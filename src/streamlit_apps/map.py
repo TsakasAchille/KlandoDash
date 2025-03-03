@@ -39,9 +39,17 @@ class TripMap:
             dep_lon = float(trip_data['departure_longitude'])
             dest_lat = float(trip_data['destination_latitude'])
             dest_lon = float(trip_data['destination_longitude'])
-            
+
+            # Calculer le centre de la carte (milieu entre départ et arrivée)
+            center_lat = (dep_lat + dest_lat) / 2
+            center_lon = (dep_lon + dest_lon) / 2
+                        
             # Créer la carte
-            m = folium.Map(tiles='CartoDB positron')
+            m = folium.Map(
+                location=[center_lat, center_lon],
+                tiles='CartoDB positron',
+                zoom_start=10  # Essayer une valeur entre 5 et 8
+            )
             
             # Ajouter les marqueurs
             folium.Marker(
@@ -65,8 +73,7 @@ class TripMap:
             ).add_to(m)
             
             # Ajuster la vue pour montrer tous les marqueurs
-            bounds = [[dep_lat, dep_lon], [dest_lat, dest_lon]]
-            m.fit_bounds(bounds, padding=(30, 30))
+
             
             # Afficher la carte
             folium_static(m)
