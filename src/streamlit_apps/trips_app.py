@@ -18,22 +18,24 @@ try:
     AGGRID_AVAILABLE = True
 except ImportError:
     AGGRID_AVAILABLE = False
+
 import sys
 import streamlit as st
 from map import TripMap
-
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, ColumnsAutoSizeMode, JsCode
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+import pandas as pd
+from car_view import CarView
 
 class TripsApp:
+    """Application principale pour l'affichage des trajets"""
+    
     def __init__(self):
-        self.backend = Backend()
-        self.loader = Loader()
-        self.setup_page()
-        self.load_style()
+        """Initialisation de l'application"""
         self.trip_processor = TripProcessor()
+        self.trip_map = TripMap()
+        self.car_view = CarView()
         self.table = Table()
         self.styles = Styles()
-        self.trip_map = TripMap()
         
     def setup_page(self):
         """Configure la page Streamlit"""
@@ -340,7 +342,10 @@ class TripsApp:
         )
 
          
+
     
+
+
 
     def run(self):
         """Point d'entrée principal de l'application"""
@@ -352,8 +357,34 @@ class TripsApp:
             st.error("Aucun trajet trouvé")
             return
 
+
+        print("=== Debug TripsApp.run ===")
+        print(f"Types dans trips_df: {trips_df.dtypes}")
+
+        # Prétraiter la colonne all_passengers pour la rendre affichable
+        if 'all_passengers' in trips_df.columns:
+            print("=== La colonne all_passengers existe ===")
+            # Print les 2 premières valeurs
+            print(f"Premier élément: {trips_df['all_passengers'].iloc[0]}, Type: {type(trips_df['all_passengers'].iloc[0])}")
+            if len(trips_df) > 1:
+                print(f"Deuxième élément: {trips_df['all_passengers'].iloc[1]}, Type: {type(trips_df['all_passengers'].iloc[1])}")
+            
+            # Formatage de la colonne all_passengers en fonction de son contenu
+            def format_passengers(x):
+                if isinstance(x, list):
+                    # Si c'est une liste (comme initialement prévu)
+                    return f"{len(x)} passager(s)"
+                elif isinstance(x, str) and x.strip():
+                    # Si c'est une chaîne non vide (ID utilisateur)
+                    return "1 passager"
+                else:
+                    # Si c'est vide ou autre
+                    return "0 passager"
+            
+            trips_df['all_passengers_display'] = trips_df['all_passengers'].apply(format_passengers)
+        
         # Disposition à deux colonnes
-        tab1, tab2 = st.tabs(["Tableau des trajets", "Carte du trajet"])
+        tab1, tab2, tab3 = st.tabs(["Tableau des trajets", "Carte du trajet","Profil des utilisateurs"])
         
         with tab1:
             st.subheader("Tableau des trajets")
@@ -361,13 +392,14 @@ class TripsApp:
             # Colonnes à afficher
             display_cols = [
                 'trip_id',
+                'trip_distance',
+                'all_passengers_display',  # Utiliser la colonne prétraitée
                 'departure_schedule',
                 'departure_name',
                 'destination_name',
                 'price_per_seat',
                 'available_seats',
-                'number_of_seats',
-                'trip_distance'
+                'number_of_seats'
             ]
             
             # Filtrer les colonnes existantes
@@ -421,6 +453,42 @@ class TripsApp:
                     st.info("Sélectionnez un trajet dans le tableau pour voir sa carte")
             except Exception as e:
                 st.error(f"Erreur: {str(e)}")
+  
+
+        
+    
+
+        with tab3:
+            st.subheader("Profil des utilisateurs et visualisation des sièges")
+            
+            try:
+                # Vérifier s'il y a une sélection dans la grille
+                selected_df = grid_response["selected_rows"]
+                has_selection = isinstance(selected_df, pd.DataFrame) and not selected_df.empty
+                
+                if has_selection:
+                    # Récupérer la première ligne sélectionnée
+                    row = selected_df.iloc[0]
+                    
+                    # Obtenir l'ID du trajet et récupérer les données complètes
+                    if 'trip_id' in row:
+                        trip_id = row['trip_id']
+                        trip_data = trips_df[trips_df['trip_id'] == trip_id]
+                        
+                        if not trip_data.empty:
+                            # Afficher les informations sur les sièges et les passagers
+                            self.car_view.display_seat_info(trip_data.iloc[0])
+                        else:
+                            st.info("Données complètes du trajet non trouvées")
+                    else:
+                        st.info("ID de trajet manquant dans la sélection")
+                else:
+                    # Message d'instruction
+                    st.info("Sélectionnez un trajet dans le tableau pour voir les informations sur les sièges")
+            except Exception as e:
+                st.error(f"Erreur lors de l'affichage des informations sur les sièges: {str(e)}")
+                import traceback
+                st.write(traceback.format_exc())
   
 if __name__ == "__main__":
     app = TripsApp()

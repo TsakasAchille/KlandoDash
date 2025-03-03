@@ -109,7 +109,7 @@ class TripProcessor:
             print("Erreur : Impossible de charger les données des trajets")
             return None
         
-        self.loader.save_dataframe_to_csv(trips_df, 'trips')
+       # self.loader.save_dataframe_to_csv(trips_df, 'trips')
 
         return trips_df
 
