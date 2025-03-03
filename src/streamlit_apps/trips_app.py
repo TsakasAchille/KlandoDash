@@ -344,125 +344,84 @@ class TripsApp:
 
     def run(self):
         """Point d'entrée principal de l'application"""
-
-
-
-        st.write("### Tableau des trajets")
-
+        st.title("KlandoDash - Tableau de bord des trajets")
+        
+        # Charger les données
         trips_df = self.trip_processor.handler()
         if trips_df is None:
-            st.error("Erreur : Aucun fichier de trajets trouvé")
+            st.error("Aucun trajet trouvé")
             return
 
-        # Définir l'ordre des colonnes à afficher
-        column_order = [
-            'trip_id',
-            'departure_schedule',
-            'trip_distance',
-            'departure_name',
-            'destination_name',
-            'price_per_seat',
-            'available_seats',
-            'number_of_seats',
-            'updated_at',
-            'departure_date',
-            'auto_confirmation',
-            'driver_reference',
-            'destination_schedule',
-            'departure_latitude',
-            'departure_longitude',
-            'destination_latitude',
-            'destination_longitude',
-            'region',
-            'trip_polyline',
-            'all_passengers',
-            'passenger_reservations'
-
-
-        ]
-
-        # Réorganiser les colonnes du DataFrame
-        # Les colonnes définies seront d'abord affichées dans l'ordre spécifié
-        # Les autres colonnes seront ajoutées à la fin
-        all_columns = column_order + [col for col in trips_df.columns if col not in column_order]
-        trips_df = trips_df[all_columns]
-        print("Colonnes disponibles:", trips_df.columns.tolist())         
-
-
-
-        gd = GridOptionsBuilder.from_dataframe(trips_df)
-
-        gd.configure_default_column(
-            groupable=True, 
-            editable=True,
-            resizable=True,
-            autoHeight=False,
-            autoWidth=True,
-            wrapText=True
-        )  
-
-        # Masquer les colonnes de coordonnées sans les supprimer du dataframe
-        hidden_columns = [
-            'departure_latitude', 
-            'departure_longitude', 
-            'destination_latitude', 
-            'destination_longitude',
-            'destination_schedule',
-            'trip_polyline',
-            'passenger_reservations',
-            'all_passengers',
-            'updated_at',
-            'departure_date'
-        ]
-        for col in hidden_columns:
-            if col in trips_df.columns:
-                gd.configure_column(col, hide=True)
+        # Disposition à deux colonnes
+        col1, col2 = st.columns([6, 4])
+        
+        with col1:
+            st.subheader("Tableau des trajets")
+            
+            # Colonnes à afficher
+            display_cols = [
+                'trip_id',
+                'departure_schedule',
+                'departure_name',
+                'destination_name',
+                'price_per_seat',
+                'available_seats',
+                'number_of_seats',
+                'trip_distance'
+            ]
+            
+            # Filtrer les colonnes existantes
+            valid_cols = [col for col in display_cols if col in trips_df.columns]
+            
+            # Configuration de la grille avec case à cocher
+            gb = GridOptionsBuilder.from_dataframe(trips_df[valid_cols])
+            gb.configure_selection('single', use_checkbox=True)
+            gb.configure_grid_options(suppressRowClickSelection=True)
+            
+            # Afficher la grille
+            grid_response = AgGrid(
+                trips_df[valid_cols],
+                gridOptions=gb.build(),
+                fit_columns_on_grid_load=True,
+                update_mode=GridUpdateMode.SELECTION_CHANGED,
+                height=400
+            )
+        
+        # Affichage de la carte
+        with col2:
+            st.subheader("Carte du trajet")
+            
+            try:
+                # Récupérer les lignes sélectionnées comme DataFrame
+                selected_df = grid_response["selected_rows"]
                 
-        # Définir l'ordre des colonnes (les colonnes non spécifiées seront affichées après celles-ci)
-        column_order = [
-            'trip_id',
-            'departure_schedule',
-            'trip_distance',
-            'departure_name',
-            'destination_name',
-            'price_per_seat',
-            'available_seats',
-            'number_of_seats'
-        ]
-        
-        # Configurer l'ordre des colonnes
-        for i, col in enumerate(column_order):
-            if col in trips_df.columns:
-                print(f"Configuring column {col} at index {i}")
-                gd.configure_column(col, order=i)
-
-        # Ajout de la colonne des cases à cocher
-        sel_mode = st.radio("Mode de sélection", ["single", "multiple"])
-        gd.configure_selection(selection_mode=sel_mode, use_checkbox=True)
-        
-        # Forcer l'affichage de la colonne des cases à cocher
-        gd.configure_grid_options(
-            rowSelection=sel_mode,
-            suppressRowClickSelection=True,
-            autoSizeColumns=True
-        )
-        
-        # Forcer l'affichage de la colonne des cases à cocher (résout parfois le problème)
-
-        gridoptions = gd.build()
-
-        # Gère les callbacks de sélection
-        sel_row = self.render_grid_with_callback(trips_df, gridoptions)
-
-        # Convertir la sélection en un DataFrame
-        valid_sel_row = pd.DataFrame(sel_row)
-
-        # Afficher la carte du trajet sélectionné
-        self.trip_map.display_trip_map(valid_sel_row)
-    
-
-
-
+                # Vérifier s'il y a une sélection valide
+                has_selection = isinstance(selected_df, pd.DataFrame) and not selected_df.empty
+                
+                if has_selection:
+                    # Récupérer la première ligne sélectionnée
+                    row = selected_df.iloc[0]
+                    
+                    # Vérifier si trip_id est présent
+                    if 'trip_id' in row:
+                        trip_id = row['trip_id']
+                        
+                        # Récupérer les données complètes du trajet
+                        trip_data = trips_df[trips_df['trip_id'] == trip_id]
+                        
+                        if not trip_data.empty:
+                            # Afficher la carte
+                            self.trip_map.display_trip_map(trip_data.iloc[0])
+                        else:
+                            st.info("Données complètes du trajet non trouvées")
+                    else:
+                        st.info("ID de trajet manquant dans la sélection")
+                else:
+                    # Message d'instruction
+                    st.info("Sélectionnez un trajet dans le tableau pour voir sa carte")
+            except Exception as e:
+                st.error(f"Erreur: {str(e)}")
+  
 if __name__ == "__main__":
     app = TripsApp()
     app.run()
