@@ -344,7 +344,7 @@ class TripsApp:
 
     def run(self):
         """Point d'entrée principal de l'application"""
-        st.title("KlandoDash - Tableau de bord des trajets")
+        st.title("Tableau de bord des trajets")
         
         # Charger les données
         trips_df = self.trip_processor.handler()
@@ -353,9 +353,9 @@ class TripsApp:
             return
 
         # Disposition à deux colonnes
-        col1, col2 = st.columns([6, 4])
+        tab1, tab2 = st.tabs(["Tableau des trajets", "Carte du trajet"])
         
-        with col1:
+        with tab1:
             st.subheader("Tableau des trajets")
             
             # Colonnes à afficher
@@ -382,13 +382,13 @@ class TripsApp:
             grid_response = AgGrid(
                 trips_df[valid_cols],
                 gridOptions=gb.build(),
-                fit_columns_on_grid_load=True,
+                fit_columns_on_grid_load=False,
                 update_mode=GridUpdateMode.SELECTION_CHANGED,
                 height=400
-            )
+                )
         
         # Affichage de la carte
-        with col2:
+        with tab2:
             st.subheader("Carte du trajet")
             
             try:
