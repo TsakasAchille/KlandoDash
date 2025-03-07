@@ -4,7 +4,7 @@ import pandas as pd
 
 from typing import Optional  # Ajoutez cet import en haut du fichier
 
-from ressources.config import CONFIG
+from src.ressources.config import CONFIG
 import glob
 
 """
@@ -127,6 +127,7 @@ class Loader:
         
         # Construire le pattern de recherche
         pattern = os.path.join(base_path, f"{data_type}_data*.json")
+        print(pattern)
         
         files = glob.glob(pattern)
         if not files:
@@ -134,6 +135,7 @@ class Loader:
             return None
             
         return max(files, key=os.path.getmtime)
+
 
     def convert_json_to_dataframe(self,file_path: str, record_path: str = None, meta: list = None) -> Optional[pd.DataFrame]:
         """

@@ -16,7 +16,8 @@
         "longitude": -17.494954
       },
       "all_passengers": [
-        "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1"
+        "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+        "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg2"
       ],
       "number_of_seats": 2,
       "trip_precision": "",
