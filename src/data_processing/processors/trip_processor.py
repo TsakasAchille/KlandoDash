@@ -1,8 +1,8 @@
-from utils.backend import Backend
+from src.data_processing.utils.backend import Backend
 import pandas as pd
 import os
 from typing import *  # Ajoutez cet import en haut du fichier
-from data_processing.loaders.loader import Loader
+from src.data_processing.loaders.loader import Loader
 import json
 
 class TripProcessor:
@@ -72,6 +72,29 @@ class TripProcessor:
                     # Utiliser le parsing sans spécifier de format explicite
                     # pandas essaiera de détecter automatiquement le format
                     df[col] = pd.to_datetime(df[col], errors='coerce')
+
+
+              # Prétraiter la colonne all_passengers pour la rendre affichable
+            if 'all_passengers' in df.columns:
+                print("=== La colonne all_passengers existe ===")
+                # Print les 2 premières valeurs
+                print(f"Premier élément: {df['all_passengers'].iloc[0]}, Type: {type(df['all_passengers'].iloc[0])}")
+                if len(df) > 1:
+                    print(f"Deuxième élément: {df['all_passengers'].iloc[1]}, Type: {type(df['all_passengers'].iloc[1])}")
+                
+                # Formatage de la colonne all_passengers en fonction de son contenu
+                def format_passengers(x):
+                    if isinstance(x, list):
+                        # Si c'est une liste (comme initialement prévu)
+                        return f"{len(x)} passager(s)"
+                    elif isinstance(x, str) and x.strip():
+                        # Si c'est une chaîne non vide (ID utilisateur)
+                        return "1 passager"
+                    else:
+                        # Si c'est vide ou autre
+                        return "0 passager"
+                
+                df['all_passengers_display'] = df['all_passengers'].apply(format_passengers)
                     
             return df
 
@@ -101,6 +124,8 @@ class TripProcessor:
             print("Erreur : Aucun fichier de trajets trouvé")
             return None
 
+
+        
         print(f"Chargement des trajets depuis : {trips_file_path}")
 
         trips_df = self.convert_trips_json_to_dataframe(trips_file_path)
@@ -196,6 +221,96 @@ class TripProcessor:
         except Exception as e:
             print(f"Erreur lors du chargement des trajets : {e}")
             return []
+
+
+    def get_user_trips(self, user_id: str, trips_df: Optional[pd.DataFrame] = None) -> Optional[pd.DataFrame]:
+        """
+        Retrouve tous les trajets associés à un utilisateur (conducteur ou passager)
+        
+        Args:
+            user_id (str): ID de l'utilisateur à rechercher
+            trips_df (Optional[pd.DataFrame]): DataFrame des trajets existant, si None handler() sera appelé
+            
+        Returns:
+            Optional[pd.DataFrame]: DataFrame contenant les trajets de l'utilisateur ou None si erreur/aucun trajet
+        """
+        try:
+            # Nettoyer l'ID utilisateur (supprimer le préfixe 'users/' s'il existe)
+            clean_user_id = user_id.replace('users/', '') if isinstance(user_id, str) else user_id
+            
+            # Récupérer tous les trajets si non fournis
+            if trips_df is None:
+                trips_df = self.handler()
+            
+            if trips_df is None or trips_df.empty:
+                print(f"Aucun trajet trouvé pour récupérer ceux de l'utilisateur {user_id}")
+                return None
+            
+            print(f"Recherche des trajets pour l'utilisateur : {user_id}")
+            print(f"Colonnes disponibles : {trips_df.columns.tolist()}")
+            
+            # Convertir les ID de passagers en liste pour faciliter la recherche
+            def convert_passengers_to_list(passengers_str):
+                if pd.isna(passengers_str) or not passengers_str:
+                    return []
+                # Si c'est déjà une liste (comme initialement prévu)
+                if isinstance(passengers_str, list):
+                    return [p.replace('users/', '') if isinstance(p, str) and 'users/' in p else p for p in passengers_str]
+                # Sinon, split par virgule, nettoyer et supprimer le préfixe 'users/'
+                result = [p.strip().replace('users/', '') if 'users/' in p.strip() else p.strip() 
+                        for p in passengers_str.split(',') if p.strip()]
+                # Log pour déboguer
+                if len(result) > 0:
+                    print(f"Convertir {passengers_str} en {result}")
+                return result
+                
+            # Appliquer la conversion
+            print("Avant conversion, exemple de all_passengers:", trips_df['all_passengers'].iloc[0] if len(trips_df) > 0 else "aucun")
+            trips_df['passengers_list'] = trips_df['all_passengers'].apply(convert_passengers_to_list)
+            
+            # Filtrer les trajets où l'utilisateur est conducteur
+            print(f"Recherche de trajets comme conducteur pour: {clean_user_id}")
+            driver_trips = trips_df[trips_df['driver_reference'] == clean_user_id].copy()
+            print(f"Trouvé {len(driver_trips)} trajets comme conducteur")
+            if not driver_trips.empty:
+                driver_trips['user_role'] = 'Conducteur'
+            
+            # Filtrer les trajets où l'utilisateur est passager - utiliser contains au lieu de in
+            print(f"Recherche de trajets comme passager pour: {clean_user_id}")
+            
+            # Méthode 1 - recherche avec contains dans la chaine d'origine
+            passenger_mask = trips_df['all_passengers'].str.contains(clean_user_id, na=False)
+            passenger_trips_1 = trips_df[passenger_mask].copy()
+            print(f"Méthode 1: Trouvé {len(passenger_trips_1)} trajets comme passager")
+            
+            # Méthode 2 - recherche dans la liste construite
+            passenger_mask_2 = trips_df['passengers_list'].apply(lambda x: clean_user_id in x)
+            passenger_trips_2 = trips_df[passenger_mask_2].copy()
+            print(f"Méthode 2: Trouvé {len(passenger_trips_2)} trajets comme passager")
+            
+            # Utilisons la méthode 1 qui semble plus fiable
+            passenger_trips = passenger_trips_1
+            if not passenger_trips.empty:
+                passenger_trips['user_role'] = 'Passager'
+            
+            # Combiner les résultats
+            user_trips = pd.concat([driver_trips, passenger_trips], ignore_index=True)
+            
+            # Supprimer la colonne temporaire
+            if 'passengers_list' in user_trips.columns:
+                user_trips = user_trips.drop(columns=['passengers_list'])
+            
+            # Trier par date de départ (les plus récents d'abord)
+            if 'departure_date' in user_trips.columns:
+                user_trips = user_trips.sort_values(by='departure_date', ascending=False)
+            
+            return user_trips if not user_trips.empty else None
+            
+        except Exception as e:
+            print(f"Erreur lors de la récupération des trajets de l'utilisateur {user_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
 
 
 if __name__ == "__main__":
