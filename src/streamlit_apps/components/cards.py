@@ -24,50 +24,52 @@ class Cards:
                     text-align: center;
                     background-color: rgba(8, 28, 54, 1);
                     border-radius: 5px;
-                    padding: 10px;
+                    padding: 0px 5px 5px 0px;
                     border-left: 5px solid #7b1f2f;
                     transition: transform 0.3s;
                 }
                 .card-base:hover {
                     transform: translateY(-5px);
                 }
-
+               
 
                 /* Styles pour les cartes d'information */
                 .info-card {
                     text-align: left;
-                    padding: 20px 20px 20px 20px; /* haut droite bas gauche */
+                    padding: 5px 5px 5px 10px; /* haut droite bas gauche */
                     border-left: 5px solid #FFFFFF;
                 }
                 .info-card.warning {
-                    border-left: 5px solid #FF9800;
+                    border-left: 5px solid #FF9800
                 }
                 .info-title {
                     color: white;
-                    font-size: 20px;
+                    font-size: 15px;
                     font-weight: bold;
-                    margin-bottom: 15px;
+                    margin-bottom: 8px;
                     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-                    padding-bottom: 10px;
+                    padding-bottom: 8px;
                 }
                 .info-content {
                     color: #D1D5DB;
                     font-size: 16px;
-                    line-height: 1.5;
+                    margin-top: 2px;
+                    margin-bottom: 2px;
+                    line-height: 1.2;
                 }
                 .info-card .value {
                     font-weight: bold;
                     color: white;
-                    font-size: 20px;
+                    font-size: 15px;
                     margin: 0;
                     display: block;
-                    margin-top: 5px;
-                    margin-bottom: 10px;
+                    margin-top: 2px;
+                    margin-bottom: 2px;
                 }
                 .info-card .label {
                     font-weight: 600;
                     color: #A0A6B0;
-                    font-size: 14px;
+                    font-size: 9px;
                     margin-right: 8px;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
@@ -76,7 +78,7 @@ class Cards:
                 /* Styles pour les cartes métriques */
                 .metric-card {
                     text-align: center;
-                    padding: 10px;
+                    padding: 5px;
                     border-left: 5px solid #7b1f2f;
                 }
                 .metric-label {
@@ -277,12 +279,16 @@ class Cards:
         cards_html = []
         width = f"{100/len(metrics_data) - 2}%"
         
+
+    
+
+
         for label, value in metrics_data:
             card = (
                 f'<div style="width: {width}; margin: 0 5px;">'
                 f'<div class="card-base" style="border-left-color: {color};">'
-                f'<p class="metric-label">{label}</p>'
-                f'<p class="metric-value">{value}</p>'
+                f'<p class="metric-label" style="font-size: 12px;">{label}</p>'
+                f'<p class="metric-value" style="font-size: 18px;">{value}</p>'
                 f'</div>'
                 f'</div>'
             )
@@ -292,55 +298,6 @@ class Cards:
         return html
 
 
-    @staticmethod
-    def create_info_cards0(info_data, color="#7B1F2F", widths=None, label_size=None, value_size=None):
-        """
-        Crée une rangée de cartes d'informations à partir d'une liste de données
-        
-        Args:
-            info_data: Liste de tuples (title, content_items, icon)
-                où content_items est une liste de tuples (label, value)
-            color: Couleur de la bordure gauche
-            widths: Liste optionnelle des largeurs en % pour chaque carte
-            label_size: Taille en px pour les labels (ex: "14px")
-            value_size: Taille en px pour les valeurs (ex: "16px")
-        
-        Returns:
-            HTML formaté pour les cartes d'information
-        """
-        cards_html = []
-        
-        # Gestion des largeurs
-        if widths is None:
-            width = f"{100/len(info_data) - 2}%"
-            widths = [width] * len(info_data)
-        else:
-            widths = [f"{w}%" for w in widths]
-        
-        # Style inline pour les tailles personnalisées
-        label_style = f' style="font-size: {label_size};"' if label_size else ''
-        value_style = f' style="font-size: {value_size};"' if value_size else ''
-        
-        for (title, content_items, icon), width in zip(info_data, widths):
-            # Génération du contenu avec labels et values personnalisés
-            content_html = ""
-            for label, value in content_items:
-                content_html += f'<p><span class="label"{label_style}>{label}</span> <span class="value"{value_style}>{value}</span></p>'
-            
-            card = (
-                f'<div style="width: {width};margin: 0px 5px 0px 5px;">'
-                f'<div class="card-base info-card" style="border-left-color: {color};">'
-                f'<div class="info-title">'
-                f'<span class="icon">{icon}</span> {title}'
-                f'</div>'
-                f'<div class="info-content">{content_html}</div>'
-                f'</div>'
-                f'</div>'
-            )
-            cards_html.append(card)
-        
-        html = f'<div style="display: flex; flex-direction: row; justify-content: space-between; align-items: stretch; margin: 0px 0;">{"".join(cards_html)}</div>'
-        return html
 
     @staticmethod
     def create_info_cards(info_data, 

@@ -44,7 +44,6 @@ class UserView:
         Returns:
             bool: True si un utilisateur est sélectionné, False sinon
         """
-        st.subheader("Tableau des Users")
     
         # Colonnes à afficher dans la table
         display_cols = [
@@ -61,14 +60,14 @@ class UserView:
             ".ag-header": {
                 "background-color": "#081C36 !important",
                 "color": "white !important",
-                "font-size": "18px !important"
+                "font-size": "14px !important"
             },
             ".ag-row-selected": {
                 "background-color": "#7b1f2f !important",
                 "color": "white !important"
             },
             ".ag-cell": {
-                "font-size": "16px !important"
+                "font-size": "14px !important"
             },
             ".ag-header-cell-label": {
                 "font-weight": "bold !important"
@@ -260,38 +259,46 @@ class UserView:
                 # Historique des trajets
                 st.subheader("Historique des trajets")
                 
+               # Remplacer le TopContainer par:
                 if user_trips_df is not None and not user_trips_df.empty:
                     # Limiter aux 5 derniers trajets pour l'affichage
                     recent_trips = user_trips_df.head(5)
                     
                     st.markdown("🚙 **Derniers trajets**")
                     
-                    # Pour chaque trajet, afficher les informations et un bouton pour y accéder
+                    # Créer des cards pour afficher les trajets
                     for _, trip in recent_trips.iterrows():
                         trip_id = trip.get("trip_id", "")
                         departure_date = self.format_date(trip.get("departure_date", ""))
                         origin = trip.get("departure_name", "None")
                         destination = trip.get("destination_name", "None")
                         role = trip.get("user_role", "Passager")
-                        
-                        # Icône en fonction du rôle
                         role_icon = "👤" if role == "Passager" else "🚗"
                         
-                        # Créer un conteneur pour chaque trajet
-
-
-                
-                        st.markdown(f"{departure_date}: {origin} → {destination} ({role_icon} {role})")
-                
-                        # Stocker l'ID dans la session avant de naviguer
-                        if st.button(f"Voir trajet", key=f"goto_{trip_id}"):
-                            # Stocker le trip_id dans la session
+                      
+                        # Créer et afficher la card
+                        # Modifier l'appel de la fonction pour qu'il corresponde à la signature
+                        card_html = Cards.create_info_cards(
+                            info_data=[
+                                (f"{origin} → {destination}", 
+                                 [("Date", departure_date), (role_icon, role)],
+                                 "🚙")
+                          ],
+                          color="#3066BE",  # Une couleur bleue pour les trajets
+                          vertical_layout=False,
+                          background_color="rgba(8, 28, 54, 0.8)",
+                          label_size="10px",
+                          value_size="14px"
+                        )
+                        st.markdown(card_html, unsafe_allow_html=True)
+                    
+                    # Placer le bouton après la carte
+                        if st.button(f"Voir détails", key=f"goto_{trip_id}", help=f"Voir le trajet"):
                             st.session_state["selected_trip_id"] = trip_id
                             st.session_state["select_trip_on_load"] = True
-                            
-                            # Utiliser le menu principal de navigation
-                            st.info(f"Veuillez cliquer sur le menu 'Trajets' dans la barre latérale pour voir le trajet {trip_id}.")
-                    
+                            st.info(f"Veuillez cliquer sur 'Trajets' dans la barre latérale.")
+
+
                     # Afficher aussi un tableau complet des trajets si nombreux
                     if len(user_trips_df) > 5:
                         with st.expander(f"Voir tous les trajets ({len(user_trips_df)} au total)"):
@@ -322,7 +329,35 @@ class UserView:
             import traceback
             st.write(traceback.format_exc())
 
-
+    # Au début du script, définissez une fonction helper
+    def styled_container(title, key=None):
+        # Créer un container avec un ID unique
+        container_id = f"container_{key}" if key else f"container_{title.replace(' ', '_').lower()}"
+        
+        # Ajouter le style CSS pour ce container spécifique
+        st.markdown(f"""
+        <style>
+            #{container_id} {{
+                border: 1px solid rgba(49, 51, 63, 0.2);
+                border-radius: 10px;
+                padding: 10px;
+                margin-bottom: 20px;
+                background-color: #f5f5f5;
+            }}
+            #{container_id} h3 {{
+                margin-top: 0;
+                color: #ffffff;
+            }}
+        </style>
+        
+        <div id="{container_id}">
+            <h3>{title}</h3>
+            <div id="{container_id}_content"></div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Retourner un container Streamlit
+        return st.container()
 
     def display_user_trip_infos0(self, user_data, trips_df: Optional[pd.DataFrame] = None):
         """Affiche les informations de trajets d'un utilisateur
@@ -488,8 +523,8 @@ class UserView:
                 card_html = Cards.create_info_cards(
                     info_data,
                     color="#EBC33F",
-                    label_size="14px",
-                    value_size="16px",
+                    label_size="10px",
+                    value_size="14px",
                     background_color="#102844"
                 )
                 st.markdown(card_html, unsafe_allow_html=True)

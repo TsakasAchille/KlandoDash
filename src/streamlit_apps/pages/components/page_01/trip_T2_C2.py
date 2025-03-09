@@ -324,16 +324,16 @@ class TripUsers:
                     st.markdown(Cards.create_info_cards(
                         info_data,
                         color=color,
-                        label_size="14px",
-                        value_size="18px",
+                        label_size="9px",
+                        value_size="14px",
                         vertical_layout=True
                     ), unsafe_allow_html=True)
             else:
                 st.markdown(Cards.create_info_cards(
                     info_data,
                     color=color,
-                    label_size="14px", 
-                    value_size="18px",
+                    label_size="9px", 
+                    value_size="14px",
                     vertical_layout=True
                 ), unsafe_allow_html=True)
                 
