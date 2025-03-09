@@ -90,7 +90,6 @@ class TripsApp:
         Returns:
             bool: True si un trajet est sélectionné, False sinon
         """
-        st.subheader("Tableau des trajets")
             
         # Colonnes à afficher
         display_cols = [
@@ -118,14 +117,14 @@ class TripsApp:
             ".ag-header": {
                 "background-color": "#081C36 !important",
                 "color": "white !important",
-                "font-size": "18px !important"  # Taille de police pour les entêtes
+                "font-size": "14px !important"  # Taille de police pour les entêtes
             },
             ".ag-row-selected": {
                 "background-color": "#7b1f2f !important",
                 "color": "white !important"
             },
             ".ag-cell": {
-                "font-size": "16px !important"  # Taille de police pour les cellules
+                "font-size": "14px !important"  # Taille de police pour les cellules
             },
             ".ag-header-cell-label": {
                 "font-weight": "bold !important"
@@ -283,7 +282,7 @@ class TripsApp:
                 info_data = [("Itinéraire", content_items, "📍")]
                 
                 # Créer la carte avec la nouvelle fonction
-                route_card = Cards.create_info_cards(info_data, label_size="14px", value_size="16px", max_height="200px")
+                route_card = Cards.create_info_cards(info_data, label_size="9px", value_size="14px", max_height="180px")
                 st.markdown(route_card, unsafe_allow_html=True)
                 
             except Exception as e:
@@ -410,7 +409,7 @@ class TripsApp:
                 info_data = [("Finances", content_items, "💵")]
                 
                 # Créer la carte avec la nouvelle fonction
-                finance_card = Cards.create_info_cards(info_data, label_size="14px", value_size="20px",color="#EBC33F")
+                finance_card = Cards.create_info_cards(info_data, label_size="9px", value_size="14px",color="#EBC33F")
                 st.markdown(finance_card, unsafe_allow_html=True)
                 
         except Exception as e:
@@ -434,6 +433,13 @@ class TripsApp:
         else:
             # Message d'instruction
             st.info("Sélectionnez un trajet dans le tableau pour voir sa carte")
+
+
+    def display_multiple_map(self, trips_df):
+       # st.subheader("Carte du trajet")
+                
+        # Afficher la carte
+        self.trip_map.display_multiple_trips_map(trips_df)
 
     def display_users_details(self, trips_df, selected_trip):
         # Charger les données
@@ -577,8 +583,8 @@ class TripsApp:
                     st.markdown(Cards.create_info_cards(
                         info_data,
                         color="#00BFA5",
-                        label_size="14px",
-                        value_size="16px",
+                        label_size="10px",
+                        value_size="13px",
                         background_color="#102844"
                     ), unsafe_allow_html=True)
                     
@@ -618,8 +624,8 @@ class TripsApp:
                         st.markdown(Cards.create_info_cards(
                             info_data,
                             color="#00BFA5",
-                            label_size="14px",
-                            value_size="16px",
+                            label_size="10px",
+                            value_size="13px",
                             background_color="#102844"
                         ), unsafe_allow_html=True)
                         
