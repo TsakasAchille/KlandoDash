@@ -58,7 +58,9 @@ class TripProcessor:
                     # Références
                     'driver_reference': trip_data['data'].get('driver_reference'),
                     'all_passengers': ','.join(trip_data['data'].get('all_passengers', [])),
-                    'passenger_reservations': json.dumps(trip_data['data'].get('passenger_reservations', []))
+                    'passenger_reservations': json.dumps(trip_data['data'].get('passenger_reservations', [])),
+                    'viator_income': trip_data['data'].get('viator_income'),
+                    'passengers': len(trip_data['data'].get('all_passengers', [])),  # Ajoutez ici
                 }
                 trips_list.append(trip_dict)
             
@@ -74,28 +76,8 @@ class TripProcessor:
                     df[col] = pd.to_datetime(df[col], errors='coerce')
 
 
-              # Prétraiter la colonne all_passengers pour la rendre affichable
-            if 'all_passengers' in df.columns:
-                print("=== La colonne all_passengers existe ===")
-                # Print les 2 premières valeurs
-                print(f"Premier élément: {df['all_passengers'].iloc[0]}, Type: {type(df['all_passengers'].iloc[0])}")
-                if len(df) > 1:
-                    print(f"Deuxième élément: {df['all_passengers'].iloc[1]}, Type: {type(df['all_passengers'].iloc[1])}")
+         
                 
-                # Formatage de la colonne all_passengers en fonction de son contenu
-                def format_passengers(x):
-                    if isinstance(x, list):
-                        # Si c'est une liste (comme initialement prévu)
-                        return f"{len(x)} passager(s)"
-                    elif isinstance(x, str) and x.strip():
-                        # Si c'est une chaîne non vide (ID utilisateur)
-                        return "1 passager"
-                    else:
-                        # Si c'est vide ou autre
-                        return "0 passager"
-                
-                df['all_passengers_display'] = df['all_passengers'].apply(format_passengers)
-                    
             return df
 
         except Exception as e:

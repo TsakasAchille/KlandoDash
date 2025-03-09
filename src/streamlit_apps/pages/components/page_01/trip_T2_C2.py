@@ -186,34 +186,37 @@ class TripUsers:
         )
         
         return fig
+
     
-    def display_seat_info(self, trip_data):
+
+    #NEWWWw----------------------------------------------------------------------------
+
+
+
+    def display_seat_occupation_info0(self, trip_data, info_cols=None):
         """
-        Affiche les informations sur les sièges pour un trajet spécifique
+        Affiche les informations sur l'occupation des sièges
         
         Args:
             trip_data: Données du trajet sélectionné
+            info_cols: Colonnes Streamlit pour l'affichage (optionnel)
         """
         try:
             # Extraire les informations nécessaires
             total_seats = int(trip_data.get('number_of_seats', 0))
             available_seats = int(trip_data.get('available_seats', 0))
             all_passengers = trip_data.get('all_passengers', '')
-            driver_id = trip_data.get('driver_reference', '').replace('users/', '')
             
             # Traiter la variable all_passengers
             if isinstance(all_passengers, str):
-                # Si la chaîne contient une virgule, c'est probablement une liste sérialisée
                 if ',' in all_passengers:
                     all_passengers = all_passengers.split(',')
-                # Sinon, convertir en liste à un élément si non vide
                 elif all_passengers.strip():
                     all_passengers = [all_passengers.strip()]
-                # Si vide, créer liste vide
                 else:
                     all_passengers = []
                     
-            # Nettoyer les IDs utilisateurs (supprimer le préfixe 'users/')
+            # Nettoyer les IDs utilisateurs
             if isinstance(all_passengers, list):
                 all_passengers = [p.replace('users/', '') for p in all_passengers]
             
@@ -223,99 +226,340 @@ class TripUsers:
             # Calculer les sièges occupés
             occupied_seats = passenger_count
             if occupied_seats > total_seats - available_seats:
-                # Si le nombre de passagers est incohérent avec les sièges disponibles
                 occupied_seats = total_seats - available_seats
             
-            # Créer la carte d'informations sur l'occupation des sièges
+            # Créer le contenu d'information
             seat_info_content = ""
             seat_info_content += self.format_detail("Total sièges", total_seats)
             seat_info_content += self.format_detail("Sièges occupés", occupied_seats)
-            #seat_info_content += self.format_detail("Sièges disponibles", available_seats)
             
             # Ajouter le pourcentage d'occupation en gras
             occupation_percentage = (occupied_seats / total_seats) * 100 if total_seats > 0 else 0
             seat_info_content += self.format_detail("Taux d'occupation", f"<strong>{occupation_percentage:.0f}%</strong>", is_value=False)
             
             # Utiliser un autre emoji selon le taux d'occupation
-            icon = "A"
+            icon = "💺"  # siège            
             card_class = ""
             if occupation_percentage > 75:
-                icon = "B"
-                card_class = "warning"
-                
-            # Créer deux colonnes pour l'affichage
-            col1, col2 = st.columns(2)
+                card_class = "success"
             
-            with col1:
-                # Afficher la carte d'information avec le style CSS
+            # Affichage dans la première colonne si colonnes fournies
+            if info_cols and len(info_cols) > 0:
+                with info_cols[0]:
+                    st.markdown(self.create_car_info_card(
+                        "Occupation des sièges", 
+                        seat_info_content,
+                        icon=icon,
+                        card_class=card_class
+                    ), unsafe_allow_html=True)
+            else:
                 st.markdown(self.create_car_info_card(
                     "Occupation des sièges", 
                     seat_info_content,
                     icon=icon,
                     card_class=card_class
                 ), unsafe_allow_html=True)
+                
+            return occupied_seats, total_seats
+        except Exception as e:
+            st.error(f"Erreur lors de l'affichage des informations d'occupation: {str(e)}")
+            return 0, 0
+    
+
+    def display_seat_occupation_info(self, trip_data, info_cols=None):
+        """
+        Affiche les informations sur l'occupation des sièges
+        
+        Args:
+            trip_data: Données du trajet sélectionné
+            info_cols: Colonnes Streamlit pour l'affichage (optionnel)
+        """
+        try:
+            # Extraire les informations nécessaires
+            total_seats = int(trip_data.get('number_of_seats', 0))
+            available_seats = int(trip_data.get('available_seats', 0))
+            all_passengers = trip_data.get('all_passengers', '')
             
-            with col2:
-                # Afficher le graphique en jauge
-                pass
-               # st.plotly_chart(self.create_seat_gauge(total_seats, total_seats - occupied_seats), use_container_width=True)
+            # Traiter la variable all_passengers
+            if isinstance(all_passengers, str):
+                if ',' in all_passengers:
+                    all_passengers = all_passengers.split(',')
+                elif all_passengers.strip():
+                    all_passengers = [all_passengers.strip()]
+                else:
+                    all_passengers = []
+                    
+            # Nettoyer les IDs utilisateurs
+            if isinstance(all_passengers, list):
+                all_passengers = [p.replace('users/', '') for p in all_passengers]
             
-            # Afficher la représentation visuelle des sièges
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-
-
-
-            # Informations sur le conducteur si disponible
-                if isinstance(driver_id, str) and driver_id.strip():
-                    # Créer un lien cliquable pour l'ID du conducteur
-                    driver_link_html = self.create_user_link(driver_id)
-                    
-                    # Créer le contenu HTML pour les informations du conducteur
-                    driver_content = f"<div class='detail-row'><span class='label'>ID Conducteur:</span> {driver_link_html}</div>"
-                    
-                    # Afficher la carte d'information du conducteur
-                    st.markdown(self.create_car_info_card(
-                        "Informations sur le conducteur", 
-                        driver_content,
-                        icon="C",
+            # Déterminer le nombre de passagers
+            passenger_count = len(all_passengers) if isinstance(all_passengers, list) else 0
+            
+            # Calculer les sièges occupés
+            occupied_seats = passenger_count
+            if occupied_seats > total_seats - available_seats:
+                occupied_seats = total_seats - available_seats
+            
+            # Calculer le pourcentage d'occupation
+            occupation_percentage = (occupied_seats / total_seats) * 100 if total_seats > 0 else 0
+            
+            # Préparer les items pour la carte d'information
+            content_items = [
+                ("Total sièges", f"{total_seats}"),
+                ("Sièges occupés", f"{occupied_seats}"),
+                ("Taux d'occupation", f"{occupation_percentage:.0f}%")
+            ]
+            
+            # Déterminer l'icône et la couleur selon le taux d'occupation
+            icon = "💺"  # siège
+            color = "#4CAF50" if occupation_percentage > 75 else "#7B1F2F"  # vert si >75%, sinon rouge par défaut
+            
+            # Préparer les données pour create_info_cards
+            info_data = [("Occupation des sièges", content_items, icon)]
+            
+            # Affichage selon les colonnes fournies
+            if info_cols and len(info_cols) > 0:
+                with info_cols[0]:
+                    st.markdown(Cards.create_info_cards(
+                        info_data,
+                        color=color,
+                        label_size="14px",
+                        value_size="18px",
+                        vertical_layout=True
                     ), unsafe_allow_html=True)
+            else:
+                st.markdown(Cards.create_info_cards(
+                    info_data,
+                    color=color,
+                    label_size="14px", 
+                    value_size="18px",
+                    vertical_layout=True
+                ), unsafe_allow_html=True)
+                
+            return occupied_seats, total_seats
+        except Exception as e:
+            st.error(f"Erreur lors de l'affichage des informations d'occupation: {str(e)}")
+            return 0, 0
 
-            col1, col2 = st.columns(2)
-            with col1:
+
+
+
+    def display_people_info0(self, trip_data, info_cols=None):
+        """
+        Affiche les informations sur le conducteur et les passagers
+        
+        Args:
+            trip_data: Données du trajet sélectionné
+            info_cols: Colonnes Streamlit pour l'affichage (optionnel)
+        """
+        try:
+            from streamlit_apps.components.cards import Cards
             
-                # Informations sur les passagers si disponibles
-                if isinstance(all_passengers, list) and len(all_passengers) > 0:
+            driver_id = trip_data.get('driver_reference', '').replace('users/', '')
+            all_passengers = trip_data.get('all_passengers', '')
+            
+            # Traiter la variable all_passengers
+            if isinstance(all_passengers, str):
+                if ',' in all_passengers:
+                    all_passengers = all_passengers.split(',')
+                elif all_passengers.strip():
+                    all_passengers = [all_passengers.strip()]
+                else:
+                    all_passengers = []
                     
-                    # Créer une ligne pour afficher le nombre total de passagers
-                    st.markdown(f"<div style='margin-top: 15px; margin-bottom: 5px;'><strong>Passagers ({len(all_passengers)})</strong></div>", unsafe_allow_html=True)
+            # Nettoyer les IDs utilisateurs
+            if isinstance(all_passengers, list):
+                all_passengers = [p.replace('users/', '') for p in all_passengers]
+            
+            if not info_cols:
+                # Créer les colonnes pour l'affichage si non fournies
+                all_elements = 1 + (1 if driver_id else 0) + len(all_passengers)  # Passagers + conducteur (si présent)
+                info_cols = st.columns(all_elements)
+            
+            col_index = 0
+            
+            # Conducteur
+            if isinstance(driver_id, str) and driver_id.strip():
+                with info_cols[col_index]:
+                    # Préparer les données pour create_info_cards
+                    driver_content = [("ID", driver_id)]
+                    info_data = [("Conducteur", driver_content, "🧑‍✈️")]
                     
-                    # Afficher chaque passager dans sa propre carte
-                    for i, passenger in enumerate(all_passengers):
-                        # Préparer le contenu pour ce passager spécifique
-                        passenger_content = ""
+                    st.markdown(Cards.create_info_cards(
+                        info_data,
+                        color="#00BFA5",
+                        label_size="14px",
+                        value_size="16px",
+                        background_color="#102844"
+                    ), unsafe_allow_html=True)
+                    
+                    # Ajouter un bouton pour voir le profil du conducteur
+                    if st.button("Voir profil", key=f"driver_profile_{driver_id}"):
+                        st.session_state["selected_user_id"] = driver_id
+                        st.session_state["show_user_profile"] = True
+                        
+                col_index += 1
+    
+            # Passagers
+            if isinstance(all_passengers, list) and len(all_passengers) > 0:
+                for i, passenger in enumerate(all_passengers):
+                    with info_cols[col_index]:
+                        passenger_content = []
                         
                         if isinstance(passenger, dict):
-                            # Si les passagers sont des objets complexes
-                            passenger_content += self.format_detail(f"Passager", passenger.get('name', f'Passager {i+1}'))
-                            passenger_content += self.format_detail(f"Siège", f"{i+1}")
-                            # Ajouter d'autres informations si disponibles
+                            passenger_content.append(("Passager", passenger.get('name', f'Passager {i+1}')))
                             if 'phone' in passenger:
-                                passenger_content += self.format_detail("Téléphone", passenger['phone'])
+                                passenger_content.append(("Téléphone", passenger['phone']))
+                            passenger_id = passenger.get('id', '')
                         else:
-                            # Si les passagers sont des IDs utilisateur - créer un lien cliquable
-                            passenger_link_html = self.create_user_link(passenger)
-                            passenger_content += f"<div class='detail-row'><span class='label'>ID Utilisateur:</span> {passenger_link_html}</div>"
-                            passenger_content += self.format_detail(f"Siège", f"{i+1}")
+                            passenger_id = passenger
+                            passenger_content.append(("ID", passenger_id))
                         
-                        # Afficher une carte individuelle pour ce passager
-                        st.markdown(self.create_car_info_card(
-                            f"Passager {i+1}", 
-                            passenger_content,
-                            icon="P",
+                        info_data = [(f"Passager {i+1}", passenger_content, "👥")]
+                        
+                        st.markdown(Cards.create_info_cards(
+                            info_data,
+                            color="#00BFA5",
+                            label_size="14px",
+                            value_size="16px",
+                            background_color="#102844"
                         ), unsafe_allow_html=True)
-            
+                        
+                        # Ajouter un bouton pour voir le profil du passager
+                        if st.button("Voir profil", key=f"passenger_profile_{i}_{passenger_id}"):
+                            st.session_state["selected_user_id"] = passenger_id
+                            st.session_state["show_user_profile"] = True
+                            
+                    col_index += 1
         except Exception as e:
-            st.error(f"Erreur lors de l'affichage des informations sur les sièges: {str(e)}")
+            st.error(f"Erreur lors de l'affichage des informations sur les personnes: {str(e)}")
+
+    def display_people_info(self, trip_data, info_cols=None):
+        """
+        Affiche les informations sur le conducteur et les passagers
+        
+        Args:
+            trip_data: Données du trajet sélectionné
+            info_cols: Colonnes Streamlit pour l'affichage (optionnel)
+        """
+        try:
+            from streamlit_apps.components.cards import Cards
+            import json
+            import os
+            
+            # Charger les données utilisateurs pour obtenir les noms
+            users_data = {}
+            try:
+                users_file = os.path.join('data', 'raw', 'users', 'users_data_20250305.json')
+                with open(users_file, 'r') as f:
+                    users_data = json.load(f)
+            except Exception as e:
+                print(f"Erreur lors du chargement des données utilisateurs: {str(e)}")
+            
+            # Fonction pour obtenir le nom d'un utilisateur à partir de son ID
+            def get_user_name(user_id):
+                if not user_id or not users_data:
+                    return "Inconnu"
+                
+                # Vérifier si users_data est un dictionnaire avec des clés d'ID
+                if isinstance(users_data, dict):
+                    user = users_data.get(user_id, {})
+                    return user.get('name', "Inconnu")
+                
+                # Si users_data est une liste d'objets utilisateur
+                elif isinstance(users_data, list):
+                    for user in users_data:
+                        if isinstance(user, dict) and user.get('id') == user_id:
+                            return user.get('name', "Inconnu")
+                
+                return "Inconnu"
+            
+            driver_id = trip_data.get('driver_reference', '').replace('users/', '')
+            all_passengers = trip_data.get('all_passengers', '')
+            
+            # Traiter la variable all_passengers
+            if isinstance(all_passengers, str):
+                if ',' in all_passengers:
+                    all_passengers = all_passengers.split(',')
+                elif all_passengers.strip():
+                    all_passengers = [all_passengers.strip()]
+                else:
+                    all_passengers = []
+                    
+            # Nettoyer les IDs utilisateurs
+            if isinstance(all_passengers, list):
+                all_passengers = [p.replace('users/', '') for p in all_passengers]
+            
+            if not info_cols:
+                # Créer les colonnes pour l'affichage si non fournies
+                all_elements = 1 + (1 if driver_id else 0) + len(all_passengers)  # Passagers + conducteur (si présent)
+                info_cols = st.columns(all_elements)
+            
+            col_index = 0
+            
+            # Conducteur
+            if isinstance(driver_id, str) and driver_id.strip():
+                with info_cols[col_index]:
+                    # Obtenir le nom du conducteur
+                    driver_name = get_user_name(driver_id)
+                    
+                    # Préparer les données pour create_info_cards
+                    driver_content = [
+                        ("Nom", driver_name),
+                        ("ID", driver_id)
+                    ]
+                    info_data = [("Conducteur", driver_content, "🧑‍✈️")]
+                    
+                    st.markdown(Cards.create_info_cards(
+                        info_data,
+                        color="#00BFA5",
+                        label_size="14px",
+                        value_size="16px",
+                        background_color="#102844"
+                    ), unsafe_allow_html=True)
+                    
+                    # Ajouter un bouton pour voir le profil du conducteur
+                    if st.button("Voir profil", key=f"driver_profile_{driver_id}"):
+                        st.session_state["selected_user_id"] = driver_id
+                        st.session_state["show_user_profile"] = True
+                        
+                col_index += 1
+    
+            # Passagers
+            if isinstance(all_passengers, list) and len(all_passengers) > 0:
+                for i, passenger in enumerate(all_passengers):
+                    with info_cols[col_index]:
+                        passenger_content = []
+                        
+                        if isinstance(passenger, dict):
+                            passenger_name = passenger.get('name', f'Passager {i+1}')
+                            passenger_id = passenger.get('id', '')
+                            passenger_content.append(("Nom", passenger_name))
+                            passenger_content.append(("ID", passenger_id))
+                            if 'phone' in passenger:
+                                passenger_content.append(("Téléphone", passenger['phone']))
+                        else:
+                            passenger_id = passenger
+                            passenger_name = get_user_name(passenger_id)
+                            passenger_content.append(("Nom", passenger_name))
+                            passenger_content.append(("ID", passenger_id))
+                        
+                        info_data = [(f"Passager {i+1}", passenger_content, "👥")]
+                        
+                        st.markdown(Cards.create_info_cards(
+                            info_data,
+                            color="#00BFA5",
+                            label_size="14px",
+                            value_size="16px",
+                            background_color="#102844"
+                        ), unsafe_allow_html=True)
+                        
+                        # Ajouter un bouton pour voir le profil du passager
+                        if st.button("Voir profil", key=f"passenger_profile_{i}_{passenger_id}"):
+                            st.session_state["selected_user_id"] = passenger_id
+                            st.session_state["show_user_profile"] = True
+                            
+                    col_index += 1
+        except Exception as e:
+            st.error(f"Erreur lors de l'affichage des informations sur les personnes: {str(e)}")

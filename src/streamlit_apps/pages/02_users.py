@@ -161,6 +161,37 @@ class UserView:
                     st.error(f"Erreur: {str(e)}")
                     import traceback
                     st.write(traceback.format_exc())
+
+        # Option de débogage - Aller directement à la page des trajets
+        if 'debug_mode' in st.session_state and st.session_state['debug_mode']:
+            with st.expander("Options de débogage"):
+                st.subheader("Navigation rapide vers un trajet")
+                direct_trip_id = st.text_input("ID du trajet à afficher", "trip_1")
+                if st.button("Aller au trajet"):
+                    # Enregistrer dans la session
+                    st.session_state["selected_trip_id"] = direct_trip_id
+                    st.session_state["select_trip_on_load"] = True
+                    
+                    # Afficher un message explicatif pour l'utilisation du menu
+                    st.info(f'''
+                    L'ID du trajet {direct_trip_id} a été stocker en mémoire. 
+                    
+                    Veuillez maintenant cliquer sur 'Trajets' dans le menu de navigation pour voir les détails du trajet.
+                    ''')
+                    
+                    # Expliquer la structure des pages Streamlit
+                    with st.expander("Pour comprendre la navigation Streamlit"):
+                        st.markdown('''
+                        **Navigation entre pages dans Streamlit**
+                        
+                        Streamlit utilise un menu de navigation latéral pour passer d'une page à l'autre.
+                        Il n'est pas possible de naviguer directement par une URL personnalisée avec des paramètres comme `/01_trips`.
+                        
+                        Au lieu de cela, il faut:
+                        1. Stocker les données nécessaires en session comme nous venons de le faire
+                        2. Cliquer sur le menu 'Trajets' dans la barre latérale pour aller à cette page 
+                        3. La page 'Trajets' détectera alors les données en session et affichera le bon trajet
+                        ''')  
 if __name__ == "__main__":
     app = UserView()
 
