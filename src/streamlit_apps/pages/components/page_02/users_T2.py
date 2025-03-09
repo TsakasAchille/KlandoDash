@@ -70,16 +70,33 @@ class UsersDisplay:
         return f"<div class='detail-row'><span class='label'>{label}:</span> <span class='{value_class}'>{value}</span></div>"
     
     def create_trip_link(self, trip_id: str) -> str:
-        """Crée un lien HTML cliquable vers la page de trajet
+        """
+        Crée un lien HTML cliquable vers la page de trajet
         
         Args:
             trip_id: ID du trajet
             
         Returns:
-            HTML du lien cliquable
+            HTML du lien cliquable ou chaîne vide si utilisation du bouton
         """
-        # Adapter cette fonction pour rediriger vers la page des trajets une fois qu'elle sera disponible
-        return f"<a href='#' onclick=\"window.open('/01_trips', '_self'); return false;\">{trip_id} (voir trajet)</a>"
+        from src.streamlit_apps.pages.components.users_trips_linker import UsersTripsLinker
+        
+        # Créer un bouton plus fiable qu'un lien HTML
+        button_key = f"goto_trip_{trip_id}_{id(trip_id)}"
+        if st.button(f"Voir trajet {trip_id}", key=button_key):
+            print(f"DEBUG: Bouton cliqué pour trajet {trip_id}")
+            
+            # Utiliser la méthode de navigation améliorée
+            UsersTripsLinker.navigate_to_trip(trip_id)
+            
+            # Message de confirmation
+            st.success(f"Navigation vers le trajet {trip_id}...")
+            
+            # Lien de secours direct
+            st.markdown(f"Si la redirection automatique ne fonctionne pas, [cliquez ici](/01_trips?trip_id={trip_id})")
+        
+        # Retourner une chaîne vide car l'action est gérée par le bouton
+        return ""
     
     def calculate_age(self, birth_date: Optional[str]) -> Optional[int]:
         """Calcule l'âge à partir de la date de naissance
@@ -140,24 +157,32 @@ class UsersDisplay:
             if len(user_df) > 0:
                 # Utilisation directe des méthodes du DataFrame pour extraire les valeurs
                 row = 0  # Index de la première ligne
-                user_id = user_df['user_id'].iloc[row] if 'user_id' in user_df.columns else 'Non disponible'
-                print(f"user_id {user_id}")
+                
+                user_id = user_df['user_id'].iloc[0]
+
+                print(f"Contenu du DataFrame user_df: {user_df}")
+
                 
                 # Déboguer le format des IDs
                 print(f"Format de l'ID utilisateur: {user_id}, type: {type(user_id)}")
                 
                 # Extraire les autres champs avec la même approche
-                display_name = user_df['display_name'].iloc[row] if 'display_name' in user_df.columns else 'Non disponible'
-                email = user_df['email'].iloc[row] if 'email' in user_df.columns else 'Non disponible'
-                phone = user_df['phone_number'].iloc[row] if 'phone_number' in user_df.columns else 'Non disponible'
-                birth_date = user_df['birth'].iloc[row] if 'birth' in user_df.columns else None
-                created_at = user_df['created_time'].iloc[row] if 'created_time' in user_df.columns else None
-                updated_at = user_df['updated_at'].iloc[row] if 'updated_at' in user_df.columns else None
+                display_name = user_df['display_name'].iloc[0] if not user_df['display_name'].empty else "Non disponible"
+                email = user_df['email'].iloc[0] if not user_df['email'].empty else "Non disponible"
+                phone = user_df['phone_number'].iloc[0] if not user_df['phone_number'].empty else "Non disponible"
+                birth_date = user_df['birth'].iloc[0] if not user_df['birth'].empty else "Non disponible"
+                created_at = user_df['created_time'].iloc[0] if not user_df['created_time'].empty else "Non disponible"
+                updated_at = user_df['updated_at'].iloc[0] if not user_df['updated_at'].empty else "Non disponible"
+
+                print(f"Contenu du DataFrame birth_date: {birth_date}")
+                print(f"Contenu du DataFrame created_at: {created_at}")
+                print(f"Contenu du DataFrame updated_at: {updated_at}")
                 
                 # Calculer l'âge à partir de la date de naissance
-                age = user_df['age'].iloc[row] if 'age' in user_df.columns else self.calculate_age(birth_date)
+                age = user_df['age'].iloc[0] if not user_df['age'].empty else "Non disponible"
+                #age_display = f"{age} ans" if age else "Non disponible"
+                # If age is a Series with a single value
                 age_display = f"{age} ans" if age else "Non disponible"
-                
                 # Formater les dates pour l'affichage
                 birth_formatted = self.format_date(birth_date) if birth_date else "Non disponible"
                 created_formatted = self.format_date(created_at) if created_at else "Non disponible"
@@ -204,6 +229,14 @@ class UsersDisplay:
         else:
             st.error("Aucune donnée utilisateur disponible")
 
+
+
+
+
+
+
+
+
     def display_user_trip_infos(self, user_df: pd.DataFrame, trips_df: Optional[pd.DataFrame] = None):
         """Affiche les informations de trajets d'un utilisateur
         
@@ -215,10 +248,11 @@ class UsersDisplay:
             # Extraire l'ID utilisateur à partir du DataFrame
             if len(user_df) > 0:
                 row = 0
-                user_series = user_df.iloc[0]
-                user_id = user_df['user_id'].iloc[row] if 'user_id' in user_df.columns else 'Non disponible'
-                print(f"user_id {user_id}")
-                
+
+                user_id = user_df['user_id'].iloc[0]
+                print(f"Traitement des trajets pour l'utilisateur: {user_id}")
+                        
+
 
                 user_trips_df = self.trip_processor.get_user_trips(user_id, trips_df)
                 
@@ -254,25 +288,33 @@ class UsersDisplay:
                     # Limiter aux 5 derniers trajets pour l'affichage
                     recent_trips = user_trips_df.head(5)
                     
-                    # Créer un contenu HTML pour l'historique des trajets
-                    trips_content = ""
+                    st.markdown("🚙 **Derniers trajets**")
+                    
+                    # Pour chaque trajet, afficher les informations et un bouton pour y accéder
                     for _, trip in recent_trips.iterrows():
                         trip_id = trip.get("trip_id", "")
                         departure_date = self.format_date(trip.get("departure_date", ""))
-                        origin = trip.get("departure_name", "")
-                        destination = trip.get("destination_name", "")
+                        origin = trip.get("departure_name", "None")
+                        destination = trip.get("destination_name", "None")
                         role = trip.get("user_role", "Passager")
                         
-                        # Créer une ligne avec un lien cliquable vers le trajet
-                        trip_link = self.create_trip_link(trip_id)
-                        role_icon = "&#128663;" if role == "Conducteur" else "&#128100;"
-                        trips_content += f"<div class='detail-row'><span class='label'>{departure_date}:</span> {origin} &rarr; {destination} ({role_icon} {role}) {trip_link}</div>"
-                    
-                    st.markdown(self.create_user_info_card(
-                        "Derniers trajets",
-                        trips_content,
-                        icon="&#128665;"
-                    ), unsafe_allow_html=True)
+                        # Icône en fonction du rôle
+                        role_icon = "👤" if role == "Passager" else "🚗"
+                        
+                        # Créer un conteneur pour chaque trajet
+                        with st.container():
+                            cols = st.columns([3, 1])
+                            with cols[0]:
+                                st.markdown(f"{departure_date}: {origin} → {destination} ({role_icon} {role})")
+                            with cols[1]:
+                                # Stocker l'ID dans la session avant de naviguer
+                                if st.button(f"Voir trajet", key=f"goto_{trip_id}"):
+                                    # Stocker le trip_id dans la session
+                                    st.session_state["selected_trip_id"] = trip_id
+                                    st.session_state["select_trip_on_load"] = True
+                                    
+                                    # Utiliser le menu principal de navigation
+                                    st.info(f"Veuillez cliquer sur le menu 'Trajets' dans la barre latérale pour voir le trajet {trip_id}.")
                     
                     # Afficher aussi un tableau complet des trajets si nombreux
                     if len(user_trips_df) > 5:

@@ -40,3 +40,17 @@ def setup_page():
     
     # Afficher le logo après avoir configuré la page
     display_sidebar_logo()
+
+def set_page_background():
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background-color: #121212;  /* Couleur de fond principal */
+        }
+        .css-18e3th9 {
+            background-color: #121212;  /* Sidebar et éléments principaux */
+        }
+        """,
+        unsafe_allow_html=True
+    )
