@@ -24,7 +24,10 @@ class ChatManager:
             tuple: (chats_df, messages_df, raw_data) - DataFrames des conversations et messages, et données brutes
         """
         # Utiliser le chemin depuis la configuration centralisée
-        from src.config import CHATS_DATA_DIR
+        from src.core.settings import OUTPUT_DIRS
+        
+        # Récupérer le répertoire des chats depuis OUTPUT_DIRS
+        CHATS_DATA_DIR = OUTPUT_DIRS["chats"]
         
         # Trouver le fichier le plus récent si plusieurs fichiers existent
         files = [f for f in os.listdir(CHATS_DATA_DIR) if f.endswith('.json')]
