@@ -33,7 +33,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.726915"
+    "updated_at": "2025-03-30T15:18:30.468685"
   },
   "R2jCbB79s1mxOutgZyzy": {
     "data": {
@@ -60,7 +60,7 @@
       "destination_name": "Place du Souvenir Africain, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.726933"
+    "updated_at": "2025-03-30T15:18:30.468713"
   },
   "test_trip_1737898588550": {
     "data": {
@@ -88,7 +88,7 @@
       "destination_name": "Q3R7+CM2 Thiès, Sénégal\n722-748, Rue de la Mairie, Thiès Nord, Thies, Thiès Region",
       "region": "Thiès"
     },
-    "updated_at": "2025-03-08T14:02:03.726949"
+    "updated_at": "2025-03-30T15:18:30.468730"
   },
   "test_trip_1737899857825": {
     "data": {
@@ -116,7 +116,7 @@
       "destination_name": "Q3R7+CM2 Thiès, Sénégal\n722-748, Rue de la Mairie, Thiès Nord, Thies, Thiès Region",
       "region": "Thiès"
     },
-    "updated_at": "2025-03-08T14:02:03.726964"
+    "updated_at": "2025-03-30T15:18:30.468747"
   },
   "test_trip_1737913469011": {
     "data": {
@@ -144,7 +144,7 @@
       "destination_name": "QP7F+X9P Jaxaay-Parcelle-Niakoul Rap, Sénégal\nRoute Sans Nom, Rufisque, Région de Dakar",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.726978"
+    "updated_at": "2025-03-30T15:18:30.468764"
   },
   "test_trip_1738141727839": {
     "data": {
@@ -160,7 +160,7 @@
       "number_of_seats": 2,
       "departure_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "destination_schedule": "2025-01-29T10:22:38+00:00",
-      "trip_precision": "",
+      "trip_precision": "Je demande à chacun de voyager avec une seule petite valise ou un sac à dos, l’espace dans le coffre étant limité.",
       "available_seats": 2,
       "trip_polyline": "skzxA~_xiB`@NRRJTDb@ENSZ]FQAcBc@i@A_@H{@h@SFdC~PzA{@|IiGt@_@x@W|@I~@@nC^fC\\t@?p@Mj@W\\Y`@k@dC}FJq@Dw@Ce@QgAiBwGQa@c@w@]a@]{@EY?OEIZsDNoAj@oBLEDM?En@y@n@g@v@e@`A[hAQjF[hAK`AUdAc@`As@x@u@`@Qx@O`ACfA?l@CtA[n@Wn@c@pB_B\\SL?HKCOMEKDGs@Za[?k@bAYtAo@v@i@~IuIbEsC~@m@vB_Bx@_At@oA^y@`@qANaAf@qETg@NKDKdA?`JtBb@J~@}Ct@eC@]X_Aj@sAb@m@v@w@~@m@x@_@zAa@lCe@`AIjA?`AFjAPr@Vl@VlDtBFPzHtEz@\\b@JB`@@DBtBd@A",
       "departure_location": {
@@ -172,7 +172,7 @@
       "destination_name": "Place du Souvenir Africain, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.726992"
+    "updated_at": "2025-03-30T15:18:30.468780"
   },
   "test_trip_1738141861812": {
     "data": {
@@ -188,7 +188,7 @@
       "number_of_seats": 1,
       "departure_name": "Place du Souvenir Africain, Dakar, Sénégal",
       "destination_schedule": "2025-01-29T10:22:44+00:00",
-      "trip_precision": "",
+      "trip_precision": "Les animaux de compagnie sont les bienvenus, à condition qu’ils soient de petite taille!",
       "available_seats": 1,
       "trip_polyline": "_ttxA~_tiBEeCLCtAP\\?LDLI@OKIM@s@@sAMaAUsBaAoMuHgAc@oAUoAKeA@k@DuCd@{A^eAb@qAx@o@n@i@v@Wh@uA`E}ArFyAxEi@zAgAfDc@t@aIpK}CrDQ\\Un@k@`CSj@QXMHALa@j@iFpEsArAkBzB_CfDaAdAmA~@cAj@MBEJSTwBbB_Al@iA\\{@LeA@iAAs@Hg@Pc@VyAnAcAf@mAZw@JiG^gAPaAZs@^g@`@q@n@UNQBGL@NBBm@dCe@pEG^KL@NJHh@z@PLj@t@^p@j@lBnAxEFj@@`AEh@Ib@iCfG]`@k@`@q@Tw@Hw@EkFw@w@Cy@B[Dy@Vw@`@aJlGuAt@eC_Q^On@a@f@Ij@B~Ab@LH\\?XKRU?EDMEIMCGDEc@KUSSa@O",
       "departure_location": {
@@ -200,7 +200,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727007"
+    "updated_at": "2025-03-30T15:18:30.468795"
   },
   "test_trip_1738141959604": {
     "data": {
@@ -216,7 +216,7 @@
       "number_of_seats": 1,
       "departure_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "destination_schedule": "2025-01-29T10:37:15+00:00",
-      "trip_precision": "",
+      "trip_precision": "Je préfère que les passagers soient non-fumeurs. Merci de ne pas fumer dans la voiture. Merci!",
       "available_seats": 1,
       "trip_polyline": "skzxA~_xiB`@NRRJTDb@ENSZ]FQAcBc@i@A_@H{@h@SFdC~PzA{@|IiGt@_@x@W|@I~@@nC^fC\\t@?p@Mj@W\\Y`@k@dC}FJq@Dw@Ce@QgAiBwGQa@c@w@]a@]{@EY?OEIZsDNoAj@oBLEDM?En@y@n@g@v@e@`A[hAQjF[hAK`AUdAc@`As@x@u@`@Qx@O`ACfA?l@CtA[n@Wn@c@pB_B\\SNAFK?ETS~AgAfAeAl@y@vB{CbCqCbCyBhCwBl@m@LG@MAETg@Ng@h@_CZw@b@o@`CmCv@kAzGaJ^y@tAkEp@oBrAmEhBgGX_Aj@sAb@m@v@w@~@m@x@_@zAa@lCe@`AIjA?`AFjAPr@Vl@V|M`If@Vr@TnA\\tAP\\?LDJGx@IdJcBfA_@r@a@hAcArAsA^g@Xa@\\}@Pq@v@mEZ_AZg@^e@r@m@t@]jD{@r@EPAHKx@[`GwA`AGlABvHbApAF`AC`AK~A_@fF_B`A]l@]r@o@^e@f@mARiADgABwKAIFMCQIEGYo@qAg@q@cF_F_@i@]y@Qw@Gu@D_ALaAZaAXg@|CsD~D{EvBoCf@_AZgATwADkAAwD@YNw@NYRWzAsAhEmDLQd@mAlDgLrBmFvBmF\\m@p@{@vHeI|CyCbCqBVSHSnAy@dB{@FIAQKQi@{@_BoG{@gEm@wDYsKAI]yMKeGIoBCuDrCI\\[Fa@As@MS[M{DF",
       "departure_location": {
@@ -228,7 +228,7 @@
       "destination_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727020"
+    "updated_at": "2025-03-30T15:18:30.468812"
   },
   "test_trip_1738142023765": {
     "data": {
@@ -256,7 +256,7 @@
       "destination_name": "QJ57+MQ7 Pikine, Sénégal\nRoute Sans Nom, Pikine, Région de Dakar",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727034"
+    "updated_at": "2025-03-30T15:18:30.468828"
   },
   "test_trip_1738142969467": {
     "data": {
@@ -284,7 +284,7 @@
       "destination_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727048"
+    "updated_at": "2025-03-30T15:18:30.468844"
   },
   "test_trip_1738143490809": {
     "data": {
@@ -312,7 +312,7 @@
       "destination_name": "PG8J+MWG Dakar, Sénégal\n142-123, Rue SC 93, Mermoz-Sacré-Cœur, Région de Dakar",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727066"
+    "updated_at": "2025-03-30T15:18:30.468868"
   },
   "test_trip_1738146313176": {
     "data": {
@@ -340,7 +340,7 @@
       "destination_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727084"
+    "updated_at": "2025-03-30T15:18:30.468885"
   },
   "test_trip_1738146430960": {
     "data": {
@@ -368,7 +368,7 @@
       "destination_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727101"
+    "updated_at": "2025-03-30T15:18:30.468900"
   },
   "test_trip_1738148695660": {
     "data": {
@@ -396,7 +396,7 @@
       "destination_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727115"
+    "updated_at": "2025-03-30T15:18:30.468916"
   },
   "test_trip_1738149188509": {
     "data": {
@@ -424,7 +424,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727128"
+    "updated_at": "2025-03-30T15:18:30.468934"
   },
   "test_trip_1738149225137": {
     "data": {
@@ -452,7 +452,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727145"
+    "updated_at": "2025-03-30T15:18:30.468949"
   },
   "test_trip_1738149935416": {
     "data": {
@@ -480,7 +480,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727159"
+    "updated_at": "2025-03-30T15:18:30.468967"
   },
   "test_trip_1738150597503": {
     "data": {
@@ -508,7 +508,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727177"
+    "updated_at": "2025-03-30T15:18:30.468983"
   },
   "test_trip_1738150827117": {
     "data": {
@@ -536,7 +536,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727190"
+    "updated_at": "2025-03-30T15:18:30.469002"
   },
   "test_trip_1738150942563": {
     "data": {
@@ -564,7 +564,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727206"
+    "updated_at": "2025-03-30T15:18:30.469017"
   },
   "test_trip_1738151016970": {
     "data": {
@@ -592,7 +592,7 @@
       "destination_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727219"
+    "updated_at": "2025-03-30T15:18:30.469032"
   },
   "test_trip_1738151258608": {
     "data": {
@@ -620,7 +620,7 @@
       "destination_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727233"
+    "updated_at": "2025-03-30T15:18:30.469048"
   },
   "test_trip_1738151436751": {
     "data": {
@@ -648,7 +648,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727247"
+    "updated_at": "2025-03-30T15:18:30.469075"
   },
   "test_trip_1738151499945": {
     "data": {
@@ -676,7 +676,7 @@
       "destination_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727260"
+    "updated_at": "2025-03-30T15:18:30.469100"
   },
   "test_trip_1738152343219": {
     "data": {
@@ -704,7 +704,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727274"
+    "updated_at": "2025-03-30T15:18:30.469117"
   },
   "test_trip_1738152560345": {
     "data": {
@@ -732,7 +732,7 @@
       "destination_name": "268P+73X Palmarin, Sénégal\nPiste Samba Dia - Palmarin - Djiffer, Région de Fatick",
       "region": "Fatick"
     },
-    "updated_at": "2025-03-08T14:02:03.727291"
+    "updated_at": "2025-03-30T15:18:30.469133"
   },
   "test_trip_1738152616456": {
     "data": {
@@ -760,7 +760,7 @@
       "destination_name": "Case des touts petits Ouest Foire, Rue YF 594, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727304"
+    "updated_at": "2025-03-30T15:18:30.469148"
   },
   "test_trip_1738152802016": {
     "data": {
@@ -788,7 +788,7 @@
       "destination_name": "Monument de la Renaissance Africaine, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727318"
+    "updated_at": "2025-03-30T15:18:30.469164"
   },
   "test_trip_1738152903935": {
     "data": {
@@ -816,7 +816,7 @@
       "destination_name": "Clinique de la Madeleine, Avenue des Diambars, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727332"
+    "updated_at": "2025-03-30T15:18:30.469179"
   },
   "test_trip_1738153282479": {
     "data": {
@@ -844,7 +844,7 @@
       "destination_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727347"
+    "updated_at": "2025-03-30T15:18:30.469194"
   },
   "test_trip_1738956570183": {
     "data": {
@@ -872,7 +872,7 @@
       "destination_name": "Q3J8+64P Thiès, Sénégal\nRoute Sans Nom, Thies Ouest, Région de Thiès",
       "region": "Thiès"
     },
-    "updated_at": "2025-03-08T14:02:03.727363"
+    "updated_at": "2025-03-30T15:18:30.469213"
   },
   "test_trip_1739275494447": {
     "data": {
@@ -901,7 +901,7 @@
       "destination_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
       "region": "Dakar"
     },
-    "updated_at": "2025-03-08T14:02:03.727377"
+    "updated_at": "2025-03-30T15:18:30.469229"
   },
   "test_trip_1739281537024": {
     "data": {
@@ -930,6 +930,325 @@
       "destination_name": "Q3G7+7FV Thiès, Sénégal\nRoute Sans Nom, Thies Ouest, Région de Thiès",
       "region": "Thiès"
     },
-    "updated_at": "2025-03-08T14:02:03.727396"
+    "updated_at": "2025-03-30T15:18:30.469244"
+  },
+  "test_trip_1743016001605": {
+    "data": {
+      "created_at": "2025-03-26T19:06:41.605000+00:00",
+      "departure_date": "2025-03-25T23:00:00+00:00",
+      "price_per_seat": 4027,
+      "trip_distance": 73.464,
+      "departure_schedule": "2025-03-26T20:06:22+00:00",
+      "destination_location": {
+        "latitude": 14.7885365,
+        "longitude": -16.9206432
+      },
+      "number_of_seats": 1,
+      "departure_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
+      "destination_schedule": "2025-03-26T21:15:37+00:00",
+      "trip_precision": "",
+      "available_seats": 1,
+      "trip_polyline": "ydpxA|rkiB_CH[FGFETe@`@oNNe@Fw@VoEpBKQUGWDMNARDRDDCZOZ[TcAp@o@j@_@n@{@rBq@jAo@r@m@h@[VcB|@gEvBu@d@w@t@{@z@o@TULQ@MHGRBPK^Y^cC~AkNtI_Bx@}Al@KCo@Nm@PcCf@mXdEgC`@uCZuBF}@@yOc@gSk@mDEgIScEO_{@{Bux@_CcN_@aZs@uk@yAmLa@gASiCa@kBc@}Ag@{Ak@aB}@qCkBqAgAaAeAqBkCq@kAiAeC_@{@[aA_@wAi@qCyD{XcBqLmAkJsC{W}AiRSsCKiDByKBsFEyCMkEEcEFqBRwBRqA^_BdAcDvEuMhDyJv@cCl@yCZ}BNwBB{DIaC_@uD}@}GOy@]uAu@yB]{@}@eB{@_Bs@cBq@qBkF_R{@qDk@uC{@gFaFq[wBaMcB{Ha@_Bs@oCcCyHwSoj@eAaD{@{CyAqGwA_IyLws@gIqc@iAgH{@aHO{Au@eJ[oFMiEAsAIoECoHDeHLcHVkG`@oG`AyKvBmNnAwGvIc`@nCeNVyA`A}Gn@kFv@}HXyDrAmQh@}Hn@oIrDqg@\\mDl@{EbAuFdAyExByHpDqK|D_LfAeDnC}HrAcE~AqEbE}LdDkJv@mCz@iDv@sDr@oEd@_E~BgQ|@sFz@eE~@yDdAqDrIeVd@gBj@yAd@iAvEiNb@sApAuEbBgI|@wEh@iDhA}Ft@uEt@aEj@qCfCmNbDqRbBeKlBuLp@wElCyP~AgKl@yDPmAbE{WlAqKZiEZ{HJmF@cBKcJI_De@kI[qEOkCQaC[{E}@iNiEio@uA{Se@cFq@wFs@eEk@uCkBqIaBiGsCsI}@eC_GqOaAgCiHkR{@uCa@{Aq@sD]cEKyDAwBNoDNyBh@sDj@aCp@aCbAmCr@_Bn@kAxCqEbBcCf@y@tAmCt@kBf@cBt@cDVmA\\{CTgDByBIyb@AyDA}DD}CNiCRoB|@iFZqAhAiDl@{ApAkCp@oAv@iAnBcCdCcCtHwGxDgEdCaD~ByDfCaFxB_Gh@eBdAkEz@}Eb@iDN}ApBi[b@qFv@uKX}Dj@mIhAoQ`@uEf@qEv@wFTkD`@_ENkBn@wF^cFXoBhBcJn@oCfAoDpAaDdC}FbDwId@gBz@uDd@cBhF{UtEmXz@eEnAiFtDgNl@kB|FiTfAkEtEePjEqPrBkIrH}XnAaFbB}HtBoLjBoMnA_LpAqOj@oJRcHFgCNcIBeFAyKM{IIkDa@}Ig@sIu@yI}AqOUyCKiDCsCH{FT}FJeAx@uGv@aElAcFnAsDbAoCxBuE`AeB~BqDxBuCtB_ChCeC~@y@`CkBlAc@rDaBpAg@|DsAnC{@xEo@|AGrAAl@D`C^fC^~AFvACnAKr@OtAa@|@]~A}@~A}A|@qAj@eAl@oBRqANyA@iBIaBK}@e@}BMe@i@gAmAsBcCwDuAaCoGqJ}BoC}CcDyFsF_GkEuCgByI_GoFiDuGuEwBcBeB_BsF{FsEwFmBsCgDsFwBsEwBcFoAoDsBeHo@iCe@aCuZeeBmF_[_D{Ps@iDaB_HcEgOcFyNcBsEeE}JaBoDcLgUgEiI_FkL_B}EcBiG_AqD{BoMGqCG}@FmARkAd@aAz@}ATFZCVMNYD]Ia@SSYI[BWNORiBB{GY_AQg@QOU[O[@WJGF]JkAFw@@oHYkXuAmAM{AYwFaBiCy@g}@sW_WoHoLsDmi@wOsBq@{OqEwYwIyZwIu@Y{Ac@kIgCoBg@cW{Hs@Ss@a@g@c@eA{AmAwBUOKAWu@_AeBES_Via@iHuLwOcX]kASqBMs@We@y@u@KMw@{BIk@OqBCk@v@_BnI{MyAgAlCgETN",
+      "departure_location": {
+        "latitude": 14.6697094,
+        "longitude": -17.4320111
+      },
+      "auto_confirmation": true,
+      "viator_income": 1769,
+      "driver_reference": "users/NrS8pDJIUCQxTtLMftCEce0UFJu2",
+      "destination_name": "Grande mosquée de thies, Thiès, Sénégal",
+      "region": "Thiès"
+    },
+    "updated_at": "2025-03-30T15:18:30.469260"
+  },
+  "test_trip_1743016289766": {
+    "data": {
+      "created_at": "2025-03-26T19:11:29.766000+00:00",
+      "departure_date": "2025-03-28T23:00:00+00:00",
+      "price_per_seat": 4027,
+      "trip_distance": 73.464,
+      "departure_schedule": "2025-03-29T20:11:00+00:00",
+      "destination_location": {
+        "latitude": 14.7885365,
+        "longitude": -16.9206432
+      },
+      "number_of_seats": 1,
+      "departure_name": "Place de l'Independance, Rue de Essarts, Dakar, Sénégal",
+      "destination_schedule": "2025-03-29T21:20:15+00:00",
+      "trip_precision": "Je demande à chacun de voyager avec une seule petite valise ou un sac à dos, l’espace dans le coffre étant limité.",
+      "available_seats": 1,
+      "trip_polyline": "ydpxA|rkiB_CH[FGFETe@`@oNNe@Fw@VoEpBKQUGWDMNARDRDDCZOZ[TcAp@o@j@_@n@{@rBq@jAo@r@m@h@[VcB|@gEvBu@d@w@t@{@z@o@TULQ@MHGRBPK^Y^cC~AkNtI_Bx@}Al@KCo@Nm@PcCf@mXdEgC`@uCZuBF}@@yOc@gSk@mDEgIScEO_{@{Bux@_CcN_@aZs@uk@yAmLa@gASiCa@kBc@}Ag@{Ak@aB}@qCkBqAgAaAeAqBkCq@kAiAeC_@{@[aA_@wAi@qCyD{XcBqLmAkJsC{W}AiRSsCKiDByKBsFEyCMkEEcEFqBRwBRqA^_BdAcDvEuMhDyJv@cCl@yCZ}BNwBB{DIaC_@uD}@}GOy@]uAu@yB]{@}@eB{@_Bs@cBq@qBkF_R{@qDk@uC{@gFaFq[wBaMcB{Ha@_Bs@oCcCyHwSoj@eAaD{@{CyAqGwA_IyLws@gIqc@iAgH{@aHO{Au@eJ[oFMiEAsAIoECoHDeHLcHVkG`@oG`AyKvBmNnAwGvIc`@nCeNVyA`A}Gn@kFv@}HXyDrAmQh@}Hn@oIrDqg@\\mDl@{EbAuFdAyExByHpDqK|D_LfAeDnC}HrAcE~AqEbE}LdDkJv@mCz@iDv@sDr@oEd@_E~BgQ|@sFz@eE~@yDdAqDrIeVd@gBj@yAd@iAvEiNb@sApAuEbBgI|@wEh@iDhA}Ft@uEt@aEj@qCfCmNbDqRbBeKlBuLp@wElCyP~AgKl@yDPmAbE{WlAqKZiEZ{HJmF@cBKcJI_De@kI[qEOkCQaC[{E}@iNiEio@uA{Se@cFq@wFs@eEk@uCkBqIaBiGsCsI}@eC_GqOaAgCiHkR{@uCa@{Aq@sD]cEKyDAwBNoDNyBh@sDj@aCp@aCbAmCr@_Bn@kAxCqEbBcCf@y@tAmCt@kBf@cBt@cDVmA\\{CTgDByBIyb@AyDA}DD}CNiCRoB|@iFZqAhAiDl@{ApAkCp@oAv@iAnBcCdCcCtHwGxDgEdCaD~ByDfCaFxB_Gh@eBdAkEz@}Eb@iDN}ApBi[b@qFv@uKX}Dj@mIhAoQ`@uEf@qEv@wFTkD`@_ENkBn@wF^cFXoBhBcJn@oCfAoDpAaDdC}FbDwId@gBz@uDd@cBhF{UtEmXz@eEnAiFtDgNl@kB|FiTfAkEtEePjEqPrBkIrH}XnAaFbB}HtBoLjBoMnA_LpAqOj@oJRcHFgCNcIBeFAyKM{IIkDa@}Ig@sIu@yI}AqOUyCKiDCsCH{FT}FJeAx@uGv@aElAcFnAsDbAoCxBuE`AeB~BqDxBuCtB_ChCeC~@y@`CkBlAc@rDaBpAg@|DsAnC{@xEo@|AGrAAl@D`C^fC^~AFvACnAKr@OtAa@|@]~A}@~A}A|@qAj@eAl@oBRqANyA@iBIaBK}@e@}BMe@i@gAmAsBcCwDuAaCoGqJ}BoC}CcDyFsF_GkEuCgByI_GoFiDuGuEwBcBeB_BsF{FsEwFmBsCgDsFwBsEwBcFoAoDsBeHo@iCe@aCuZeeBmF_[_D{Ps@iDaB_HcEgOcFyNcBsEeE}JaBoDcLgUgEiI_FkL_B}EcBiG_AqD{BoMGqCG}@FmARkAd@aAz@}ATFZCVMNYD]Ia@SSYI[BWNORiBB{GY_AQg@QOU[O[@WJGF]JkAFw@@oHYkXuAmAM{AYwFaBiCy@g}@sW_WoHoLsDmi@wOsBq@{OqEwYwIyZwIu@Y{Ac@kIgCoBg@cW{Hs@Ss@a@g@c@eA{AmAwBUOKAWu@_AeBES_Via@iHuLwOcX]kASqBMs@We@y@u@KMw@{BIk@OqBCk@v@_BnI{MyAgAlCgETN",
+      "departure_location": {
+        "latitude": 14.6697094,
+        "longitude": -17.4320111
+      },
+      "auto_confirmation": true,
+      "viator_income": 1769,
+      "driver_reference": "users/NrS8pDJIUCQxTtLMftCEce0UFJu2",
+      "destination_name": "Grande mosquée de thies, Thiès, Sénégal",
+      "region": "Thiès"
+    },
+    "updated_at": "2025-03-30T15:18:30.469278"
+  },
+  "test_trip_1743016686926": {
+    "data": {
+      "created_at": "2025-03-26T19:18:06.926000+00:00",
+      "departure_date": "2025-03-28T23:00:00+00:00",
+      "price_per_seat": 3569,
+      "trip_distance": 72.208,
+      "departure_schedule": "2025-03-29T20:17:00+00:00",
+      "destination_location": {
+        "latitude": 15.614044494656053,
+        "longitude": -16.229144856333733
+      },
+      "number_of_seats": 1,
+      "departure_name": "Pont Faidherbe, Pont Faidherbe, Saint-Louis, Sénégal",
+      "destination_schedule": "2025-03-29T21:32:27+00:00",
+      "trip_precision": "Les animaux de compagnie sont les bienvenus, à condition qu’ils soient de petite taille!",
+      "available_seats": 1,
+      "trip_polyline": "a`y`Bb|ucBV}NHs@FClAVjAb@v@Jr@@h@E|FaAbBMbB@z@Dt@HjBd@hC|@bBh@`@HxC^hBN`AD|BCtBMh@GpBe@b@OfCoA`@Wt^yZlOkM`SsP~AcAvDyA`AWhLgArh@kE`AEhDYtD_@z@Av@Dz@Nf@NtDrBrBjAv@\\hAZ~BZx@BfBE|ASt@SjWiJpNkF`VwIz@c@fA}@t@aA^m@d@mANs@LgA`BaYR_Cb@kCf@sB`K}[pDgLpWey@vG}S`BoFfJqY`IsV`AcClB{DpBmDxAwB`BqB|HgJtFyGrD}D`DqC|F}DpDiBpEgBxMeFpCeAhBw@vMaF`CaAxFwBlO}FbZeLvCmAnI{ClFuBlYyKbCkA`XkN|Aw@vHcEtImEpSqK`BcAj@e@vAeBl@eAf@sA\\uAN_BFuAEqBKuAg@wBaKwXcBkGmA}EoAiEYm@{IuZsF}QqBaHYeB}JalAyGux@kFwq@yM{aB{Lu{Ai@eHC}ABiANmBR}AHc@tN{h@~GcW|@aDnB}H\\wBhFka@jAuLzBaV`A{JlAqML{C@{@]{pAHcFNwD\\uE^cEb@kDz@kFf@cCnBsHfBqF~AgEpQib@~DiJ~DsJpCmGv@uBhD_LhA}D|A_FlDuLv@kB`AiB~@mAz@w@z@m@|FaDbLcG~BqA|JmFhE_C`KiF~CwB`LaIfDcCxAy@bH_DtBiAtCkAfEoBrHeDhOeIjHeEzVgNfCuAjBo@pBa@hAOzBIjSIbIE~BO~AObBa@hCy@dCaAdGoC\\WhGsCdJ{DzCgA~WeIlEuAxCs@vAOrAGdE?xc@P`CEzXuAjWoAjCErDLhKn@bJd@jBRnCd@vAZpA`@bPlG`c@jQxOpGfE`BdFvBtLzEht@zYbC`A|Bt@~@P|BTjBD`BC`AIbBWnHqBxD_AxSyFhG_BtA_@pDaAl@S~@StDa@f@CfDCrBHjALdCb@tA^rGzBbBn@v^hMbVnIxLjEnCbAjBv@bBbAbEnCxOzKfDrBhBx@pCbAfA^fJhBvDp@xa@`I|Ex@bRzAfJl@`h@vDlDV~Hl@|Pr@dDNhFn@jB`@~DjA~h@xP~Bv@nF|A`Cv@vGtBfT~GbQtFjWvGng@lMxUdG~AXbCN`BAdBK|@M|m@}Lv\\yGlAYtIcBbbAyRtf@qJfM_C|HaBdEu@nRsD~Co@zBc@zGoAzE}@`\\mGlEw@`e@aJpGkA|EaAlJgBpLyBvSaElHqArAc@~Aw@fAs@dBsAnKoJlHqGvCaCrCkCrGyFlC}B|JyIjDyCdGoFzB_Bx@c@bBi@`Cg@jAOfAEdAAzADrBRxB`@`OxClCh@r@PtOvCz@RnGlAfIbBbEpAl@ROq@f@iGzAuS`AiMdPnA?Wa@}CuF}Xc@eCq@yCMaA{@oEq@}DUkA?s@NkBp@?vEg@hC_AfA_@h@IlCOZpG?`@@R",
+      "departure_location": {
+        "latitude": 16.0257939,
+        "longitude": -16.5012952
+      },
+      "auto_confirmation": true,
+      "viator_income": 1851,
+      "driver_reference": "users/NFY1HR7vJOVztoqCId70HZyWH4l2",
+      "destination_name": "JQ7C+J89 Louga, Sénégal\nRoute Sans Nom, Région de Louga",
+      "region": "Louga"
+    },
+    "updated_at": "2025-03-30T15:18:30.469296"
+  },
+  "test_trip_1743016961272": {
+    "data": {
+      "created_at": "2025-03-26T19:22:41.272000+00:00",
+      "departure_date": "2025-03-28T23:00:00+00:00",
+      "price_per_seat": 1939,
+      "trip_distance": 31.793,
+      "departure_schedule": "2025-03-29T20:22:00+00:00",
+      "destination_location": {
+        "latitude": 12.8103382,
+        "longitude": -16.2318575
+      },
+      "number_of_seats": 1,
+      "departure_name": "Port de Ziguinchor, Rue de Santhiaba, Ziguinchor, Sénégal",
+      "destination_schedule": "2025-03-29T21:03:41+00:00",
+      "trip_precision": "Je préfère que les passagers soient non-fumeurs. Merci!",
+      "available_seats": 1,
+      "trip_polyline": "qpykArfhbBh@eFJoAvAGBQTK\\@fEtAzClA~AgJXiANa@x@mDwGgBoAQa@CqWG{Q?{@Jk@N{@`@m@d@g@p@_@t@wOna@aDdIuCtHk@hAg@t@i@h@_Ap@q@ZsCx@gf@nMcU|FeVvFsJnB_Fp@sBTgCPgQl@iVhAcZzA{AAaAMw@Wg@W}^cXaAm@_N{JgBkAaE_C_LaGmC_Bm@o@QYqCyFc@u@aCwDaH_Kk@q@u@m@oAg@mVuEeViH_Ce@kBW}QyAsQqAaGe@mAGcLc@cBMwAU{Ag@cAi@eAw@_A}@m@s@u@wAYs@[gAW{A]uDyGo{@{Fus@qDoe@iBiUQwAa@}Aq@kB]q@aAyA_F{Fa@_@cBmAy@a@{@]cA]oAYoAS_AKaCBeBHcoAxIkUbB}Gh@wmCtS}b@lDyf@xDolAlJ{{@`HoPrAqJp@iFj@e\\~F{MjCwb@`I_LrBe`@hHwB\\sEd@oCL_EFwC?eEQ_DYiDk@aD{@uBq@iCoA_CuAwAaAkC{B}BaCcBsBiBkCw@oA_AiBeA{B_A_C}E}N_@eAcCuHyBuGc@{AwHlCiPvFmDhAmE~AqJdD{I|C]FmDlAoAj@m@[gAs@{@q@mBoBeDkDsCsCgAcA",
+      "departure_location": {
+        "latitude": 12.5877128,
+        "longitude": -16.2674763
+      },
+      "auto_confirmation": true,
+      "viator_income": 1135,
+      "driver_reference": "users/tO3Ve07qeZUYs1uRoI1znxal1n92",
+      "destination_name": "CENTRE DE SANTE DE BIGNONA, N5, Bignona, Sénégal",
+      "region": "Ziguinchor"
+    },
+    "updated_at": "2025-03-30T15:18:30.469312"
+  },
+  "test_trip_1743017133428": {
+    "data": {
+      "created_at": "2025-03-26T19:25:33.428000+00:00",
+      "departure_date": "2025-03-28T23:00:00+00:00",
+      "price_per_seat": 2772,
+      "trip_distance": 46.951,
+      "departure_schedule": "2025-03-29T20:25:00+00:00",
+      "destination_location": {
+        "latitude": 14.3389718,
+        "longitude": -16.4111426
+      },
+      "number_of_seats": 1,
+      "departure_name": "Grande Mosquée Medina Baye Kaolack, Médina baye, Kaolack, Sénégal",
+      "destination_schedule": "2025-03-29T21:28:31+00:00",
+      "trip_precision": "Je mets souvent de la musique (plutôt tranquille), mais on peut en discuter et choisir une playlist ensemble si vous le souhaitez.",
+      "available_seats": 1,
+      "trip_polyline": "czluAxi`aBXLcFjIfBdAx@l@lAn@lPvJnAx@APHLD@Ed@eA|l@[l[`@FrFpBfF`BnBj@tFfBxIlCjBl@~At@VFjFfBjCt@lCt@pDlAxB|@zBx@xIpCv@XwAjDsI`ScIhRuEjKwEbLiAfCeKjV{Rld@iXtn@oHxPwAlDeBzDoFjMsDpIiZlr@cKzUuEpKgJnTmIxR{BpF}@pBsBhFuTjh@yEvKeWbm@}BfFaAbC}Nl]aFpLm@dAc@|@mRhd@uNr\\qBxEiC`GyQxb@oAxCiD`IgCfG{AfDeCfGoAhCa_AjyBy\\bx@cEnJqC|GmPj`@uE|KuQrb@qPv`@k`@n~@mBhEkFhM_FfLmb@vw@wE~IcEdIuTxb@{@`B}FjLoU~c@kGxLcCrEyFzKmA|BiD|G{EbJiIbP_Rx]iBbDkEpIwCtFeHfNgH|MuGdMiFvJcBdDkMrUaAbBqFjK{FvKuBlDsAfC{HfOgOjXiGbLiDzGoEbI}A|C_KdRmA`CyCpFcBbD}A|B_@d@aBzA_CbBm@Vaa@lNyz@lYoAb@_A`@{Af@{BlAaAn@cB`B_BvB}OjUi@r@qEjHoJnPmA|As@|@g`@ra@oLzLuUrVaInIoAvAyM`NcJvJeJhJaA`AaIvIy@fAuF|I}H|L\\GjCSfA?t@BdANbB`@|Af@|OtHhAd@dAp@lF~DrCjBnCbBaAfBo@xAaAvCkBhG}EjOq@jCUx@aBzDmCfGcAtBQVwBpB_@VYLs@RkBXcADYGIEMQSIW@OHKTATJTPJV@RI@?If@",
+      "departure_location": {
+        "latitude": 14.1609376,
+        "longitude": -16.0628231
+      },
+      "auto_confirmation": true,
+      "viator_income": 1596,
+      "driver_reference": "users/9yEEsbRxjmdSw8g8hyBtDlukpT42",
+      "destination_name": "Marché, Fatick, Sénégal",
+      "region": "Fatick"
+    },
+    "updated_at": "2025-03-30T15:18:30.469333"
+  },
+  "test_trip_1743017515899": {
+    "data": {
+      "created_at": "2025-03-26T19:31:55.899000+00:00",
+      "departure_date": "2025-03-28T23:00:00+00:00",
+      "price_per_seat": 8148,
+      "trip_distance": 214.491,
+      "departure_schedule": "2025-03-29T20:31:00+00:00",
+      "destination_location": {
+        "latitude": 14.0995369,
+        "longitude": -15.5569145
+      },
+      "number_of_seats": 1,
+      "departure_name": "Q8FH+M4P Tambacounda, Sénégal\nN1, Tambacounda, Tambacounda Region",
+      "destination_schedule": "2025-03-29T23:38:51+00:00",
+      "trip_precision": "Je fais généralement une pause toutes les deux heures pour se dégourdir les jambes, prendre un café ou faire une pause toilettes.",
+      "available_seats": 1,
+      "trip_polyline": "whasAxkmrAmCPvBzUb@|FdBrQXlEBbDBd_@BjNB`LIrVQvq@AbXClQ?xL@p`@Cl_@C~MMrVIzLA~BMvJ_@dUUdJCrCe@`V]~WKlFk@hh@MjK]`WKtKMlJ?vBm@rj@QrO[v^EhFEbGQ|EUbDy@tJ_BjRwCh^cEfj@wCjc@]~D[|Bm@tCaBtGcDvLmFfRwAxEkG|TiZ`iAeG`UwO`l@cIlZoAzE{ApFeEzOsChJeCrI{CfM_AtEq@vE_@bEUhD}An]QpEyAn[yBfg@KzAa@lEWrBcAtFiEzSwAlGk@xBy@dC}@`C}Tvg@_CfGmE|Lu@`Ce@zBiDnUOdAe@tC]~Ae@dBu@tBqExJqBdE}c@p}@g@z@sB`Ei@zAkA`EoCdK{BtHaCdJuCxJcSfu@}]ntA}Sdx@gIr[iEfP{GtXk^vuAk@hCe@dDiHtm@?Vw[jpCi@fEq@`DaAvCiAnCgApBqAlBcBvBgG~GgDnDoHnI{NfPgXpZsAlBeAjBuA`DqFvNwCzIkBbGmVdv@uF|PeB|Fk@fCStAUxBOhCClDBhBvB~^hErs@XfCZnBrBhJ^|Ah@fBrN~_@ZlAJ~@BfAMxKIvBUnC[tBq@xCo@vBsAlDeNl]k@jBm@hCY`B}OrfA}Fh`@qAdJoBtMS~A_@|Dy@fMi@rKGlDJbtALvkAGxBQnCa@`Dg@bC{@~CmCvIgD`L{Kz^cNbd@sItWcDxJaEdMiNjb@yNl`@}EbNmIfVu@`CkDvMqApEuIbWqEpNqE|Mmm@njBMJsSpn@aMz_@eItVuEjNuBpGs]ffAwF~P{FjQkAtDeEhM_DhJkGnRuAlEqDxK{Ujt@mTfq@sIvV{Unq@}A`GmXllAqBxIiKfd@oXxlAu@|C}BjKkAbFgEpRwDbPmb@zkBiHz[kB|Hk@nC}Kvf@i^n_BeAhFe@pD]|EQrEyDtu@oCrj@U|EmBf_@?r@w@nPoEx|@Ih@}G|tAoD|s@cBj\\{A`ZoC~i@SdDuApXiBv]sCrj@EvBBpCPpDT`CZjB~BdKPz@ZvBXzCHpCAdBElBiD|v@E`DDrCXbExFjr@HzB?lDg@vQYbMQbIC`F@vBLfF`Cvs@vAxg@|@~\\X|JBpCGxCIfA[xCg@vC_C~K_DfOg@fD[lDe@vG}Enq@m@dISlDgJhoAuFrw@_Ffs@_Frr@MtDGzBAxED~^BzOArRClUGtHy@xc@EnAObC_@vCmAlGcE`ScEpRsD|Q{Jle@w@`EuCdNi@lDi@bF{BhXoI~iAUzFwDxnA_Cb{@i@vTq@pVSxOI|Ba@bE_DrO{Kxh@q@xDi@tEsDza@e@fDcC|OcLx`A[lDWhFI`GDfEHjDn@zIxBpX^zDRvErF~p@p@vIt@hHp@tDnAtFn@~BdBxFbCfJv@vC~B~HrAbFxBxHxDjNn@rBpAvDZr@pA|BrAjBrCrCtB|AlCzAvLlGpAt@vVjMbPpInC~A^Tf@d@jBxBx@tAb@tAb@fBNz@PvAVdFT|EH|Cz@hRLbCV~FXdGT~FjCnm@n@nMJnARtAf@hCxAbEx@dB`@r@zMtStFpIrQ`YzAzBdApB|BdFtAtDp@rBnB`IrCpNbAtFhEfT`AnFzBtKvG~]`ExStCvNvIld@Bn@nJbg@zFlZl@fEb@xDZzEJjDB`DCzEKnDa@hGcCf\\sA|P}AdTk@nHsD~f@UjDYbDwCx`@eBrUoCv^o@hIs@vJs@hJ[|DYlEeAnM}@pMqA~PmB`WQvCy@dJyAxR]tEoAlPYfEm@tHa@~JGxBo@vQ{@tWcAp[c@lNGlDSxEmAnb@w@~ViEtyAm@tRIdEsAt^oCxr@G`EPt|@D~@KlPc@xd@o@pv@EvBWbF]hEk@tEa@`CcPdy@_@~BWpCKdCC|CFbCTbD^vCp@xChP|o@jDvMbAvEn@pD\\tB\\jCd@vEjAdPX~Ex@xMJpDBlEEhDSpF_@zEc@tDYjBs@fDyApFkArD_BbEkAfCyBbEwWza@sNnSup@t_A}@xA}@fB}@vBq@rBu@fDa@fCUrCIvBCfB\\d_@IfDMzBUjB]vBq@rCeVxz@qJp]yk@drBw@jC]~@cA~B{ApCoAfBuA~AeHvGsCtCoTrSwA`BqAhB_BrCy@fBsw@zvB{G~PiC`H{GdQcTlj@qk@rzAwQpe@eF|MmLnZu@vAqCnHkLnZk@rA}@dBkAfBsDvE]j@kl@~s@wB`CqCjDwRjUq@fAc@j@a[~^aD~DeA~AaBzC}@zBq@zBg@xB[lBWfCOjC_@vRiEh`CMdDa@hFgL|kAeGzn@gOh~AqAfMgBlRoI~{@mCvXoEje@}BfUiBlRe@dEgAvH_Pdv@cFlVoAxFmD|PyC`Ns@dCuBzF_FfMuFzN}CbIm@lBWjAwJfp@yDpWUtCIrA_D|v@QdC[xBe@nBs@nBe@`AcAfBce@bu@eSl[s@vAg@tA]|AQtAG~AWbp@WfbAO~_A_@~tAYfwBSbbAg@vnEDvNLfOD`AJ`Ax@zC~BxI`ChJJjAARHPJD\\^|Qtq@zIr[p@hCjAbEDj@KV?PJPZPVl@r@jDdArHrBjPNhAwJ_@EvAeA@",
+      "departure_location": {
+        "latitude": 13.774204476959483,
+        "longitude": -13.67218192666769
+      },
+      "auto_confirmation": true,
+      "viator_income": 3368,
+      "driver_reference": "users/gp9YroQl9kVvNNSZHt9tiKgiRsz1",
+      "destination_name": "Hôpital régional de Kaffrine, Kaffrine, Sénégal",
+      "region": "Kaffrine"
+    },
+    "updated_at": "2025-03-30T15:18:30.469349"
+  },
+  "test_trip_1743018017321": {
+    "data": {
+      "created_at": "2025-03-26T19:40:17.321000+00:00",
+      "departure_date": "2025-03-28T23:00:00+00:00",
+      "price_per_seat": 2404,
+      "trip_distance": 40.574,
+      "departure_schedule": "2025-03-29T20:40:00+00:00",
+      "destination_location": {
+        "latitude": 14.8038887,
+        "longitude": -15.9100393
+      },
+      "number_of_seats": 1,
+      "departure_name": "Mosquée de Diourbel, Diourbel, Sénégal",
+      "destination_schedule": "2025-03-29T21:34:27+00:00",
+      "trip_precision": "La voiture est climatisée, donc pas d’inquiétude en cas de fortes chaleurs, le confort est au rendez-vous!",
+      "available_seats": 1,
+      "trip_polyline": "e|lxAnfabBIa@_L|CCOiFtAuEyQ_@}AVMlCq@RKRYBYCg@s@qGu@aHm@aJcB}Xi@oHU_Ba@_BWq@IQaA}@{FeEmCgCeDeDsAyAyBiCqRqV{QoUqFgHeDiEuFsHwLwPeB_CiAaBwPuUwB_DoBgCgBiCsD_FCc@CK@QIMOAw@]cAyAeUiZg@s@}C}DaByBkJsL{B_D_EgFwDeF_AsAoE{FaYm_@iRyVeKiNmWk^{E}GmGyIiAsAyCwCo@m@}JyHm@o@}OaUuO}TaBqC_AyBg@mB}AiJ}@kFi@iBkA_Dm@oAi[wl@wLoUm`@wt@wFiKcB}DkAcDiAwF_@}B]qCc@}B{@iDuMg`@yAyEYk@qe@_vA{[e`AkYoz@_Occ@}@aDeVakA{@uFqGax@aAkL{AoLoSk|Au@eEm@eCkAiDaXgu@c@gAyLa]cKgYaAmDiLwj@[cAaRo}@wLel@U_BKeB?iBFyATiBjC}Q|BuORoBBsBEkAGi@u@_DqJc^_g@uiBgUkz@mBgHe@sB]oBi@{EsF}f@i@eEaFyd@Ak@HkAXsCtAcKl@aEb@eDDq@@o@aCXcB\\gYbD_@@eDsXeNfB",
+      "departure_location": {
+        "latitude": 14.6528292,
+        "longitude": -16.23154139999999
+      },
+      "auto_confirmation": true,
+      "viator_income": 1387,
+      "driver_reference": "users/nKpWKxeIEYYhpNegQ3kDPvOyzQl2",
+      "destination_name": "MBACKE khewar, Mbacké, Sénégal",
+      "region": "Diourbel"
+    },
+    "updated_at": "2025-03-30T15:18:30.469364"
+  },
+  "test_trip_1743018363382": {
+    "data": {
+      "created_at": "2025-03-26T19:46:03.382000+00:00",
+      "departure_date": "2025-03-28T23:00:00+00:00",
+      "price_per_seat": 9407,
+      "trip_distance": 243.397,
+      "departure_schedule": "2025-03-29T20:45:00+00:00",
+      "destination_location": {
+        "latitude": 16.6565509,
+        "longitude": -14.9564053
+      },
+      "number_of_seats": 1,
+      "departure_name": "Hotel de Matam, Matam, Sénégal",
+      "destination_schedule": "2025-03-30T00:29:32+00:00",
+      "trip_precision": "L’heure de départ est fixe, je ne pourrai malheureusement pas attendre en cas de retard, donc merci d’arriver à l’heure.",
+      "available_seats": 1,
+      "trip_polyline": "{xp~Axw{oAUDkBNgRfCrDrQnArFt@nC\\bAtCvFvAzBlAxAtK`MfCjCbCxBjAz@z@`@zCrBfV`QxKjI~AnAlEnCl|@zr@nAjAtAxA|`@r[dCbC`BrBpBvClAtBfe@v_AtQr^xUve@z@nBfDrIrSng@EL@FcGbCmHlCeSzHmNpFyf@hRoU`JgF|BgEdCeCjBuTlQyXtTgU`RmBxAiZhVm[fWihAp}@yD|C}@z@cVvRuGbFiC|Bs@d@kC|BsCxBeJrHmA~@qD~CoIxGsJ~HyD|CcBpAiCvBgD`CwD`CiB`AaChAkCfAyEbByBj@aDt@}I~BaInB_TnFmf@tLwRbFaV~F_U|F}J`CqKnCqVfGcd@dLcOtDwFxAkDv@{F|AkEdAgIxBgEtAuF`CiB`AgCxAyBtAgFtDiCtBcCbBuX`TeHtFeOdLiHjFge@j^wOlLwLfJiEjDad@d]yC|B}@p@mAbAcZdUsDhDcDbD_DbDqBfBgDjCoBtAuEnCe`@fTuFfDmJxEoAv@wEfC{CdBcAp@uC~AoE~BkH`E_I`EmBx@uEdBcd@hNaQxFwTbHiK~CcJvCyJzCcH|BoK`DyIdCwG|BiObFuBz@wAv@M@mDhAWFeAFe@FiWvHoLxDgCz@yQvFwEbBQCSDgA`@iAh@iGdDkBlAkDnBq@NYJOJu@`Ai@b@{E`DmBjAmBfAaEzCqA|Ao@j@qClBwH|EcB|@m@d@oAz@_CrAiKtEkDlA_F~@id@`Ns`@tL_JrCkh@xOwBt@}B|@{FzCqAz@wAz@kFxDaEpDsBxBqChDgHbLuQtZwSt]u@pAqAnBiBdCwA`Bca@z`@iCzByFdF{a@t`@qg@jf@eLjKyW~VoUzTqRtQ_I|HaAdA{CvDmCxD}LdUyAlC}Yhj@cv@twAslClcF}DtH}ApCqB|D}DtJmSrp@_ErNuAbFiArEwD~QuAzGg@dC{AhHcAnEy@tDs@dCqBdGoHpSsB`IuBxJqM|o@sBlJa@zAu@hCeBlEu\\fu@}@`Bk@`AUf@qCdGyDtI}HzPsB~DgBxCmP~ViJbOoAlBmBpDcAbCs@|BuDdP_Jx_@ga@ffBkWphAq@dCyApEwAlDaBlDgCnEqCdEkC`DcBlB{BvBgCvBoEbDyEpCyv@nc@_e@xWkJlFkF~CgFnCiHbEyBjAyFdDwElCuBrAeD|BmDrC_ErD}C~CqEbGmC|DiCrE{BnEuA`DgBvEmA`Ek@tBeBxHqG|[uf@deCkArGi@zDc@|E]pGElC@~FTxG^xEj@nE~E`\\v@~FZvDX~EJpHWnJq@nJ]`Eu@dK{Cb_@}AdSk@xEcA|Fy@rDwApFqC|J{ArFcCzIiDdMcAjDaBfGmBfHqJlb@UlAYbAcAzEgGbXeJna@{@nC{@xBi@jAs@lBo@tBuGpYmYnpAi@zCq@pEu@fHa@fIKlG?tEFfEP`E^~FdY|dDl@pEd@tCbB~HnO~r@t@jEp@nFh@|FTvFH`GA`EQ~GUjDo@~Gw@bFg@lCyAnGyAxEsBvFkBfEeDhG_ClD_BzBaDzD{DzDcDzCaJdIyBpBeEpDsr@rn@mJpIeY~Vcx@ps@gE|DcFjEsMpLoHtGi@h@{I~HeN|L}C`CqGjE}@j@{CdBqE~B}DdB{FzB_Bj@kErAqCr@gIdBq^jH_JdBoKxBoHxAqIdBkDn@uv@pOq^nHgUnE{A\\em@tLyDt@iATcGbB{@VqFtBwCxA}DvBoD~BwB`BuEhEuDdE_AhAaCfD}BtDmA`CmBjEob@beAkK|W}FpNqD|IcEhKoNp]oh@jqAkLxYkBjEqG`Pg`Al_C_KtVyAfDaCpEqAtBwC~DqCdDaD~C_Az@cHrFgb@r[{X~SqDvCsCnCeCtCcC~CyCzEmBfDqArCsApDyApEk@rBiEjQyCxLgEjQim@neCqJx_@k@jCkFfTy@`Dy@rCeCxHaAlCwChH}CxGqDbH}DpGeFnHeDfEuGpHcUtUigB|iBqJ|JkKnKuJ|JoHxH{zDx_E{DbEmBlBoDzDgJtJkBvB}CdE_BdCmAzBiCrFmA`DiAhDeAxDaApEO|@k@~DWvBSfCe@nHaErx@MnBYdCShAu@`Ds@`C{@rBu@~A_AzAiB`C{BfCcA|@_Ar@oAx@gAl@oAn@}FbCmi@pTuX`LiWfKkD|AmBdAwBvAsBhBcAbAgArA}AzBkAtBcAzBgBtF_J~YwO|g@wJ|[aXn|@uCjJsApD}AlDiBrDqIrO_D|FeJnPgJpPuD~Ger@joA_AvA_n@|hAsa@ju@iS~^aBtCoH`NsC~EwCfEiCxCaDdDgFnEoa@v\\c^xYs@h@_FbE_a@h\\_HtFyE~Dcc@b^{CfCkGdFkNdLuPjNsI`HeEnDyGpFeEjEgCxCqC`EuC~EwAvCiAlCkBlF}@`D{@tDo@fDi@|Dk@hFiBhYuH`jAwH`kAc@hD_@tBq@hC}@jCy@jBuAbCwArBc@j@u@x@gAdAsK`JaSbPyChCgU`RqQzN{DbDmGfFiBbBaBdBuOnQkJrKsFjG{BlC_EzDwBfBiCpBsCjBaExBgD|A_FjB{CbAiI|BcFzAyBn@qC~@gD~@mHxBuLjDkBp@_Dz@kC|@yBz@{FnCkElCeCbBcFfE_EdEgDdEwB`DqAxBw@vAeAvBqB~EeBjFuAlFcAvFk@hEc@xESlEkEdtAwPrlFmAb`@OnJAtGrAhvCrAv~C^|}@ArDQfHUfDmM~vAeMruAOv@a\\rpDsJzdAmDd`@[pDe@lEKzAmCtYe@hG}AvVqAzRqBr[[hDe@~CgBhJyAjHgH|]k@`EWpCMlDiCniAsCvbA{C`nAgAdb@BjBRtBXzApNhg@rF~Qp@jCpBtGV|@pAxEbAhDpBdHVnARbBDtAC~BMzAIx@s@xCul@v}BY|AQhBCtB\\jn@Lja@CzAGdBYfD{BxRyFhf@g@nC_UraAw@|EW`CyAhRu@vRBtBD`A~AjMz@vFd`@rfCLpAFtBGhBkFhbAO`Ba@~Cc@jCi@dC_Orm@Mj@UfBK`B?dBb@r[JvDPjBvBfN_Bs@qb@eU{Aw@oB{@kCaAMIuBs@cCaAyFsByIiDwBs@}FaC_Ai@uAcA_H_FgMcJiR}Mu@e@gDcC{IkGqAaAe@WqC_AmB_@eBQoBCoKTyILqKTwCB}FLmS^cED{b@x@kUb@wBJmEp@k@LkC|@iAd@iAj@sAx@gAv@gAbAkAlAaCfDm`@tq@sg@h|@_FxIqJhP_DvF_BfCsAdCaCbEsChFk@xBItAHhATrBbNfaA~@pGH|@HpBCvAQtB_@pBm@pBsDfHkFxJiI`PgNrWsAzCg@bBq@fDOdBIdB?xCLbCxBhRnHvm@N`B@`AAxAO`C[jBy@jC[l@kApBkAfBiAnBgEnGqP`XyCvEqC|Do@t@sBnAiDhBkL~FyDrBoL|Fsq@l]gMnGuKrFeN~GqHxDmXbNmFhC_DdB{A`A_JjGcIjG{DtCiLdGsHrDcElAgE|BgB|@q@Xe@Hq@D{IDke@BaAM_@@KHEJMfCs@YaCgA",
+      "departure_location": {
+        "latitude": 15.6559947,
+        "longitude": -13.2545114
+      },
+      "auto_confirmation": true,
+      "viator_income": 3963,
+      "driver_reference": "users/XmFzQR56rMSTt02dgrudwbcJm6e2",
+      "destination_name": "Fort de Podor, Podor, Sénégal",
+      "region": "Louga"
+    },
+    "updated_at": "2025-03-30T15:18:30.469380"
+  },
+  "test_trip_1743018779393": {
+    "data": {
+      "created_at": "2025-03-26T19:52:59.393000+00:00",
+      "departure_date": "2025-03-28T23:00:00+00:00",
+      "price_per_seat": 4249,
+      "trip_distance": 86.727,
+      "departure_schedule": "2025-03-29T20:52:00+00:00",
+      "destination_location": {
+        "latitude": 12.7136335,
+        "longitude": -15.5531314
+      },
+      "number_of_seats": 1,
+      "departure_name": "Marché Central de Kolda, Marché central, Kolda, Sénégal",
+      "destination_schedule": "2025-03-29T22:22:42+00:00",
+      "trip_precision": "Des prises USB sont disponibles à bord pour recharger vos téléphones pendant le trajet, pensez juste à apporter votre câble!",
+      "available_seats": 1,
+      "trip_polyline": "oxtmAzaezACV`Fl@?GtL~AxEfBbBbAd@Zx@r@bBfBzDxFvGvKxFfJ`BrChAbBdCxC~KhM|NzPlCdDxDnEz@~Ar@hB^fBTdBHlA?bCGjE?bAFpBP`CTvAh@bCX`AnAxCzLjY`DxGbGdKpJfNhFdI`C|DvBzCdApA|@z@vEtDdEtCxCjCnAnApAfBnArBfArBpAxCdDvI|BhHnBbI\\jBjArIpDx[~AlWVdDJdDNhGC`IJhCbCjX`AbIj@lEp@jEn@fFhCrRRdCHhDD~HCrFD~CAbFLjCb@dEhAvJzCfWvAlL^|Bf@bCt@tCdAlDhBvEzBbFfBtD|DfHfBtC`AvAdArAfF~F~BrBdBlAhVtNzDzBzBzAhBxAbA|@pAtA~@lArAlBdAfBx@dBj@tAt@|BxDnOlAdE`@lA|D|MbBbFz@tBvBrErAfC|ChF~D|FjNxRfC~CtQrSfBtBxHhKnGzJlEhHlCvE`BnDdBjEz@hCnEjPrG~V`CnIbEdNjCtIz@|CnBbKhApGbAhEjAzDfAxCnCbHhItSlUvn@~BdH~BhIlFhTZ~BJdBBzBCbA_@|Dc@bEc@vEu@zEm@dC_BdFs@pB[fA_@|@kB~CwAnBuErFyEpGgDbF{H~LuHnL}FfJgApBuAnDSt@kAdGe@dCaAdHsCvUyA`Lu@hF_AzGYfBaAjD}FfQ{@jCm@bCWpA]jCOxB[`OIxFQvFQdIEzCI`CE~CKrAIl@e@bCi@tBM\\uAtCiB~DuBbFmCdGm@|AkHbPqFbMs@nBe@lBwE|Ye@nBmCbIoDlK}@zCc@~ByBzPMjBC~ABnBdB|ZH|CBfBA~EGfGE`Ai@~DiChQcAfFiHfZw@jCq@bB}@`B}O~SsDxEkAbB{@vAwA|CkEnLMb@Kf@MdAwDxf@WtB_@~AWv@o@lA{Vb`@qLjReB~C{DbI[z@m@vByBrIWx@Sh@k@v@m@h@k@Xi\\jM{EdBqJ~B_FlAsCz@eBr@y@^_g@~WkAv@cA~@{@fAu@rAs@rB]dBiDbUcIlh@gCfPc@dCs@dDg@jBm@nBmI|TmHtR}IdVwAfFi@pCQlAY|CQvCo@rOi@dIwFps@[lEIxD@bDP`Ev@nHxBtQzAdNfFpb@hDlXjKj|@nAtKZxBtAtMR|BPvC^pJj@dQ\\vG\\dEnAfMz@jG|A|JnHjf@nEb[t@nE|AzGhTp_An@pBxK|e@~c@doBlF~U|Hn]j@`DlDbZ~@lIrE|`@l@vEdBpPv@hGnOtsA~Dp]~Dn]vDp\\zCrWxIzv@`O`qAxCzXrCxUx@zHvB~R|BnSd@vEJpCE|HSjF_BvXkBzZe@|H_Cp`@wA`WX?VFRRxRvk@~@vBrA`C`AlAjAnAv@r@lAz@~AbAlMjHxAx@hAf@lBp@lBd@vCd@fAJjCJbCAtI_@dMu@v\\}AxFSlLk@`CClADjCV~AVtBn@hCz@dAd@t@d@xIdHvCjCdAfAbD~Dx@pAtArCp@|Ap@xB^jB`FtYf@xBb@xAbAbCz@|A~AdC`JtMrCdEr@hAj@jAfGtP`BzEh@nA|@|A~@nAfAbAzIpHJ\\@RzD\\dGd@`BHhVb@|L\\xJ\\pD^rBZhAXpC`AdFzAhEtApHxBdIdCfBd@dUtG`SxFxKdDzOpE~QpFrDbAhDfAlJjCnOrE~A\\h@HhETtBGfKg@jFQvE_@jIg@|D[vEWvBSpIo@jBKnEi@hB[`G_B~Cw@lQwEvIcBjDk@jAOdEw@dAKpGWbAAhDFdBHbN\\tAHnAAh@EtDi@pGaB`EkA~@]n@[hCkB~@u@tHkHbBuBp@cA|@qA`AmBlBiE_AiFcEoXzAS",
+      "departure_location": {
+        "latitude": 12.8910313,
+        "longitude": -14.9406389
+      },
+      "auto_confirmation": true,
+      "viator_income": 2191,
+      "driver_reference": "users/ylKr6CvDqrh9uwhgfxTL4FXFNRC2",
+      "destination_name": "Hôpital Régional, Sédhiou, Sénégal",
+      "region": "Sédhiou"
+    },
+    "updated_at": "2025-03-30T15:18:30.469396"
+  },
+  "test_trip_1743018905426": {
+    "data": {
+      "created_at": "2025-03-26T19:55:05.426000+00:00",
+      "departure_date": "2025-03-28T23:00:00+00:00",
+      "price_per_seat": 4518,
+      "trip_distance": 83.915,
+      "departure_schedule": "2025-03-29T20:54:00+00:00",
+      "destination_location": {
+        "latitude": 14.4633661,
+        "longitude": -17.0601259
+      },
+      "number_of_seats": 1,
+      "departure_name": "Aéroport international Léopold Sedar Senghor (DKR), Dakar, Sénégal",
+      "destination_schedule": "2025-03-29T22:11:00+00:00",
+      "trip_precision": "Je conduis prudemment et respecte toujours les limitations de vitesse, donc pas d’inquiétude si vous aimez les trajets tranquilles.",
+      "available_seats": 1,
+      "trip_polyline": "s`_yAf`wiBZoBSMEF]Dm@ZQGYg@QQMGkCe@kCk@O@OHEJWvAKJWNYFqCm@}@WmBw@}BoAeEeCqAs@gBw@qAe@_Dy@cFcAcCm@yAg@kB{@uBmAs@m@}@gAu@mA}@kBq@oBYaBMcAG{A@iBHiADc@Z{AbAwC^m@rGwHbD{Df@}@n@{AXgAJ}@@eBAiA?qBWiIB}DN{BR{A\\eBl@yBh@uAv@}At@qAt@cA~AiBtDwCrJgH|CoClHcGh@a@^_@`DmCx@_AhA{AbAmBp@gBb@gB\\sBfDe_@nCg[~A{P`AuKp@eIDc@j@oCTaA\\gAXm@r@cA\\a@z@o@`@SfA_@tA[j@I\\M~@WRKj@o@Nk@Bq@CUOe@IOcAmAu@u@OIOCq@_Aq@u@EMqAqBq@wA_AeCG][aA_@wAi@qCyD{XcBqLmAkJsC{W}AiRSsCKiDByKBsFEyCMkEEcEFqBRwBRqA^_BdAcDvEuMhDyJv@cCl@yCZ}BNwBB{DIaC_@uD}@}GOy@]uAu@yB]{@}@eB{@_Bs@cBq@qBkF_R{@qDk@uC{@gFaFq[wBaMcB{Ha@_Bs@oCcCyHwSoj@eAaD{@{CyAqGwA_IyLws@gIqc@iAgH{@aHO{Au@eJ[oFMiEAsAIoECoHDeHLcHVkG`@oG`AyKvBmNnAwGvIc`@nCeNVyA`A}Gn@kFv@}HXyDrAmQh@}Hn@oIrDqg@\\mDl@{EbAuFdAyExByHpDqK|D_LfAeDnC}HrAcE~AqEbE}LdDkJv@mCz@iDv@sDr@oEd@_E~BgQ|@sFz@eE~@yDdAqDrIeVd@gBj@yAd@iAvEiNb@sApAuEbBgI|@wEh@iDhA}Ft@uEt@aEj@qCfCmNbDqRbBeKlBuLp@wElCyP~AgKl@yDPmAbE{WlAqKZiEZ{HJmF@cBKcJI_De@kI[qEOkCQaC[{E}@iNiEio@uA{Se@cFq@wFs@eEk@uCkBqIaBiGsCsI}@eC_GqOaAgCiHkR{@uCa@{Aq@sD]cEKyDAwBNoDNyBh@sDj@aCp@aCbAmCr@_Bn@kAxCqEbBcCf@y@tAmCt@kBf@cBt@cDVmA\\{CTgDByBIyb@AyDA}DD}CNiCRoB|@iFZqAhAiDl@{ApAkCp@oAv@iAnBcCdCcCtHwGxDgEdCaD~ByDfCaFxB_Gh@eBdAkEz@}Eb@iDN}ApBi[b@qFv@uKX}Dj@mIhAoQ`@uEf@qEv@wFTkD`@_ENkBn@wF^cFXoBhBcJn@oCfAoDpAaDdC}FbDwId@gBz@uDd@cBhF{UtEmXz@eEnAiFtDgNl@kB|FiTfAkEtEePjEqPrBkIrH}XnAaFbB}HtBoLjBoMnA_LpAqOj@oJRcHFgCNcIBeFAyKM{IIkDa@}Ig@sIu@yI}AqOUyCKiDCsCH{FT}FJeAx@uGv@aElAcFnAsDbAoCxBuE`AeB~BqDxBuCtB_ChCeC~@y@`CkB|CuBhE_CnB_ArB{@xE_BfD}@rCk@dEs@tD]|DYxDIxD?xDHvBJhFd@xF~@dCf@xH|BdO`FjJnCnG|AjDv@rBf@|FjAhK`BtJrAvGr@~L`ApKj@|JZrGLdG@zD@rOW`FOlFQjLa@dNa@hNe@|BIlJUrCK`IM`LEjNBxLRtRh@tBJ`Hb@jTbBtKpAnJjAdDb@lLrBdDn@lRlDdDn@`BXdFvA|Bx@lEjBjB~@`EhCx@j@bDnChAdAhDlDxFpGpDvDxD~CfDtB|DnBjBv@tQrG|WrJvDlAdDt@fDj@|Gt@pEP|C@fBCjES|CWbDa@`B]~EqAdFkB`EkBdAk@pEoChDkBdDuBfJiFxBeAnCaAnEoA`Do@lK{AhFs@pEcAbF}AfSoGlCu@~MiE`GqBnGmBvE}A~OeFhBi@`JwCjLqDfIiChT}GrBq@vGoBvj@oQtFcBlDmApC}@vGyBrCcAtGoChGsCdB{@dBcAbEyBxEqC`DoBjJuGdJsGpCmB|G_F~P}LdJsGvCwBjI{FrF_E~@o@PCxKgHh@[tAg@j@Kl@El@Cn@BxALjCZl@Fl@@^C^If@WVU\\e@Rm@Fo@Aq@Ki@k@gAkBsCyCsEm@sAOk@Ik@Eq@?aAJmAPy@Ro@r@iAL]n@k@h@_@lAe@fBc@tBc@~BaAbA_A`@KbA_AjAwAr@gAXi@FAdANZRxGtFlJ|GtHjFnD|CxClDrAdB|FjIpFrHnBnCnFbHfF|F~DzDlAdAdCpBlDbCvKpHbD|BB@jD`CnEtCb@^zCpBbH|E^d@xFdExC|CjFpG|EfGxHnJn@z@rCxFpAbCxDhJrMt\\nA|Cf@nAzEnKz@bB~D~IVf@Rf@Nj@@JFBt@dA|@vAZNz@v@|AjAZVx@`@hCnBZThAvA`A~ApCfHc@Tt@lB",
+      "departure_location": {
+        "latitude": 14.7456395,
+        "longitude": -17.490339
+      },
+      "auto_confirmation": true,
+      "viator_income": 1949,
+      "driver_reference": "users/yBX5IlRHLVZATs82AQoRDfUyAsb2",
+      "destination_name": "port de peche, Ngaparou, Mbour, Sénégal",
+      "region": "Thiès"
+    },
+    "updated_at": "2025-03-30T15:18:30.469411"
+  },
+  "test_trip_1743019058368": {
+    "data": {
+      "created_at": "2025-03-26T19:57:38.368000+00:00",
+      "departure_date": "2025-03-28T23:00:00+00:00",
+      "price_per_seat": 4619,
+      "trip_distance": 113.844,
+      "departure_schedule": "2025-03-29T20:57:00+00:00",
+      "destination_location": {
+        "latitude": 15.4006115,
+        "longitude": -15.1118478
+      },
+      "number_of_seats": 1,
+      "departure_name": "Grande Mosquée de Touba., MOSQUE, Touba, Sénégal",
+      "destination_schedule": "2025-03-29T22:45:50+00:00",
+      "trip_precision": "Si vous avez des besoins spécifiques (arrêt en cours de route, sensibilité à la musique ou autre), n’hésitez pas à me le dire à l’avance pour qu’on puisse s’organiser au mieux.",
+      "available_seats": 1,
+      "trip_polyline": "}~uyAzq{_BKa@Q?iCh@k@iCaDx@q@{CxEgAyIi]cBsGs@qCoBb@iBqIa@aBhBe@yCcNhKeCJEuDqXy@wFcBoLmBeO_AeHe@{Cg@{D_B_LiLkz@cDoVS}@a@mAc@}@}@mAm@i@eDqBy@_@[GsJoE}h@_VuWuLcVyKqIsDqCwAe|BedAig@mUmh@{UaeBcr@yCgAgCq@yJkBkT}DwA]cDeAoBw@yz@o_@kLaF{h@yPiAa@aAe@{B}Auo@ai@gA_AaAu@{@g@eBu@mTeI_C}@kPgGcIyC}IeDsDiB}KkHehAeu@gO_K_DyBiKoIqDyCgCgBwC{Aa`@}QeAo@}AmAuAuAe_@wb@eo@wt@_{@{kAiDuEsAqBsBoCgAiAwAeAa@WeGoCgCaA{HiDmhCwgA{CgBsBwAcdA}t@e_B_jAiKuHeD}B{c@y[mBiAmOyHmgAaj@gvB}eA_C{AcAcA_AoAuEsH}LkS_AyAeDwF}LaSio@_eAyDsGmHoL}n@sdA}@oA{FuGwi@gm@uSoUacAyhAsAiBw@oAiIqO{AoCgBeDuAgBy@y@mQyPqA{AgAcBud@it@}AoCmNsTka@ci@ea@{h@wD}E_BuB{AkB_Aw@uBkAkb@cRyFcC{IaEqw@w]sQeI_u@k\\aGoCw]sO{OgHs\\eO}D_BwAe@yEiAifAqUq\\iHisCan@_FeAcCq@sLyDyMeEcFgByCgA}a@yO}\\iMiBy@uAu@cBeAsz@ur@_G}EBOXkA^o@^}@ZgAbBuJ~@kFhByK`DeRjJ_j@bMct@RkBHkA@kBCe@mB}X]wEcD}e@_A_NeA}Og@yGWcCU_A_AiDc@iAo@oAyA_CwAgBaA}@oAaA_CsAgBy@yd@iPcEuAi@WoIwCqFqByE}AVeIzAcm@TaKRuFJ_GYqU?aG`@oQZoKLiGX_KTsK~@o_@HcF\\yLTmKp@uXF{E\\_KTaMNqDDsCHcBBkCJ{DJcCFoCt@_ZReMJiCDyCR{EF_EPuFF{DViHDaETqIBgD`@{MLwGJ}CBcCb@yMHmEAyEI}AgPg|AaAmJqCgWiMolAu@kH}@aHg@}CwAcHcAgEaJu\\wJq^gPgm@{e@ugB{j@{tBcEyL_Lg\\ea@skAu]ycA}GgSYkAm@sDu@wE_@yAs@iB[o@}i@{~@_Xad@a@w@c@cAg@eBYeBMyAsS_vEa@yHcA{USmDIqCqBac@WyGMyDBgC`@cHnDci@hAsPrEgq@~@}M\\yFTwSN_NFkMRyPP}UDuDTiCbDiTl@wDdCuPf@}CL}@bAyG`DyS{AUaE{@oPoCd@}CmE}@F_@",
+      "departure_location": {
+        "latitude": 14.8632694,
+        "longitude": -15.8753708
+      },
+      "auto_confirmation": true,
+      "viator_income": 2043,
+      "driver_reference": "users/JAb5jKqQfOae96UcqSRoPau679q2",
+      "destination_name": "Hôpital maguette lo, Linguère, Sénégal",
+      "region": "Louga"
+    },
+    "updated_at": "2025-03-30T15:18:30.469430"
   }
 }

@@ -7,28 +7,25 @@ import os
 import math
 import argparse
 from typing import Any, Dict, List, Optional, Union, Tuple
+from dotenv import load_dotenv
+from src.core.settings import FIREBASE_KEY_PATH, OUTPUT_DIRS, ensure_dir
 
-class FirebaseTrips:
-    def __init__(self, key_path: Optional[str] = None, output_dir: Optional[str] = None):
+# Charger les variables d'environnement depuis le fichier .env
+load_dotenv()
+
+class TripsSubscriber   :
+    def __init__(self):
         """
-        Initialise la connexion Firebase avec la clé fournie ou la clé par défaut
-        Args:
-            key_path (str, optional): Chemin vers le fichier de clé Firebase. Si non fourni, utilise le chemin par défaut.
-            output_dir (str, optional): Dossier de sauvegarde des fichiers. Si non fourni, utilise le dossier par défaut.
+        Initialise la connexion Firebase avec la clé configurée dans settings.py
         """
-        # Configuration de la clé Firebase
-        if key_path is None:
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-            key_path = os.path.join(base_dir, 'src', 'keys', 'klando-d3cb3-firebase-adminsdk-uak7b-7af3798d36.json')
+        # Utiliser directement les constantes de settings.py
+        self.key_path = FIREBASE_KEY_PATH
+        self.output_dir = OUTPUT_DIRS["trips"]
         
-        # Configuration du dossier de sortie
-        if output_dir is None:
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-            self.raw_dir = os.path.join(base_dir, 'data', 'raw')
-        else:
-            self.raw_dir = output_dir
+        # S'assurer que le répertoire de sortie existe
+        ensure_dir(self.output_dir)
             
-        self.db = firestore.Client.from_service_account_json(key_path)
+        self.db = firestore.Client.from_service_account_json(self.key_path)
         print("Projet connecté :", self.db.project)
         self.data_dict = {}
         
@@ -49,6 +46,7 @@ class FirebaseTrips:
             'Louga': (15.6173, -16.2240),
             'Matam': (15.6559, -13.2548)
         }
+
 
     def determine_region(self, lat: float, lon: float) -> str:
         """Détermine la région en fonction des coordonnées données"""
@@ -81,10 +79,44 @@ class FirebaseTrips:
         else:
             return data
 
-    def run(self, collection_name: str = "trips") -> List[Tuple[str, Dict[str, Any]]]:
-        """Récupère les données des trajets"""
+    def run(self, collection_name: str = "trips", save_data: bool = True) -> Dict[str, Any]:
+        """Récupère, traite et sauvegarde les données des trajets en une seule opération
+        
+        Args:
+            collection_name (str): Nom de la collection Firestore à récupérer
+            save_data (bool): Si True, sauvegarde automatiquement les données traitées
+            
+        Returns:
+            Dict[str, Any]: Données traitées ou dictionnaire vide en cas d'erreur
+        """
         try:
             print(f"Récupération des trajets...")
+            collection_ref = self.db.collection(collection_name)
+            docs = collection_ref.stream()
+            raw_data = [(doc.id, doc.to_dict()) for doc in docs]
+            print(f"Nombre de trajets récupérés : {len(raw_data)}")
+            
+            # Traitement des données immédiatement
+            if self.process(raw_data):
+                # Sauvegarde des données si demandé
+                if save_data:
+                    saved_path = self.save()
+                    if saved_path:
+                        print(f"Données des trajets sauvegardées avec succès: {saved_path}")
+                    else:
+                        print("Avertissement: échec de la sauvegarde des données")
+                return self.data_dict
+            else:
+                print("Erreur lors du traitement des trajets")
+                return {}
+        except Exception as e:
+            print(f"Erreur lors de la récupération des trajets: {e}")
+            return {}
+            
+    def retrieve_raw_data(self, collection_name: str = "trips") -> List[Tuple[str, Dict[str, Any]]]:
+        """Récupère uniquement les données brutes des trajets sans traitement"""
+        try:
+            print(f"Récupération des trajets (données brutes)...")
             collection_ref = self.db.collection(collection_name)
             docs = collection_ref.stream()
             raw_data = [(doc.id, doc.to_dict()) for doc in docs]
@@ -136,17 +168,16 @@ class FirebaseTrips:
             filename = f"trips_data_{date_str}.json"
 
             # Créer les chemins des dossiers
-            trips_dir = os.path.join(self.raw_dir, 'trips')
-            os.makedirs(trips_dir, exist_ok=True)
+            ensure_dir(self.output_dir)
 
             # Sauvegarder la version datée
-            dated_path = os.path.join(trips_dir, filename)
+            dated_path = os.path.join(self.output_dir, filename)
             with open(dated_path, 'w', encoding='utf-8') as f:
                 json.dump(self.data_dict, f, ensure_ascii=False, indent=2)
             print(f"Données sauvegardées dans : {dated_path}")
             
             # Sauvegarder la version courante
-            latest_path = os.path.join(self.raw_dir, 'trips_data.json')
+            latest_path = os.path.join(self.output_dir, 'trips_data.json')
             with open(latest_path, 'w', encoding='utf-8') as f:
                 json.dump(self.data_dict, f, ensure_ascii=False, indent=2)
             
@@ -158,17 +189,15 @@ class FirebaseTrips:
 
 def main():
     parser = argparse.ArgumentParser(description='Synchronise les trajets depuis Firebase')
-    parser.add_argument('--key', type=str, help='Chemin vers le fichier de clé Firebase (optionnel)')
     parser.add_argument('--output', type=str, help='Dossier de sauvegarde des fichiers (optionnel)')
     args = parser.parse_args()
 
     # Créer l'instance avec la clé et le dossier de sortie spécifiés ou les valeurs par défaut
-    firebase_trips = FirebaseTrips(key_path=args.key, output_dir=args.output)
+    firebase_trips = TripsSubscriber()
     
     # Récupérer et sauvegarder les trajets
-    raw_data = firebase_trips.run()
-    if raw_data and firebase_trips.process(raw_data):
-        firebase_trips.save()
+    firebase_trips.run()
+
 
 
 if __name__ == "__main__":

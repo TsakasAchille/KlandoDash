@@ -14,8 +14,7 @@ from datetime import datetime
 
 #Trip components
 from src.data_processing.processors.trip_processor import TripProcessor
-from src.streamlit_apps.pages.components import TripUsers
-from src.streamlit_apps.pages.components import TripMap
+from src.streamlit_apps.pages.components.trip_map import TripMap
 
 #Common components
 from src.streamlit_apps.components import Table, Styles, setup_page
@@ -47,9 +46,6 @@ class TripsApp:
         """Initialisation de l'application"""
         self.trip_processor = TripProcessor()
         self.trip_map = TripMap()
-        self.trip_users = TripUsers()
-        self.table = Table()
-        self.styles = Styles()
         Cards.load_card_styles()
         
                 
@@ -137,7 +133,7 @@ class TripsApp:
             gridOptions=gb.build(),
             fit_columns_on_grid_load=False,
             update_mode=GridUpdateMode.SELECTION_CHANGED,
-            height=850,
+            height=650,
             custom_css=custom_css
         )
 
@@ -209,58 +205,8 @@ class TripsApp:
             except Exception as e:
                 st.error(f"Erreur lors de l'affichage des informations du trajet: {str(e)}")
 
-    def display_trip_info(self, trips_df, selected_trip):
-        """
-        Affiche les informations du trajet de manière élégante avec des cartes stylisées
-        """
-        #st.subheader("Informations sur le trajet")
-    
-        if selected_trip is not None and 'trip_id' in selected_trip:
-            trip_id = selected_trip['trip_id']
-            trip_data = trips_df[trips_df['trip_id'] == trip_id]
-            
-            if not trip_data.empty:
-                try:
-                    
-                    # Afficher la carte d'itinéraire avec distance
-                    self.display_route_info(trip_data)
-                    
-                    # Afficher la carte de durée
-                    
-                    # Afficher la carte financière
-                    self.display_financial_info(trip_data)
-                    
-                except Exception as e:
-                    st.error(f"Erreur lors de l'affichage des informations du trajet: {str(e)}")
-    
-    def display_route_info0(self, trip_data):
-        """
-        Affiche la carte d'itinéraire incluant départ, destination et distance
-        """
-        
-        print("=== Debug display_route_info ===")
-        print("trip_data:", trip_data)
-        if 'departure_name' in trip_data and 'destination_name' in trip_data:
-            try:
-                departure = trip_data['departure_name'] if not trip_data['departure_name'].empty else "Non disponible"
-                destination = trip_data['destination_name'] if not trip_data['destination_name'].empty else "Non disponible"
-                
-                # Création des paires label/value pour la carte
-                content_items = [
-                    ("Départ", departure),
-                    ("Destination", destination)
-                ]
-                
-                # Création d'une liste avec un seul élément pour create_info_cards
-                info_data = [("Itinéraire", content_items, "📍")]
-                
-                # Créer la carte avec la nouvelle fonction
-                route_card = Cards.create_info_cards(info_data, label_size="14px", value_size="16px",max_height="200px")
-                st.markdown(route_card, unsafe_allow_html=True)
-                
-            except Exception as e:
-                st.error(f"Erreur lors de l'affichage de l'itinéraire: {str(e)}")
-    
+  
+   
 
     def display_route_info(self, trip_data):
         """
@@ -347,39 +293,6 @@ class TripsApp:
 
 
 
-    def display_financial_info0(self, trip_data):
-        """
-        Affiche les informations financières du trajet
-        """
-        try:
-            content = ""
-            
-            if 'price_per_seat' in trip_data:
-                price = trip_data['price_per_seat'].values[0] if isinstance(trip_data['price_per_seat'], pd.Series) else trip_data['price_per_seat']
-                if isinstance(price, (int, float)):
-                    price_str = f"{price:.2f} XOF"
-                else:
-                    price_str = price
-                content += Cards.format_detail("💰 Prix/Place", f" {price_str} XOF")
-            
-            # Ajouter d'autres informations financières si disponibles
-            if 'viator_income' in trip_data:
-                viator_income = trip_data['viator_income'].values[0] if isinstance(trip_data['viator_income'], pd.Series) else trip_data['viator_income']
-                if isinstance(viator_income, (int, float)):
-                    viator_income_str = f"{viator_income:.2f} XOF"
-                else:
-                    viator_income_str = viator_income
-                content += Cards.format_detail("💸 Viator Income", f"{viator_income_str}")
-            
-            if content:
-                finance_card = Cards.create_custom_card("Finances", content, icon="💵")
-                st.markdown(finance_card, unsafe_allow_html=True)
-                
-        except Exception as e:
-            st.error(f"Erreur lors de l'affichage des informations financières: {str(e)}")
-
-
-
     def display_financial_info(self, trip_data):
         """
         Affiche les informations financières du trajet
@@ -441,85 +354,89 @@ class TripsApp:
         # Afficher la carte
         self.trip_map.display_multiple_trips_map(trips_df)
 
-    def display_users_details(self, trips_df, selected_trip):
-        # Charger les données
-        if trips_df is None:
-            st.error("Aucun trajet trouvé")
-            return
-
-        print("=== Debug TripsApp.run ===")
-
-        # Logique de détection du trajet sélectionné
-        
-        # Stocker les données sélectionnées dans la session state
-        #selected_df = self.grid_response["selected_rows"]
-
-        st.subheader("Profil des utilisateurs")
-        
-        if selected_trip is not None and 'trip_id' in selected_trip:
-            # Récupérer l'ID du trajet sélectionné
-            trip_id = selected_trip['trip_id']
-            
-            # Récupérer les données complètes du trajetS
-            trip_data = trips_df[trips_df['trip_id'] == trip_id]
-            
-            if not trip_data.empty:
-                # Afficher la visualisation des utilisateurs
-                self.trip_users.display_seat_info(trip_data.iloc[0])
-            else:
-                st.info("Données complètes du trajet non trouvées")
-        else:
-            # Message d'instruction
-            st.info("Sélectionnez un trajet dans le tableau pour voir les utilisateurs")
+  
         
 
-    def display_seat_info(self, trip_data,selected_trip):
-        if trips_df is None:
-            st.error("Aucun trajet trouvé")
-            return
-
-        print("=== Debug TripsApp.run ===")
-
-        # Logique de détection du trajet sélectionné
-        
-        # Stocker les données sélectionnées dans la session state
-        #selected_df = self.grid_response["selected_rows"]
-
-        st.subheader("Profil des utilisateurs")
-        
-        if selected_trip is not None and 'trip_id' in selected_trip:
-            # Récupérer l'ID du trajet sélectionné
-            trip_id = selected_trip['trip_id']
-            
-            # Récupérer les données complètes du trajetS
-            trip_data = trips_df[trips_df['trip_id'] == trip_id]
-            
-            if not trip_data.empty:
-                # Afficher la visualisation des utilisateurs
-                self.trip_users.display_seat_info(trip_data.iloc[0])
-            else:
-                st.info("Données complètes du trajet non trouvées")
-        else:
-            # Message d'instruction
-            st.info("Sélectionnez un trajet dans le tableau pour voir les utilisateurs")
 
 
 
-    def display_seat_occupation_info(self, selected_trip):
+
+    def display_seat_occupation_info(self, trip_data, info_cols=None):
         """
-        Affiche les informations d'occupation des sièges pour un trajet
+        Affiche les informations sur l'occupation des sièges
+        
+        Args:
+            trip_data: Données du trajet sélectionné
+            info_cols: Colonnes Streamlit pour l'affichage (optionnel)
         """
         try:
-            if selected_trip is not None and 'trip_id' in selected_trip:
-                # Nous avons déjà les données complètes du trajet dans selected_trip
-                # Pas besoin de faire de recherche supplémentaire
-                
-                # Appeler la méthode d'affichage des sièges
-                self.trip_users.display_seat_occupation_info(selected_trip)
+            # Extraire les informations nécessaires
+            total_seats = int(trip_data.get('number_of_seats', 0))
+            available_seats = int(trip_data.get('available_seats', 0))
+            all_passengers = trip_data.get('all_passengers', '')
+            
+            # Traiter la variable all_passengers
+            if isinstance(all_passengers, str):
+                if ',' in all_passengers:
+                    all_passengers = all_passengers.split(',')
+                elif all_passengers.strip():
+                    all_passengers = [all_passengers.strip()]
+                else:
+                    all_passengers = []
+                    
+            # Nettoyer les IDs utilisateurs
+            if isinstance(all_passengers, list):
+                all_passengers = [p.replace('users/', '') for p in all_passengers]
+            
+            # Déterminer le nombre de passagers
+            passenger_count = len(all_passengers) if isinstance(all_passengers, list) else 0
+            
+            # Calculer les sièges occupés
+            occupied_seats = passenger_count
+            if occupied_seats > total_seats - available_seats:
+                occupied_seats = total_seats - available_seats
+            
+            # Calculer le pourcentage d'occupation
+            occupation_percentage = (occupied_seats / total_seats) * 100 if total_seats > 0 else 0
+            
+            # Préparer les items pour la carte d'information
+            content_items = [
+                ("Total sièges", f"{total_seats}"),
+                ("Sièges occupés", f"{occupied_seats}"),
+                ("Taux d'occupation", f"{occupation_percentage:.0f}%")
+            ]
+            
+            # Déterminer l'icône et la couleur selon le taux d'occupation
+            icon = "💺"  # siège
+            color = "#4CAF50" if occupation_percentage > 75 else "#7B1F2F"  # vert si >75%, sinon rouge par défaut
+            
+            # Préparer les données pour create_info_cards
+            info_data = [("Occupation des sièges", content_items, icon)]
+            
+            # Affichage selon les colonnes fournies
+            if info_cols and len(info_cols) > 0:
+                with info_cols[0]:
+                    st.markdown(Cards.create_info_cards(
+                        info_data,
+                        color=color,
+                        label_size="9px",
+                        value_size="14px",
+                        vertical_layout=True
+                    ), unsafe_allow_html=True)
             else:
-                st.info("Données du trajet insuffisantes")
+                st.markdown(Cards.create_info_cards(
+                    info_data,
+                    color=color,
+                    label_size="9px", 
+                    value_size="14px",
+                    vertical_layout=True
+                ), unsafe_allow_html=True)
+                
+            return occupied_seats, total_seats
         except Exception as e:
             st.error(f"Erreur lors de l'affichage des informations d'occupation: {str(e)}")
+            return 0, 0
+
 
 
     def display_people_info(self, trip_data, info_cols=None):
@@ -629,16 +546,122 @@ class TripsApp:
                             background_color="#102844"
                         ), unsafe_allow_html=True)
                         
-                        # Ajouter un bouton pour voir le profil du passager
-                        if st.button("Voir profil", key=f"passenger_profile_{i}_{passenger_id}"):
-                            st.session_state["selected_user_id"] = passenger_id
-                            st.session_state["show_user_profile"] = True
-                            
+                        # Ajouter les boutons pour voir le profil et le chat du passager
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("Voir profil", key=f"passenger_profile_{i}_{passenger_id}"):
+                                st.session_state["selected_user_id"] = passenger_id
+                                st.session_state["show_user_profile"] = True
+                        
+                        with col2:
+                            if st.button("💬 Chat", key=f"passenger_chat_{i}_{passenger_id}"):
+                                # Stocker l'ID du passager pour le chat
+                                st.session_state["chat_with_passenger_id"] = passenger_id
+                                st.session_state["show_chat_dialog"] = True
+                                # Stocker aussi les noms pour l'affichage et l'ID du trajet
+                                st.session_state["chat_passenger_name"] = passenger_name
+                                st.session_state["chat_trip_id"] = trip_data.get('trip_id', '')
+                        
+                        # Afficher le popup de chat si demandé pour ce passager
+                        if st.session_state.get("show_chat_dialog", False) and \
+                           st.session_state.get("chat_with_passenger_id") == passenger_id:
+                            self.display_chat_popup(passenger_id, passenger_name, trip_data.get('trip_id', ''))
+                    
                     col_index += 1
         except Exception as e:
             st.error(f"Erreur lors de l'affichage des informations sur les personnes: {str(e)}")
 
+    def display_chat_popup(self, passenger_id, passenger_name, trip_id):
+        """
+        Affiche un dialogue de chat pour le passager sélectionné
+        
+        Args:
+            passenger_id (str): ID du passager
+            passenger_name (str): Nom du passager
+            trip_id (str): ID du trajet
+        """
+        from src.streamlit_apps.pages.components.chats import ChatManager
+        
+        # Créer un grand dialogue modal pour le chat
+        with st.container():
+            # Ajouter un bouton pour fermer le dialogue
+            st.markdown("""
+            <style>
+            .chat-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background-color: #102844;
+                color: white;
+                padding: 10px 15px;
+                border-radius: 5px 5px 0 0;
+            }
+            .chat-dialog {
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                margin-bottom: 20px;
+                background-color: white;
+            }
+            .chat-content {
+                padding: 15px;
+                max-height: 500px;
+                overflow-y: auto;
+            }
+            </style>
+            """, unsafe_allow_html=True)
 
+            st.markdown(f'<div class="chat-dialog">', unsafe_allow_html=True)
+            
+            # Entête du dialogue avec le nom du passager et le bouton de fermeture
+            header_cols = st.columns([3, 1])
+            with header_cols[0]:
+                st.markdown(f'<div class="chat-header"><h3>Chat avec {passenger_name}</h3></div>', unsafe_allow_html=True)
+            with header_cols[1]:
+                if st.button("Fermer", key="close_chat_dialog"):
+                    # Réinitialiser les variables de session pour fermer le dialogue
+                    st.session_state["show_chat_dialog"] = False
+                    st.session_state["chat_with_passenger_id"] = None
+                    st.rerun()
+            
+            # Contenu du chat
+            st.markdown('<div class="chat-content">', unsafe_allow_html=True)
+            
+            # Utiliser le ChatManager pour récupérer et afficher les conversations
+            chat_manager = ChatManager()
+            
+            # Charger les conversations et les filtrer pour ce passager et ce trajet
+            chats_df, messages_df, _ = chat_manager.load_chat_data()
+            
+            if not chats_df.empty:
+                # Filtrer les conversations pour ce passager
+                # On cherche les conversations où le passager est soit user_a soit user_b
+                filtered_chats = chats_df[(chats_df['user_a'] == passenger_id) | (chats_df['user_b'] == passenger_id)]
+                
+                if not filtered_chats.empty:
+                    # Sélectionner la première conversation trouvée
+                    selected_chat = filtered_chats.iloc[0]
+                    chat_id = selected_chat['chat_id']
+                    
+                    # Récupérer les messages de cette conversation
+                    chat_messages = messages_df[messages_df['chat_id'] == chat_id].copy()
+                    
+                    if not chat_messages.empty:
+                        # Déterminer l'autre utilisateur dans la conversation
+                        user_a = selected_chat['user_a']
+                        user_b = selected_chat['user_b']
+                        
+                        # Afficher les messages avec le style approprié
+                        chat_manager.display_chat_from_dataframe(chat_messages, user_a, user_b)
+                    else:
+                        st.info("Aucun message dans cette conversation.")
+                else:
+                    st.info(f"Aucune conversation trouvée pour {passenger_name}.")
+            else:
+                st.info("Aucune donnée de chat disponible.")
+                
+            st.markdown('</div>', unsafe_allow_html=True)  # Fermer chat-content
+            st.markdown('</div>', unsafe_allow_html=True)  # Fermer chat-dialog
 
 
 if __name__ == "__main__":
