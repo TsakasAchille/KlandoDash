@@ -5,22 +5,34 @@ from datetime import datetime
 import os
 import argparse
 from typing import Any, Dict, List, Optional, Tuple
-from src.core.settings import FIREBASE_KEY_PATH, OUTPUT_DIRS, ensure_dir
+from src.core.settings import FIREBASE_CONFIG, OUTPUT_DIRS, ensure_dir
 
 
 class ChatsSubscriber:
     def __init__(self):
         """
-        Initialise la connexion Firebase avec la clé configurée dans settings.py
+        Initialise la connexion Firebase avec la configuration depuis settings.py
+        qui supporte à la fois les fichiers locaux et les variables d'environnement
         """
         # Utiliser directement les constantes de settings.py
-        self.key_path = FIREBASE_KEY_PATH
         self.output_dir = OUTPUT_DIRS["chats"]
         
         # S'assurer que le répertoire de sortie existe
         ensure_dir(self.output_dir)
+        
+        # Initialiser Firebase en fonction de la configuration disponible
+        if "key_path" in FIREBASE_CONFIG:
+            self.db = firestore.Client.from_service_account_json(FIREBASE_CONFIG["key_path"])
+        elif "credentials_json" in FIREBASE_CONFIG:
+            # Utiliser directement le dictionnaire d'identifiants
+            cred = credentials.Certificate(FIREBASE_CONFIG["credentials_json"])
+            # Initialiser l'application Firebase si ce n'est pas déjà fait
+            if not firebase_admin._apps:
+                firebase_admin.initialize_app(cred)
+            self.db = firestore.client()
+        else:
+            raise Exception("Configuration Firebase incorrecte ou manquante")
             
-        self.db = firestore.Client.from_service_account_json(self.key_path)
         print("Projet connecté :", self.db.project)
         self.data_dict = {}
 
