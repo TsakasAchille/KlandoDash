@@ -7,42 +7,71 @@ import os
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 import argparse
+from typing import Any, Dict, List, Optional, Union, Tuple
+from src.core.settings import FIREBASE_KEY_PATH, OUTPUT_DIRS, ensure_dir
 
-class FirebaseUsers:
-    def __init__(self, 
-                key_path=None, output_dir=None):
+class UsersSubscriber:
+    def __init__(self):
         """
-        Initialise la connexion Firebase avec la clé fournie ou la clé par défaut
-        Args:
-            key_path (str, optional): Chemin vers le fichier de clé Firebase. Si non fourni, utilise le chemin par défaut.
-            output_dir (str, optional): Dossier de sauvegarde des fichiers. Si non fourni, utilise le dossier par défaut.
+        Initialise la connexion Firebase avec la clé configurée dans settings.py
         """
-        # Configuration de la clé Firebase
-        if key_path is None:
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-            key_path = os.path.join(base_dir, 'src', 'keys', 'klando-d3cb3-firebase-adminsdk-uak7b-7af3798d36.json')
+        # Utiliser directement les constantes de settings.py
+        self.key_path = FIREBASE_KEY_PATH
+        self.output_dir = OUTPUT_DIRS["users"]
         
-        # Configuration du dossier de sortie
-        if output_dir is None:
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-            self.raw_dir = os.path.join(base_dir, 'data', 'raw')
-        else:
-            self.raw_dir = output_dir
+        # S'assurer que le répertoire de sortie existe
+        ensure_dir(self.output_dir)
             
-        self.db = firestore.Client.from_service_account_json(key_path)
+        self.db = firestore.Client.from_service_account_json(self.key_path)
         print("Projet connecté :", self.db.project)
         self.data_dict = {}
 
-    def run(self, collection_name="users"):
+    def run(self, collection_name="users", save_data: bool = True) -> Dict[str, Any]:
         """
-        Récupère les données brutes depuis Firebase
+        Récupère, traite et sauvegarde les données des utilisateurs en une seule opération
+        
+        Args:
+            collection_name (str): Nom de la collection à récupérer
+            save_data (bool): Si True, sauvegarde automatiquement les données traitées
+            
+        Returns:
+            Dict[str, Any]: Dictionnaire des utilisateurs traités ou dictionnaire vide en cas d'erreur
+        """
+        try:
+            print(f"Récupération des données de la collection {collection_name}...")
+            collection_ref = self.db.collection(collection_name)
+            docs = collection_ref.stream()
+            raw_data = [(doc.id, doc.to_dict()) for doc in docs]
+            print(f"Nombre de documents récupérés : {len(raw_data)}")
+            
+            # Traitement des données immédiatement
+            if self.process(raw_data):
+                # Sauvegarde des données si demandé
+                if save_data:
+                    saved_path = self.save()
+                    if saved_path:
+                        print(f"Données des utilisateurs sauvegardées avec succès")
+                    else:
+                        print("Avertissement: échec de la sauvegarde des données")
+                return self.data_dict
+            else:
+                print("Erreur lors du traitement des utilisateurs")
+                return {}
+        except Exception as e:
+            print(f"Erreur lors de la récupération des utilisateurs: {e}")
+            return {}
+            
+    def retrieve_raw_data(self, collection_name="users") -> List[Tuple[str, Dict[str, Any]]]:
+        """
+        Récupère uniquement les données brutes depuis Firebase sans traitement
+        
         Args:
             collection_name (str): Nom de la collection à récupérer
         Returns:
             list: Liste des documents bruts
         """
         try:
-            print(f"Récupération des données de la collection {collection_name}...")
+            print(f"Récupération des données brutes de la collection {collection_name}...")
             collection_ref = self.db.collection(collection_name)
             docs = collection_ref.stream()
             raw_data = [(doc.id, doc.to_dict()) for doc in docs]
@@ -52,11 +81,13 @@ class FirebaseUsers:
             print(f"Erreur lors de la récupération des données : {e}")
             return []
 
-    def process(self, raw_data):
+    def process(self, raw_data) -> bool:
         """
         Traite les données brutes pour les formater
         Args:
             raw_data (list): Liste des tuples (id, data) bruts
+        Returns:
+            bool: True si le traitement a réussi, False sinon
         """
         try:
             print("Traitement des données...")
@@ -81,50 +112,40 @@ class FirebaseUsers:
             print(f"Erreur lors du traitement des données : {e}")
             return False
 
-    def save(self):
+    def save(self) -> bool:
         """
         Sauvegarde les données traitées dans les fichiers
+        Returns:
+            bool: True si la sauvegarde a réussi, False sinon
         """
         try:
             if not self.data_dict:
                 raise ValueError("Aucune donnée à sauvegarder. Exécutez d'abord process().")
 
-            # Créer le nom du fichier avec la date et l'heure
             timestamp = datetime.now()
             date_str = timestamp.strftime('%Y%m%d')
             filename = f"users_data_{date_str}.json"
 
             # Créer les chemins des dossiers
-            users_dir = os.path.join(self.raw_dir, 'user')
-            os.makedirs(users_dir, exist_ok=True)
+            ensure_dir(self.output_dir)
 
             # Chemin pour le fichier daté dans le dossier users
-            dated_path = os.path.join(users_dir, filename)
+            dated_path = os.path.join(self.output_dir, filename)
             
             # Sauvegarder les données dans le fichier daté
             with open(dated_path, 'w', encoding='utf-8') as f:
                 json.dump(self.data_dict, f, ensure_ascii=False, indent=2)
             print(f"Données sauvegardées dans : {dated_path}")
             
-            # Mettre à jour aussi users_data.json dans le dossier raw pour la compatibilité
-            latest_path = os.path.join(self.raw_dir, 'users_data.json')
+            # Mettre à jour aussi users_data.json pour l'accès courant
+            latest_path = os.path.join(self.output_dir, 'users_data.json')
             with open(latest_path, 'w', encoding='utf-8') as f:
                 json.dump(self.data_dict, f, ensure_ascii=False, indent=2)
-            print(f"Données également sauvegardées dans : {latest_path}")
             
             return True
         except Exception as e:
             print(f"Erreur lors de la sauvegarde des données : {e}")
             return False
-
-    def save_firestore_to_file(self, collection_name="users"):
-        """
-        Méthode combinée pour exécuter tout le processus
-        """
-        raw_data = self.run(collection_name)
-        if raw_data and self.process(raw_data):
-            return self.save()
-        return False
 
     def calculate_age(self, birth_date):
         """Calcule l'âge à partir d'une date de naissance"""
@@ -150,7 +171,7 @@ class FirebaseUsers:
             print(f"Erreur lors du calcul de l'âge : {e}")
             return None
 
-    def serialize_firestore_data(self, data):
+    def serialize_firestore_data(self, data: Any) -> Any:
         """Convertit les objets Firestore non sérialisables"""
         if isinstance(data, firestore.DocumentReference):
             # Convertir DocumentReference en chemin de document
@@ -174,15 +195,16 @@ class FirebaseUsers:
 
 def main():
     parser = argparse.ArgumentParser(description='Synchronise les utilisateurs depuis Firebase')
-    parser.add_argument('--key', type=str, help='Chemin vers le fichier de clé Firebase (optionnel)')
     parser.add_argument('--output', type=str, help='Dossier de sauvegarde des fichiers (optionnel)')
     args = parser.parse_args()
 
     # Créer l'instance avec la clé et le dossier de sortie spécifiés ou les valeurs par défaut
-    firebase_users = FirebaseUsers(key_path=args.key, output_dir=args.output)
+    firebase_users = UsersSubscriber()
     
-    # Exécuter le processus complet
-    firebase_users.save_firestore_to_file("users")
+    # Récupérer et sauvegarder les utilisateurs
+    raw_data = firebase_users.run()
+    if raw_data:
+        print("Utilisateurs récupérés avec succès")
 
 
 if __name__ == "__main__":

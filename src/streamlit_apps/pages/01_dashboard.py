@@ -6,7 +6,7 @@ import pandas as pd
 
 from src.streamlit_apps.components import Table, Styles, setup_page, set_page_background
 
-from src.streamlit_apps.pages.components.trips import TripsApp
+from src.streamlit_apps.pages.components.trips_backend import TripsApp
 from src.streamlit_apps.pages.components.users import UserView
 from src.streamlit_apps.pages.components.users_trips_linker import UsersTripsLinker
 
@@ -56,7 +56,7 @@ with col2:
     st.write("")
 
 trip_container = st.expander("Informations sur le trajet", expanded=True)
-passager_container = st.expander("Passagers", expanded=True)
+passengers_container = st.expander("Passagers", expanded=True)
 user_container = st.expander("Utilisateurs", expanded=True)
 
 
@@ -127,18 +127,33 @@ with trip_container:
 
                 
                 with BottomContainer:
-
+                        pass
                         #------------People----------------     
                         # TODO:Better linking, using dataframe not get data for user info           
-                        trips_app.display_people_info(selected_trip)
+                        #trips_app.display_people_info(selected_trip)
+                       
         else:
             st.write("Veuillez sélectionner un trajet")         
                     
 
+if "selected_trip_id" in st.session_state:
+            #selected_trip = st.session_state["selected_trip"]
+            selected_trip_id = st.session_state["selected_trip_id"]
+
+            # Récupérer le trajet correspondant
+            selected_trip = trips_df[trips_df['trip_id'] == selected_trip_id].iloc[0]
+
+#-------------------PEOPLE-------------------
+
+            with passengers_container:
+            # TODO:Better linking, using dataframe not get data for user info  
+            #          
+                trips_app.display_people_info(selected_trip)
+
+#-------------------USERS-------------------
 
 with user_container:
 
-    #-------------------USERS-------------------
 
     col1, col2 = st.columns([1,2])
 

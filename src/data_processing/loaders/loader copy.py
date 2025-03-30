@@ -1,22 +1,20 @@
 import os
 import json
+import pandas as pd
 import glob
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 from src.core.settings import OUTPUT_DIRS, ensure_dir
 
 """
-Le but de cette classe est de charger les fichiers JSON créés par les subscribers
+Le but de cette classe est de souscrire au fichier Json souscrit et créer par les subscriber
 """
 
 class Loader:
     def __init__(self):
-        """
-        Initialise le loader avec les chemins de sortie configurés
-        """
         # Utiliser les chemins définis dans settings.py
         self.output_dirs = OUTPUT_DIRS
 
-    def load_json_to_dict(self, file_path=None, pattern=None) -> Tuple[Dict, Optional[str]]:
+    def load_json_to_dict(self, file_path=None, pattern=None):
         """
         Charge un fichier JSON et le convertit en dictionnaire
         Args:
@@ -28,12 +26,14 @@ class Loader:
         """
         if file_path and os.path.isfile(file_path):
             file_used = file_path
-            data = self.load_json_data(file_path)
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
         else:
             if pattern:
                 file_used = self.get_latest_json_file(pattern)
                 if file_used:
-                    data = self.load_json_data(file_used)
+                    with open(file_used, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
                 else:
                     print("Aucun fichier trouvé")
                     return {}, None
@@ -43,7 +43,7 @@ class Loader:
         
         return data, file_used
 
-    def load_json_data(self, file_path) -> Dict:
+    def load_json_data(self, file_path):
         """
         Charge un fichier JSON
         Args:
@@ -58,7 +58,7 @@ class Loader:
             print(f"Erreur lors du chargement du fichier {file_path}: {e}")
             return {}
 
-    def get_latest_json_file(self, pattern) -> Optional[str]:
+    def get_latest_json_file(self, pattern):
         """
         Récupère le fichier JSON le plus récent correspondant au pattern
         Args:
@@ -71,7 +71,7 @@ class Loader:
             return None
         return max(files, key=os.path.getmtime)
 
-    def _check_json_file(self, file_path) -> bool:
+    def _check_json_file(self, file_path):
        """
        Vérifie si un fichier JSON existe et est valide
        Args:
@@ -90,6 +90,39 @@ class Loader:
            return False
        
        return True
+
+    def save_dataframe_to_csv(self, df: pd.DataFrame, data_type: str) -> Optional[str]:
+        """
+        Sauvegarde un DataFrame en CSV dans le dossier approprié
+        Args:
+            df (pd.DataFrame): DataFrame à sauvegarder
+            data_type (str): Type de données ('trips', 'users' ou 'chats')
+        Returns:
+            Optional[str]: Chemin du fichier CSV créé ou None si erreur
+        """
+        try:
+            # Créer le nom du fichier avec la date
+            timestamp = pd.Timestamp.now().strftime('%Y%m%d')
+            filename = f"{data_type}_data_{timestamp}.csv"
+            
+            # Obtenir le chemin du projet
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+            
+            # Construire le chemin de sortie (dans un dossier processed)
+            output_dir = os.path.join(project_root, 'data', 'processed', data_type)
+            ensure_dir(output_dir)
+            
+            # Chemin complet du fichier
+            output_path = os.path.join(output_dir, filename)
+            
+            # Sauvegarder en CSV
+            df.to_csv(output_path, index=False)
+            print(f"Fichier CSV sauvegardé : {output_path}")
+            return output_path
+            
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde en CSV : {e}")
+            return None
 
     def find_latest_json_file_path(self, data_type: str) -> Optional[str]:
         """
@@ -118,6 +151,35 @@ class Loader:
             
         # Retourner le fichier le plus récent
         return max(files, key=os.path.getmtime)
+
+    def convert_json_to_dataframe(self, file_path: str, record_path: str = None, meta: list = None) -> Optional[pd.DataFrame]:
+        """
+        Charge un fichier JSON et le convertit en DataFrame
+        
+        Args:
+            file_path (str): Chemin vers le fichier JSON à charger
+            record_path (str, optional): Chemin vers les enregistrements dans le JSON
+            meta (list, optional): Liste des métadonnées à inclure
+            
+        Returns:
+            Optional[pd.DataFrame]: DataFrame contenant les données du JSON,
+                                  None si une erreur survient
+        """
+        if not self._check_json_file(file_path):
+            return None
+    
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return pd.json_normalize(
+                data=data,
+                record_path=record_path,
+                meta=meta,
+                errors='ignore'
+            )
+        except Exception as e:
+            print(f"Erreur lors du chargement du fichier {file_path}: {e}")
+            return None
 
 
 if __name__ == "__main__":
