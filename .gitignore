@@ -46,3 +46,6 @@ env/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+src/keys/klando-d3cb3-firebase-adminsdk-*.json
