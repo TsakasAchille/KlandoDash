@@ -1,0 +1,10 @@
+python-3.8
+# Créer fichier runtime.txt pour spécifier la version Python
+echo "python-3.8" > runtime.txt
+
+# Créer script de démarrage pour Render
+echo '#!/bin/bash
+streamlit run src/streamlit_apps/Home.py' > start.sh
+
+# Rendre le script exécutable
+chmod +x start.sh
