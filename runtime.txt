@@ -1,6 +1,6 @@
-python-3.8
+python-3.11
 # Créer fichier runtime.txt pour spécifier la version Python
-echo "python-3.8" > runtime.txt
+echo "python-3.11" > runtime.txt
 
 # Créer script de démarrage pour Render
 echo '#!/bin/bash
