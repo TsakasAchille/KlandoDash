@@ -9,6 +9,7 @@ from typing import Dict, Optional
 # Changer l'import pour utiliser un chemin relatif
 from src.data_processing.loaders.loader import Loader
 from src.data_processing.utils.backend import Backend
+from src.core.database import User, get_session
 
 class UserProcessor:
     """
@@ -18,59 +19,57 @@ class UserProcessor:
     
     def __init__(self):
         """Initialise la visualisation des profils utilisateurs"""
-        # Utiliser Loader au lieu de s'instancier soi-même
+        # Conserver le loader pour maintenir la compatibilité avec le code existant
         self.loader = Loader()
         self.backend = Backend()
     
-    def handler(self) -> dict:
-        """Charge et traite les données des utilisateurs
+    @st.cache_data(ttl=300)  # Cache les données pendant 5 minutes
+    def handler(_self) -> pd.DataFrame:
+        """Charge et traite les données des utilisateurs depuis PostgreSQL
         Returns:
-            dict: Dictionnaire contenant les données utilisateurs
+            pd.DataFrame: DataFrame contenant les données utilisateurs
         """
-        # Trouver le fichier utilisateur le plus récent
-        users_file_path = self.loader.find_latest_json_file_path(data_type='users')
-        if users_file_path is None:
-            print("Erreur : Aucun fichier d'utilisateurs trouvé")
-            return None
+        try:
+            print("Récupération des utilisateurs depuis PostgreSQL...")
+            session = get_session()
+            users = session.query(User).all()
+            users_data = [user.to_dict() for user in users]
+            session.close()
             
-        print(f"Chargement des utilisateurs depuis : {users_file_path}")
-        
-        users_df = self.convert_users_json_to_dataframe(users_file_path)
-
-        if users_df is None:
-            print("Erreur : Impossible de charger les données des utilisateurs")
+            if not users_data:
+                print("Aucun utilisateur trouvé dans la base de données.")
+                return None
+                
+            # Créer le DataFrame directement à partir des données
+            users_df = pd.DataFrame(users_data)
+            
+            # Conversion des dates
+            date_columns = ['created_at', 'updated_at']
+            for col in date_columns:
+                if col in users_df.columns:
+                    users_df[col] = pd.to_datetime(users_df[col], errors='coerce')
+            
+            print(f"Chargement réussi de {len(users_df)} utilisateurs")
+            return users_df
+            
+        except Exception as e:
+            print(f"Erreur lors du chargement des utilisateurs: {e}")
             return None
-
-
-        return users_df
-
     
     def load_data(self) -> pd.DataFrame:
         """Charge les données des utilisateurs
         Returns:
             pd.DataFrame: DataFrame des utilisateurs
         """
-        users_dict = self.handler()
+        users_df = self.handler()
         
-        if not users_dict:
+        if not users_df:
             return pd.DataFrame()
         
-        # Convertir le dictionnaire en DataFrame
-        users_list = []
-        for user_id, user_info in users_dict.items():
-            user_data = user_info.get('data', {})
-            user_data['user_id'] = user_id  # Ajouter l'ID utilisateur
-            
-            # Convertir les dates si nécessaire
-            if 'created_time' in user_data and isinstance(user_data['created_time'], str):
-                try:
-                    user_data['created_time'] = datetime.fromisoformat(user_data['created_time'].replace('Z', '+00:00'))
-                except ValueError:
-                    pass
-            
-            users_list.append(user_data)
+        # Conversion des dates si nécessaire
+        if 'created_at' in users_df.columns:
+            users_df['created_at'] = pd.to_datetime(users_df['created_at'], errors='coerce')
         
-        users_df = pd.DataFrame(users_list)
         return users_df
     
     def get_user_stats(self, users_df: pd.DataFrame) -> Dict:
@@ -91,9 +90,9 @@ class UserProcessor:
                 stats['avg_age'] = round(valid_ages.mean(), 1)
         
         # Autres statistiques utiles
-        if 'created_time' in users_df.columns:
+        if 'created_at' in users_df.columns:
             now = datetime.now()
-            stats['recent_users'] = len(users_df[users_df['created_time'] > (now - timedelta(days=30))])
+            stats['recent_users'] = len(users_df[users_df['created_at'] > (now - timedelta(days=30))])
         
         return stats
     
@@ -114,11 +113,11 @@ class UserProcessor:
         col2.metric("Âge moyen", avg_age)
         
         # Afficher le nombre d'utilisateurs récents (derniers 30 jours)
-        if 'created_time' in users_df.columns:
+        if 'created_at' in users_df.columns:
             import datetime as dt
             now = dt.datetime.now()
             thirty_days_ago = now - dt.timedelta(days=30)
-            recent_users = users_df[users_df['created_time'] > thirty_days_ago]
+            recent_users = users_df[users_df['created_at'] > thirty_days_ago]
             col3.metric("Nouveaux utilisateurs (30j)", len(recent_users))
         else:
             col3.metric("Nouveaux utilisateurs (30j)", "N/A")
@@ -159,13 +158,13 @@ class UserProcessor:
         Args:
             users_df: DataFrame des utilisateurs
         """
-        if 'created_time' in users_df.columns:
+        if 'created_at' in users_df.columns:
             # S'assurer que les valeurs de date sont valides
-            valid_df = users_df[users_df['created_time'].notna()].copy()
+            valid_df = users_df[users_df['created_at'].notna()].copy()
             
             if not valid_df.empty:
                 # Extraire juste la date (sans l'heure)
-                valid_df['creation_date'] = valid_df['created_time'].dt.date
+                valid_df['creation_date'] = valid_df['created_at'].dt.date
                 
                 # Compter les utilisateurs par date
                 counts = valid_df.groupby('creation_date').size().reset_index(name='count')
@@ -293,64 +292,3 @@ class UserProcessor:
         
         # Afficher le tableau des utilisateurs
         self.display_user_table(users_df)
-
-
-    def convert_users_json_to_dataframe(self, file_path: str) -> Optional[pd.DataFrame]:
-        """
-        Convertit le JSON des utilisateurs en DataFrame avec une structure aplatie
-        Args:
-            file_path (str): Chemin vers le fichier JSON des utilisateurs
-        Returns:
-            Optional[pd.DataFrame]: DataFrame structuré des utilisateurs ou None si erreur
-        """
-        if not self.loader._check_json_file(file_path):
-            return None
-
-        try:
-            with open(file_path, 'r') as f:
-                data = json.load(f)
-            
-            users_list = []
-            for user_id, user_data in data.items():
-                # S'assurer que l'ID est correctement généré
-                user_dict = {
-                    'user_id': user_id,  # ID externe (clé principale dans le JSON)
-                    'updated_at': user_data.get('updated_at'),
-                    # Informations de base
-                    'uid': user_id,  # Utiliser directement l'ID externe comme uid
-                    'first_name': user_data['data'].get('first_name'),
-                    'name': user_data['data'].get('name'),
-                    'display_name': user_data['data'].get('display_name'),
-                    'email': user_data['data'].get('email'),
-                    'phone_number': user_data['data'].get('phone_number'),
-                    'phone_verified': user_data['data'].get('phone_verified'),
-                    'birth': user_data['data'].get('birth'),
-                    'age': user_data['data'].get('age'),
-                    'created_time': user_data['data'].get('created_time'),
-                    'photo_url': user_data['data'].get('photo_url', ''),
-                    'short_description': user_data['data'].get('short_description', '')
-                }
-                users_list.append(user_dict)
-            
-            df = pd.DataFrame(users_list)
-            
-            # Conversion des dates comme dans TripProcessor
-            date_columns = ['birth', 'created_time', 'updated_at']
-            for col in date_columns:
-                if col in df.columns:
-                    df[col] = pd.to_datetime(df[col], errors='coerce')
-            
-            # Formater les informations d'utilisateur
-            # Ajouter des colonnes dérivées utiles si nécessaire
-            if 'display_name' in df.columns and 'name' in df.columns and 'first_name' in df.columns:
-                # S'assurer que display_name est rempli même si la valeur est None
-                df['display_name'] = df.apply(
-                    lambda row: row['display_name'] if pd.notna(row['display_name']) else 
-                    f"{row['name'] or ''} {row['first_name'] or ''}".strip(), axis=1
-                )
-            
-            return df
-
-        except Exception as e:
-            print(f"Erreur lors du parsing du fichier utilisateurs {file_path}: {e}")
-            return None

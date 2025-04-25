@@ -1,4 +1,5 @@
 import math
+import pandas as pd
 
 # Note: Ce fichier a été simplifié suite à la migration vers PostgreSQL/Supabase
 # Seules les fonctionnalités encore utilisées ont été conservées
@@ -22,8 +23,6 @@ class Backend:
             'Louga': (15.6173, -16.2240),
             'Matam': (15.6559, -13.2548)
         }
-        # Initialisation vide pour maintenir la compatibilité avec le code existant
-        self.kpi_data = None
 
     def determine_region(self, lat, lon):
         """
@@ -50,12 +49,6 @@ class Backend:
                 closest_region = region
 
         return closest_region
-    
-    def get_kpi_data(self):
-        """
-        Retourne les données KPI (méthode maintenue pour compatibilité)
-        """
-        return {}
 
 # Note: Les autres méthodes liées au chargement de données depuis Firebase
 # ont été supprimées car elles ne sont plus utilisées dans l'application
