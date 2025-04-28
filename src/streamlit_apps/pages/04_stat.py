@@ -10,9 +10,6 @@ import pandas as pd
 
 # Ajouter le dossier src au PYTHONPATH pour pouvoir importer les modules
 
-import streamlit as st
-import pandas as pd
-
 from src.streamlit_apps.components import setup_page, set_page_background
 from src.streamlit_apps.pages.components.stats import (
     display_general_stats,

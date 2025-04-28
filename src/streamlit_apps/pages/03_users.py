@@ -6,9 +6,6 @@ import streamlit as st
 from src.streamlit_apps.components.password_protect import protect
 protect()
 
-import sys
-import os
-import streamlit as st
 import pandas as pd
 from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
