@@ -1,4 +1,8 @@
 import streamlit as st
+import os
+from src.streamlit_apps.components.password_protect import protect
+protect()
+
 from src.streamlit_apps.components import setup_page
 from src.streamlit_apps.pages.components.chats import ChatManager
 

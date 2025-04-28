@@ -1,5 +1,8 @@
 import streamlit as st
 import os
+from src.streamlit_apps.components.password_protect import protect
+protect()
+
 import sys
 import pandas as pd
 

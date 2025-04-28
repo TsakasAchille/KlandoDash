@@ -4,6 +4,14 @@ import streamlit as st
 import importlib.util
 import pandas as pd
 
+import streamlit as st
+import os
+from src.streamlit_apps.components.password_protect import protect
+protect()
+
+import streamlit as st
+import importlib.util
+import pandas as pd
 from src.streamlit_apps.components import Table, Styles, setup_page, set_page_background
 
 from src.streamlit_apps.pages.components.trips import (
