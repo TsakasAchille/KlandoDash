@@ -193,10 +193,7 @@ with user_container:
             selected_user_df = pd.DataFrame()
         
         # Débogage pour comprendre le problème
-        st.write(f"ID utilisateur recherché: {selected_user_id}")
-        st.write(f"Colonnes disponibles: {users_df.columns.tolist()}")
-        st.write(f"Utilisateur trouvé: {not selected_user_df.empty}")
-        
+     
         if not selected_user_df.empty:
             try:
                 # Convertir le DataFrame en dictionnaire avec gestion d'erreur
