@@ -3,6 +3,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))  # IMPORTANT: doit être en premier!
 
 import streamlit as st
+import pandas as pd
 from src.streamlit_apps.components.password_protect import protect
 protect()
 
