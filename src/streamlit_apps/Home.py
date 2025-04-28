@@ -2,12 +2,13 @@ import streamlit as st
 import os
 from src.streamlit_apps.components.password_protect import protect
 protect()
-
 import sys
-import pandas as pd
-
-# Ajouter le dossier src au PYTHONPATH pour pouvoir importer les modules
+import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+import streamlit as st
+from src.streamlit_apps.components.password_protect import protect
+protect()
 
 # Importer la fonction de configuration de page
 from src.streamlit_apps.components import setup_page
