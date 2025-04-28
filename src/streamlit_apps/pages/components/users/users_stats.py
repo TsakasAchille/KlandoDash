@@ -32,7 +32,9 @@ class UsersStatsManager:
             # Récupérer les statistiques de l'utilisateur
             total_trips_count, driver_trips_count, passenger_trips_count, total_distance, total_seats = self._calculate_user_stats(user_id)
             
-            # Afficher les statistiques avec modern_card
+         
+
+            # Afficher les statistiques générales (autre carte)
             modern_card(
                 title="Statistiques Utilisateur",
                 icon="📊",  
@@ -40,8 +42,7 @@ class UsersStatsManager:
                     ("Trajets effectués (total)", total_trips_count),
                     ("Trajets en tant que conducteur", driver_trips_count),
                     ("Trajets en tant que passager", passenger_trips_count),
-                    ("Distance totale", f"{total_distance:.1f} km"),
-                    ("Places réservées", total_seats)
+                    ("Distance totale", f"{total_distance:.1f} km")
                 ],
                 accent_color="#2ecc71"  # Vert pour les statistiques
             )

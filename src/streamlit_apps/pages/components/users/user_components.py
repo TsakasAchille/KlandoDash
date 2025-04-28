@@ -154,6 +154,21 @@ def clean_latin1(text):
         st.warning("Certains caractères spéciaux non supportés par le PDF ont été remplacés par '?'")
         return cleaned
 
+def remove_timezone_from_df(df):
+    """Supprime le timezone des colonnes datetime64 de DataFrame (Excel ne supporte pas tz-aware)."""
+    for col in df.select_dtypes(include=["datetimetz", "datetime"]):
+        # On ne retire le tz que si la colonne est tz-aware
+        if hasattr(df[col].dtype, 'tz') and df[col].dtype.tz is not None:
+            df[col] = df[col].dt.tz_localize(None)
+    return df
+
+def remove_timezone_from_dict(d):
+    """Supprime le timezone des champs datetime dans un dictionnaire."""
+    for k, v in d.items():
+        if hasattr(v, 'tzinfo') and v.tzinfo is not None:
+            d[k] = v.replace(tzinfo=None)
+    return d
+
 def export_user_to_excel(user_data, trips=None, stats=None, transaction_types=None):
     try:
         import xlsxwriter
@@ -161,13 +176,18 @@ def export_user_to_excel(user_data, trips=None, stats=None, transaction_types=No
         import streamlit as st
         st.error("Le module xlsxwriter n'est pas installé. Faites : pip install xlsxwriter")
         return None
+    import copy
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-        pd.DataFrame([user_data]).to_excel(writer, sheet_name="Profil", index=False)
+        # Nettoyage timezone pour user_data et stats (dict)
+        user_data_clean = remove_timezone_from_dict(copy.deepcopy(user_data))
+        pd.DataFrame([user_data_clean]).to_excel(writer, sheet_name="Profil", index=False)
         if stats is not None:
-            pd.DataFrame([stats]).to_excel(writer, sheet_name="Statistiques", index=False)
+            stats_clean = remove_timezone_from_dict(copy.deepcopy(stats))
+            pd.DataFrame([stats_clean]).to_excel(writer, sheet_name="Statistiques", index=False)
         if trips is not None and not trips.empty:
-            trips.to_excel(writer, sheet_name="Trajets", index=False)
+            trips_clean = remove_timezone_from_df(trips.copy())
+            trips_clean.to_excel(writer, sheet_name="Trajets", index=False)
         if transaction_types is not None:
             pd.DataFrame({"Types de transaction": transaction_types}).to_excel(writer, sheet_name="Transactions", index=False)
         writer.save()

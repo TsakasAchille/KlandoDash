@@ -19,21 +19,37 @@ class TripsOccupationManager:
             # Extraire les informations nécessaires
             total_seats = int(trip_data.get('number_of_seats', 0))
             available_seats = int(trip_data.get('available_seats', 0))
-            all_passengers = trip_data.get('all_passengers', '')
             
-            # Traiter la variable all_passengers
-            if isinstance(all_passengers, str):
-                if ',' in all_passengers:
-                    all_passengers = all_passengers.split(',')
-                elif all_passengers.strip():
-                    all_passengers = [all_passengers.strip()]
+            trip_id = trip_data.get('trip_id', '')
+            # Essayer de récupérer les passagers depuis la table trip_passengers (comme TripsPeople)
+            all_passengers = []
+            try:
+                from src.core.database import execute_raw_query
+                query = """
+                SELECT passenger_id FROM trip_passengers WHERE trip_id = :trip_id
+                """
+                result = execute_raw_query(query, {"trip_id": trip_id})
+                all_passengers = [row[0] for row in result]
+            except Exception:
+                # fallback: utiliser passenger_reservations
+                passenger_reservations = trip_data.get('passenger_reservations', [])
+                import json
+                if passenger_reservations is None:
+                    all_passengers = []
+                elif isinstance(passenger_reservations, str):
+                    try:
+                        parsed_reservations = json.loads(passenger_reservations)
+                        if isinstance(parsed_reservations, list):
+                            all_passengers = [res.get('passenger_id', '').replace('users/', '') for res in parsed_reservations if res.get('passenger_id')]
+                        else:
+                            all_passengers = []
+                    except json.JSONDecodeError:
+                        all_passengers = []
+                elif isinstance(passenger_reservations, list):
+                    all_passengers = [res.get('passenger_id', '').replace('users/', '') for res in passenger_reservations if res.get('passenger_id')]
                 else:
                     all_passengers = []
-                    
-            # Nettoyer les IDs utilisateurs
-            if isinstance(all_passengers, list):
-                all_passengers = [p.replace('users/', '') for p in all_passengers]
-            
+
             # Déterminer le nombre de passagers
             passenger_count = len(all_passengers) if isinstance(all_passengers, list) else 0
             
@@ -47,7 +63,7 @@ class TripsOccupationManager:
             
             modern_card(
                 title="Occupation des sièges",
-                icon="🪑",
+                icon="🧑‍🤝‍🧑",  # Icône plus moderne pour occupation/sièges
                 items=[
                     ("Sièges totaux", total_seats),
                     ("Sièges occupés", occupied_seats),
