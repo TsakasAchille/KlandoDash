@@ -10,8 +10,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 from src.data_processing.processors.user_processor import UserProcessor
 from src.streamlit_apps.components import Table, Styles, setup_page
-from src.streamlit_apps.pages.components import UsersDisplay
-from src.streamlit_apps.pages.components.users_trips_linker import UsersTripsLinker
+from src.streamlit_apps.pages.components import UsersTripsLinker
+from src.streamlit_apps.pages.components.users import (
+    display_user_profile,
+    display_user_stats,
+    display_user_trips
+)
 from src.streamlit_apps.components import Cards  # Importez la nouvelle classe Cards
 from typing import Optional
 
@@ -27,7 +31,6 @@ class UserView:
         self.user_processor = UserProcessor()
         self.table = Table()
         self.styles = Styles()
-        self.users_display = UsersDisplay()  # Initialisation de la nouvelle classe d'affichage
         self.users_trips_linker = UsersTripsLinker()
         Cards.load_card_styles()
 
@@ -47,9 +50,11 @@ class UserView:
     
         # Colonnes à afficher dans la table
         display_cols = [
-            'user_id',
+            'id',          # 'id' et non 'user_id' dans PostgreSQL
             'display_name',
-            'age'
+            'name',
+            'email',
+            'phone_number'
         ]
         
         # Filtrer les colonnes existantes
@@ -114,11 +119,20 @@ class UserView:
 
      #Stockage de la sélection
         if has_selection:
-            # Stocker la sélection dans la session state
-            user_id = selected_df['user_id'].iloc[0]
+            # Conversion en dictionnaire pour faciliter l'accès aux champs
+            selected_data = selected_df[0] if isinstance(selected_df, list) else selected_df.iloc[0]
+            
+            # Essayer d'abord avec 'id' (nom dans PostgreSQL), puis avec 'user_id' (ancien nom dans Firebase)
+            if 'id' in selected_data:
+                user_id = selected_data['id']
+            elif 'user_id' in selected_data:
+                user_id = selected_data['user_id']
+            else:
+                st.error("Impossible de trouver l'ID de l'utilisateur dans la sélection")
+                return False
+                
             st.session_state["selected_user_id"] = user_id
-            st.session_state["selected_user_df"] = selected_df[0] if isinstance(selected_df, list) else selected_df.iloc[0]
-
+            st.session_state["selected_user_df"] = selected_data
      
 
 
@@ -152,61 +166,181 @@ class UserView:
             st.subheader("Détails de l'utilisateur")
 
          
-            self.users_display.user_display_handler(users_df)
+            #display_user_profile(users_df)
+            #display_user_stats(users_df)
+            #display_user_trips(users_df)
                             
 
-    def find_user_trips(self, user_data, trips_df: Optional[pd.DataFrame] = None):
+    def find_user_trips(self, user_data, trips_df: Optional[pd.DataFrame] = None, page: int = 1, items_per_page: int = 10):
         """
-        Cherche les trajets correspondants à l'utilisateur dans le DataFrame des trajets
+        Cherche les trajets correspondants à l'utilisateur en utilisant la méthode optimisée
         
         Args:
             user_data: Dictionnaire ou série contenant les informations d'un utilisateur
-            trips_df: DataFrame des trajets déjà chargé, optionnel
+            trips_df: DataFrame des trajets déjà chargé, optionnel (déprécié)
+            page: Numéro de la page actuelle (commencé à 1)
+            items_per_page: Nombre d'éléments par page
+            
         Returns:
-            pd.DataFrame: DataFrame des trajets correspondants à l'utilisateur
+            dict: Dictionnaire contenant le DataFrame des trajets et les infos de pagination
         """
-        if trips_df is None or trips_df.empty:
-            return pd.DataFrame()
+        from src.data_processing.processors.trip_processor import TripProcessor
         
-        # Extraire l'ID utilisateur (format "user_X")
-        user_id = user_data.get('user_id', "")
-        user_id_short = user_id.split("/")[-1] if isinstance(user_id, str) and "/" in user_id else user_id
+        # Vérifier si les données utilisateur sont valides
+        if user_data is None:
+            print("Données utilisateur non disponibles")
+            return None
+            
+        # Extraire l'ID utilisateur en fonction des colonnes disponibles
+        user_id = None
+        if isinstance(user_data, dict):
+            user_id = user_data.get('id') or user_data.get('user_id')
+        else:  # pd.Series or DataFrame row
+            if 'id' in user_data:
+                user_id = user_data['id']
+            elif 'user_id' in user_data:
+                user_id = user_data['user_id']
         
-        # Colonnes à vérifier pour les correspondances exactes
-        id_columns = ['driver_id', 'passenger_id', 'user_id']
-        
-        # Colonnes à vérifier pour les correspondances partielles (listes de passagers)
-        list_columns = ['all_passengers', 'passengers']
-        
-        # Créer le masque pour les correspondances
-        mask = pd.Series(False, index=trips_df.index)
-        
-        # Chercher les correspondances exactes
-        for col in id_columns:
-            if col in trips_df.columns:
-                mask = mask | (trips_df[col] == user_id)
-        
-        # Chercher dans les listes de passagers de façon sécurisée
-        for col in list_columns:
-            if col in trips_df.columns:
-                # Convertir la colonne en chaîne et remplacer NaN par chaîne vide
-                str_col = trips_df[col].astype(str).fillna('')
-                
-                # Chercher les patterns dans la colonne convertie en chaîne
-                pattern1 = f"users/{user_id_short}"
-                pattern2 = user_id_short
-                
-                mask = mask | str_col.str.contains(pattern1, na=False)
-                mask = mask | str_col.str.contains(pattern2, na=False)
-        
-        # Retourner les trajets filtrés
-        return trips_df[mask].copy()
-
-
-
+        if not user_id:
+            print("ID utilisateur non disponible dans les données")
+            return None
+            
+        # Utiliser la méthode optimisée get_user_trips avec pagination
+        processor = TripProcessor()
+        return processor.get_user_trips(user_id, trips_df=None, page=page, items_per_page=items_per_page)
 
 
     def display_user_trip_infos(self, user_data, trips_df: Optional[pd.DataFrame] = None):
+        """Affiche les informations de trajets d'un utilisateur
+        
+        Args:
+            user_data: Dictionnaire ou série contenant les informations d'un utilisateur spécifique
+            trips_df: DataFrame des trajets déjà chargé, optionnel
+        """
+        try:
+            # Vérifier les données utilisateur
+            if user_data is not None:
+                # Extraire l'ID utilisateur (compatibilité avec id et user_id)
+                user_id = None
+                if isinstance(user_data, dict):
+                    user_id = user_data.get('id') or user_data.get('user_id')
+                else:  # pd.Series or DataFrame row
+                    if 'id' in user_data:
+                        user_id = user_data['id']
+                    elif 'user_id' in user_data:
+                        user_id = user_data['user_id']
+                
+                if not user_id:
+                    st.error("ID utilisateur non disponible")
+                    return
+                    
+                print(f"Traitement des trajets pour l'utilisateur: {user_id}")
+                
+                # Initialiser la page dans la session state si elle n'existe pas encore
+                if 'trip_page' not in st.session_state:
+                    st.session_state['trip_page'] = 1
+                
+                # Nombre d'éléments par page
+                items_per_page = 10
+                
+                # Récupérer les trajets de l'utilisateur avec pagination
+                trips_result = self.find_user_trips(
+                    user_data, 
+                    trips_df=None, 
+                    page=st.session_state['trip_page'], 
+                    items_per_page=items_per_page
+                )
+                
+                # Initialiser les variables
+                nb_trips = 0
+                total_distance = 0
+                total_co2 = 0
+                pagination_info = {}
+                user_trips_df = None
+
+                if trips_result:
+                    user_trips_df = trips_result.get('trips_df')
+                    pagination_info = trips_result.get('pagination', {})
+                    total_items = pagination_info.get('total_items', 0)
+                    total_pages = pagination_info.get('total_pages', 0)
+                    
+                    if user_trips_df is not None and not user_trips_df.empty:
+                        nb_trips = total_items  # Utiliser le total d'items
+                        # Calculer la distance totale si disponible
+                        if 'trip_distance' in user_trips_df.columns:
+                            total_distance = user_trips_df['trip_distance'].sum()
+                        # Estimer l'économie de CO2 (exemple: 150g par km)
+                        total_co2 = total_distance * 0.15  # 150g/km converti en kg
+                
+                # Données pour les metric cards
+                metrics_data = [
+                    ("Trajets effectués", str(nb_trips)),
+                    ("Kilomètres parcourus", f"{total_distance:.1f} km"),
+                    ("Économie de CO2", f"{total_co2:.1f} kg")
+                ]
+                
+                # Créer et afficher les metric cards
+                metrics_html = Cards.create_metric_cards(metrics_data)
+                st.markdown(metrics_html, unsafe_allow_html=True)
+                
+                # Historique des trajets
+                st.subheader("Historique des trajets")
+                
+                if user_trips_df is not None and not user_trips_df.empty:
+                    # Afficher tous les trajets de la page actuelle
+                    st.markdown(f"🚙 **Trajets de l'utilisateur (page {st.session_state['trip_page']})** - Total: {nb_trips} trajets")
+                    
+                    # Pour chaque trajet, afficher les informations et un bouton pour y accéder
+                    for _, trip in user_trips_df.iterrows():
+                        trip_id = trip.get("trip_id", "")
+                        departure_date = self.format_date(trip.get("departure_date", ""))
+                        origin = trip.get("departure_name", "None")
+                        destination = trip.get("destination_name", "None")
+                        role = trip.get("user_role", "Passager")
+                        
+                        # Icône en fonction du rôle
+                        role_icon = "👤" if role == "Passager" else "🚗"
+                        
+                        # Créer un conteneur pour chaque trajet
+                        with st.container():
+                            cols = st.columns([3, 1])
+                            with cols[0]:
+                                st.markdown(f"{departure_date}: {origin} → {destination} ({role_icon} {role})")
+                            with cols[1]:
+                                # Stocker l'ID dans la session avant de naviguer
+                                if st.button(f"Voir trajet", key=f"goto_{trip_id}"):
+                                    # Stocker le trip_id dans la session
+                                    st.session_state["selected_trip_id"] = trip_id
+                                    # Rediriger vers la page des trajets
+                                    UsersTripsLinker.set_trip_selection(trip_id)
+                    
+                    # Controles de pagination
+                    if total_pages > 1:
+                        col1, col2, col3 = st.columns([1, 3, 1])
+                        with col1:
+                            if st.session_state['trip_page'] > 1:
+                                if st.button("⏮ Précédent"):
+                                    st.session_state['trip_page'] -= 1
+                                    st.experimental_rerun()
+                        with col2:
+                            st.markdown(f"**Page {st.session_state['trip_page']} sur {total_pages}**", 
+                                        unsafe_allow_html=True)
+                        with col3:
+                            if st.session_state['trip_page'] < total_pages:
+                                if st.button("Suivant ⏭"):
+                                    st.session_state['trip_page'] += 1
+                                    st.experimental_rerun()
+                else:
+                    st.info("Aucun trajet trouvé pour cet utilisateur.")
+            else:
+                st.error("Données utilisateur non disponibles")
+        except Exception as e:
+            st.error(f"Erreur lors de l'affichage des informations de trajet: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+
+    def display_user_trip_infos0(self, user_data, trips_df: Optional[pd.DataFrame] = None):
         """Affiche les informations de trajets d'un utilisateur
         
         Args:
@@ -296,9 +430,8 @@ class UserView:
                         if st.button(f"Voir détails", key=f"goto_{trip_id}", help=f"Voir le trajet"):
                             st.session_state["selected_trip_id"] = trip_id
                             st.session_state["select_trip_on_load"] = True
-                            st.info(f"Veuillez cliquer sur 'Trajets' dans la barre latérale.")
-
-
+                            st.info(f"Veuillez cliquer sur 'Trajets' dans le menu de navigation pour voir les détails du trajet.")
+                    
                     # Afficher aussi un tableau complet des trajets si nombreux
                     if len(user_trips_df) > 5:
                         with st.expander(f"Voir tous les trajets ({len(user_trips_df)} au total)"):
@@ -359,122 +492,6 @@ class UserView:
         # Retourner un container Streamlit
         return st.container()
 
-    def display_user_trip_infos0(self, user_data, trips_df: Optional[pd.DataFrame] = None):
-        """Affiche les informations de trajets d'un utilisateur
-        
-        Args:
-            user_data: Dictionnaire ou série contenant les informations d'un utilisateur spécifique
-            trips_df: DataFrame des trajets déjà chargé, optionnel
-        """
-        try:
-            # Vérifier les données utilisateur
-            if user_data is not None:
-                # Extraire directement l'ID utilisateur (comme pour user_info)
-                user_id = user_data.get('user_id')
-                if not user_id:
-                    st.error("ID utilisateur non disponible")
-                    return
-                    
-                print(f"Traitement des trajets pour l'utilisateur: {user_id}")
-                
-                # Appeler la fonction find_user_trips pour filtrer le DataFrame
-                user_trips_df = self.find_user_trips(user_data, trips_df)
-                
-                # Optionnel: afficher des informations de débogage
-                print(f"Nombre de trajets trouvés: {len(user_trips_df) if user_trips_df is not None else 0}")
-
-
-
-                # Calculer les statistiques si des trajets existent
-                nb_trips = 0
-                total_distance = 0
-                total_co2 = 0
-                
-                if user_trips_df is not None and not user_trips_df.empty:
-                    nb_trips = len(user_trips_df)
-                    # Calculer la distance totale si disponible
-                    if 'trip_distance' in user_trips_df.columns:
-                        total_distance = user_trips_df['trip_distance'].sum()
-                    # Estimer l'économie de CO2 (exemple: 150g par km)
-                    total_co2 = total_distance * 0.15  # 150g/km converti en kg
-                
-                # Données pour les metric cards
-                metrics_data = [
-                    ("Trajets effectués", str(nb_trips)),
-                    ("Kilomètres parcourus", f"{total_distance:.1f} km"),
-                    ("Économie de CO2", f"{total_co2:.1f} kg")
-                ]
-                
-                # Créer et afficher les metric cards
-                metrics_html = Cards.create_metric_cards(metrics_data)
-                st.markdown(metrics_html, unsafe_allow_html=True)
-                
-                # Historique des trajets
-                st.subheader("Historique des trajets")
-                
-                if user_trips_df is not None and not user_trips_df.empty:
-                    # Limiter aux 5 derniers trajets pour l'affichage
-                    recent_trips = user_trips_df.head(5)
-                    
-                    st.markdown("🚙 **Derniers trajets**")
-                    
-                    # Pour chaque trajet, afficher les informations et un bouton pour y accéder
-                    for _, trip in recent_trips.iterrows():
-                        trip_id = trip.get("trip_id", "")
-                        departure_date = self.format_date(trip.get("departure_date", ""))
-                        origin = trip.get("departure_name", "None")
-                        destination = trip.get("destination_name", "None")
-                        role = trip.get("user_role", "Passager")
-                        
-                        # Icône en fonction du rôle
-                        role_icon = "👤" if role == "Passager" else "🚗"
-                        
-                        # Créer un conteneur pour chaque trajet
-                        with st.container():
-                            cols = st.columns([3, 1])
-                            with cols[0]:
-                                st.markdown(f"{departure_date}: {origin} → {destination} ({role_icon} {role})")
-                            with cols[1]:
-                                # Stocker l'ID dans la session avant de naviguer
-                                if st.button(f"Voir trajet", key=f"goto_{trip_id}"):
-                                    # Stocker le trip_id dans la session
-                                    st.session_state["selected_trip_id"] = trip_id
-                                    st.session_state["select_trip_on_load"] = True
-                                    
-                                    # Utiliser le menu principal de navigation
-                                    st.info(f"Veuillez cliquer sur le menu 'Trajets' dans la barre latérale pour voir le trajet {trip_id}.")
-                    
-                    # Afficher aussi un tableau complet des trajets si nombreux
-                    if len(user_trips_df) > 5:
-                        with st.expander(f"Voir tous les trajets ({len(user_trips_df)} au total)"):
-                            # Sélectionner et renommer les colonnes pertinentes
-                            display_cols = [
-                                'trip_id', 'departure_date', 'departure_name', 'destination_name',
-                                'trip_distance', 'price_per_seat', 'user_role'
-                            ]
-                            cols_to_show = [col for col in display_cols if col in user_trips_df.columns]
-                            
-                            # Renommer les colonnes pour l'affichage
-                            rename_dict = {
-                                'trip_id': 'ID du trajet',
-                                'departure_date': 'Date de départ', 
-                                'departure_name': 'Origine',
-                                'destination_name': 'Destination',
-                                'trip_distance': 'Distance (km)',
-                                'price_per_seat': 'Prix par siège',
-                                'user_role': 'Rôle'
-                            }
-                            
-                            # Afficher le tableau avec les colonnes renommées
-                            st.dataframe(user_trips_df[cols_to_show].rename(columns=rename_dict))
-                else:
-                    st.info("Aucun trajet trouvé pour cet utilisateur.")
-        except Exception as e:
-            st.error(f"Erreur lors de l'affichage des trajets: {str(e)}")
-            import traceback
-            st.write(traceback.format_exc())
-
-
     def display_user_info(self, user_data):
         """Affiche les informations détaillées sur un utilisateur
         
@@ -492,17 +509,34 @@ class UserView:
                 email = user_data.get('email', "Non disponible")
                 phone = user_data.get('phone_number', "Non disponible")
                 birth_date = user_data.get('birth', "Non disponible")
-                created_at = user_data.get('created_time', "Non disponible")
+                created_at = user_data.get('created_at', "Non disponible")
                 updated_at = user_data.get('updated_at', "Non disponible")
                 age = user_data.get('age', "Non disponible")
                 
                 # Formater l'âge pour l'affichage
-                age_display = f"{age} ans" if age and age != "Non disponible" else "Non disponible"
+                age_display = f"{age} ans" if isinstance(age, (str, int, float)) and age and age != "Non disponible" else "Non disponible"
                 
-                # Formater les dates pour l'affichage
-                birth_formatted = self.format_date(birth_date) if birth_date and birth_date != "Non disponible" else "Non disponible"
-                created_formatted = self.format_date(created_at) if created_at and created_at != "Non disponible" else "Non disponible"
-                updated_formatted = self.format_date(updated_at) if updated_at and updated_at != "Non disponible" else "Non disponible"
+                # Formater les dates pour l'affichage - gérer les Series pandas
+                # Vérifier si birth_date est une Series pandas ou un scalaire
+                if isinstance(birth_date, pd.Series):
+                    birth_value = birth_date.iloc[0] if not birth_date.empty else None
+                    birth_formatted = self.format_date(birth_value) if birth_value and birth_value != "Non disponible" else "Non disponible"
+                else:
+                    birth_formatted = self.format_date(birth_date) if birth_date and birth_date != "Non disponible" else "Non disponible"
+                
+                # Vérifier si created_at est une Series pandas ou un scalaire
+                if isinstance(created_at, pd.Series):
+                    created_value = created_at.iloc[0] if not created_at.empty else None
+                    created_formatted = self.format_date(created_value) if created_value and created_value != "Non disponible" else "Non disponible"
+                else:
+                    created_formatted = self.format_date(created_at) if created_at and created_at != "Non disponible" else "Non disponible"
+                
+                # Vérifier si updated_at est une Series pandas ou un scalaire
+                if isinstance(updated_at, pd.Series):
+                    updated_value = updated_at.iloc[0] if not updated_at.empty else None
+                    updated_formatted = self.format_date(updated_value) if updated_value and updated_value != "Non disponible" else "Non disponible"
+                else:
+                    updated_formatted = self.format_date(updated_at) if updated_at and updated_at != "Non disponible" else "Non disponible"
                 
                 # Créer le contenu pour info_cards (liste de tuples)
                 user_content = [
@@ -633,8 +667,6 @@ class UserView:
        
         with st.container():
 
-
-
             st.subheader("Détails de l'utilisateur")
 
             try:
@@ -657,19 +689,30 @@ class UserView:
                     else:
                         user = selected_df.iloc[0]  # DataFrame
                         
-                    # Vérifier si user_id est présent
-                    if 'user_id' in user:
+                    # Vérifier si un identifiant d'utilisateur est présent (id dans PostgreSQL, user_id dans l'ancien système)
+                    user_id = None
+                    if 'id' in user:
+                        user_id = user['id']
+                    elif 'user_id' in user:
                         user_id = user['user_id']
+                        
+                    if user_id is not None:
                         print(f"Traitement des trajets pour l'utilisateur: {user_id}")
                             
                         # Récupérer les données complètes de l'utilisateur si nécessaire
                         # (Optionnel: si vous avez besoin de données supplémentaires non présentes dans la ligne sélectionnée)
-                        user_data = users_df[users_df['user_id'] == user_id]
+                        if 'id' in users_df.columns:
+                            user_data = users_df[users_df['id'] == user_id]
+                        else:
+                            user_data = users_df[users_df['user_id'] == user_id]
+                            
                         print(f"Traitement des données pour l'utilisateur: {user_data}")
                             
                         if not user_data.empty:
                             # Afficher les détails de l'utilisateur avec la nouvelle classe
-                            self.users_display.user_display_handler(user_data)
+                            display_user_profile(user_data)
+                            display_user_stats(user_data)
+                            display_user_trips(user_data)
                             
                         else:
                             st.info("Données complètes de l'utilisateur non trouvées")

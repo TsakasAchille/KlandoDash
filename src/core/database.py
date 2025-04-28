@@ -164,6 +164,42 @@ class Chat(Base):
         }
 
 
+class Transaction(Base):
+    __tablename__ = "transactions"
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=True)
+    external_id = Column(String, nullable=True)
+    msg = Column(String, nullable=True)
+    amount = Column(Integer, nullable=True)
+    status = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    service_code = Column(String, nullable=True)
+    sender = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
+    error_message = Column(String, nullable=True)
+    has_transactions = Column(Boolean, nullable=True)
+    transaction_metadata = Column(JSON, nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "external_id": self.external_id,
+            "msg": self.msg,
+            "amount": self.amount,
+            "status": self.status,
+            "phone": self.phone,
+            "service_code": self.service_code,
+            "sender": self.sender,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "error_message": self.error_message,
+            "has_transactions": self.has_transactions,
+            "transaction_metadata": self.transaction_metadata
+        }
+
+
 def init_db():
     """Initialise la base de données en créant les tables si elles n'existent pas"""
     # Utiliser des commandes SQL directes pour créer les tables dans le bon ordre
@@ -237,6 +273,26 @@ def init_db():
             message VARCHAR,
             timestamp TIMESTAMP,
             updated_at TIMESTAMP
+        );
+        """))
+        
+        # Créer la table transactions
+        connection.execute(text("""
+        CREATE TABLE IF NOT EXISTS transactions (
+            id VARCHAR PRIMARY KEY,
+            user_id VARCHAR REFERENCES users(id),
+            external_id VARCHAR,
+            msg VARCHAR,
+            amount INTEGER,
+            status VARCHAR,
+            phone VARCHAR,
+            service_code VARCHAR,
+            sender VARCHAR,
+            created_at TIMESTAMP,
+            updated_at TIMESTAMP,
+            error_message VARCHAR,
+            has_transactions BOOLEAN,
+            transaction_metadata JSON
         );
         """))
 

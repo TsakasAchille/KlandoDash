@@ -9,7 +9,7 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 # Chemins relatifs au répertoire du projet
 RESOURCE_DIR = PROJECT_DIR / "src" / "resources"
 CONFIG_PATH = RESOURCE_DIR / "config.json"
-FIREBASE_KEY_PATH = RESOURCE_DIR / "keys" / "klando-d3cb3-firebase-adminsdk-uak7b-7af3798d36.json"
+FIREBASE_KEY_PATH = RESOURCE_DIR / "keys" / "klando-d3cb3-firebase-adminsdk-uak7b-1fc82c7a25.json"
 
 # Chemins pour les sorties de données
 OUTPUT_DIRS = {

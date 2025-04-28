@@ -17,8 +17,8 @@ __all__ = [
 
 def display_sidebar_logo():
     """Affiche le logo Klando dans la sidebar"""
-    # Ajouter le logo dans la sidebar
-    logo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../src/ressources/icons/logo-transparent.svg"))
+    # Utiliser le logo dans src/resources/icons
+    logo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../src/resources/icons/logo-transparent.svg"))
     
     # Vérifier si le fichier logo existe
     if os.path.exists(logo_path):

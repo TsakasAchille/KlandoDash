@@ -4,7 +4,9 @@ import os
 from datetime import datetime
 import pandas as pd
 from src.streamlit_apps.components import Table, Styles, setup_page
-import streamlit.components.v1 as components
+# Corriger l'importation des composants Streamlit
+import streamlit.components.v1 as stcomp
+from src.core.database import Chat, get_session
 
 class ChatManager:
     """
@@ -16,85 +18,44 @@ class ChatManager:
         """Initialisation de la classe ChatManager"""
         pass
     
-    def load_chat_data(self):
+    @st.cache_data(ttl=300)  # Cache les données pendant 5 minutes
+    def load_chat_data(_self):
         """
-        Charge les données de chat à partir du fichier JSON le plus récent et les structure en DataFrames
+        Charge les données de chat directement depuis PostgreSQL et les structure en DataFrames
         
         Returns:
             tuple: (chats_df, messages_df, raw_data) - DataFrames des conversations et messages, et données brutes
         """
-        # Utiliser le chemin depuis la configuration centralisée
-        from src.core.settings import OUTPUT_DIRS
-        
-        # Récupérer le répertoire des chats depuis OUTPUT_DIRS
-        CHATS_DATA_DIR = OUTPUT_DIRS["chats"]
-        
-        # Trouver le fichier le plus récent si plusieurs fichiers existent
-        files = [f for f in os.listdir(CHATS_DATA_DIR) if f.endswith('.json')]
-        if not files:
-            st.error("Aucun fichier de données de chat trouvé.")
-            return pd.DataFrame(), pd.DataFrame(), {}
-        
-        # Trier par date (en supposant un format comme chats_data_YYYYMMDD.json)
-        latest_file = sorted(files)[-1]
-        data_path = os.path.join(CHATS_DATA_DIR, latest_file)
-        
-        # Charger les données brutes
-        with open(data_path, 'r') as f:
-            raw_data = json.load(f)
-        
-        # Convertir en DataFrames pour faciliter l'analyse
-        chat_list = []
-        message_list = []
-        
-        for chat_id, chat_info in raw_data.items():
-            # Informations de la conversation
-            trip_ref = chat_info['data'].get('trip_reference', '').split('/')[-1]
-            user_a = chat_info['data'].get('user_a', '').split('/')[-1]
-            user_b = chat_info['data'].get('user_b', '').split('/')[-1]
-            last_message_time = chat_info['data'].get('last_message_time', '')
+        try:
+            print("Récupération des chats depuis PostgreSQL...")
+            session = get_session()
+            chats = session.query(Chat).all()
+            chats_data = [chat.to_dict() for chat in chats]
+            session.close()
             
-            # Ajouter cette conversation au DataFrame des conversations
-            chat_list.append({
-                'chat_id': chat_id,
-                'trip_ref': trip_ref,
-                'user_a': user_a,
-                'user_b': user_b,
-                'last_message_time': last_message_time,
-                'message_count': len(chat_info.get('messages', []))
-            })
-            
-            # Ajouter les messages de cette conversation
-            for msg in chat_info.get('messages', []):
-                msg_data = msg['data']
-                sender = msg_data['user'].split('/')[-1]
-                timestamp = msg_data.get('timestamp', '')
+            if not chats_data:
+                print("Aucun chat trouvé dans la base de données.")
+                return pd.DataFrame(), pd.DataFrame(), {}
                 
-                message_list.append({
-                    'chat_id': chat_id,
-                    'message_id': msg.get('id', ''),
-                    'sender': sender,
-                    'timestamp': timestamp,
-                    'message_text': msg_data.get('message', ''),
-                    'has_audio': 'audio_url' in msg_data,
-                    'audio_url': msg_data.get('audio_url', ''),
-                    'audio_duration': msg_data.get('audio_duration', 0),
-                    'is_user_a': sender == user_a
-                })
-        
-        # Créer les DataFrames
-        chats_df = pd.DataFrame(chat_list)
-        messages_df = pd.DataFrame(message_list)
-        
-        # Convertir les timestamps en datetime
-        if not messages_df.empty and 'timestamp' in messages_df.columns:
-            messages_df['timestamp'] = pd.to_datetime(messages_df['timestamp'].str.replace('Z', '+00:00'))
-        
-        # Trier les messages par timestamp
-        if not messages_df.empty:
-            messages_df = messages_df.sort_values('timestamp')
+            # Créer le DataFrame directement à partir des données
+            chats_df = pd.DataFrame(chats_data)
             
-        return chats_df, messages_df, raw_data
+            # Pour la compat à retravailler plus tard
+            messages_df = pd.DataFrame()  # Tableau vide pour l'instant
+            raw_data = {}  # Données brutes vides pour l'instant
+            
+            # Conversion des dates
+            date_columns = ['timestamp', 'updated_at']
+            for col in date_columns:
+                if col in chats_df.columns:
+                    chats_df[col] = pd.to_datetime(chats_df[col], errors='coerce')
+            
+            print(f"Chargement réussi de {len(chats_df)} chats")
+            return chats_df, messages_df, raw_data
+            
+        except Exception as e:
+            print(f"Erreur lors du chargement des chats: {e}")
+            return pd.DataFrame(), pd.DataFrame(), {}
     
     def display_chat_interface(self):
         """
@@ -352,8 +313,8 @@ class ChatManager:
         for audio_id, audio_url in audio_elements:
             # Version simplifiée sans le paramètre key
             with st.container():
-                # Script pour tenter de déplacer l'audio
-                components.html(f"""
+                # Script pour tenter de déplacer l'élément audio au bon endroit
+                stcomp.html(f"""
                 <script>
                     // Fonction pour déplacer l'élément audio au bon endroit
                     function moveAudio() {{
@@ -439,9 +400,9 @@ class ChatManager:
             # Contenu du message
             if 'audio_url' in msg_data:
                 # Pour les messages audio, on utilise un composant Streamlit séparé
-                st.markdown(html, unsafe_allow_html=True)
+                st.markdown(html+'</div></div>', unsafe_allow_html=True)
                 st.audio(msg_data['audio_url'])
-                html = "" # On réinitialise le HTML pour la partie timestamp
+                continue  # On passe au message suivant
             elif 'message' in msg_data:
                 html += f"<div>{msg_data['message']}</div>"
             

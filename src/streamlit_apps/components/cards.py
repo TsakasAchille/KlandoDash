@@ -350,7 +350,7 @@ class Cards:
                     content_html += f'<p><span class="label"{label_style}>{label}</span> <span class="value"{value_style}>{value}</span></p>'
             
             card = (
-                f'<div style="width: {width};margin: 0px 5px 0px 5px;">'
+                f'<div style="width: {width};margin: 5px 5px 5px 5px;">'
                 f'<div class="card-base info-card" style="{bg_style}border-left-color: {color};">'
                 f'<div class="info-title">'
                 f'<span class="icon">{icon}</span> {title}'

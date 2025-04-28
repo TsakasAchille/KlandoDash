@@ -20,7 +20,7 @@ class UsersTripsManager:
         """
         try:
             # Extraire l'ID de l'utilisateur
-            user_id = user_data.get('id', None)
+            user_id = user_data.get('uid', None)
             if not user_id:
                 return
             
@@ -44,32 +44,12 @@ class UsersTripsManager:
             st.error(f"Erreur lors de l'affichage des trajets: {str(e)}")
     
     def _get_user_trips(self, user_id):
-        """Récupère les trajets associés à un utilisateur
-        
-        Args:
-            user_id: ID de l'utilisateur
-            
-        Returns:
-            DataFrame: Trajets de l'utilisateur
-        """
+        """Récupère tous les trajets associés à un utilisateur via une seule requête optimisée (conducteur OU passager)"""
         try:
-            # Récupérer tous les trajets de la base de données
-            trips_df = self.trip_processor.handler()
-            
-            # Filtrer les trajets de l'utilisateur en sécurisant le filtrage
-            user_trips = pd.DataFrame()
-            if 'all_passengers' in trips_df.columns:
-                # Convertir user_id en string pour éviter les problèmes de type
-                user_id_str = str(user_id)
-                # Filtrer les trajets qui contiennent l'ID de l'utilisateur
-                user_trips = trips_df[trips_df['all_passengers'].fillna('').apply(
-                    lambda x: user_id_str in str(x).split(',') if x else False
-                )]
-            
-            return user_trips
-            
+            trips_df = self.trip_processor.get_all_user_trips(str(user_id))
+            return trips_df
         except Exception as e:
-            st.error(f"Erreur lors de la récupération des trajets: {str(e)}")
+            st.error(f"Erreur lors de la récupération des trajets (lecture optimisée): {str(e)}")
             return pd.DataFrame()
     
     def _display_trips_table(self, trips_df):

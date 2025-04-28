@@ -1,12 +1,10 @@
-
-from .page_02.users_T2 import UsersDisplay
+# Importer les composants de base
 from .users_trips_linker import UsersTripsLinker
-from .trips_backend import TripsApp
 
+# Importer depuis les nouveaux modules
+from .trips.trips_display import TripsDisplay
 
 __all__ = [
-    "TripMap",
-    "UsersDisplay",
     "UsersTripsLinker",
+    "TripsDisplay",
 ]
-

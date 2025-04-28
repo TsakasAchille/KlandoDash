@@ -69,13 +69,20 @@ class TripsPeople:
                 with cols[0]:
                     # Récupérer directement le nom depuis le DataFrame
                     driver_name = "Inconnu"
-                    # Chercher d'abord avec 'id' (PostgreSQL), puis avec 'user_id' (ancien format)
-                    if 'id' in users_df.columns:
+                    # Chercher d'abord avec 'uid' (PostgreSQL/Supabase), puis 'id', puis 'user_id' (ancien format)
+                    if 'uid' in users_df.columns:
+                        driver_row = users_df[users_df['uid'] == driver_id]
+                    elif 'id' in users_df.columns:
                         driver_row = users_df[users_df['id'] == driver_id]
                     elif 'user_id' in users_df.columns:
                         driver_row = users_df[users_df['user_id'] == driver_id]
                     else:
                         driver_row = pd.DataFrame()
+                    
+                    # Débogage pour comprendre pourquoi l'utilisateur n'est pas trouvé
+                    if driver_row.empty:
+                        st.write(f"ID conducteur recherché: {driver_id}")
+                        st.write(f"Colonnes disponibles: {users_df.columns.tolist()}")
                         
                     if not driver_row.empty:
                         # Chercher d'abord display_name, puis name pour assurer la meilleure donnée
@@ -117,7 +124,9 @@ class TripsPeople:
                                 passenger_phone = ""
                                 
                                 # Récupérer le nom depuis le DataFrame
-                                if 'id' in users_df.columns:
+                                if 'uid' in users_df.columns:
+                                    passenger_row = users_df[users_df['uid'] == passenger_id]
+                                elif 'id' in users_df.columns:
                                     passenger_row = users_df[users_df['id'] == passenger_id]
                                 elif 'user_id' in users_df.columns:
                                     passenger_row = users_df[users_df['user_id'] == passenger_id]
@@ -167,40 +176,24 @@ class TripsPeople:
             st.error(f"Erreur lors de l'affichage des informations sur les personnes: {str(e)}")
             
     def _get_passengers_from_db(self, trip_id):
-        """Récupère les passagers depuis la table trip_passengers
-        
-        Args:
-            trip_id: ID du trajet
-            
-        Returns:
-            list: Liste des IDs des passagers
-        """
+        """Récupère les passagers depuis la table trip_passengers (optimisé)"""
         try:
-            # Vérifier si la table trip_passengers existe
-            check_query = """
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'trip_passengers'
-            );
-            """
-            
-            exists = execute_raw_query(check_query)
-            if not exists or not exists[0][0]:
-                # La table n'existe pas, retourner une liste vide
-                return []
+            # Utiliser la nouvelle architecture PostgreSQL/Supabase
+            # pour récupérer les passagers depuis la table trip_passengers
+            try:
+                # Exécuter une requête SQL directe pour récupérer les passagers
+                query = """
+                SELECT passenger_id FROM trip_passengers 
+                WHERE trip_id = :trip_id
+                """
+                result = execute_raw_query(query, {"trip_id": trip_id})
                 
-            # Requête pour récupérer les passagers du trajet
-            query = """
-            SELECT passenger_id FROM trip_passengers 
-            WHERE trip_id = :trip_id
-            """
-            
-            results = execute_raw_query(query, {'trip_id': trip_id})
-            
-            # Convertir les résultats en liste d'IDs
-            passenger_ids = [row[0] for row in results] if results else []
-            return passenger_ids
-            
+                # Extraire les IDs des passagers
+                passenger_ids = [row[0] for row in result]
+                return passenger_ids
+            except Exception as e:
+                st.warning(f"Table trip_passengers non disponible: {str(e)}")
+                return []
         except Exception as e:
             st.warning(f"Erreur lors de la récupération des passagers depuis la base de données: {str(e)}")
             return []

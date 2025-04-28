@@ -6,9 +6,23 @@ import pandas as pd
 
 from src.streamlit_apps.components import Table, Styles, setup_page, set_page_background
 
-from src.streamlit_apps.pages.components.trips_backend import TripsApp
-from src.streamlit_apps.pages.components.users import UserView
+# Nouvelle importation directe des fonctions
+from src.streamlit_apps.pages.components.trips import (
+    get_trip_data, 
+    display_trips_table,
+    display_map,
+    display_route_info,
+    display_financial_info, 
+    display_seat_occupation_info,
+    display_time_metrics,
+    display_distance_info,
+    display_fuel_info,
+    display_CO2_info,
+    display_people_info
+)
 from src.streamlit_apps.pages.components.users_trips_linker import UsersTripsLinker
+# Importer directement UserProcessor pour charger les données utilisateurs
+from src.data_processing.processors.user_processor import UserProcessor
 
 setup_page()
 set_page_background()
@@ -24,128 +38,90 @@ st.markdown("""
 # Créer une instance de UsersTripsLinker pour gérer les liens entre utilisateurs et trajets
 users_trips_linker = UsersTripsLinker()
 
-# Créer les instances des applications
-trips_app = TripsApp()
-users_app = UserView()
-
-# Créer les onglets pour la navigation
-
-
-users_df = users_app.get_data()
+# Charger les données d'utilisateurs avec UserProcessor directement
+if "user_df" not in st.session_state:
+    # Ancien : users_df = user_processor.handler()
+    # Nouveau : lecture directe via la méthode statique
+    users_df = UserProcessor.get_all_users()
+    if users_df is not None:
+        st.session_state["user_df"] = users_df
+else:
+    users_df = st.session_state["user_df"]
 
 if users_df is None:
     st.error("Aucun utilisateur trouvé")
+
+# Charger les données de trajets (en utilisant la nouvelle fonction avec cache)
+if "trips_df" not in st.session_state:
+    trips_df = get_trip_data()  # Fonction avec @st.cache_data
+    if trips_df is not None:
+        st.session_state["trips_df"] = trips_df
 else:
-    st.session_state["user_df"] = users_df
-
-
-trips_df = trips_app.get_data()
+    trips_df = st.session_state["trips_df"]
 
 if trips_df is None:
     st.error("Aucun trajet trouvé")
 else:
     st.session_state["trip_df"] = trips_df
 
+# Créer les onglets pour la navigation
+tab1, tab2 = st.tabs(["Trajets", "Détails du trajet"])
 
-col1, col2 = st.columns([1,2])
-
-with col1:
+# Premier onglet : liste des trajets tableau 
+with tab1:
     st.write("Veuillez sélectionner un trajet dans le tableau.")
-
-with col2:
-    st.write("")
-
-trip_container = st.expander("Informations sur le trajet", expanded=True)
-passengers_container = st.expander("Passagers", expanded=True)
-user_container = st.expander("Utilisateurs", expanded=True)
-
-
-
-#-------------------TRIPS-------------------
-with trip_container:
-    col1, col2 = st.columns([1,2])
-
-    with col1:
-
-        #------------TABLE----------------
-
-        selected_df = trips_app.display_trips_table(trips_df)
-
-        # Vérifier s'il y a une sélection valide
-        has_selection = False
-        if isinstance(selected_df, list):
-            has_selection = len(selected_df) > 0
-        elif isinstance(selected_df, pd.DataFrame):
-            has_selection = not selected_df.empty
-        else:
-            has_selection = selected_df is not None
-
-        #Stockage de la sélection
-        if has_selection:
-            # Stocker la sélection dans la session state
-            #st.session_state["selected_trip"] = selected_df[0] if isinstance(selected_df, list) else selected_df.iloc[0]
-            st.session_state["selected_trip_id"] = selected_df[0]['trip_id'] if isinstance(selected_df, list) else selected_df.iloc[0]['trip_id']
-
-
-        if "selected_trip_id" in st.session_state:
-            #selected_trip = st.session_state["selected_trip"]
-            selected_trip_id = st.session_state["selected_trip_id"]
-
-            # Récupérer le trajet correspondant
-            selected_trip = trips_df[trips_df['trip_id'] == selected_trip_id].iloc[0]
-
-
+    
+    # Afficher le tableau des trajets avec la nouvelle fonction qui met à jour session_state
+    display_trips_table(trips_df)
+    
+# Deuxième onglet : détails du trajet sélectionné
+with tab2:
+    if "selected_trip_id" in st.session_state:
+        selected_trip_id = st.session_state["selected_trip_id"]
+        
+        # Récupérer le trajet correspondant
+        selected_trip = trips_df[trips_df['trip_id'] == selected_trip_id].iloc[0]
+        
+        # Créer des expanders pour organiser l'information
+        trip_container = st.expander("Informations sur le trajet", expanded=True)
+        passengers_container = st.expander("Passagers", expanded=True)
+        
+        # Afficher les informations du trajet
+        with trip_container:
+            col1, col2 = st.columns([1, 2])
+            
+            with col1:
+                # Route information
+                display_route_info(selected_trip)
+                
+                # Financial information
+                display_financial_info(selected_trip)
+                
+                # Seat occupation information
+                display_seat_occupation_info(selected_trip)
+                
             with col2:
-                TopContainer = st.container()
-                BottomContainer = st.container()
-
-                with TopContainer:
-                    col1, col2 = st.columns([1,2])
-
-                    with col1:
-
-                        #------------Route----------------
-                        trips_app.display_route_info(selected_trip)
-
-                        #------------Financial----------------
-                        trips_app.display_financial_info(selected_trip)
-
-                        #------------Seat Occupation----------------
-                        trips_app.display_seat_occupation_info(selected_trip)
-
-                    with col2:
-                    
-                        #------------Time Date----------------
-                        trips_app.display_time_metrics(selected_trip)
-
-                        #------------MAP----------------
-                        trips_app.display_map(trips_df, selected_trip)
+                # Time and date metrics
+                display_time_metrics(selected_trip)
                 
-                        #------------Distance----------------                
-                        trips_app.display_all_metrics(selected_trip)
-
-
+                # Map display
+                display_map(trips_df, selected_trip)
                 
-                with BottomContainer:
-                        pass
-                        #------------People----------------     
-                        # TODO:Better linking, using dataframe not get data for user info           
-                        #trips_app.display_people_info(selected_trip)
-                       
-        else:
-            st.write("Veuillez sélectionner un trajet")         
-                    
-
-if "selected_trip_id" in st.session_state:
-            #selected_trip = st.session_state["selected_trip"]
-            selected_trip_id = st.session_state["selected_trip_id"]
-
-            # Récupérer le trajet correspondant
-            selected_trip = trips_df[trips_df['trip_id'] == selected_trip_id].iloc[0]
-
-#-------------------PEOPLE-------------------
-
-            with passengers_container:
-            # TODO:Better linking, using dataframe not get data for user info  
-            #          
-                trips_app.display_people_info(selected_trip)
+                # Métriques alignées horizontalement
+                metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
+                with metrics_col1:
+                    display_distance_info(selected_trip)
+                with metrics_col2:
+                    display_fuel_info(selected_trip)
+                with metrics_col3:
+                    display_CO2_info(selected_trip)
+        
+        # Afficher les informations sur les passagers
+        with passengers_container:
+            # Si besoin d'obtenir les passagers d'un trip_id :
+            # (remplacer par une logique adaptée si nécessaire)
+            passenger_ids = []
+            display_people_info(selected_trip)
+            
+    else:
+        st.write("Veuillez sélectionner un trajet dans l'onglet 'Trajets'")

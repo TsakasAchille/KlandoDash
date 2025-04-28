@@ -81,8 +81,9 @@ def _get_occupation_manager():
 @st.cache_data
 def get_trip_data():
     """Récupère les données de trajets depuis la base de données"""
-    processor = TripProcessor()
-    return processor.handler()
+    # Ancien : return TripProcessor.get_trips_by_trip_ids(None)
+    # Nouveau : charge tous les trajets via la nouvelle méthode
+    return TripProcessor.get_all_trips()
 
 # === Fonctions de tableau ===
 def display_trips_table(trips_df):
@@ -153,7 +154,12 @@ def display_seat_occupation_info(trip_data, info_cols=None):
 
 # === Fonctions sur les personnes ===
 def display_people_info(trip_data, info_cols=None):
-    """Affiche les informations sur le conducteur et les passagers"""
+    """Affiche les informations sur le conducteur et les passagers
+    
+    Args:
+        trip_data: Données du trajet sélectionné
+        info_cols: Colonnes Streamlit pour l'affichage (optionnel)
+    """
     return _get_people().display_people_info(trip_data, info_cols)
 
 # === Fonctions de chat ===
