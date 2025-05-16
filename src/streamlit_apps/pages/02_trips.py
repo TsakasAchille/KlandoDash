@@ -55,6 +55,17 @@ else:
 if users_df is None:
     st.error("Aucun utilisateur trouvé")
 
+# Ajouter un bouton pour rafraîchir manuellement les données des voyages
+refresh_col1, refresh_col2 = st.columns([3, 1])
+with refresh_col2:
+    if st.button("🔄 Rafraîchir les données"):
+        # Vider le cache pour forcer une nouvelle récupération des données
+        st.cache_data.clear()
+        # Supprimer les données en cache dans session_state
+        if "trips_df" in st.session_state:
+            del st.session_state["trips_df"]
+        st.success("Données rafraîchies! Les nouveaux voyages sont maintenant visibles.")
+
 # Charger les données de trajets (en utilisant la nouvelle fonction avec cache)
 if "trips_df" not in st.session_state:
     trips_df = get_trip_data()  # Fonction avec @st.cache_data

@@ -1,0 +1,121 @@
+/* === KLANDO CHARTE GRAPHIQUE === */
+:root {
+    --klando-red: #730200;
+    --klando-bluegrey: #3a4654;
+    --klando-bg: #f8fafc;
+    --klando-border: #3a4654;
+    --klando-header-bg: #e3eaf1;
+    --klando-header-fg: #3a4654;
+}
+
+/* Police GLIKER Regular (fallbacks inclus) */
+body, .klando-card, .klando-card-header, .klando-card-body, .klando-passenger-card {
+    font-family: 'GLIKER Regular', 'Segoe UI', 'Roboto', Arial, sans-serif;
+}
+
+.klando-card {
+    border-radius: 14px !important;
+    border: 2px solid var(--klando-bluegrey) !important;
+    box-shadow: 0 2px 14px 0 rgba(58,70,84,0.06);
+    margin-bottom: 18px;
+    background: #fff;
+}
+
+.klando-card-header {
+    background: var(--klando-header-bg) !important;
+    font-weight: 600;
+    color: var(--klando-header-fg);
+    border-bottom: 1px solid var(--klando-bluegrey);
+    border-radius: 12px 12px 0 0;
+    font-size: 1.1rem;
+    letter-spacing: 0.01em;
+}
+
+.klando-card-body {
+    padding: 1.2rem 1.4rem;
+    color: var(--klando-bluegrey);
+}
+
+.klando-map-card {
+    height: 440px;
+    min-height: 340px;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    border-radius: 12px;
+    border: 1.5px solid var(--klando-bluegrey);
+}
+
+/* Titres principaux */
+h1, h2, h3, h4, h5, h6, .klando-title {
+    color: var(--klando-bluegrey);
+    font-family: 'GLIKER Regular', 'Segoe UI', 'Roboto', Arial, sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+/* Accent rouge KLANDO pour éléments clés */
+.klando-accent, .klando-card .klando-accent {
+    color: var(--klando-red) !important;
+    font-weight: 700;
+}
+
+/* Pour les boutons principaux */
+.btn-primary, .dbc-btn-primary, .klando-btn-primary {
+    background: var(--klando-red) !important;
+    border-color: var(--klando-red) !important;
+    color: #fff !important;
+    font-family: 'GLIKER Regular', 'Segoe UI', 'Roboto', Arial, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+/* Passagers cards */
+.klando-passenger-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #0001;
+    padding: 14px;
+    margin-bottom: 12px;
+    height: 100%;
+    border: 1.5px solid var(--klando-bluegrey);
+}
+
+.klando-passenger-card .klando-accent {
+    color: var(--klando-red) !important;
+}
+
+/* Bordures et focus */
+*:focus {
+    outline-color: var(--klando-red);
+}
+
+/* Alertes personnalisées */
+.alert-danger, .dbc-alert-danger {
+    background: #fff0f0 !important;
+    color: var(--klando-red) !important;
+    border-color: var(--klando-red) !important;
+}
+
+.alert-warning, .dbc-alert-warning {
+    background: #fff8e1 !important;
+    color: var(--klando-bluegrey) !important;
+    border-color: var(--klando-bluegrey) !important;
+}
+
+/* Pour les liens principaux */
+a, .klando-link {
+    color: var(--klando-red);
+    text-decoration: underline dotted;
+}
+
+/* Pour les stats et labels */
+.klando-label {
+    color: var(--klando-bluegrey);
+    font-weight: 600;
+}
+
+.klando-value {
+    color: var(--klando-red);
+    font-weight: 700;
+}

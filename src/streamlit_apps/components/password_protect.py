@@ -1,5 +1,9 @@
 import streamlit as st
 import os
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis le fichier .env
+load_dotenv()
 
 def protect():
     APP_PASSWORD = os.environ.get("APP_PASSWORD", "changeme")
