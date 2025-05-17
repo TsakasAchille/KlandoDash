@@ -19,7 +19,32 @@ support_css = '''
 '''
 
 # Layout de la page de support technique
-layout = dbc.Container([
+# Style personnalisé pour la page
+support_styles = {
+    "main-container": {
+        "padding": "20px",
+        "backgroundColor": "#f8f9fa",
+        "minHeight": "100vh",
+        "width": "100%"
+    },
+    "card": {
+        "boxShadow": "0 2px 5px rgba(0, 0, 0, 0.1)",
+        "borderRadius": "8px",
+        "backgroundColor": "white",
+        "border": "none"
+    },
+    "ticket-list": {
+        "height": "350px",
+        "overflowY": "auto",
+        "padding": "5px"
+    },
+    "details-card": {
+        "minHeight": "400px",
+        "marginTop": "20px"
+    }
+}
+
+layout = html.Div([
     # Injecter le CSS personnalisé
     html.Div(html.Iframe(srcDoc=support_css, style={'display': 'none'})),
     html.H2("Support Technique", style={"marginTop": "20px", "marginBottom": "20px"}),
@@ -38,28 +63,75 @@ layout = dbc.Container([
     # Store pour le ticket sélectionné
     dcc.Store(id="selected-ticket-store"),
     
-    # Layout principal avec 2 colonnes: liste des tickets et détails
-    dbc.Row([
-        # Colonne gauche: Liste des tickets
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader("Liste des Tickets"),
-                dbc.CardBody([
-                    html.Div(id="tickets-list-container")
-                ])
-            ])
-        ], width=4),
-        
-        # Colonne droite: Détails du ticket et commentaires
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader("Détails du Ticket"),
-                dbc.CardBody([
-                    html.Div(id="ticket-details-container")
-                ])
-            ])
-        ], width=8)
-    ])
+    # Layout avec deux colonnes: tickets à gauche, détails à droite
+    dbc.Container(
+        [
+            dbc.Row(
+                [
+                    # Colonne de gauche avec les listes de tickets empilées verticalement
+                    dbc.Col(
+                        [
+                            # Tickets ouverts
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(["Tickets Ouverts ", dbc.Badge("0", id="open-count", color="danger", className="ms-1")]),
+                                    dbc.CardBody([
+                                        html.Div(id="open-tickets-container", style={"height": "220px", "overflowY": "auto"})
+                                    ])
+                                ],
+                                className="mb-3",
+                                style={"boxShadow": "0 2px 5px rgba(0, 0, 0, 0.1)", "borderRadius": "8px"}
+                            ),
+                            
+                            # Tickets en cours
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(["En cours ", dbc.Badge("0", id="progress-count", color="warning", className="ms-1")]),
+                                    dbc.CardBody([
+                                        html.Div(id="progress-tickets-container", style={"height": "220px", "overflowY": "auto"})
+                                    ])
+                                ],
+                                className="mb-3",
+                                style={"boxShadow": "0 2px 5px rgba(0, 0, 0, 0.1)", "borderRadius": "8px"}
+                            ),
+                            
+                            # Tickets fermés
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(["Tickets Fermés ", dbc.Badge("0", id="closed-count", color="success", className="ms-1")]),
+                                    dbc.CardBody([
+                                        html.Div(id="closed-tickets-container", style={"height": "220px", "overflowY": "auto"})
+                                    ])
+                                ],
+                                style={"boxShadow": "0 2px 5px rgba(0, 0, 0, 0.1)", "borderRadius": "8px"}
+                            ),
+                        ],
+                        width=4,
+                    ),
+                    
+                    # Colonne de droite avec les détails du ticket
+                    dbc.Col(
+                        dbc.Card(
+                            [
+                                dbc.CardHeader("Détails du Ticket"),
+                                dbc.CardBody([
+                                    html.Div(id="ticket-details-container")
+                                ])
+                            ],
+                            style={
+                                "minHeight": "500px", 
+                                "boxShadow": "0 2px 5px rgba(0, 0, 0, 0.1)",
+                                "borderRadius": "8px"
+                            }
+                        ),
+                        width=8,
+                    ),
+                ],
+            )
+        ],
+        fluid=True,
+        className="py-3"
+    )
 ])
 
 
@@ -118,40 +190,80 @@ def load_support_tickets(n_clicks):
     return data
 
 
-# Callback pour stocker le ticket sélectionné et afficher les tickets
+# Callback pour mettre à jour les 3 listes de tickets et les compteurs
 @callback(
-    [Output("selected-ticket-store", "data"),
-     Output("tickets-list-container", "children")],
+    [
+        # Contenu des listes
+        Output("open-tickets-container", "children"),
+        Output("progress-tickets-container", "children"),
+        Output("closed-tickets-container", "children"),
+        
+        # Compteurs
+        Output("open-count", "children"),
+        Output("progress-count", "children"),
+        Output("closed-count", "children"),
+    ],
+    [Input("support-tickets-store", "data"),
+     Input("selected-ticket-store", "data")]
+)
+def update_tickets_lists(tickets_data, selected_ticket):
+    if not tickets_data or not tickets_data.get("tickets"):
+        empty_message = html.Div("Aucun ticket disponible", className="text-muted text-center py-4")
+        return empty_message, empty_message, empty_message, "0", "0", "0"
+    
+    # Récupérer l'ID du ticket sélectionné
+    selected_id = selected_ticket.get("ticket_id") if selected_ticket else None
+    
+    # Séparer les tickets par statut
+    open_tickets = [t for t in tickets_data["tickets"] if t.get("status") == "open"]
+    progress_tickets = [t for t in tickets_data["tickets"] if t.get("status") == "in progress"]
+    closed_tickets = [t for t in tickets_data["tickets"] if t.get("status") == "closed"]
+    
+    # Rendre chaque liste avec la fonction de rendu
+    open_list = render_tickets_list(open_tickets, selected_id) if open_tickets else html.Div("Aucun ticket ouvert", className="text-muted text-center py-4")
+    progress_list = render_tickets_list(progress_tickets, selected_id) if progress_tickets else html.Div("Aucun ticket en cours", className="text-muted text-center py-4")
+    closed_list = render_tickets_list(closed_tickets, selected_id) if closed_tickets else html.Div("Aucun ticket fermé", className="text-muted text-center py-4")
+    
+    # Mettre à jour les compteurs
+    open_count = str(len(open_tickets))
+    progress_count = str(len(progress_tickets))
+    closed_count = str(len(closed_tickets))
+    
+    return open_list, progress_list, closed_list, open_count, progress_count, closed_count
+
+
+# Callback pour stocker le ticket sélectionné
+@callback(
+    Output("selected-ticket-store", "data"),
     [Input("support-tickets-store", "data"),
      Input({"type": "ticket-item", "index": ALL}, "n_clicks")],
     [State("selected-ticket-store", "data")]
 )
-def update_tickets_and_selection(tickets_data, ticket_clicks, selected_ticket):
+def update_selected_ticket(tickets_data, ticket_clicks, selected_ticket):
     triggered = ctx.triggered_id
     
-    if not tickets_data:
-        return None, html.Div("Aucun ticket disponible")
+    if not tickets_data or not tickets_data.get("tickets"):
+        return None
     
     # Par défaut, garder le ticket sélectionné actuel
     new_selected = selected_ticket
     
     # Si un ticket a été cliqué
     if triggered and isinstance(triggered, dict) and triggered.get("type") == "ticket-item":
-        ticket_index = triggered.get("index")
-        if ticket_index < len(tickets_data["tickets"]):
-            new_selected = tickets_data["tickets"][ticket_index]
+        ticket_id = triggered.get("index")  # Maintenant c'est l'ID du ticket, pas l'index
+        
+        # Trouver le ticket correspondant à cet ID
+        all_tickets = tickets_data["tickets"]
+        for ticket in all_tickets:
+            if ticket["ticket_id"] == ticket_id:
+                new_selected = ticket
+                break
     
     # Sélectionner le premier ticket par défaut si aucun n'est sélectionné
     if not new_selected and tickets_data["tickets"]:
         new_selected = tickets_data["tickets"][0]
     
-    # Obtenir l'ID du ticket sélectionné
-    selected_id = new_selected.get("ticket_id") if new_selected else None
-    
-    # Rendre la liste des tickets
-    tickets_list = render_tickets_list(tickets_data["tickets"], selected_id)
-    
-    return new_selected, tickets_list
+    return new_selected
 
 
 # Callback pour afficher les détails du ticket et les commentaires

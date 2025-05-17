@@ -83,6 +83,7 @@ def render_tickets_list(tickets, selected_ticket_id=None):
             "boxShadow": "0 2px 5px rgba(0, 0, 0, 0.08)"
         }
         
+        # Utiliser l'ID unique du ticket au lieu de l'index pour l'identifier de façon fiable
         ticket_items.append(
             html.Div([
                 html.Div([
@@ -102,7 +103,7 @@ def render_tickets_list(tickets, selected_ticket_id=None):
                 ], style={"display": "flex", "justifyContent": "space-between"})
             ], 
             style=row_style, 
-            id={"type": "ticket-item", "index": i},
+            id={"type": "ticket-item", "index": ticket["ticket_id"]},  # Utiliser l'ID du ticket au lieu de l'index
             className="ticket-row"
             )
         )
@@ -112,8 +113,9 @@ def render_tickets_list(tickets, selected_ticket_id=None):
         ticket_items,
         # Nous utilisons le style inline pour l'effet hover via la prop className
         style={
-            "maxHeight": "500px",
-            "overflowY": "auto"
+            # Suppression de l'attribut overflowY pour éviter la double barre de défilement
+            # Le conteneur parent gère déjà le défilement
+            "maxHeight": "500px"
         },
         # Ajoutons un ID pour appliquer du CSS personnalisé dans app.py si nécessaire
         id="tickets-list"
