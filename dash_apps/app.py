@@ -1,6 +1,12 @@
+import sys
+import os
+
+# Ajouter le répertoire racine du projet au PYTHONPATH
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
+
 from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
-import os
 
 # Multipage support (Dash >=2.0)
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)

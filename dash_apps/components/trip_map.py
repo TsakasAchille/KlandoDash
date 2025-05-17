@@ -2,6 +2,8 @@ import dash_leaflet as dl
 from dash import html
 import dash_bootstrap_components as dbc
 import polyline
+import jinja2
+import os
 
 # Couleurs KLANDO
 KLANDO_RED = "#730200"
@@ -16,59 +18,190 @@ def render_trip_map(trip_row):
     """
     if trip_row is None:
         return None
+        
+    # Convertir le DataFrame row en dictionnaire si ce n'est pas déjà fait
+    if hasattr(trip_row, 'to_dict'):
+        trip_dict = trip_row.to_dict()
+    else:
+        trip_dict = dict(trip_row)
+    
     # Si polyline présente et non vide, affiche le trajet complet
-    if 'trip_polyline' in trip_row and trip_row['trip_polyline']:
-        try:
-            coords = polyline.decode(trip_row['trip_polyline'])  # [(lat, lon), ...]
-            if not coords:
-                raise ValueError("Décodage polyline vide")
+    try:
+        if 'trip_polyline' in trip_dict and trip_dict['trip_polyline']:
+            # Décoder la polyline
+            polyline_str = trip_dict['trip_polyline']
+            if isinstance(polyline_str, bytes):
+                polyline_str = polyline_str.decode('utf-8')
+                
+            coords = polyline.decode(polyline_str)  # [(lat, lon), ...]
+            print(f"[DEBUG] Polyline décodée. Longueur: {len(coords)} points")
+            
+            if not coords or len(coords) < 2:
+                raise ValueError("Polyline trop courte")
+                
             line_positions = coords
             departure = coords[0]
             arrival = coords[-1]
-            departure_name = trip_row.get('departure_name', 'Départ')
-            arrival_name = trip_row.get('destination_name', 'Arrivée')
+            departure_name = trip_dict.get('departure_name', 'Départ')
+            arrival_name = trip_dict.get('destination_name', 'Arrivée')
             center = coords[len(coords)//2]
-            return dbc.Card([
-                dbc.CardHeader("Trajet sur la carte", className="klando-card-header"),
-                dbc.CardBody([
+            
+            # Utiliser directement le composant Leaflet de Dash avec un style moderne
+            return html.Div([
+                html.Div(
+                    className="card-header",
+                    children=[
+                        html.Div(
+                            className="header-icon",
+                            children="🗺️"
+                        ),
+                        html.H2("Trajet sur la carte", className="card-title", style={
+                            "fontSize": "22px",
+                            "fontWeight": "600",
+                            "color": "#333",
+                            "margin": "0",
+                            "marginLeft": "15px"
+                        })
+                    ],
+                    style={
+                        "display": "flex",
+                        "alignItems": "center",
+                        "marginBottom": "20px",
+                    }
+                ),
+                html.Div(
                     dl.Map([
                         dl.TileLayer(),
-                        dl.Polyline(positions=line_positions, color=KLANDO_RED, weight=5),
+                        dl.Polyline(positions=line_positions, color=KLANDO_RED, weight=5, opacity=0.8),
                         dl.Marker(position=departure, children=[dl.Tooltip(f"Départ: {departure_name}")]),
                         dl.Marker(position=arrival, children=[dl.Tooltip(f"Arrivée: {arrival_name}")]),
-                    ], center=center, zoom=11, className="klando-map-card")
-                ], className="klando-card-body")
-            ], className="klando-card")
-        except Exception as e:
-            print(f"[render_trip_map] Erreur décodage polyline: {e}")
-            # On tombe sur le fallback ligne droite
+                    ], center=center, zoom=12, style={
+                        'height': '500px', 
+                        'width': '100%',
+                        'borderRadius': '18px',
+                        'overflow': 'hidden'
+                    }),
+                    style={
+                        "backgroundColor": "#fafcfe",
+                        "borderRadius": "18px",
+                        "padding": "10px",
+                    }
+                )
+            ], style={
+                "backgroundColor": "white",
+                "borderRadius": "28px",
+                "boxShadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px",
+                "padding": "25px",
+                "overflow": "hidden",
+                "marginBottom": "20px"
+            })
+    
+    except Exception as e:
+        print(f"[render_trip_map] Erreur décodage polyline: {e}")
+    
     # Fallback : ligne droite entre départ et arrivée
     try:
-        lat1 = float(trip_row.get('departure_latitude'))
-        lon1 = float(trip_row.get('departure_longitude'))
-        lat2 = float(trip_row.get('destination_latitude'))
-        lon2 = float(trip_row.get('destination_longitude'))
+        lat1 = float(trip_dict.get('departure_latitude'))
+        lon1 = float(trip_dict.get('departure_longitude'))
+        lat2 = float(trip_dict.get('destination_latitude'))
+        lon2 = float(trip_dict.get('destination_longitude'))
+        
         departure = (lat1, lon1)
         arrival = (lat2, lon2)
-        departure_name = trip_row.get('departure_name', 'Départ')
-        arrival_name = trip_row.get('destination_name', 'Arrivée')
+        departure_name = trip_dict.get('departure_name', 'Départ')
+        arrival_name = trip_dict.get('destination_name', 'Arrivée')
         center = ((lat1+lat2)/2, (lon1+lon2)/2)
-        return dbc.Card([
-            dbc.CardHeader("Trajet sur la carte", className="klando-card-header"),
-            dbc.CardBody([
-                dl.Map([
-                    dl.TileLayer(),
-                    dl.Polyline(positions=[departure, arrival], color=KLANDO_RED, weight=5, dashArray="10,10"),
-                    dl.Marker(position=departure, children=[dl.Tooltip(f"Départ: {departure_name}")]),
-                    dl.Marker(position=arrival, children=[dl.Tooltip(f"Arrivée: {arrival_name}")]),
-                ], center=center, zoom=9, className="klando-map-card"),
-                html.Div("Aucune polyline disponible : affichage d'une ligne droite entre départ et arrivée.", style={"color": "#B00", "fontSize": "12px", "marginTop": "6px"})
-            ], className="klando-card-body")
-        ], className="klando-card")
+        
+        return html.Div([
+            html.Div(
+                className="card-header",
+                children=[
+                    html.Div(
+                        className="header-icon",
+                        children=html.I(className="fas fa-map-marked-alt", style={"color": "#4281ec"})
+                    ),
+                    html.H2("Trajet sur la carte", className="card-title", style={
+                        "fontSize": "22px",
+                        "fontWeight": "600",
+                        "color": "#333",
+                        "margin": "0",
+                        "marginLeft": "15px"
+                    })
+                ],
+                style={
+                    "display": "flex",
+                    "alignItems": "center",
+                    "marginBottom": "20px",
+                }
+            ),
+            html.Div(
+                [
+                    dl.Map([
+                        dl.TileLayer(),
+                        dl.Polyline(positions=[departure, arrival], color=KLANDO_RED, weight=5, dashArray="10,10", opacity=0.8),
+                        dl.Marker(position=departure, children=[dl.Tooltip(f"Départ: {departure_name}")]),
+                        dl.Marker(position=arrival, children=[dl.Tooltip(f"Arrivée: {arrival_name}")]),
+                    ], center=center, zoom=10, style={
+                        'height': '500px', 
+                        'width': '100%',
+                        'borderRadius': '18px',
+                        'overflow': 'hidden'
+                    }),
+                    html.Div("Aucune polyline disponible : affichage d'une ligne droite.", 
+                             style={"color": "#B00", "fontSize": "12px", "marginTop": "10px", "textAlign": "center"})
+                ],
+                style={
+                    "backgroundColor": "#fafcfe",
+                    "borderRadius": "18px",
+                    "padding": "10px",
+                }
+            )
+        ], style={
+            "backgroundColor": "white",
+            "borderRadius": "28px",
+            "boxShadow": "0 10px 30px rgba(0,0,0,0.1)",
+            "padding": "25px",
+            "overflow": "hidden",
+            "marginBottom": "20px"
+        })
+        
     except Exception as e:
-        return dbc.Card([
-            dbc.CardHeader("Trajet sur la carte", className="klando-card-header"),
-            dbc.CardBody([
-                html.Div("Impossible d'afficher la carte (pas de coordonnées valides)", style={"color": "#B00"})
-            ], className="klando-card-body")
-        ], className="klando-card")
+        return html.Div([
+            html.Div(
+                className="card-header",
+                children=[
+                    html.Div(
+                        className="header-icon",
+                        children="⚠️"
+                    ),
+                    html.H2("Trajet sur la carte", className="card-title", style={
+                        "fontSize": "22px",
+                        "fontWeight": "600",
+                        "color": "#333",
+                        "margin": "0",
+                        "marginLeft": "15px"
+                    })
+                ],
+                style={
+                    "display": "flex",
+                    "alignItems": "center",
+                    "marginBottom": "20px",
+                }
+            ),
+            html.Div(
+                html.Div("Impossible d'afficher la carte (pas de coordonnées valides)", 
+                         style={"color": "#B00", "padding": "30px", "textAlign": "center", "fontSize": "16px"}),
+                style={
+                    "backgroundColor": "#fafcfe",
+                    "borderRadius": "18px",
+                    "padding": "10px",
+                }
+            )
+        ], style={
+            "backgroundColor": "white",
+            "borderRadius": "28px",
+            "boxShadow": "0 10px 30px rgba(0,0,0,0.1)",
+            "padding": "25px",
+            "overflow": "hidden",
+            "marginBottom": "20px"
+        })

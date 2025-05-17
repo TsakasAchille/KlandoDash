@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Passagers et Réservations</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .passengers-card {
+      background: white;
+      border-radius: 28px;
+      padding: 25px;
+      overflow: hidden;
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #fff5e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-size: 20px;
+    }
+    
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+    }
+    
+    .passengers-container {
+      background: white;
+      border-radius: 18px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    
+    .passenger-card {
+      background-color:#fafcfe;
+      border-radius: 16px;
+      padding: 20px;
+      /*box-shadow: 0 4px 12px rgba(0,0,0,0.05);*/
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .passenger-header {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 12px;
+      margin-bottom: 15px;
+    }
+    
+    .passenger-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: #e8f3ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      font-size: 18px;
+    }
+    
+    .passenger-name {
+      font-weight: 600;
+      color: #1c2b46;
+      font-size: 16px;
+    }
+    
+    .passenger-details {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 15px 0;
+    }
+    
+    .passenger-detail-item {
+      display: flex;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .detail-label {
+      font-weight: 500;
+      color: #666;
+      width: 130px;
+      flex-shrink: 0;
+    }
+    
+    .detail-value {
+      font-weight: 400;
+      color: #333;
+      word-break: break-word;
+      max-width: calc(100% - 130px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .confirmed {
+      color: #2563eb;
+      font-weight: 600;
+    }
+    
+    .pending {
+      color: #B00;
+      font-weight: 600;
+    }
+    
+    .profile-button {
+      background-color: #e0ecff;
+      color: #2563eb;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: auto;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      transition: background-color 0.2s;
+    }
+    
+    .profile-button:hover {
+      background-color: #d0e0ff;
+    }
+    
+    .empty-message {
+      text-align: center;
+      color: #666;
+      padding: 40px 20px;
+      font-style: italic;
+    }
+    
+    /* Responsive */
+    @media (max-width: 767px) {
+      .passengers-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="passengers-card">
+    <div class="card-header" style="background-color: transparent;">
+      <div class="header-icon">
+        👥
+      </div>
+      <h2 class="card-title">Passagers et Réservations</h2>
+    </div>
+    
+    <div class="passengers-container">
+      {% if passengers and passengers|length > 0 %}
+        {% for passenger in passengers %}
+          <div class="passenger-card">
+            <div class="passenger-header">
+              <div class="passenger-avatar">👤</div>
+              <div class="passenger-name">{{ passenger.get("name", "Passager " + loop.index|string) }}</div>
+            </div>
+            
+            <ul class="passenger-details">
+              <li class="passenger-detail-item">
+                <span class="detail-label">Email :</span>
+                <span class="detail-value">{{ passenger.get("email", "-") }}</span>
+              </li>
+              <li class="passenger-detail-item">
+                <span class="detail-label">Téléphone :</span>
+                <span class="detail-value">{{ passenger.get("phone", "-") }}</span>
+              </li>
+              <li class="passenger-detail-item">
+                <span class="detail-label">Places réservées :</span>
+                <span class="detail-value">{{ passenger.get("seats", "-") }}</span>
+              </li>
+              <li class="passenger-detail-item">
+                <span class="detail-label">Statut :</span>
+                <span class="detail-value {% if passenger.get('status') == 'confirmé' %}confirmed{% else %}pending{% endif %}">
+                  {{ passenger.get("status", "-") }}
+                </span>
+              </li>
+            </ul>
+            
+            {% if passenger.get("uid") %}
+              <a href="/users?uid={{ passenger.get('uid') }}" class="profile-button">Voir profil</a>
+            {% else %}
+              <a href="/users" class="profile-button">Voir profil</a>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-message">
+          Aucun passager à afficher pour ce trajet.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

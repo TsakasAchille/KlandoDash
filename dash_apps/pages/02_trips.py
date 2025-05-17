@@ -24,7 +24,7 @@ layout = dbc.Container([
     html.Div(id="refresh-message"),
     dcc.Store(id="users-store"),
     dcc.Store(id="trips-store"),
-    dcc.Store(id="selected-trip-id"),
+    dcc.Store(id="selected-trip-id", storage_type="session"),
     html.Div(id="main-content"),
     html.Div(id="trip-details")
 ], fluid=True)
@@ -59,14 +59,21 @@ def show_refresh_message(n_clicks):
     Output("main-content", "children"),
     Input("users-store", "data"),
     Input("trips-store", "data"),
+    Input("selected-trip-id", "data"),
 )
-def update_main_content(users_data, trips_data):
+def update_main_content(users_data, trips_data, selected_trip_id):
     if users_data is None:
         return dbc.Alert("Aucun utilisateur trouvé", color="danger")
     if trips_data is None or len(trips_data) == 0:
         return dbc.Alert("Aucun trajet trouvé", color="danger")
     trips_df = pd.DataFrame(trips_data)
-    table = render_trips_table(trips_df)
+    # Préselection du trajet si selected_trip_id est présent
+    preselect_row = []
+    if selected_trip_id:
+        idx = trips_df.index[trips_df['trip_id'] == selected_trip_id].tolist()
+        if idx:
+            preselect_row = [idx[0]]
+    table = render_trips_table(trips_df, selected_rows=preselect_row)
     instruction = html.P("Sélectionnez un trajet dans le tableau pour voir les détails.")
     details_div = html.Div(id="trip-details")
     return html.Div([instruction, table, html.Hr(), details_div])

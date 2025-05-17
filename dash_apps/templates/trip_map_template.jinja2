@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Carte du trajet - {{ trip.get("trip_id", "") }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Charger Leaflet directement sans attributs crossorigin qui peuvent causer des problèmes -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+    }
+    
+    .map-card {
+      background: white;
+      border-radius: 28px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      padding: 25px;
+      overflow: hidden;
+      height: calc(100% - 50px);
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #f0f4ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+    }
+    
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+    }
+    
+    .map-container {
+      height: calc(100% - 80px);
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    #mapid {
+      height: 100%;
+      width: 100%;
+      z-index: 10;
+    }
+    
+    .map-notice {
+      margin-top: 10px;
+      color: #B00;
+      font-size: 12px;
+    }
+    
+    /* Personnalisation des marqueurs Leaflet */
+    .leaflet-div-icon {
+      background: transparent;
+      border: none;
+    }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+      .map-card {
+        padding: 15px;
+      }
+      
+      .card-title {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="map-card">
+    <div class="card-header">
+      <div class="header-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4281ec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+          <line x1="9" y1="3" x2="9" y2="18"></line>
+          <line x1="15" y1="6" x2="15" y2="21"></line>
+        </svg>
+      </div>
+      <h2 class="card-title">Trajet sur la carte</h2>
+    </div>
+    
+    <div class="map-container">
+      <div id="mapid"></div>
+    </div>
+    
+    {% if not has_polyline %}
+    <div class="map-notice">
+      Aucune polyline disponible : affichage d'une ligne droite entre départ et arrivée.
+    </div>
+    {% endif %}
+  </div>
+
+  <script>
+    // Exécuter le code lorsque la page est chargée
+    window.onload = function() {
+      // Console log pour vérifier l'exécution du script
+      console.log('Initialisation de la carte');
+      
+      try {
+        // Vérifier si l'élément existe
+        const mapElement = document.getElementById('mapid');
+        if (!mapElement) {
+          console.error("Element mapid non trouvé!");
+          return;
+        }
+        
+        // Définir une hauteur explicite pour garantir le rendu
+        mapElement.style.height = '500px';
+        
+        // Initialiser la carte avec des options explicites
+        const map = L.map('mapid', {
+          zoomControl: true,
+          scrollWheelZoom: true,
+          doubleClickZoom: true
+        });
+        
+        // Ajouter la couche de tuiles OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19
+        }).addTo(map);
+        
+        // Couleurs KLANDO
+        const KLANDO_RED = "#730200";
+        
+        {% if has_polyline %}
+          try {
+            // Log sécurisé de la longueur des coordonnées
+            let coordCount = 0;
+            
+            // Coordonnées décodées de la polyline
+            const coordinates = {{ coordinates|tojson }};
+            
+            if (coordinates) {
+              coordCount = coordinates.length;
+              console.log('Coordonnées chargées:', coordCount, 'points');
+            }
+            
+            if (coordinates && coordinates.length >= 2) {
+              // Convertir les coordonnées au format attendu par Leaflet si nécessaire
+              const validCoordinates = coordinates.map(coord => {
+                if (Array.isArray(coord) && coord.length === 2) {
+                  return [parseFloat(coord[0]), parseFloat(coord[1])];
+                }
+                return coord;
+              });
+              
+              // Tracer le trajet
+              const polyline = L.polyline(validCoordinates, {
+                color: KLANDO_RED,
+                weight: 5,
+                opacity: 0.8
+              }).addTo(map);
+              
+              // Marqueurs de départ et d'arrivée
+              const departureMarker = L.marker(validCoordinates[0]).addTo(map);
+              departureMarker.bindTooltip("Départ: {{ trip.get('departure_name', 'Départ') }}");
+              
+              const arrivalMarker = L.marker(validCoordinates[validCoordinates.length - 1]).addTo(map);
+              arrivalMarker.bindTooltip("Arrivée: {{ trip.get('destination_name', 'Arrivée') }}");
+              
+              // Définir une vue qui correspond aux limites du trajet
+              try {
+                map.fitBounds(polyline.getBounds(), {
+                  padding: [50, 50],
+                  maxZoom: 15
+                });
+              } catch (e) {
+                console.error('Erreur lors de fitBounds:', e);
+                // Fallback à un zoom fixe sur le premier point
+                map.setView(validCoordinates[0], 12);
+              }
+            } else {
+              throw new Error('Pas assez de points dans les coordonnées');
+            }
+          } catch (coordError) {
+            console.error('Erreur avec les coordonnées:', coordError);
+            // Fallback si erreur avec les coordonnées de la polyline
+            fallbackDirectLine();
+          }
+        {% else %}
+          fallbackDirectLine();
+        {% endif %}
+        
+        function fallbackDirectLine() {
+          try {
+            // Coordonnées de départ et d'arrivée
+            const departure = [{{ trip.get('departure_latitude', 0) }}, {{ trip.get('departure_longitude', 0) }}];
+            const arrival = [{{ trip.get('destination_latitude', 0) }}, {{ trip.get('destination_longitude', 0) }}];
+            
+            // Vérifier la validité des coordonnées
+            if (isNaN(departure[0]) || isNaN(departure[1]) || isNaN(arrival[0]) || isNaN(arrival[1])) {
+              throw new Error('Coordonnées invalides');
+            }
+            
+            // Tracer une ligne droite entre départ et arrivée
+            const polyline = L.polyline([departure, arrival], {
+              color: KLANDO_RED,
+              weight: 5,
+              dashArray: "10,10"
+            }).addTo(map);
+            
+            // Marqueurs de départ et d'arrivée
+            const departureMarker = L.marker(departure).addTo(map);
+            departureMarker.bindTooltip("Départ: {{ trip.get('departure_name', 'Départ') }}");
+            
+            const arrivalMarker = L.marker(arrival).addTo(map);
+            arrivalMarker.bindTooltip("Arrivée: {{ trip.get('destination_name', 'Arrivée') }}");
+            
+            // Ajuster la vue aux limites de la polyline
+            map.fitBounds(polyline.getBounds());
+          } catch (fallbackError) {
+            console.error('Erreur dans le fallback ligne directe:', fallbackError);
+            // Centrer sur la France en cas d'erreur complète
+            map.setView([46.603354, 1.888334], 5);
+          }
+        }
+        
+        // Ajuster la carte après un court délai pour s'assurer que le DOM est complètement chargé
+        setTimeout(function() {
+          map.invalidateSize();
+        }, 100);
+      } catch (e) {
+        console.error('Erreur d\'initialisation de la carte:', e);
+        // Afficher un message d'erreur visible dans l'iframe
+        document.body.innerHTML += '<div style="padding: 20px; color: red; text-align: center;">Erreur de chargement de la carte: ' + e.message + '</div>';
+      }
+    };
+  </script>
+</body>
+</html>

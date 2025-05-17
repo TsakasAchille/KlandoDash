@@ -5,7 +5,9 @@ KLANDO_RED = "#730200"
 KLANDO_BLUEGREY = "#3a4654"
 
 
-def render_trips_table(trips_df, columns=None):
+def render_trips_table(trips_df, columns=None, selected_rows=None):
+    if selected_rows is None:
+        selected_rows = []
     """
     Retourne un dash_table.DataTable stylé selon la charte KLANDO.
     Args:
@@ -28,7 +30,7 @@ def render_trips_table(trips_df, columns=None):
         filter_action='native',  # <-- filtrage natif Dash
         sort_action='native',
         row_selectable="single",
-        selected_rows=[],
+        selected_rows=selected_rows,
         style_table={
             "overflowX": "auto",
             "borderRadius": "10px",

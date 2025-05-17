@@ -6,6 +6,24 @@ from dash_apps.components.trip_stats import render_trip_stats
 from dash_apps.components.trip_passengers import render_trip_passengers
 from dash_apps.utils.db_utils import get_trip_passengers
 from src.core.database import get_session, User
+import jinja2
+import os
+
+
+def render_trip_card_html(trip_data):
+    """
+    Génère le HTML pour la card de détail du trajet en utilisant le template Jinja2.
+    
+    Args:
+        trip_data: dictionnaire contenant les informations du trajet
+    Returns:
+        HTML généré à partir du template
+    """
+    templates_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')
+    template_loader = jinja2.FileSystemLoader(searchpath=templates_dir)
+    template_env = jinja2.Environment(loader=template_loader)
+    template = template_env.get_template('trip_details_template.jinja2')
+    return template.render(trip=trip_data)
 
 
 def trip_details_layout(selected_trip, trips_data):
@@ -17,41 +35,44 @@ def trip_details_layout(selected_trip, trips_data):
     Returns:
         dbc.Row
     """
-    fields = [
-        ("Départ", selected_trip.get("departure_name", "-")),
-        ("Destination", selected_trip.get("destination_name", "-")),
-        ("Date", selected_trip.get("departure_date", "-")),
-        ("Heure de départ", selected_trip.get("departure_schedule", "-")),
-        ("Conducteur (ID)", selected_trip.get("driver_id", "-")),
-    ]
-    details_card = dbc.Card([
-        dbc.CardHeader("Détails du trajet sélectionné", className="klando-card-header"),
-        dbc.CardBody([
-            html.Ul([
-                html.Li([
-                    html.Span(label + " : ", className="klando-label"),
-                    html.Span(str(value), className="klando-value")
-                ], style={"marginBottom": "2px", "fontSize": "1.15em"})
-                for label, value in fields
-            ], style={"listStyle": "none", "padding": 0, "margin": 0})
-        ], className="klando-card-body")
-    ], className="klando-card mb-4")
-
-    trip_map = render_trip_map(selected_trip)
-    polyline_val = selected_trip.get("trip_polyline", None)
-    debug_polyline = html.Div([
-        html.Small("trip_polyline : ", style={"fontWeight": "bold"}),
-        html.Code(str(polyline_val))
-    ], style={"marginTop": "8px", "color": "#999"})
-
-    trip_stats = render_trip_stats(selected_trip)
-    if hasattr(trip_stats, "type") and trip_stats.type == "Card":
-        trip_stats = trip_stats  # déjà une Card custom
+    # Convertir le DataFrame row en dictionnaire si ce n'est pas déjà fait
+    if hasattr(selected_trip, 'to_dict'):
+        trip_dict = selected_trip.to_dict()
     else:
-        trip_stats = dbc.Card([
-            dbc.CardHeader("Statistiques du trajet", className="klando-card-header"),
-            dbc.CardBody([trip_stats], className="klando-card-body")
-        ], className="klando-card mb-4")
+        trip_dict = dict(selected_trip)
+    
+    # Génération du HTML pour la card de détail du trajet en utilisant Jinja
+    trip_html = render_trip_card_html(trip_dict)
+    
+    # Création du composant Dash en utilisant la technique qui fonctionne bien pour trip_map
+    details_card = html.Div(
+        html.Iframe(
+            srcDoc=trip_html,
+            style={
+                'width': '100%',
+                'height': '600px',
+                'border': 'none',
+                'overflow': 'hidden',
+                'backgroundColor': 'transparent',
+                'borderRadius': '18px'
+            },
+            sandbox='allow-scripts',
+        ),
+        style={
+            'backgroundColor': 'white',
+            'borderRadius': '28px',
+            'boxShadow': 'rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px',
+            'padding': '15px',
+            'overflow': 'hidden',
+            'margin': '5px'
+        }
+    )
+
+    # Rendu de la carte sans debug info
+    trip_map = render_trip_map(selected_trip)
+
+    # Notre composant trip_stats est déjà un iframe avec le template, pas besoin de l'encapsuler
+    trip_stats = render_trip_stats(selected_trip)
 
     # Récupération SQL des passagers
     trip_id = selected_trip.get("trip_id")
@@ -63,26 +84,16 @@ def trip_details_layout(selected_trip, trips_data):
             users = session.query(User).filter(User.uid.in_(passenger_ids)).all()
             users_df = pd.DataFrame([u.to_dict() for u in users]) if users else pd.DataFrame()
         passengers_list = users_df.to_dict("records") if not users_df.empty else []
+    # Utilisation directe du composant trip_passengers avec son propre style cohérent
     trip_passengers = render_trip_passengers(passengers_list)
-    if hasattr(trip_passengers, "type") and trip_passengers.type == "Card":
-        trip_passengers = trip_passengers  # déjà une Card custom
-    else:
-        trip_passengers = dbc.Card([
-            dbc.CardHeader("Passagers & Réservations", className="klando-card-header"),
-            dbc.CardBody([trip_passengers], className="klando-card-body")
-        ], className="klando-card mb-4")
 
     return dbc.Row([
         dbc.Col([
-            details_card,
-            trip_stats
-        ], md=4, xs=12),
+            html.Div(details_card, style={"marginBottom": "20px"}),
+            html.Div(trip_stats)
+        ], md=4, xs=12, style={"paddingRight": "20px"}),
         dbc.Col([
-            html.Div(trip_map) if trip_map else html.Div("Aucune carte générée (polyline absente ou invalide)", style={"color": "#B00"}),
-            html.Div([
-                html.Small("trip_polyline : ", style={"fontWeight": "bold"}),
-                html.Code(str(polyline_val))
-            ], style={"marginTop": "8px", "color": "#B00", "fontSize": "12px"}) if polyline_val else None,
-            trip_passengers
-        ], md=8, xs=12)
-    ], className="g-3 align-items-stretch mb-4")
+            html.Div(trip_map, style={"marginBottom": "20px"}) if trip_map else html.Div("Aucune carte générée (polyline absente ou invalide)", style={"color": "#B00", "marginBottom": "20px"}),
+            html.Div(trip_passengers)
+        ], md=8, xs=12, style={"paddingLeft": "20px"})
+    ], className="g-4 align-items-stretch mb-4", style={"margin": "0px"})

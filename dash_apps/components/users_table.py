@@ -3,7 +3,9 @@ from dash import dash_table
 KLANDO_RED = "#730200"
 KLANDO_BLUEGREY = "#3a4654"
 
-def render_users_table(users_df, columns=None):
+def render_users_table(users_df, columns=None, selected_rows=None):
+    if selected_rows is None:
+        selected_rows = []
     display_columns = [col for col in users_df.columns]
     if columns is None:
         columns = [{"name": col, "id": col} for col in display_columns]
@@ -14,7 +16,7 @@ def render_users_table(users_df, columns=None):
         filter_action='native',
         sort_action='native',
         row_selectable="single",
-        selected_rows=[],
+        selected_rows=selected_rows,
         style_table={
             "overflowX": "auto",
             "borderRadius": "10px",
