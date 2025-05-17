@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Statistiques Temporelles</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .stats-card {
+      background: white;
+      border-radius: 28px;
+      padding: 25px;
+      overflow: hidden;
+      box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #f0e6f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-size: 20px;
+    }
+    
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+    }
+    
+    .chart-container {
+      width: 100%;
+      height: 350px;
+      margin-top: 20px;
+    }
+    
+    .summary-text {
+      margin-top: 15px;
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="stats-card">
+    <div class="card-header">
+      <div class="header-icon">
+        📅
+      </div>
+      <h2 class="card-title">Statistiques Temporelles</h2>
+    </div>
+
+    <!-- Graphique temporel -->
+    <div id="time-chart" class="chart-container"></div>
+    
+    <!-- Résumé des tendances -->
+    <div class="summary-text">
+      {% if time_data and time_data|length > 0 %}
+        <p>Ce graphique montre l'évolution du nombre de trajets sur la période du 
+        <strong>{{ first_date }}</strong> au <strong>{{ last_date }}</strong>.</p>
+        
+        {% if trend_percentage is not none %}
+          {% if trend_percentage > 0 %}
+          <p>On observe une <strong>augmentation de {{ trend_percentage }}%</strong> du nombre de trajets sur cette période.</p>
+          {% elif trend_percentage < 0 %}
+          <p>On observe une <strong>diminution de {{ trend_percentage|abs }}%</strong> du nombre de trajets sur cette période.</p>
+          {% else %}
+          <p>Le nombre de trajets est resté stable sur cette période.</p>
+          {% endif %}
+        {% endif %}
+        
+        {% if busiest_date %}
+        <p>Le jour avec le plus grand nombre de trajets était le <strong>{{ busiest_date }}</strong> 
+          avec <strong>{{ busiest_count }} trajets</strong>.</p>
+        {% endif %}
+      {% else %}
+        <p>Aucune donnée temporelle disponible pour analyse.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    // Données pour le graphique temporel
+    const timeData = {{ time_data | tojson | safe }};
+    
+    if (timeData && timeData.length > 0) {
+      const dates = timeData.map(item => item.date);
+      const counts = timeData.map(item => item.count);
+      
+      const timeTrace = {
+        x: dates,
+        y: counts,
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: {
+          color: '#9b59b6',
+          width: 2
+        },
+        marker: {
+          color: '#8e44ad',
+          size: 6
+        }
+      };
+      
+      const timeLayout = {
+        title: 'Évolution du nombre de trajets dans le temps',
+        titlefont: {
+          size: 16
+        },
+        margin: { t: 40, r: 10, l: 50, b: 40 },
+        plot_bgcolor: 'transparent',
+        paper_bgcolor: 'transparent',
+        xaxis: {
+          title: 'Date',
+          tickformat: '%d %b %Y',
+          tickfont: { size: 10 }
+        },
+        yaxis: {
+          title: 'Nombre de trajets',
+          tickfont: { size: 10 }
+        }
+      };
+      
+      Plotly.newPlot('time-chart', [timeTrace], timeLayout, {responsive: true, displayModeBar: false});
+    } else {
+      document.getElementById('time-chart').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">' + 
+        'Aucune donnée temporelle disponible' + 
+        '</div>';
+    }
+  </script>
+</body>
+</html>

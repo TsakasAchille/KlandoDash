@@ -87,13 +87,21 @@ def trip_details_layout(selected_trip, trips_data):
     # Utilisation directe du composant trip_passengers avec son propre style cohérent
     trip_passengers = render_trip_passengers(passengers_list)
 
+    # Style commun pour tous les widgets avec marge inférieure uniforme
+    common_card_style = {"marginBottom": "16px"}
+    
+    # Style pour les colonnes avec espacement uniforme
+    col_padding = "12px"
+    
     return dbc.Row([
         dbc.Col([
-            html.Div(details_card, style={"marginBottom": "20px"}),
-            html.Div(trip_stats)
-        ], md=4, xs=12, style={"paddingRight": "20px"}),
+            html.Div(details_card, style=common_card_style),
+            html.Div(trip_stats, style=common_card_style)
+        ], md=4, xs=12, style={"paddingRight": col_padding, "paddingLeft": col_padding}),
         dbc.Col([
-            html.Div(trip_map, style={"marginBottom": "20px"}) if trip_map else html.Div("Aucune carte générée (polyline absente ou invalide)", style={"color": "#B00", "marginBottom": "20px"}),
-            html.Div(trip_passengers)
-        ], md=8, xs=12, style={"paddingLeft": "20px"})
-    ], className="g-4 align-items-stretch mb-4", style={"margin": "0px"})
+            html.Div(trip_map, style=common_card_style) if trip_map else 
+                html.Div("Aucune carte générée (polyline absente ou invalide)", 
+                        style={"color": "#B00", **common_card_style}),
+            html.Div(trip_passengers, style=common_card_style)
+        ], md=8, xs=12, style={"paddingRight": col_padding, "paddingLeft": col_padding})
+    ], className="align-items-stretch", style={"margin": "8px 0"})

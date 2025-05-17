@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Conducteur du Trajet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .driver-card {
+      background: white;
+      border-radius: 28px;
+      padding: 25px;
+      overflow: hidden;
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #e6f5eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-size: 20px;
+    }
+    
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+    }
+    
+    .driver-card {
+      background: white;
+      border-radius: 28px;
+      padding: 25px;
+      overflow: hidden;
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #e6f5eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-size: 20px;
+    }
+    
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+    }
+    
+    .driver-container {
+      background: #f8fafc;
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      margin-top: 15px;
+    }
+    
+    .driver-card-inner {
+      padding: 15px;
+      border-radius: 15px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .driver-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e9ecef;
+    }
+    
+    .driver-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #e0f0ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-size: 20px;
+      color: #3366CC;
+    }
+    
+    .driver-name {
+      font-weight: 600;
+      font-size: 18px;
+      color: #333;
+    }
+    
+    .driver-details {
+      list-style-type: none;
+      padding: 0;
+      margin: 0 0 15px 0;
+    }
+    
+    .passenger-detail-item, .driver-detail-item {
+      display: flex;
+      margin-bottom: 10px;
+      align-items: left;
+    }
+    
+    .detail-label {
+      font-weight: 500;
+      color: #666;
+      width: 130px;
+      flex-shrink: 0;
+    }
+    
+    .detail-value {
+      font-weight: 400;
+      color: #333;
+      word-break: break-word;
+      max-width: calc(100% - 130px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .user-id {
+      font-family: monospace;
+      font-size: 14px;
+      background-color: #f0f2f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #e9ecef;
+    }
+    
+    .profile-button {
+      margin-top: 15px;
+      align-self: flex-end;
+      color: #3366CC;
+      font-weight: 500;
+      background-color: #e0f0ff;
+      border-radius: 20px;
+      padding: 6px 16px;
+      text-decoration: none;
+      display: inline-block;
+      transition: background-color 0.2s;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    
+    .profile-button:hover {
+      background-color: #d0e0ff;
+    }
+    
+    .empty-message {
+      text-align: center;
+      color: #666;
+      padding: 40px 20px;
+      font-style: italic;
+    }
+    
+    /* Responsive styling */
+    @media (max-width: 768px) {
+      .driver-container {
+        padding: 10px;
+      }
+      
+      .driver-card-inner {
+        padding: 10px;
+      }
+    }
+    
+    .details-container {
+      background: #f8fafc;
+      border-radius: 18px;
+      padding: 25px;
+    }
+    
+    .driver-info {
+      display: flex;
+      align-items: center;
+    }
+    
+    .driver-photo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background-color: #e0f0ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 25px;
+      font-size: 50px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    
+    .driver-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .driver-details {
+      flex-grow: 1;
+    }
+    
+    .detail-row {
+      margin-bottom: 14px;
+    }
+    
+    .detail-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .detail-label {
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+    
+    .detail-value {
+      font-weight: 600;
+      color: #1c2b46;
+      font-size: 16px;
+    }
+    
+    .badge-role {
+      background-color: #e0f0ff;
+      color: #3366CC;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 500;
+    }
+    
+    .profile-button {
+      margin-top: 15px;
+      align-self: flex-end;
+      color: #3366CC;
+      font-weight: 500;
+      background-color: #e0f0ff;
+      border-radius: 20px;
+      padding: 6px 16px;
+      text-decoration: none;
+      display: inline-block;
+      transition: background-color 0.2s;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    
+    .profile-button:hover {
+      background-color: #d0e0ff;
+    }
+    
+    .profile-link {
+      display: inline-block;
+      margin-top: 20px;
+      background-color: #28a745;
+      color: white;
+      padding: 10px 16px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    
+    .profile-link:hover {
+      background-color: #218838;
+    }
+    
+    .no-driver {
+      padding: 40px 0;
+      text-align: center;
+      color: #777;
+      font-style: italic;
+    }
+    
+    @media (max-width: 600px) {
+      .driver-card {
+        padding: 20px;
+      }
+      
+      .card-title {
+        font-size: 22px;
+      }
+      
+      .driver-info {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .driver-photo {
+        margin-right: 0;
+        margin-bottom: 25px;
+      }
+      
+      .driver-details {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
+  <script>
+    function viewProfileEvent(userId) {
+      // Envoyer un message à la fenêtre parente avec l'ID de l'utilisateur
+      window.parent.postMessage({
+        type: 'viewProfile',
+        userId: userId
+      }, '*');
+    }
+  </script>
+</head>
+<body>
+  <div class="driver-card">
+    <div class="card-header">
+      <div class="header-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M16 16v-3a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"></path>
+          <circle cx="12" cy="9" r="2"></circle>
+        </svg>
+      </div>
+      <h2 class="card-title">Conducteur du Trajet</h2>
+    </div>
+    
+    <div class="driver-container">
+      {% if driver %}
+        <div class="driver-card-inner">
+          <div class="passenger-header">
+            <div class="passenger-avatar">👤</div>
+            <div class="passenger-name">{{ driver.name or driver.display_name or driver.first_name or 'N/A' }}</div>
+          </div>
+          
+          <ul class="passenger-details">
+            <li class="passenger-detail-item">
+              <span class="detail-label">Email :</span>
+              <span class="detail-value">{{ driver.email or 'N/A' }}</span>
+            </li>
+            <li class="passenger-detail-item">
+              <span class="detail-label">ID Utilisateur :</span>
+              <span class="detail-value user-id">{{ driver.uid or 'N/A' }}</span>
+            </li>
+            {% if driver.role %}
+            <li class="passenger-detail-item">
+              <span class="detail-label">Rôle :</span>
+              <span class="detail-value">{{ driver.role }}</span>
+            </li>
+            {% endif %}
+          </ul>
+          
+          {% if driver.uid %}
+            <a href="/users?uid={{ driver.uid }}" target="_top" class="profile-button">Voir profil</a>
+          {% else %}
+            <a href="/users" target="_top" class="profile-button">Voir profil</a>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="empty-message">
+          Aucune information sur le conducteur n'est disponible pour ce trajet.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

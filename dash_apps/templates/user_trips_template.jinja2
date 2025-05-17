@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Trajets Utilisateur</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    .card-container {
+      width: 100%;
+    }
+    
+    .trips-card {
+      background: white;
+      border-radius: 28px;
+      padding: 30px;
+      overflow: hidden;
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 25px;
+    }
+    
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: #e0f5ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+    }
+    
+    .card-title {
+      font-size: 26px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+    }
+    
+    .details-container {
+      background: #f8fafc;
+      border-radius: 18px;
+      padding: 25px;
+    }
+    
+    .trips-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .trips-table th {
+      text-align: left;
+      padding: 15px 12px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #555;
+      border-bottom: 2px solid #eaeef3;
+      background-color: #f8fafc;
+    }
+    
+    .trips-table td {
+      padding: 15px 12px;
+      border-bottom: 1px solid #eaeef3;
+      font-size: 15px;
+      color: #333;
+    }
+    
+    .trips-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .trips-table tr:nth-child(odd) {
+      background-color: #f9fafb;
+    }
+    
+    .trips-table tr:hover {
+      background-color: #f0f7ff;
+    }
+    
+    .no-trips {
+      padding: 40px 0;
+      text-align: center;
+      color: #777;
+      font-style: italic;
+    }
+    
+    .btn-view {
+      background-color: #3182ce;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background-color 0.2s;
+    }
+    
+    .btn-view:hover {
+      background-color: #2c5282;
+    }
+    
+    .distance-col {
+      text-align: right;
+    }
+    
+    .price-col {
+      text-align: right;
+    }
+    
+    .action-col {
+      text-align: center;
+    }
+    
+    .role-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .role-driver {
+      background-color: #e6f5eb;
+      color: #28a745;
+    }
+    
+    .role-passenger {
+      background-color: #fff5d9;
+      color: #fd7e14;
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+    
+    .pagination button {
+      background-color: #f0f2f5;
+      border: none;
+      padding: 8px 12px;
+      margin: 0 4px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .pagination button.active {
+      background-color: #3182ce;
+      color: white;
+    }
+    
+    .db-error {
+      margin-top: 20px;
+      padding: 15px 20px;
+      background-color: #fff1f0;
+      border-left: 4px solid #dc3545;
+      color: #dc3545;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+    
+    .db-error strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+    
+    @media (max-width: 600px) {
+      .trips-card {
+        padding: 20px;
+      }
+      
+      .card-title {
+        font-size: 22px;
+      }
+      
+      .trips-table {
+        font-size: 14px;
+      }
+      
+      .trips-table th,
+      .trips-table td {
+        padding: 10px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card-container">
+    <div class="trips-card">
+      <div class="card-header">
+        <div class="header-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0891b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"></path>
+            <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"></path>
+            <line x1="3" y1="16" x2="21" y2="16"></line>
+          </svg>
+        </div>
+        <h1 class="card-title">Trajets de l'utilisateur ({{ trips|length }})</h1>
+      </div>
+      
+      {% if db_error %}
+      <div class="db-error">
+        <strong>Erreur de connexion</strong>
+        Impossible de récupérer les trajets depuis la base de données. Veuillez rafraîchir la page ou réessayer plus tard.
+      </div>
+      {% endif %}
+      
+      <div class="details-container">
+        {% if trips and trips|length > 0 %}
+        <table class="trips-table">
+          <thead>
+            <tr>
+              <th>Rôle</th>
+              <th>Départ</th>
+              <th>Destination</th>
+              <th>Date</th>
+              <th class="distance-col">Distance</th>
+              <th class="price-col">Prix</th>
+              <th class="action-col">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for trip in trips %}
+            <tr>
+              <td>
+                {% if trip.role == 'driver' %}
+                <span class="role-badge role-driver">Conducteur</span>
+                {% else %}
+                <span class="role-badge role-passenger">Passager</span>
+                {% endif %}
+              </td>
+              <td>{{ trip.departure_name }}</td>
+              <td>{{ trip.destination_name }}</td>
+              <td>{{ trip.departure_schedule }}</td>
+              <td class="distance-col">{{ trip.trip_distance|round(1) }} km</td>
+              <td class="price-col">{{ trip.price_per_seat }} XOF</td>
+              <td class="action-col">
+                <a href="#" class="btn-view" onclick="window.parent.location.href='/trips?trip_id={{ trip.trip_id }}'">Voir</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="no-trips">
+          Aucun trajet trouvé pour cet utilisateur.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <script>
+    // Function to format date if needed
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('fr-FR', {
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    
+    // Apply formatting to dates if necessary
+    document.addEventListener('DOMContentLoaded', function() {
+      const dateCells = document.querySelectorAll('td[data-date]');
+      dateCells.forEach(cell => {
+        const dateStr = cell.getAttribute('data-date');
+        if (dateStr) {
+          cell.textContent = formatDate(dateStr);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

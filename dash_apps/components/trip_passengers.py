@@ -1,7 +1,8 @@
-from dash import html
+from dash import html, dcc, Input, Output, State, callback
 import dash_bootstrap_components as dbc
 from jinja2 import Environment, FileSystemLoader
 import os
+import dash
 
 # Initialisation de Jinja2 pour le template de passagers
 template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
@@ -35,7 +36,8 @@ def render_trip_passengers(passengers):
                 'backgroundColor': 'transparent',
                 'borderRadius': '18px'
             },
-            sandbox='allow-scripts',
+            # Permettre la navigation vers le top (fenêtre parente)
+            sandbox='allow-scripts allow-top-navigation',
         ),
         style={
             'backgroundColor': 'white',
@@ -48,3 +50,6 @@ def render_trip_passengers(passengers):
             'margin': 'auto'
         }
     )
+
+# La redirection est désormais gérée directement via les liens HTML avec target="_top"
+

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Statistiques Générales</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .stats-card {
+      background: white;
+      border-radius: 28px;
+      padding: 25px;
+      overflow: hidden;
+      box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #e6f5eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-size: 20px;
+    }
+    
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .metric-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .metric-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #333;
+      margin: 0;
+    }
+    
+    .metric-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .chart-container {
+      width: 100%;
+      height: 300px;
+      margin-top: 20px;
+    }
+    
+    .graph-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-top: 30px;
+    }
+    
+    .chart-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    
+    .chart-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 15px 0;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .graph-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stats-card">
+    <div class="card-header">
+      <div class="header-icon">
+        📊
+      </div>
+      <h2 class="card-title">Statistiques Générales</h2>
+    </div>
+
+    <!-- Métriques principales -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <h3 class="metric-value">{{ total_trips }}</h3>
+        <p class="metric-label">Trajets totaux</p>
+      </div>
+      <div class="metric-card">
+        <h3 class="metric-value">{{ total_distance }} km</h3>
+        <p class="metric-label">Distance totale</p>
+      </div>
+      <div class="metric-card">
+        <h3 class="metric-value">{{ avg_distance }} km</h3>
+        <p class="metric-label">Distance moyenne</p>
+      </div>
+      <div class="metric-card">
+        <h3 class="metric-value">{{ total_passengers }}</h3>
+        <p class="metric-label">Total passagers</p>
+      </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="graph-row">
+      <div class="chart-card">
+        <h3 class="chart-title">Distribution des distances</h3>
+        <div id="distance-chart" class="chart-container"></div>
+      </div>
+      <div class="chart-card">
+        <h3 class="chart-title">Nombre de passagers par trajet</h3>
+        <div id="passenger-chart" class="chart-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Données pour l'histogramme des distances
+    const distanceData = {{ distance_data | safe }};
+    const distanceBins = {{ distance_bins | safe }};
+    
+    // Créer l'histogramme des distances
+    const distanceTrace = {
+      x: distanceData,
+      type: 'histogram',
+      nbinsx: distanceBins.length,
+      marker: {
+        color: '#3498db',
+        line: {
+          color: '#2980b9',
+          width: 1
+        }
+      }
+    };
+    
+    const distanceLayout = {
+      margin: { t: 10, r: 10, l: 30, b: 40 },
+      plot_bgcolor: 'transparent',
+      paper_bgcolor: 'transparent',
+      xaxis: {
+        title: 'Distance (km)',
+        tickfont: { size: 10 }
+      },
+      yaxis: {
+        title: 'Nombre de trajets',
+        tickfont: { size: 10 }
+      }
+    };
+    
+    Plotly.newPlot('distance-chart', [distanceTrace], distanceLayout, {responsive: true, displayModeBar: false});
+    
+    // Données pour le graphique des passagers
+    const passengerCounts = {{ passenger_counts | tojson | safe }};
+    
+    const passengerTrace = {
+      x: passengerCounts.map(item => item.count),
+      y: passengerCounts.map(item => item.passengers),
+      type: 'bar',
+      orientation: 'h',
+      marker: {
+        color: '#2ecc71',
+        line: {
+          color: '#27ae60',
+          width: 1
+        }
+      }
+    };
+    
+    const passengerLayout = {
+      margin: { t: 10, r: 10, l: 50, b: 40 },
+      plot_bgcolor: 'transparent',
+      paper_bgcolor: 'transparent',
+      xaxis: {
+        title: 'Nombre de trajets',
+        tickfont: { size: 10 }
+      },
+      yaxis: {
+        title: 'Passagers',
+        tickfont: { size: 10 }
+      }
+    };
+    
+    Plotly.newPlot('passenger-chart', [passengerTrace], passengerLayout, {responsive: true, displayModeBar: false});
+  </script>
+</body>
+</html>

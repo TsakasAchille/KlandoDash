@@ -116,6 +116,15 @@
       text-overflow: ellipsis;
     }
     
+    .user-id {
+      font-family: monospace;
+      font-size: 14px;
+      background-color: #f0f2f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #e9ecef;
+    }
+    
     .confirmed {
       color: #2563eb;
       font-weight: 600;
@@ -127,19 +136,20 @@
     }
     
     .profile-button {
-      background-color: #e0ecff;
-      color: #2563eb;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 14px;
+      margin-top: 15px;
+      align-self: flex-end;
+      color: #3366CC;
       font-weight: 500;
-      cursor: pointer;
-      margin-top: auto;
-      text-align: center;
+      background-color: #e0f0ff;
+      border-radius: 20px;
+      padding: 6px 16px;
       text-decoration: none;
       display: inline-block;
       transition: background-color 0.2s;
+      border: none;  /* Supprime la bordure du bouton */
+      cursor: pointer;  /* Ajoute le curseur pointer */
+      font-size: 14px;  /* Taille de police consistante */
+      font-family: inherit;  /* Hérite la police du parent */
     }
     
     .profile-button:hover {
@@ -160,6 +170,15 @@
       }
     }
   </style>
+  <script>
+    function viewProfileEvent(userId) {
+      // Envoyer un message à la fenêtre parente avec l'ID de l'utilisateur
+      window.parent.postMessage({
+        type: 'viewProfile',
+        userId: userId
+      }, '*');
+    }
+  </script>
 </head>
 <body>
   <div class="passengers-card">
@@ -185,25 +204,21 @@
                 <span class="detail-value">{{ passenger.get("email", "-") }}</span>
               </li>
               <li class="passenger-detail-item">
-                <span class="detail-label">Téléphone :</span>
-                <span class="detail-value">{{ passenger.get("phone", "-") }}</span>
+                <span class="detail-label">ID Utilisateur :</span>
+                <span class="detail-value user-id">{{ passenger.get("uid", "-") }}</span>
               </li>
+              {% if passenger.get("role") %}
               <li class="passenger-detail-item">
-                <span class="detail-label">Places réservées :</span>
-                <span class="detail-value">{{ passenger.get("seats", "-") }}</span>
+                <span class="detail-label">Rôle :</span>
+                <span class="detail-value">{{ passenger.get("role", "-") }}</span>
               </li>
-              <li class="passenger-detail-item">
-                <span class="detail-label">Statut :</span>
-                <span class="detail-value {% if passenger.get('status') == 'confirmé' %}confirmed{% else %}pending{% endif %}">
-                  {{ passenger.get("status", "-") }}
-                </span>
-              </li>
+              {% endif %}
             </ul>
             
             {% if passenger.get("uid") %}
-              <a href="/users?uid={{ passenger.get('uid') }}" class="profile-button">Voir profil</a>
+              <a href="/users?uid={{ passenger.get('uid') }}" target="_top" class="profile-button">Voir profil</a>
             {% else %}
-              <a href="/users" class="profile-button">Voir profil</a>
+              <a href="/users" target="_top" class="profile-button">Voir profil</a>
             {% endif %}
           </div>
         {% endfor %}

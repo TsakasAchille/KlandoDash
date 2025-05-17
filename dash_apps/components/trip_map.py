@@ -6,7 +6,8 @@ import jinja2
 import os
 
 # Couleurs KLANDO
-KLANDO_RED = "#730200"
+KLANDO_PRIMARY = "#4281ec"
+KLANDO_RED = "#e63946"
 KLANDO_BLUEGREY = "#3a4654"
 
 
@@ -71,10 +72,26 @@ def render_trip_map(trip_row):
                 ),
                 html.Div(
                     dl.Map([
-                        dl.TileLayer(),
-                        dl.Polyline(positions=line_positions, color=KLANDO_RED, weight=5, opacity=0.8),
-                        dl.Marker(position=departure, children=[dl.Tooltip(f"Départ: {departure_name}")]),
-                        dl.Marker(position=arrival, children=[dl.Tooltip(f"Arrivée: {arrival_name}")]),
+                        # Style de carte plus épuré et moderne (CartoDB Positron)
+                        #dl.TileLayer(url='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                                   # attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'),
+                        
+                        # Autres styles de cartes modernes disponibles en commentaire:
+                        # Style Voyager (élegant avec plus de détails)
+                        dl.TileLayer(url='https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'),
+                        
+                        # Style Dark Matter (mode sombre)
+                        # dl.TileLayer(url='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                        #            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'),
+                        dl.Polyline(positions=line_positions, color=KLANDO_PRIMARY, weight=5, opacity=0.85),
+                        # Marqueurs personnalisés
+                        dl.Marker(position=departure, children=[dl.Tooltip(f"Départ: {departure_name}")], 
+                                icon=dict(iconUrl='', iconSize=[18, 18], className='custom-div-icon', 
+                                        html=f'<div style="background-color:{KLANDO_PRIMARY}; width:12px; height:12px; border-radius:50%; border:3px solid white; box-shadow:0 0 5px rgba(0,0,0,0.2);"></div>')),
+                        dl.Marker(position=arrival, children=[dl.Tooltip(f"Arrivée: {arrival_name}")], 
+                                icon=dict(iconUrl='', iconSize=[18, 18], className='custom-div-icon', 
+                                        html=f'<div style="background-color:{KLANDO_RED}; width:12px; height:12px; border-radius:50%; border:3px solid white; box-shadow:0 0 5px rgba(0,0,0,0.2);"></div>')),
                     ], center=center, zoom=12, style={
                         'height': '500px', 
                         'width': '100%',

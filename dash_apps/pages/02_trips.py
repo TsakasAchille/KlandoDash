@@ -5,15 +5,11 @@ import pandas as pd
 # TODO: Migrer/remplacer les imports Streamlit par des modules Dash natifs ou custom
 from src.data_processing.processors.user_processor import UserProcessor
 from dash_apps.components.trips_table import render_trips_table
-from dash_apps.components.trip_map import render_trip_map
-from dash_apps.components.trip_stats import render_trip_stats
-from dash_apps.components.trip_passengers import render_trip_passengers
-from dash_apps.utils.db_utils import get_trip_passengers
-from src.core.database import get_session, User
-from dash_apps.components.trip_details import trip_details_layout
+from dash_apps.components.trip_details_layout import create_trip_details_layout
 
 # Layout de la page (exposé pour import via multipage)
 layout = dbc.Container([
+    dcc.Location(id="trips-url", refresh=False),  # Composant de navigation pour la page trajets
     html.H2("Dashboard utilisateurs et trajets", style={"marginTop": "20px"}),
     dbc.Row([
         dbc.Col([], width=9),
@@ -93,17 +89,16 @@ def update_selected_trip_id(selected_rows, trips_data):
 @callback(
     Output("trip-details", "children"),
     Input("selected-trip-id", "data"),
-    State("trips-store", "data")
+    Input("trips-store", "data"),
+    prevent_initial_call=False
 )
-
 def show_trip_details(selected_trip_id, trips_data):
-    if not selected_trip_id or not trips_data:
-        return dbc.Alert("Aucun trajet sélectionné.", color="warning")
-    trips_df = pd.DataFrame(trips_data)
-    selected_trip = trips_df[trips_df["trip_id"] == selected_trip_id]
-    if selected_trip.empty:
-        return dbc.Alert("Trajet introuvable.", color="danger")
-    return trip_details_layout(selected_trip.iloc[0], trips_data)
+    # Debug logs
+    print(f"[DEBUG] selected_trip_id: {selected_trip_id}")
+    print(f"[DEBUG] trips_data existe: {trips_data is not None}")
+    
+    # Délègue la création du layout à une fonction dédiée
+    return create_trip_details_layout(selected_trip_id, trips_data)
 
 if __name__ == "__main__":
     app.run(debug=True)

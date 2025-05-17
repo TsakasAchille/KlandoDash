@@ -4,6 +4,8 @@ import pandas as pd
 from dash import dash_table
 from dash_apps.components.users_table import render_users_table
 from dash_apps.components.user_details import render_user_details
+from dash_apps.components.user_stats import render_user_stats
+from dash_apps.components.user_trips import render_user_trips
 
 layout = dbc.Container([
     dcc.Location(id="users-url", refresh=False),
@@ -37,6 +39,11 @@ layout = dbc.Container([
         dbc.Col([
             html.Div(id="user-stats-panel")
         ], width=6)
+    ]),
+    dbc.Row([
+        dbc.Col([
+            html.Div(id="user-trips-panel")
+        ], width=12)
     ])
 ], fluid=True)
 
@@ -63,6 +70,7 @@ def show_refresh_users_message(n_clicks):
     Output("main-users-content", "children"),
     Output("user-details-panel", "children"),
     Output("user-stats-panel", "children"),
+    Output("user-trips-panel", "children"),
     Output("users-table", "selected_rows"),
     Input("users-page-store", "data"),
     Input("users-table", "selected_rows"),
@@ -71,12 +79,13 @@ def show_refresh_users_message(n_clicks):
 def show_users_content(users_data, selected_rows, url_search):
     import urllib.parse
     from dash_apps.components.user_stats import render_user_stats
+    from dash_apps.components.user_trips import render_user_trips
     preselect_row = None
     if not users_data:
         # Affiche un DataTable vide pour que l'Input existe toujours
         empty_df = pd.DataFrame([{"uid": "", "name": "", "email": "", "phone": "", "role": "", "created_at": ""}])
         table = render_users_table(empty_df, selected_rows=selected_rows)
-        return table, None, None, selected_rows
+        return table, None, None, None, selected_rows
     users_df = pd.DataFrame(users_data)
     # Recherche d'un paramètre uid dans l'URL
     uid_from_url = None
@@ -97,11 +106,13 @@ def show_users_content(users_data, selected_rows, url_search):
     if preselect_row is None:
         preselect_row = selected_rows or []
     table = render_users_table(users_df, selected_rows=preselect_row)
-    # Affichage du détail utilisateur et des statistiques si une ligne est sélectionnée
+    # Affichage du détail utilisateur, des statistiques et des trajets si une ligne est sélectionnée
     details = None
     stats = None
+    trips = None
     if preselect_row and len(preselect_row) > 0:
         user = users_df.iloc[preselect_row[0]]
         details = render_user_details(user)
         stats = render_user_stats(user)
-    return table, details, stats, preselect_row
+        trips = render_user_trips(user)
+    return table, details, stats, trips, preselect_row
