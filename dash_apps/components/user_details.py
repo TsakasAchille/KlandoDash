@@ -7,7 +7,5 @@ def render_user_details(user):
     if user is None:
         return None
     return html.Div([
-        render_user_profile(user),
-        html.Br(),
-        render_user_stats(user)
+        render_user_profile(user)
     ])

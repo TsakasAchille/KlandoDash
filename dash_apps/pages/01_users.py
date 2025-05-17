@@ -28,10 +28,15 @@ layout = dbc.Container([
                     selected_rows=[],
                 ), id="main-users-content"
             )
-        ], width=8),
+        ], width=12)
+    ]),
+    dbc.Row([
         dbc.Col([
             html.Div(id="user-details-panel")
-        ], width=4)
+        ], width=6),
+        dbc.Col([
+            html.Div(id="user-stats-panel")
+        ], width=6)
     ])
 ], fluid=True)
 
@@ -57,6 +62,7 @@ def show_refresh_users_message(n_clicks):
 @callback(
     Output("main-users-content", "children"),
     Output("user-details-panel", "children"),
+    Output("user-stats-panel", "children"),
     Output("users-table", "selected_rows"),
     Input("users-page-store", "data"),
     Input("users-table", "selected_rows"),
@@ -64,12 +70,13 @@ def show_refresh_users_message(n_clicks):
 )
 def show_users_content(users_data, selected_rows, url_search):
     import urllib.parse
+    from dash_apps.components.user_stats import render_user_stats
     preselect_row = None
     if not users_data:
         # Affiche un DataTable vide pour que l'Input existe toujours
         empty_df = pd.DataFrame([{"uid": "", "name": "", "email": "", "phone": "", "role": "", "created_at": ""}])
         table = render_users_table(empty_df, selected_rows=selected_rows)
-        return table, None, selected_rows
+        return table, None, None, selected_rows
     users_df = pd.DataFrame(users_data)
     # Recherche d'un paramètre uid dans l'URL
     uid_from_url = None
@@ -90,9 +97,11 @@ def show_users_content(users_data, selected_rows, url_search):
     if preselect_row is None:
         preselect_row = selected_rows or []
     table = render_users_table(users_df, selected_rows=preselect_row)
-    # Affichage du détail utilisateur si une ligne est sélectionnée
+    # Affichage du détail utilisateur et des statistiques si une ligne est sélectionnée
     details = None
+    stats = None
     if preselect_row and len(preselect_row) > 0:
         user = users_df.iloc[preselect_row[0]]
         details = render_user_details(user)
-    return table, details, preselect_row
+        stats = render_user_stats(user)
+    return table, details, stats, preselect_row
