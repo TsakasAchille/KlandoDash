@@ -53,29 +53,33 @@ def render_tickets_list(tickets, selected_ticket_id=None):
     # Créer la liste des tickets
     ticket_items = []
     
-    for i, ticket in enumerate(tickets):
-        status_colors = {
-            "open": "danger",
-            "in progress": "warning",
-            "closed": "success"
+    for ticket in tickets:
+        # Définir les classes et textes selon le statut
+        status = ticket.get("status", "open")
+        status_mapping = {
+            "open": {"color": "danger", "text": "Ouvert"},
+            "in progress": {"color": "warning", "text": "En cours"},
+            "closed": {"color": "success", "text": "Fermé"}
         }
         
-        status_badges = {
-            "open": "Ouvert",
-            "in progress": "En cours",
-            "closed": "Fermé"
-        }
+        # Valeurs par défaut si le statut n'est pas reconnu
+        status_info = status_mapping.get(status, {"color": "secondary", "text": status})
         
-        # Utiliser la fonction parse_date pour convertir la date
+        # Formater la date
         date_obj = parse_date(ticket["created_at"])
         formatted_date = date_obj.strftime("%d/%m/%Y")
         
         # Style pour le ticket sélectionné
-        selected = ticket["ticket_id"] == selected_ticket_id if selected_ticket_id else False
-        row_style = {
+        is_selected = ticket["ticket_id"] == selected_ticket_id if selected_ticket_id else False
+        
+        # Si le ticket est sélectionné, on utilise une bordure bleue
+        # Sinon, on n'ajoute pas de bordure colorée spécifique
+        border_style = f"4px solid #3498db" if is_selected else "1px solid #eee"
+        
+        ticket_style = {
             "padding": "10px",
-            "borderLeft": "4px solid #3498db" if selected else "none",
-            "backgroundColor": "#f8f9fa" if selected else "white",
+            "borderLeft": border_style,
+            "backgroundColor": "#f8f9fa" if is_selected else "white",
             "borderRadius": "5px",
             "marginBottom": "8px",
             "cursor": "pointer",
@@ -83,48 +87,63 @@ def render_tickets_list(tickets, selected_ticket_id=None):
             "boxShadow": "0 2px 5px rgba(0, 0, 0, 0.08)"
         }
         
-        # Utiliser l'ID unique du ticket au lieu de l'index pour l'identifier de façon fiable
+        # Créer l'élément ticket cliquable
         ticket_items.append(
-            html.Div([
-                html.Div([
-                    html.Div([
-                        html.Strong(ticket["objet"], className="d-block"),
-                        html.Small([
-                            "De: ", 
-                            html.Span(ticket["user_id"], style={"fontStyle": "italic"})
-                        ], className="text-muted"),
-                    ], style={"flex": "1"}),
-                    html.Div([
-                        dbc.Badge(status_badges.get(ticket["status"], ticket["status"]), 
-                                 color=status_colors.get(ticket["status"], "secondary"),
-                                 className="mb-1"),
-                        html.Div(formatted_date, className="small text-muted text-end")
-                    ], style={"textAlign": "right"})
-                ], style={"display": "flex", "justifyContent": "space-between"})
-            ], 
-            style=row_style, 
-            id={"type": "ticket-item", "index": ticket["ticket_id"]},  # Utiliser l'ID du ticket au lieu de l'index
-            className="ticket-row"
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.Div(ticket["objet"], style={"fontWeight": "600", "marginBottom": "4px"}),
+                                    html.Div(["De: ", html.Span(ticket["user_id"], style={"fontStyle": "italic"})], style={"fontSize": "12px", "color": "#666"})
+                                ],
+                                style={"flex": "1"}
+                            ),
+                            html.Div(
+                                [
+                                    dbc.Badge(status_info["text"], color=status_info["color"], className="mb-1"),
+                                    html.Div(formatted_date, style={"fontSize": "11px", "color": "#999", "textAlign": "right"})
+                                ],
+                                style={"textAlign": "right"}
+                            )
+                        ],
+                        style={"display": "flex", "justifyContent": "space-between"}
+                    )
+                ],
+                style=ticket_style,
+                id={"type": "ticket-item", "index": ticket["ticket_id"]},
+                className="ticket-row"
             )
         )
     
-    # Appliquer les styles directement dans le conteneur
+    # Ajouter le style CSS pour l'effet hover avec un iframe invisible
+    hover_css = '''
+    <style>
+        .ticket-row:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12) !important;
+            transition: all 0.2s ease;
+        }
+    </style>
+    '''
+    
+    # Retourner la liste des tickets avec le style hover intégré dans un iframe invisible
     return html.Div(
-        ticket_items,
-        # Nous utilisons le style inline pour l'effet hover via la prop className
-        style={
-            # Suppression de l'attribut overflowY pour éviter la double barre de défilement
-            # Le conteneur parent gère déjà le défilement
-            "maxHeight": "500px"
-        },
-        # Ajoutons un ID pour appliquer du CSS personnalisé dans app.py si nécessaire
-        id="tickets-list"
+        [
+            # Iframe invisible pour injecter le CSS
+            html.Iframe(srcDoc=hover_css, style={'display': 'none'}),
+            # Liste des tickets
+            *ticket_items
+        ],
+        id="tickets-list",
+        style={"maxHeight": "500px"}
     )
 
 
 def render_ticket_details(ticket, comments):
     """
-    Affiche les détails d'un ticket et ses commentaires
+    Affiche les détails d'un ticket et ses commentaires en utilisant un template Jinja2
     
     Args:
         ticket: Le ticket à afficher
@@ -133,153 +152,110 @@ def render_ticket_details(ticket, comments):
     Returns:
         Un composant Dash pour afficher les détails du ticket
     """
-    status_options = [
-        {"label": "Ouvert", "value": "open"},
-        {"label": "En cours", "value": "in progress"},
-        {"label": "Fermé", "value": "closed"}
-    ]
+    # Importer l'utilitaire de rendu de template
+    from dash_apps.utils.template_utils import render_template_with_iframe
     
-    # Formatter les dates en utilisant la fonction globale parse_date
+    # Définir les classes et textes selon le statut
+    status = ticket.get("status", "open")
+    status_mapping = {
+        "open": {"class": "danger", "text": "Ouvert"},
+        "in progress": {"class": "warning", "text": "En cours"},
+        "closed": {"class": "success", "text": "Fermé"}
+    }
+    
+    # Valeurs par défaut si le statut n'est pas reconnu
+    status_info = status_mapping.get(status, {"class": "secondary", "text": status})
+    
+    # Formatter les dates
     created_at = parse_date(ticket["created_at"])
     updated_at = parse_date(ticket["updated_at"])
     
-    # Section détails
+    # Formater les commentaires
+    formatted_comments = []
+    for comment in comments if comments else []:
+        comment_date = parse_date(comment.get("created_at", ""))
+        formatted_comments.append({
+            "author_id": comment.get("user_id", "Système"),  # Utiliser user_id au lieu de author_id
+            "content": comment.get("comment_text", ""),  # Utiliser comment_text au lieu de content
+            "formatted_date": comment_date.strftime("%d/%m/%Y %H:%M")
+        })
+    
+    # Contexte à passer au template
+    context = {
+        "ticket": ticket,
+        "status_class": status_info["class"],
+        "status_text": status_info["text"],
+        "created_date": created_at.strftime("%d/%m/%Y %H:%M"),
+        "updated_date": updated_at.strftime("%d/%m/%Y %H:%M"),
+        "comments": formatted_comments
+    }
+    
+    # Rendre le template dans un iframe
+    iframe = render_template_with_iframe(
+        "support_ticket_details_template.jinja2", 
+        context,
+        height="500px",
+        width="100%"
+    )
+    
+    # Section détails avec l'iframe et les formulaires interactifs
     details_section = html.Div([
-        html.H4(ticket["objet"], className="mb-3"),
+        # Iframe du template pour les détails du ticket
+        iframe,
         
-        # Info générales
-        dbc.Row([
-            dbc.Col([
-                html.P([
-                    html.Strong("Statut: "),
-                    dbc.Badge(
-                        {"open": "Ouvert", "in progress": "En cours", "closed": "Fermé"}.get(ticket["status"], ticket["status"]),
-                        color={"open": "danger", "in progress": "warning", "closed": "success"}.get(ticket["status"], "secondary")
+        # Formulaire de mise à jour du statut (toujours géré par Dash)
+        html.Div([
+            dbc.Card([
+                dbc.CardHeader("Mettre à jour le statut"),
+                dbc.CardBody([
+                    dbc.Row([
+                        dbc.Col([
+                            dcc.Dropdown(
+                                id={"type": "status-dropdown", "index": ticket["ticket_id"]},
+                                options=[
+                                    {"label": "Ouvert", "value": "open"},
+                                    {"label": "En cours", "value": "in progress"},
+                                    {"label": "Fermé", "value": "closed"}
+                                ],
+                                value=ticket["status"],
+                                className="mb-2"
+                            ),
+                            dbc.Button(
+                                "Mettre à jour",
+                                id={"type": "update-status-btn", "index": ticket["ticket_id"]},
+                                color="primary",
+                                className="mt-2"
+                            )
+                        ])
+                    ])
+                ])
+            ], className="mb-4")
+        ], id="status-change-form"),
+        
+        # Formulaire d'ajout de commentaire (toujours géré par Dash)
+        html.Div([
+            dbc.Card([
+                dbc.CardHeader("Ajouter un commentaire"),
+                dbc.CardBody([
+                    dbc.InputGroup([
+                        dbc.Textarea(
+                            id={"type": "comment-text", "index": ticket["ticket_id"]},
+                            placeholder="Votre commentaire...",
+                            style={"height": "80px", "resize": "none"}
+                        )
+                    ], className="mb-2"),
+                    dbc.Button(
+                        "Ajouter",
+                        id={"type": "add-comment-btn", "index": ticket["ticket_id"]},
+                        color="primary"
                     )
-                ], className="mb-2"),
-                html.P([
-                    html.Strong("Utilisateur: "),
-                    ticket["user_id"]
-                ], className="mb-2"),
-                html.P([
-                    html.Strong("Créé le: "),
-                    created_at.strftime("%d/%m/%Y %H:%M")
-                ], className="mb-2"),
-                html.P([
-                    html.Strong("Mis à jour le: "),
-                    updated_at.strftime("%d/%m/%Y %H:%M")
-                ], className="mb-2"),
-            ], width=6),
-            dbc.Col([
-                html.P([
-                    html.Strong("Préférence de contact: "),
-                    ticket["contact_preference"]
-                ], className="mb-2"),
-                html.P([
-                    html.Strong("Téléphone: "),
-                    ticket["phone"] if ticket["phone"] else "-"
-                ], className="mb-2"),
-                html.P([
-                    html.Strong("E-mail: "),
-                    ticket["mail"] if ticket["mail"] else "-"
-                ], className="mb-2"),
-            ], width=6),
-        ], className="mb-4"),
-        
-        # Message
-        dbc.Card([
-            dbc.CardHeader("Message"),
-            dbc.CardBody([
-                html.P(ticket["message"])
-            ])
-        ], className="mb-4"),
-        
-        # Mise à jour du statut
-        dbc.Card([
-            dbc.CardHeader("Mettre à jour le statut"),
-            dbc.CardBody([
-                dbc.Row([
-                    dbc.Col([
-                        dcc.Dropdown(
-                            id="status-dropdown",
-                            options=status_options,
-                            value=ticket["status"],
-                            clearable=False
-                        )
-                    ], width=9),
-                    dbc.Col([
-                        dbc.Button(
-                            "Mettre à jour", 
-                            id="update-status-button", 
-                            color="primary",
-                            className="w-100"
-                        )
-                    ], width=3),
                 ])
             ])
-        ], className="mb-4"),
+        ], id="comment-form")
     ])
     
-    # Section commentaires
-    comments_header = html.Div([
-        html.H5("Commentaires", className="mb-3"),
-        html.Hr()
-    ]) if comments else html.Div([
-        html.H5("Commentaires", className="mb-3"),
-        html.P("Aucun commentaire pour ce ticket", className="text-muted"),
-        html.Hr()
-    ])
-    
-    comments_items = []
-    for comment in comments:
-        # Utiliser la fonction parse_date pour gérer tous les formats de date
-        comment_date = parse_date(comment["created_at"])
-        
-        # Différencier les commentaires admin/utilisateur
-        is_admin = comment["user_id"] == "admin"
-        comment_style = {
-            "backgroundColor": "#f0f7ff" if is_admin else "#f8f9fa",
-            "borderLeft": f"4px solid {'#3498db' if is_admin else '#7f8c8d'}",
-            "padding": "12px 15px",
-            "borderRadius": "5px",
-            "marginBottom": "12px"
-        }
-        
-        comments_items.append(html.Div([
-            html.Div([
-                html.Strong(
-                    f"{'Support technique' if is_admin else comment['user_id']}",
-                    style={"color": "#3498db" if is_admin else "#7f8c8d"}
-                ),
-                html.Small(
-                    comment_date.strftime("%d/%m/%Y %H:%M"),
-                    className="text-muted ms-2"
-                )
-            ], className="mb-2"),
-            html.P(comment["comment_text"], style={"marginBottom": "0"})
-        ], style=comment_style))
-    
-    # Section ajouter un commentaire
-    add_comment_section = html.Div([
-        html.H5("Ajouter un commentaire", className="mb-3"),
-        dbc.Textarea(
-            id="comment-input",
-            placeholder="Votre commentaire...",
-            style={"height": "100px", "marginBottom": "10px"}
-        ),
-        dbc.Button(
-            "Ajouter un commentaire", 
-            id="add-comment-button", 
-            color="primary"
-        )
-    ])
-    
-    return html.Div([
-        details_section,
-        comments_header,
-        html.Div(comments_items, className="mb-4"),
-        add_comment_section
-    ])
+    # Retourner directement la section de détails qui contient déjà tout ce dont nous avons besoin
+    return details_section
 
 
 def update_ticket_status(ticket_id, new_status, tickets_data):

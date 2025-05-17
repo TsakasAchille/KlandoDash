@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Ticket de Support</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    .ticket-row {
+      background: white;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-left: 4px solid {{ status_color }};
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .ticket-row:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    }
+    
+    .ticket-content {
+      flex: 1;
+    }
+    
+    .ticket-info {
+      text-align: right;
+    }
+    
+    .ticket-subject {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #333;
+    }
+    
+    .ticket-user {
+      font-size: 12px;
+      color: #666;
+      font-style: italic;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    
+    .badge-danger {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    .badge-warning {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    .badge-success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .date {
+      font-size: 11px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="ticket-row" data-ticket-id="{{ ticket.get('ticket_id', '') }}">
+    <div class="ticket-content">
+      <div class="ticket-subject">{{ ticket.get('objet', 'Sans objet') }}</div>
+      <div class="ticket-user">De: {{ ticket.get('user_id', '-') }}</div>
+    </div>
+    <div class="ticket-info">
+      <div class="badge badge-{{ status_class }}">{{ status_text }}</div>
+      <div class="date">{{ formatted_date }}</div>
+    </div>
+  </div>
+</body>
+</html>

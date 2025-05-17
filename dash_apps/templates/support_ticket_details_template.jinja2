@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Détails du Ticket</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .ticket-details {
+      padding: 15px;
+    }
+    
+    .ticket-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .info-item {
+      margin-bottom: 10px;
+    }
+    
+    .info-label {
+      font-weight: 600;
+      color: #555;
+      margin-right: 6px;
+    }
+    
+    .info-value {
+      color: #333;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .badge-danger {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    .badge-warning {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    .badge-success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .message-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .comments-section {
+      margin-top: 30px;
+    }
+    
+    .comment {
+      border-left: 3px solid #6c757d;
+      padding-left: 12px;
+      margin-bottom: 15px;
+    }
+    
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    
+    .comment-author {
+      font-weight: 600;
+      color: #444;
+    }
+    
+    .comment-date {
+      color: #777;
+      font-size: 12px;
+    }
+    
+    .comment-text {
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .status-form, .comment-form {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .form-title {
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    
+    .select-status {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .textarea-comment {
+      width: calc(100% - 16px);
+      min-height: 80px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-family: 'Inter', sans-serif;
+      resize: vertical;
+    }
+    
+    .button {
+      background-color: #4281ec;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    
+    .button:hover {
+      background-color: #2a66c5;
+    }
+  </style>
+</head>
+<body>
+  <div class="ticket-details">
+    <div class="ticket-title">{{ ticket.get('objet', 'Sans objet') }}</div>
+    
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Statut:</span>
+        <span class="badge badge-{{ status_class }}">{{ status_text }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Utilisateur:</span>
+        <span class="info-value">{{ ticket.get('user_id', '-') }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Créé le:</span>
+        <span class="info-value">{{ created_date }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Mis à jour le:</span>
+        <span class="info-value">{{ updated_date }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Préférence de contact:</span>
+        <span class="info-value">{{ ticket.get('contact_preference', '-') }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Téléphone:</span>
+        <span class="info-value">{{ ticket.get('phone', '-') }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">E-mail:</span>
+        <span class="info-value">{{ ticket.get('mail', '-') }}</span>
+      </div>
+    </div>
+    
+    <div class="message-card">
+      {{ ticket.get('message', 'Pas de message') }}
+    </div>
+    
+    <!-- Ce div sera remplacé par le formulaire de changement de statut dans Dash -->
+    <div id="status-change-form"></div>
+    
+    <!-- Section des commentaires -->
+    <div class="comments-section">
+      <h4>Commentaires ({{ comments|length }})</h4>
+      {% if comments %}
+        {% for comment in comments %}
+        <div class="comment">
+          <div class="comment-header">
+            <span class="comment-author">{{ comment.get('author_id', 'Système') }}</span>
+            <span class="comment-date">{{ comment.get('formatted_date', '-') }}</span>
+          </div>
+          <div class="comment-text">{{ comment.get('content', '') }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p>Aucun commentaire pour l'instant</p>
+      {% endif %}
+    </div>
+    
+    <!-- Ce div sera remplacé par le formulaire d'ajout de commentaire dans Dash -->
+    <div id="comment-form"></div>
+  </div>
+</body>
+</html>
