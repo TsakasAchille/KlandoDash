@@ -22,6 +22,7 @@ app.layout = dbc.Container([
                 dbc.Nav([
                     dbc.NavLink("Utilisateurs", href="/users", active="exact", id="nav-users", className="mb-2"),
                     dbc.NavLink("Trajets", href="/trips", active="exact", id="nav-trips", className="mb-2"),
+                    dbc.NavLink("Statistiques", href="/stats", active="exact", id="nav-stats", className="mb-2"),
                 ], vertical=True, pills=True, className="sidebar-nav"),
             ], style={"position": "fixed", "top": 0, "left": 0, "height": "100vh", "width": "220px", "background": "#f8f9fa", "padding": "24px 12px 0 12px", "borderRight": "2px solid #eee", "zIndex": 1000})
         ], width=2, style={"padding": 0, "maxWidth": "220px"}),
@@ -37,6 +38,7 @@ app.layout = dbc.Container([
 from dash_apps.pages import trips_page
 import importlib
 users_page = importlib.import_module('dash_apps.pages.01_users')
+stats_page = importlib.import_module('dash_apps.pages.03_stats')
 
 @app.callback(
     Output("page-content", "children"),
@@ -47,6 +49,8 @@ def display_page(pathname):
         return trips_page
     if pathname == "/users":
         return users_page.layout
+    if pathname == "/stats":
+        return stats_page.layout
     return dbc.Alert("Page non trouvée", color="danger")
 
 if __name__ == "__main__":
