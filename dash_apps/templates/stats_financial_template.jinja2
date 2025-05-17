@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Statistiques Financières</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f7fa;
+      color: #333;
+    }
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .metrics-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .metric-card {
+      background-color: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.05);
+      flex: 1;
+      min-width: 200px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .metric-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+    }
+    .metric-title {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .metric-value {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #2c3e50;
+    }
+    .chart-card {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 20px;
+    }
+    .chart-title {
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    .chart-container {
+      height: 350px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="metrics-row">
+      <!-- Prix moyen par place -->
+      <div class="metric-card">
+        <div class="metric-title">Prix moyen par place</div>
+        <div class="metric-value">{{ "%.2f €"|format(avg_price) if avg_price else "-" }}</div>
+      </div>
+      
+      <!-- Revenu total -->
+      <div class="metric-card">
+        <div class="metric-title">Revenu total</div>
+        <div class="metric-value">{{ "%.2f €"|format(total_price) if total_price else "-" }}</div>
+      </div>
+      
+      <!-- Prix moyen par km -->
+      <div class="metric-card">
+        <div class="metric-title">Prix moyen par km</div>
+        <div class="metric-value">{{ "%.2f €"|format(avg_price_per_km) if avg_price_per_km else "-" }}</div>
+      </div>
+      
+      <!-- Revenu moyen Viator -->
+      <div class="metric-card">
+        <div class="metric-title">Revenu moyen Viator</div>
+        <div class="metric-value">{{ "%.2f €"|format(avg_viator_income) if avg_viator_income else "-" }}</div>
+      </div>
+      
+      <!-- Revenu total Viator -->
+      <div class="metric-card">
+        <div class="metric-title">Revenu total Viator</div>
+        <div class="metric-value">{{ "%.2f €"|format(total_viator_income) if total_viator_income else "-" }}</div>
+      </div>
+    </div>
+    
+    <!-- Distribution des prix -->
+    <div class="chart-card">
+      <h3 class="chart-title">Distribution des prix par place</h3>
+      <div id="price-distribution-chart" class="chart-container"></div>
+    </div>
+    
+    <!-- Distribution des revenus Viator -->
+    <div class="chart-card">
+      <h3 class="chart-title">Distribution des revenus Viator</h3>
+      <div id="viator-distribution-chart" class="chart-container"></div>
+    </div>
+    
+    <!-- Prix vs Distance -->
+    <div class="chart-card">
+      <h3 class="chart-title">Relation Prix / Distance</h3>
+      <div id="price-distance-chart" class="chart-container"></div>
+    </div>
+    
+    <!-- Évolution des revenus dans le temps -->
+    <div class="chart-card">
+      <h3 class="chart-title">Évolution des revenus dans le temps</h3>
+      <div id="income-time-chart" class="chart-container"></div>
+    </div>
+  </div>
+  
+  <script>
+    // Distribution des prix
+    const priceData = {{ price_distribution | tojson | safe }};
+    
+    if (priceData && priceData.data) {
+      Plotly.newPlot(
+        'price-distribution-chart', 
+        priceData.data,
+        priceData.layout,
+        {responsive: true}
+      );
+    } else {
+      document.getElementById('price-distribution-chart').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Aucune donnée de prix disponible</div>';
+    }
+    
+    // Distribution des revenus Viator
+    const viatorData = {{ viator_distribution | tojson | safe }};
+    
+    if (viatorData && viatorData.data) {
+      Plotly.newPlot(
+        'viator-distribution-chart', 
+        viatorData.data,
+        viatorData.layout,
+        {responsive: true}
+      );
+    } else {
+      document.getElementById('viator-distribution-chart').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Aucune donnée de revenus Viator disponible</div>';
+    }
+    
+    // Prix vs Distance
+    const priceDistanceData = {{ price_distance | tojson | safe }};
+    
+    if (priceDistanceData && priceDistanceData.data) {
+      Plotly.newPlot(
+        'price-distance-chart', 
+        priceDistanceData.data,
+        priceDistanceData.layout,
+        {responsive: true}
+      );
+    } else {
+      document.getElementById('price-distance-chart').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Données insuffisantes pour l\'analyse prix/distance</div>';
+    }
+    
+    // Évolution des revenus dans le temps
+    const incomeTimeData = {{ income_time | tojson | safe }};
+    
+    if (incomeTimeData && incomeTimeData.data) {
+      Plotly.newPlot(
+        'income-time-chart', 
+        incomeTimeData.data,
+        incomeTimeData.layout,
+        {responsive: true}
+      );
+    } else {
+      document.getElementById('income-time-chart').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Données temporelles insuffisantes</div>';
+    }
+  </script>
+</body>
+</html>

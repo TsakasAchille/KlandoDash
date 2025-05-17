@@ -37,9 +37,25 @@ layout = dbc.Container([
                 ]
             ),
             dcc.Tab(
-                html.Div(id="stats-temporal-container", className="p-3"),
                 label="Analyse temporelle",
-                value="tab-temporal"
+                value="tab-temporal",
+                children=[
+                    html.Div(id="stats-temporal-container", className="p-3")
+                ]
+            ),
+            dcc.Tab(
+                label="Analyse géographique",
+                value="tab-geographic",
+                children=[
+                    html.Div(id="stats-geographic-container", className="p-3")
+                ]
+            ),
+            dcc.Tab(
+                label="Analyse financière",
+                value="tab-financial",
+                children=[
+                    html.Div(id="stats-financial-container", className="p-3")
+                ]
             )
         ],
         id="stats-tabs",
@@ -84,6 +100,7 @@ def load_stats_data(n_clicks):
 
 
 from dash_apps.components.stats_general import render_stats_general
+from dash_apps.components.stats_temporal import render_stats_temporal
 
 @callback(
     Output("stats-general-container", "children"),
@@ -93,3 +110,27 @@ def update_stats_general(trips_data):
     print(f"[DEBUG] Mise à jour des statistiques générales avec {len(trips_data) if trips_data else 0} enregistrements")
     return render_stats_general(trips_data)
 
+@callback(
+    Output("stats-temporal-container", "children"),
+    Input("stats-trips-store", "data")
+)
+def update_stats_temporal(trips_data):
+    print(f"[DEBUG] Mise à jour des statistiques temporelles avec {len(trips_data) if trips_data else 0} enregistrements")
+    return render_stats_temporal(trips_data)
+
+@callback(
+    Output("stats-geographic-container", "children"),
+    Input("stats-trips-store", "data")
+)
+def update_stats_geographic(trips_data):
+    print("[DEBUG] Mise à jour des statistiques géographiques avec", len(trips_data) if trips_data else 0, "enregistrements")
+    return render_stats_geographic(trips_data)
+
+
+@callback(
+    Output("stats-financial-container", "children"),
+    Input("stats-trips-store", "data")
+)
+def update_stats_financial(trips_data):
+    print("[DEBUG] Mise à jour des statistiques financières avec", len(trips_data) if trips_data else 0, "enregistrements")
+    return render_stats_financial(trips_data)

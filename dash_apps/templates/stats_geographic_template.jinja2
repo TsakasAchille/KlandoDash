@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Statistiques Géographiques</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <!-- Leaflet Heat plugin pour les heatmaps -->
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .stats-card {
+      background: white;
+      border-radius: 28px;
+      padding: 25px;
+      overflow: hidden;
+      box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #e6ebf5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-size: 20px;
+    }
+    
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+    }
+    
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .metric-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .metric-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #333;
+      margin: 0;
+    }
+    
+    .metric-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .chart-container {
+      width: 100%;
+      height: 300px;
+      margin-top: 20px;
+    }
+    
+    .graph-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-top: 30px;
+    }
+    
+    .chart-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    
+    .chart-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 15px 0;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .graph-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stats-card">
+    <div class="card-header">
+      <div class="header-icon">
+        🌍
+      </div>
+      <h2 class="card-title">Statistiques Géographiques</h2>
+    </div>
+
+    <!-- Métriques principales -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <h3 class="metric-value">{{ unique_departures }}</h3>
+        <p class="metric-label">Lieux de départ</p>
+      </div>
+      <div class="metric-card">
+        <h3 class="metric-value">{{ unique_destinations }}</h3>
+        <p class="metric-label">Destinations</p>
+      </div>
+      <div class="metric-card">
+        <h3 class="metric-value">{{ popular_route_count }}</h3>
+        <p class="metric-label">Route la + fréquentée</p>
+      </div>
+      <div class="metric-card">
+        <h3 class="metric-value">{{ avg_distance }} km</h3>
+        <p class="metric-label">Distance moyenne</p>
+      </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="graph-row">
+      <div class="chart-card">
+        <h3 class="chart-title">Lieux de départ les plus fréquents</h3>
+        <div id="departures-chart" class="chart-container"></div>
+      </div>
+      <div class="chart-card">
+        <h3 class="chart-title">Destinations les plus fréquentes</h3>
+        <div id="destinations-chart" class="chart-container"></div>
+      </div>
+    </div>
+    
+    <!-- Routes les plus populaires -->
+    <div class="chart-card" style="margin-top: 20px;">
+      <h3 class="chart-title">Routes les plus populaires</h3>
+      <div id="routes-chart" class="chart-container"></div>
+    </div>
+    
+    <!-- Carte des zones les plus fréquentées -->
+    <div class="chart-card" style="margin-top: 20px;">
+      <h3 class="chart-title">Carte des régions les plus fréquentées</h3>
+      <div id="map-container" style="height: 500px; border-radius: 8px; overflow: hidden;"></div>
+    </div>
+  </div>
+
+  <script>
+    // Données pour les graphiques
+    const topDepartures = {{ top_departures | tojson | safe }};
+    const topDestinations = {{ top_destinations | tojson | safe }};
+    const topRoutes = {{ top_routes | tojson | safe }};
+    
+    // Graphique des lieux de départ
+    if (topDepartures && topDepartures.length > 0) {
+      const departuresTrace = {
+        x: topDepartures.map(item => item.count),
+        y: topDepartures.map(item => item.name),
+        type: 'bar',
+        orientation: 'h',
+        marker: {
+          color: '#3498db',
+          line: {
+            color: '#2980b9',
+            width: 1
+          }
+        }
+      };
+      
+      const departuresLayout = {
+        margin: { t: 10, r: 10, l: 150, b: 40 },
+        plot_bgcolor: 'transparent',
+        paper_bgcolor: 'transparent',
+        xaxis: {
+          title: 'Nombre de trajets',
+          tickfont: { size: 10 }
+        },
+        yaxis: {
+          tickfont: { size: 10 }
+        }
+      };
+      
+      Plotly.newPlot('departures-chart', [departuresTrace], departuresLayout, {responsive: true, displayModeBar: false});
+    } else {
+      document.getElementById('departures-chart').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Aucune donnée disponible</div>';
+    }
+    
+    // Graphique des destinations
+    if (topDestinations && topDestinations.length > 0) {
+      const destinationsTrace = {
+        x: topDestinations.map(item => item.count),
+        y: topDestinations.map(item => item.name),
+        type: 'bar',
+        orientation: 'h',
+        marker: {
+          color: '#2ecc71',
+          line: {
+            color: '#27ae60',
+            width: 1
+          }
+        }
+      };
+      
+      const destinationsLayout = {
+        margin: { t: 10, r: 10, l: 150, b: 40 },
+        plot_bgcolor: 'transparent',
+        paper_bgcolor: 'transparent',
+        xaxis: {
+          title: 'Nombre de trajets',
+          tickfont: { size: 10 }
+        },
+        yaxis: {
+          tickfont: { size: 10 }
+        }
+      };
+      
+      Plotly.newPlot('destinations-chart', [destinationsTrace], destinationsLayout, {responsive: true, displayModeBar: false});
+    } else {
+      document.getElementById('destinations-chart').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Aucune donnée disponible</div>';
+    }
+    
+    // Graphique des routes populaires
+    if (topRoutes && topRoutes.length > 0) {
+      const routesTrace = {
+        x: topRoutes.map(item => item.count),
+        y: topRoutes.map(item => item.route),
+        type: 'bar',
+        orientation: 'h',
+        marker: {
+          color: '#9b59b6',
+          line: {
+            color: '#8e44ad',
+            width: 1
+          }
+        }
+      };
+      
+      const routesLayout = {
+        margin: { t: 10, r: 10, l: 200, b: 40 },
+        plot_bgcolor: 'transparent',
+        paper_bgcolor: 'transparent',
+        xaxis: {
+          title: 'Nombre de trajets',
+          tickfont: { size: 10 }
+        },
+        yaxis: {
+          tickfont: { size: 10 }
+        }
+      };
+      
+      Plotly.newPlot('routes-chart', [routesTrace], routesLayout, {responsive: true, displayModeBar: false});
+    } else {
+      document.getElementById('routes-chart').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Aucune donnée disponible</div>';
+    }
+    
+    // Carte Leaflet des régions les plus fréquentées
+    const mapPoints = {{ map_points | tojson | safe }};
+    
+    // Initialiser la carte avec un style moderne et épuré
+    const map = L.map('map-container', {
+      center: [46.603354, 1.888334],  // Centre de la France par défaut
+      zoom: 5,
+      zoomControl: true,
+      scrollWheelZoom: false
+    });
+    
+    // Ajouter un fond de carte léger et moderne
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+    
+    if (mapPoints && mapPoints.length > 0) {
+      // Préparer les données pour la heatmap
+      const heatData = mapPoints.map(point => {
+        // Format: [lat, lng, intensity]
+        return [point.lat, point.lng, point.count];
+      });
+      
+      // Créer la couche de heatmap
+      const heat = L.heatLayer(heatData, {
+        radius: 25,
+        blur: 15,
+        maxZoom: 17,
+        gradient: {
+          0.0: '#3498db',  // Bleu clair
+          0.3: '#2ecc71',  // Vert
+          0.6: '#f39c12',  // Orange
+          0.9: '#e74c3c'   // Rouge
+        }
+      }).addTo(map);
+      
+      // Ajouter des marqueurs pour les points les plus importants
+      mapPoints.forEach(point => {
+        if (point.count > 5) {  // Ne montrer que les points importants
+          const marker = L.circleMarker([point.lat, point.lng], {
+            radius: Math.min(10, 5 + point.count / 10),
+            fillColor: '#3498db',
+            color: '#2980b9',
+            weight: 1,
+            opacity: 0.8,
+            fillOpacity: 0.6
+          }).addTo(map);
+          
+          // Ajouter un popup avec des informations
+          marker.bindPopup(`
+            <div style="font-family: 'Inter', sans-serif; padding: 10px;">
+              <strong>${point.name}</strong><br>
+              ${point.count} trajets<br>
+              ${point.type === 'origin' ? 'Départ' : 'Destination'}
+            </div>
+          `);
+        }
+      });
+      
+      // Ajuster le zoom pour voir tous les points
+      if (mapPoints.length > 1) {
+        const latLngs = mapPoints.map(p => [p.lat, p.lng]);
+        map.fitBounds(L.latLngBounds(latLngs));
+      }
+      
+    } else {
+      document.getElementById('map-container').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Aucune donnée géographique disponible</div>';
+    }
+  </script>
+</body>
+</html>
