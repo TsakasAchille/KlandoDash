@@ -218,6 +218,7 @@ def update_ticket_status_callback(btn_clicks, status_values, selected_ticket, ti
     prevent_initial_call=True
 )
 def add_comment_callback(btn_clicks, comment_texts, selected_ticket, tickets_data):
+    from flask import session
     # Vérifier si un bouton a été cliqué
     if not any(btn_clicks) or not selected_ticket or not selected_ticket.get("ticket_id"):
         return tickets_data, [""] * len(comment_texts)
@@ -237,10 +238,14 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, tickets_dat
         # Si le commentaire est vide, on ne fait rien
         return tickets_data, [""] * len(comment_texts)
     
+    # Récupérer le nom et l'ID de l'utilisateur connecté depuis la session
+    user_name = session.get('user_name', 'Utilisateur')
+    user_id = session.get('user_id', 'anonymous')
+    
     # Ajouter le commentaire dans la base de données
     success = db_add_comment(
         ticket_id,
-        "Support",  # Utilisateur par défaut (support technique)
+        user_name,  # Nom de l'utilisateur connecté
         comment_text.strip()
     )
     
@@ -258,7 +263,8 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, tickets_dat
         # Créer un nouveau commentaire pour l'affichage local
         new_comment = {
             "ticket_id": ticket_id,
-            "user_id": "Support",
+            "user_id": user_id,
+            "user_name": user_name,
             "comment_text": comment_text.strip(),
             "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }

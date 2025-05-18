@@ -174,8 +174,10 @@ def render_ticket_details(ticket, comments):
     formatted_comments = []
     for comment in comments if comments else []:
         comment_date = parse_date(comment.get("created_at", ""))
+        # Utiliser user_name s'il existe, sinon utiliser user_id
+        author_name = comment.get("user_name", comment.get("user_id", "Système"))
         formatted_comments.append({
-            "author_id": comment.get("user_id", "Système"),  # Utiliser user_id au lieu de author_id
+            "author_id": author_name,  # Utiliser le nom de l'utilisateur
             "content": comment.get("comment_text", ""),  # Utiliser comment_text au lieu de content
             "formatted_date": comment_date.strftime("%d/%m/%Y %H:%M")
         })
