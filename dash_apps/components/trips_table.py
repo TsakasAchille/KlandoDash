@@ -16,7 +16,7 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_trips_table(trips_df, columns=None, selected_rows=None):
+def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="trips-table"):
     """
     Retourne un dash_table.DataTable stylé selon le design moderne de l'application.
     
@@ -56,7 +56,7 @@ def render_trips_table(trips_df, columns=None, selected_rows=None):
     
     # Table stylisee avec la meme apparence que les autres composants
     table = dash_table.DataTable(
-        id="trips-table",
+        id=table_id,
         columns=columns,
         data=trips_df.to_dict("records"),
         filter_action='native',

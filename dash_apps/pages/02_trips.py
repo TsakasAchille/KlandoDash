@@ -21,17 +21,17 @@ layout = dbc.Container([
     dcc.Store(id="users-store"),
     dcc.Store(id="trips-store"),
     dcc.Store(id="selected-trip-id", storage_type="session"),
-    html.Div(id="main-content"),
+    html.Div(id="trips-content-area"),  # Changement d'ID pour éviter le conflit
     html.Div(id="trip-details")
 ], fluid=True)
 
 # --- Callbacks Dash multipage ---
 
 @callback(
-    Output("users-store", "data"),
-    Output("trips-store", "data"),
+    Output("users-store", "data", allow_duplicate=True),
+    Output("trips-store", "data", allow_duplicate=True),
     Input("refresh-btn", "n_clicks"),
-    prevent_initial_call=False
+    prevent_initial_call='initial_duplicate'
 )
 def load_data(n_clicks):
     # TODO: Remplacer get_trip_data par une version Dash compatible si besoin
@@ -44,7 +44,7 @@ def load_data(n_clicks):
     return users_data, trips_data
 
 @callback(
-    Output("refresh-message", "children"),
+    Output("refresh-message", "children", allow_duplicate=True),
     Input("refresh-btn", "n_clicks"),
     prevent_initial_call=True
 )
@@ -52,10 +52,11 @@ def show_refresh_message(n_clicks):
     return dbc.Alert("Données rafraîchies! Les nouveaux voyages sont maintenant visibles.", color="success", dismissable=True)
 
 @callback(
-    Output("main-content", "children"),
+    Output("trips-content-area", "children", allow_duplicate=True),
     Input("users-store", "data"),
     Input("trips-store", "data"),
     Input("selected-trip-id", "data"),
+    prevent_initial_call='initial_duplicate'
 )
 def update_main_content(users_data, trips_data, selected_trip_id):
     if users_data is None:
@@ -71,13 +72,15 @@ def update_main_content(users_data, trips_data, selected_trip_id):
             preselect_row = [idx[0]]
     table = render_trips_table(trips_df, selected_rows=preselect_row)
     instruction = html.P("Sélectionnez un trajet dans le tableau pour voir les détails.")
-    details_div = html.Div(id="trip-details")
+    # Renommer le composant pour éviter les conflits de callbacks
+    details_div = html.Div(id="trips-page-details")
     return html.Div([instruction, table, html.Hr(), details_div])
 
 @callback(
-    Output("selected-trip-id", "data"),
+    Output("selected-trip-id", "data", allow_duplicate=True),
     Input("trips-table", "selected_rows"),
-    State("trips-store", "data")
+    State("trips-store", "data"),
+    prevent_initial_call='initial_duplicate'
 )
 def update_selected_trip_id(selected_rows, trips_data):
     if selected_rows and trips_data:
@@ -87,17 +90,17 @@ def update_selected_trip_id(selected_rows, trips_data):
     return None
 
 @callback(
-    Output("trip-details", "children"),
+    Output("trips-page-details", "children", allow_duplicate=True),
     Input("selected-trip-id", "data"),
     Input("trips-store", "data"),
-    prevent_initial_call=False
+    prevent_initial_call='initial_duplicate'
 )
 def show_trip_details(selected_trip_id, trips_data):
     # Debug logs
     print(f"[DEBUG] selected_trip_id: {selected_trip_id}")
     print(f"[DEBUG] trips_data existe: {trips_data is not None}")
     
-    # Délègue la création du layout à une fonction dédiée
+    # Délègue la création du layout à une fonction dédiée avec style Klando
     return create_trip_details_layout(selected_trip_id, trips_data)
 
 if __name__ == "__main__":
