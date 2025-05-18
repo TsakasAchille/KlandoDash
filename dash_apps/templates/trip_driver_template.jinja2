@@ -77,7 +77,7 @@
     }
     
     .driver-container {
-      background: #f8fafc;
+      background: white;
       border-radius: 18px;
       padding: 20px;
       display: flex;
@@ -88,7 +88,7 @@
     .driver-card-inner {
       padding: 15px;
       border-radius: 15px;
-      background: #fff;
+      background: #fafcfe;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
     
@@ -154,6 +154,18 @@
       padding: 2px 6px;
       border-radius: 4px;
       border: 1px solid #e9ecef;
+    }
+
+    .passenger-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: #e8f3ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      font-size: 18px;
     }
     
     .profile-button {
@@ -259,6 +271,13 @@
       font-size: 0.85em;
       font-weight: 500;
     }
+     .passenger-header {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 12px;
+      margin-bottom: 15px;
+    }
     
     .profile-button {
       margin-top: 15px;
@@ -356,7 +375,7 @@
     <div class="driver-container">
       {% if driver %}
         <div class="driver-card-inner">
-          <div class="passenger-header">
+          <div class="passenger-header" style="display: flex; align-items: center; gap: 10px;">
             <div class="passenger-avatar">👤</div>
             <div class="passenger-name">{{ driver.name or driver.display_name or driver.first_name or 'N/A' }}</div>
           </div>
