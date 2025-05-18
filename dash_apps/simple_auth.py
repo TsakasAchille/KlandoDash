@@ -63,7 +63,7 @@ def init_auth(server):
         </head>
         <body>
             <div class="login-container">
-                <h1 class="brand">KLANDO</h1>
+                <img src="assets/icons/NewLogo.png" alt="KLANDO" height="120px" class="mb-4">
                 <h2 class="mb-3" style="color: #505050; font-weight: 500;">Bienvenue sur KlandoDash</h2>
                 <p class="text-muted mb-4">Connectez-vous pour accéder à l'application</p>
                 

@@ -10,6 +10,7 @@ import dash_bootstrap_components as dbc
 from dash_apps.config import Config
 from flask import session, redirect
 from flask_login import LoginManager, current_user, login_required
+from flask_session import Session
 
 # Importer notre module d'authentification personnalisé
 from dash_apps.auth.oauth import setup_oauth, google_login, google_callback
@@ -28,6 +29,9 @@ server = app.server
 server.config['SECRET_KEY'] = Config.SECRET_KEY
 server.config['SESSION_TYPE'] = 'filesystem'
 server.config['SESSION_PERMANENT'] = True
+
+# Initialiser Flask-Session
+Session(server)
 
 # Initialisation de Flask-Login
 login_manager = LoginManager()
