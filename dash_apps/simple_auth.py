@@ -169,31 +169,18 @@ def init_auth(server):
     
     @server.route('/logout')
     def logout():
-        """Route de déconnexion"""
+        """Route de déconnexion - gérée par le callback dans app.py"""
+        # La déconnexion est maintenant gérée par un callback Dash dans app.py
+        # Cette route existe uniquement pour compatibilité
         logout_user()
         session.clear()
-        # Utiliser JavaScript pour la redirection immédiate
-        return '''
-        <html>
-            <head>
-                <title>Déconnexion</title>
-                <script>
-                    // Utiliser window.location.href plutôt que flask.redirect
-                    window.location.href = '/login';
-                </script>
-            </head>
-            <body>
-                <p>Si vous n'êtes pas redirigé automatiquement, <a href="/login">cliquez ici</a>.</p>
-            </body>
-        </html>
-        '''
+        # Retourne un message simple, la redirection sera gérée par Dash
+        return 'Déconnexion en cours...'
         
     @server.route('/auth/logout')
     def auth_logout():
-        """Route alternative de déconnexion pour maintenir la compatibilité"""
-        logout_user()
-        session.clear()
-        # Rediriger vers la route principale
+        """Route alternative de déconnexion - gérée par le callback dans app.py"""
+        # La déconnexion est maintenant gérée par un callback Dash dans app.py
         return logout()
     
     @server.before_request

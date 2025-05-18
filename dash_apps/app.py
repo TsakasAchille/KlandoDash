@@ -56,7 +56,6 @@ setup_oauth(server)
 
 # Utiliser notre module d'authentification simple
 from dash_apps.simple_auth import init_auth, is_valid_klando_user, render_user_menu
-from dash_apps.components.logout_component import create_logout_button
 
 # Initialiser l'authentification sur le serveur
 init_auth(server)
@@ -70,7 +69,9 @@ app.layout = dbc.Container([
         # Sidebar navigation
         dbc.Col([
             html.Div([
-                html.H3("KlandoDash", className="mt-4 mb-4", style={"color": "#730200", "fontFamily": "Gliker, Arial, sans-serif"}),
+                html.Div([
+                    html.Img(src="assets/icons/NewLogo.png", style={"width": "100%", "max-width": "180px", "object-fit": "contain"}, className="mt-4 mb-4")
+                ], style={"text-align": "center"}),
                 dbc.Nav([
                     dbc.NavLink("Utilisateurs", href="/users", active="exact", id="nav-users", className="mb-2"),
                     dbc.NavLink("Trajets", href="/trips", active="exact", id="nav-trips", className="mb-2"),
@@ -161,9 +162,27 @@ page_layouts['/support'] = load_page_from_file('04_support.py', 'Support')
 page_layouts['/'] = load_page_from_file('trips_page.py', 'Accueil/Trajets')
 page_layouts['/trips'] = page_layouts['/']
 
-# Pages de déconnexion désactivées dans Dash, gérées par Flask
-# Utiliser directement les boutons qui pointent vers /logout
-# La redirection se fait via le template HTML
+# Ajouter un composant de redirection pour la déconnexion
+app.layout.children.append(dcc.Location(id='redirect-logout', refresh=True))
+
+# Callback pour gérer la déconnexion via le composant dcc.Location
+@app.callback(
+    Output('redirect-logout', 'pathname'),
+    Input('url', 'pathname')
+)
+def handle_logout(pathname):
+    """Gère la redirection après déconnexion"""
+    if pathname == '/logout' or pathname == '/auth/logout':
+        from flask_login import logout_user
+        from flask import session
+        # Déconnecter l'utilisateur
+        logout_user()
+        session.clear()
+        # Rediriger vers la page de login
+        return '/login'
+    # Dans les autres cas, ne pas faire de redirection
+    from dash import no_update
+    return no_update
 
 # Callback pour afficher le menu utilisateur
 @app.callback(
@@ -182,10 +201,9 @@ def update_user_menu(pathname):
     # Vérifier le domaine de l'email
     if not is_valid_klando_user():
         # Déconnecter l'utilisateur si email non valide
-        from dash_apps.components.logout_component import create_logout_button
         return html.Div([
             html.P("Accès réservé aux emails @klando-sn.com", className="text-danger"),
-            create_logout_button("Se déconnecter", "danger", "mt-2", False)
+            dbc.Button([html.I(className="fas fa-sign-out-alt me-2"), "Se déconnecter"], color="danger", href="/logout", className="mt-2")
         ])
     
     # Utilisateur valide, afficher le menu normal
@@ -238,7 +256,7 @@ def display_page(pathname):
                 html.H4("Accès restreint", className="alert-heading"),
                 html.P("Seuls les utilisateurs avec une adresse email @klando-sn.com sont autorisés à accéder à cette application."),
                 html.Hr(),
-                create_logout_button("Se déconnecter", "danger", "mt-3", False)
+                dbc.Button([html.I(className="fas fa-sign-out-alt me-2"), "Se déconnecter"], color="danger", href="/logout", className="mt-3")
             ],
             color="danger",
             className="my-5",
