@@ -79,7 +79,7 @@ def load_stats_data(n_clicks):
     print(f"[DEBUG] Tentative de chargement des données... (n_clicks={n_clicks})")
     try:
         # Obtenir les données de trajet du processeur
-        from src.streamlit_apps.pages.components.trips import get_trip_data  # TEMPORAIRE
+        from dash_apps.utils.trip_data import get_trip_data
         trips_df = get_trip_data()
         
         # Vérifier si les données ont été chargées correctement

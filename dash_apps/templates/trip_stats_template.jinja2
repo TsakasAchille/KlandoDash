@@ -113,26 +113,40 @@
       <div class="stat-row">
         <span class="stat-label">Prix par place</span>
         <span class="stat-value highlight-value">
-          {% if trip.get("price_per_seat") %}{{ trip.get("price_per_seat") }} €{% else %}-{% endif %}
+          {% if trip.get("passenger_price") %}{{ trip.get("passenger_price") }} €{% else %}-{% endif %}
+        </span>
+      </div>
+      
+      <!-- Prix conducteur -->
+      <div class="stat-row">
+        <span class="stat-label">Prix conducteur</span>
+        <span class="stat-value">
+          {% if trip.get("driver_price") %}{{ trip.get("driver_price") }} €{% else %}-{% endif %}
         </span>
       </div>
       
       <!-- Nombre de places -->
       <div class="stat-row">
         <span class="stat-label">Nombre de places</span>
-        <span class="stat-value">{{ trip.get("number_of_seats", "-") }}</span>
+        <span class="stat-value">{{ trip.get("seats_published", "-") }}</span>
       </div>
       
       <!-- Places disponibles -->
       <div class="stat-row">
         <span class="stat-label">Places disponibles</span>
-        <span class="stat-value">{{ trip.get("available_seats", "-") }}</span>
+        <span class="stat-value">{{ trip.get("seats_available", "-") }}</span>
       </div>
       
       <!-- Réservations -->
       <div class="stat-row">
         <span class="stat-label">Réservations</span>
-        <span class="stat-value">{{ trip.get("passenger_count", "-") }}</span>
+        <span class="stat-value">{{ trip.get("seats_booked", "-") }}</span>
+      </div>
+      
+      <!-- Statut -->
+      <div class="stat-row">
+        <span class="stat-label">Statut</span>
+        <span class="stat-value">{{ trip.get("status", "-") }}</span>
       </div>
     </div>
   </div>

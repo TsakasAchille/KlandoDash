@@ -70,7 +70,7 @@ def render_user_menu():
                 dbc.DropdownMenuItem(f"Connecté en tant que {display_name}", header=True),
                 dbc.DropdownMenuItem(f"Email: {email}", header=True, style={"fontStyle": "italic", "fontSize": "0.8rem"}),
                 dbc.DropdownMenuItem(divider=True),
-                dbc.DropdownMenuItem([html.I(className="fas fa-user me-2"), "Profil"], href="#"),
+                dbc.DropdownMenuItem([html.I(className="fas fa-user me-2"), "Profil"], href="/user-profile"),
                 dbc.DropdownMenuItem([html.I(className="fas fa-sign-out-alt me-2"), "Se déconnecter"], href="/auth/logout"),
             ],
             nav=True,

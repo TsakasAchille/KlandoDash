@@ -39,11 +39,11 @@ def render_stats_geographic(trips_data):
     
     # Distance moyenne
     avg_distance = 0
-    if 'trip_distance' in trips_df.columns and not trips_df['trip_distance'].empty:
+    if 'distance' in trips_df.columns and not trips_df['distance'].empty:
         # Filtrer les valeurs NaN/None
-        clean_df = trips_df.dropna(subset=['trip_distance'])
+        clean_df = trips_df.dropna(subset=['distance'])
         if len(clean_df) > 0:
-            avg_distance = round(clean_df['trip_distance'].mean(), 1)
+            avg_distance = round(clean_df['distance'].mean(), 1)
     
     # Top lieux de départ
     top_departures = []

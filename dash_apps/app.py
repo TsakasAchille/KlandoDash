@@ -1,5 +1,6 @@
 import sys
 import os
+import importlib.util
 
 # Ajouter le répertoire racine du projet au PYTHONPATH
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -74,7 +75,7 @@ app.layout = dbc.Container([
         dbc.Col([
             html.Div([
                 html.Div([
-                    html.Img(src="assets/icons/NewLogo.png", style={"width": "100%", "max-width": "180px", "object-fit": "contain"}, className="mt-4 mb-4")
+                    html.Img(src="assets/icons/klando-500x173.png", style={"width": "100%", "max-width": "180px", "object-fit": "contain"}, className="mt-4 mb-4")
                 ], style={"text-align": "center"}),
                 dbc.Nav([
                     dbc.NavLink("Utilisateurs", href="/users", active="exact", id="nav-users", className="mb-2"),
@@ -162,6 +163,9 @@ page_layouts['/support'] = load_page_from_file('04_support.py', 'Support')
 # Page d'exemple pour la page membres - temporairement désactivée car incompatible avec le nouveau système d'authentification
 # page_layouts['/members'] = load_page_from_file('05_members.py', 'Membres')
 
+# Page de profil utilisateur
+page_layouts['/user-profile'] = load_page_from_file('05_user_profile.py', 'Profil')
+
 # Page principale: la page trajets (version sans conflit de callbacks)
 page_layouts['/'] = load_page_from_file('trips_page.py', 'Accueil/Trajets')
 page_layouts['/trips'] = page_layouts['/']
@@ -201,14 +205,6 @@ def update_user_menu(pathname):
     if not current_user.is_authenticated:
         from dash import no_update
         return dbc.Button("Se connecter", color="primary", href="/auth/login", className="ms-2")
-    
-    # Vérifier le domaine de l'email
-    if not is_valid_klando_user():
-        # Déconnecter l'utilisateur si email non valide
-        return html.Div([
-            html.P("Accès réservé aux emails @klando-sn.com", className="text-danger"),
-            dbc.Button([html.I(className="fas fa-sign-out-alt me-2"), "Se déconnecter"], color="danger", href="/logout", className="mt-2")
-        ])
     
     # Utilisateur valide, afficher le menu normal
     return render_user_menu()
@@ -253,16 +249,16 @@ def display_page(pathname):
             }
         )
     
-    # Vérifier le domaine email
-    if not is_valid_klando_user():
+    # Si l'utilisateur n'est pas authentifié, vérification générique (pas de domaine spécifique)
+    if not current_user.is_authenticated:
         return dbc.Alert(
             [
-                html.H4("Accès restreint", className="alert-heading"),
-                html.P("Seuls les utilisateurs avec une adresse email @klando-sn.com sont autorisés à accéder à cette application."),
+                html.H4("Authentification requise", className="alert-heading"),
+                html.P("Veuillez vous connecter pour accéder à cette application."),
                 html.Hr(),
-                dbc.Button([html.I(className="fas fa-sign-out-alt me-2"), "Se déconnecter"], color="danger", href="/logout", className="mt-3")
+                dbc.Button([html.I(className="fas fa-sign-in-alt me-2"), "Se connecter"], color="primary", href="/auth/login", className="mt-3")
             ],
-            color="danger",
+            color="info",
             className="my-5",
             style={
                 "maxWidth": "550px", 
@@ -279,6 +275,60 @@ def display_page(pathname):
     
     # Afficher le chemin demandé pour débogage
     print(f"URL demandée: {pathname}")
+    
+    # Page de profil utilisateur - intégrée directement ici pour éviter les conflits de callbacks
+    if pathname == '/user-profile':
+        # Afficher les informations du profil
+        profile_pic = getattr(current_user, 'profile_pic', None)
+        name = getattr(current_user, 'name', 'Utilisateur')
+        email = getattr(current_user, 'email', 'Email non disponible')
+        user_id = getattr(current_user, 'id', 'ID non disponible')
+        
+        return dbc.Container([
+            html.H2("Mon Profil", style={"marginTop": "20px"}),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardBody([
+                            html.Div([
+                                html.Div([
+                                    html.Img(src=profile_pic, style={
+                                        "width": "150px", 
+                                        "height": "150px", 
+                                        "borderRadius": "50%",
+                                        "border": "3px solid #4285F4",
+                                        "margin": "0 auto 20px auto",
+                                        "display": "block"
+                                    }) if profile_pic else html.Div(
+                                        html.I(className="fas fa-user-circle fa-6x", style={"color": "#4285F4"}),
+                                        style={"textAlign": "center", "margin": "0 auto 20px auto"}
+                                    )
+                                ]),
+                                
+                                html.H3(name, style={"textAlign": "center", "margin": "10px 0"}),
+                                
+                                dbc.Row([
+                                    dbc.Col([
+                                        dbc.Card([
+                                            dbc.CardHeader("Informations de connexion"),
+                                            dbc.CardBody([
+                                                html.P([html.Strong("Email : "), email]),
+                                                html.P([html.Strong("Identifiant : "), user_id]),
+                                                html.P([html.Strong("Méthode de connexion : "), "Google"])
+                                            ])
+                                        ], style={"marginBottom": "20px"})
+                                    ], width=12)
+                                ])
+                            ])
+                        ])
+                    ], style={
+                        'borderRadius': '15px',
+                        'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        'margin': '20px 0'
+                    })
+                ], width=12)
+            ])
+        ], fluid=True)
     
     # Chercher la page dans notre dictionnaire de layouts
     if pathname in page_layouts and page_layouts[pathname] is not None:

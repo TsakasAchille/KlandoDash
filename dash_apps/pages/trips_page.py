@@ -14,6 +14,7 @@ def get_layout():
         dcc.Store(id="klando-users-store"),
         dcc.Store(id="klando-trips-store"),
         dcc.Store(id="klando-selected-trip-id", storage_type="session"),
+        dcc.Store(id="klando-page-current", data=0),
         
         html.H2("Dashboard utilisateurs et trajets", style={"marginTop": "20px"}),
         dbc.Row([
@@ -41,7 +42,7 @@ def load_data(n_clicks):
     # Charger les données utilisateurs et trajets
     users_df = UserProcessor.get_all_users()
     # get_trip_data doit retourner un DataFrame de trajets
-    from src.streamlit_apps.pages.components.trips import get_trip_data  # TEMPORAIRE
+    from dash_apps.utils.trip_data import get_trip_data
     trips_df = get_trip_data()
     
     users_data = users_df.to_dict("records") if users_df is not None else []
@@ -66,9 +67,10 @@ def show_refresh_message(n_clicks):
     Output("klando-trips-main-area", "children"),
     [Input("klando-users-store", "data"),
      Input("klando-trips-store", "data"),
-     Input("klando-selected-trip-id", "data")]
+     Input("klando-selected-trip-id", "data"),
+     Input("klando-page-current", "data")]
 )
-def update_trips_content(users_data, trips_data, selected_trip_id):
+def update_trips_content(users_data, trips_data, selected_trip_id, page_current):
     # Vérifier si les données sont disponibles
     if not trips_data:
         return dbc.Alert(
@@ -88,7 +90,7 @@ def update_trips_content(users_data, trips_data, selected_trip_id):
             preselect_row = [idx[0]]
     
     # Créer le tableau des trajets
-    table = render_trips_table(trips_df, selected_rows=preselect_row, table_id="klando-trips-table")
+    table = render_trips_table(trips_df, selected_rows=preselect_row, table_id="klando-trips-table", page_current=page_current)
     
     instruction = html.P("Sélectionnez un trajet dans le tableau pour voir les détails.", 
                        className="text-muted fst-italic")
@@ -111,6 +113,15 @@ def update_selected_trip_id(selected_rows, trips_data):
         selected_trip_id = trips_df.iloc[selected_rows[0]]['trip_id']
         return selected_trip_id
     return None
+
+# Mise à jour de la page courante du tableau
+@callback(
+    Output("klando-page-current", "data"),
+    Input("klando-trips-table", "page_current"),
+    prevent_initial_call=True
+)
+def update_page_current(page_current):
+    return page_current
 
 # Affichage des détails du trajet sélectionné
 @callback(

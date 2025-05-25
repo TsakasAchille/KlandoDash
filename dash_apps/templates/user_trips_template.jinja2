@@ -247,8 +247,8 @@
               <td>{{ trip.departure_name }}</td>
               <td>{{ trip.destination_name }}</td>
               <td>{{ trip.departure_schedule }}</td>
-              <td class="distance-col">{{ trip.trip_distance|round(1) }} km</td>
-              <td class="price-col">{{ trip.price_per_seat }} XOF</td>
+              <td class="distance-col">{{ trip.distance|default(0)|round(1) }} km</td>
+              <td class="price-col">{{ trip.passenger_price|default(0) }} XOF</td>
               <td class="action-col">
                 <a href="#" class="btn-view" onclick="window.parent.location.href='/trips?trip_id={{ trip.trip_id }}'">Voir</a>
               </td>

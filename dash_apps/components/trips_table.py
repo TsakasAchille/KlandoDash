@@ -16,7 +16,7 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="trips-table"):
+def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="trips-table", page_current=0):
     """
     Retourne un dash_table.DataTable stylé selon le design moderne de l'application.
     
@@ -41,12 +41,18 @@ def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="tri
         # Renommer les colonnes pour plus de lisibilité
         column_mapping = {
             'trip_id': 'ID Trajet',
-            'departure': 'Départ',
-            'arrival': 'Arrivée',
-            'departure_datetime': 'Date de départ',
+            'departure_name': 'Départ',
+            'destination_name': 'Destination',
+            'departure_date': 'Date de départ',
+            'departure_schedule': 'Heure de départ',
             'driver_id': 'Conducteur',
-            'price': 'Prix',
-            'seats': 'Sièges'
+            'passenger_price': 'Prix passager',
+            'driver_price': 'Prix conducteur',
+            'seats_available': 'Places disponibles',
+            'seats_booked': 'Places réservées',
+            'seats_published': 'Places publiées',
+            'distance': 'Distance',
+            'status': 'Statut'
         }
         
         columns = []
@@ -119,7 +125,7 @@ def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="tri
             }
         ],
         page_size=10,
-        page_current=0,
+        page_current=page_current,
     )
     
     # Envelopper la table dans un conteneur style avec le meme design que les autres composants

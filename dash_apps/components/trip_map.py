@@ -28,9 +28,9 @@ def render_trip_map(trip_row):
     
     # Si polyline présente et non vide, affiche le trajet complet
     try:
-        if 'trip_polyline' in trip_dict and trip_dict['trip_polyline']:
+        if 'polyline' in trip_dict and trip_dict['polyline']:
             # Décoder la polyline
-            polyline_str = trip_dict['trip_polyline']
+            polyline_str = trip_dict['polyline']
             if isinstance(polyline_str, bytes):
                 polyline_str = polyline_str.decode('utf-8')
                 
@@ -85,13 +85,21 @@ def render_trip_map(trip_row):
                         # dl.TileLayer(url='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
                         #            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'),
                         dl.Polyline(positions=line_positions, color=KLANDO_PRIMARY, weight=5, opacity=0.85),
-                        # Marqueurs personnalisés
+                        # Marqueurs personnalisés utilisant divIcon au lieu de icon standard
                         dl.Marker(position=departure, children=[dl.Tooltip(f"Départ: {departure_name}")], 
-                                icon=dict(iconUrl='', iconSize=[18, 18], className='custom-div-icon', 
-                                        html=f'<div style="background-color:{KLANDO_PRIMARY}; width:12px; height:12px; border-radius:50%; border:3px solid white; box-shadow:0 0 5px rgba(0,0,0,0.2);"></div>')),
+                                icon=dict(
+                                    iconUrl='https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',  # URL de secours (nécessaire)
+                                    iconSize=[30, 45], 
+                                    className='custom-div-icon', 
+                                    html=f'<div style="background-color:#4ade80; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 5px rgba(0,0,0,0.2);"></div>'
+                                )),
                         dl.Marker(position=arrival, children=[dl.Tooltip(f"Arrivée: {arrival_name}")], 
-                                icon=dict(iconUrl='', iconSize=[18, 18], className='custom-div-icon', 
-                                        html=f'<div style="background-color:{KLANDO_RED}; width:12px; height:12px; border-radius:50%; border:3px solid white; box-shadow:0 0 5px rgba(0,0,0,0.2);"></div>')),
+                                icon=dict(
+                                    iconUrl='https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',  # URL de secours (nécessaire)
+                                    iconSize=[30, 45], 
+                                    className='custom-div-icon', 
+                                    html=f'<div style="background-color:#f97316; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 5px rgba(0,0,0,0.2);"></div>'
+                                )),
                     ], center=center, zoom=12, style={
                         'height': '500px', 
                         'width': '100%',
@@ -154,10 +162,27 @@ def render_trip_map(trip_row):
             html.Div(
                 [
                     dl.Map([
-                        dl.TileLayer(),
+                        # Style Voyager (identique au cas avec polyline)
+                        dl.TileLayer(url='https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'),
+                        
                         dl.Polyline(positions=[departure, arrival], color=KLANDO_RED, weight=5, dashArray="10,10", opacity=0.8),
-                        dl.Marker(position=departure, children=[dl.Tooltip(f"Départ: {departure_name}")]),
-                        dl.Marker(position=arrival, children=[dl.Tooltip(f"Arrivée: {arrival_name}")]),
+                        
+                        # Marqueurs personnalisés (identiques au cas avec polyline)
+                        dl.Marker(position=departure, children=[dl.Tooltip(f"Départ: {departure_name}")], 
+                                icon=dict(
+                                    iconUrl='https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',  # URL de secours (nécessaire)
+                                    iconSize=[32, 32], 
+                                    className='custom-div-icon', 
+                                    html=f'<div style="background-color:#4ade80; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 5px rgba(0,0,0,0.2);"></div>'
+                                )),
+                        dl.Marker(position=arrival, children=[dl.Tooltip(f"Arrivée: {arrival_name}")], 
+                                icon=dict(
+                                    iconUrl='https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',  # URL de secours (nécessaire)
+                                    iconSize=[32, 32], 
+                                    className='custom-div-icon', 
+                                    html=f'<div style="background-color:#f97316; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 5px rgba(0,0,0,0.2);"></div>'
+                                )),
                     ], center=center, zoom=10, style={
                         'height': '500px', 
                         'width': '100%',

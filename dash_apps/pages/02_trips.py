@@ -37,7 +37,7 @@ def load_data(n_clicks):
     # TODO: Remplacer get_trip_data par une version Dash compatible si besoin
     users_df = UserProcessor.get_all_users()
     # get_trip_data doit retourner un DataFrame de trajets
-    from src.streamlit_apps.pages.components.trips import get_trip_data  # TEMPORAIRE
+    from dash_apps.utils.trip_data import get_trip_data
     trips_df = get_trip_data()
     users_data = users_df.to_dict("records") if users_df is not None else None
     trips_data = trips_df.to_dict("records") if trips_df is not None else None

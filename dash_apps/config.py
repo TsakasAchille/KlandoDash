@@ -24,8 +24,9 @@ class Config(object):
     # Si vous utilisez un port différent ou un nom de domaine différent, modifiez cette valeur
     OAUTH_REDIRECT_URI = os.environ.get('OAUTH_REDIRECT_URI', 'http://localhost:8050/auth/login/google/callback')
     
-    # Domaine autorisé pour l'authentification
-    AUTHORIZED_DOMAIN = 'klando-sn.com'
+    # Liste des emails autorisés - ceux configurés comme utilisateurs de test dans Google Cloud Console
+    # Cette liste doit correspondre exactement aux utilisateurs de test configurés dans Google OAuth Console
+    AUTHORIZED_EMAILS = os.environ.get('AUTHORIZED_EMAILS', '').split(',') if os.environ.get('AUTHORIZED_EMAILS') else []
     
     # Base de données SQLite pour les utilisateurs
     SQLALCHEMY_DATABASE_URI = 'sqlite:///users.db'

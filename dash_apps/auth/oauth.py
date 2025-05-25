@@ -1,96 +1,205 @@
-from authlib.integrations.flask_client import OAuth
-from dash_apps.config import Config
-from flask import redirect, url_for, session, flash, request
-from flask_login import login_user, logout_user
-from dash_apps.auth.models import User
-import secrets
+# Standard libraries
 import os
+import json
+import secrets
 
-# OAuth configuration
-oauth = OAuth()
+# Autoriser HTTP pour le développement local uniquement
+# Ne jamais activer ceci en production !
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-# Configuration OAuth pour Google - s'assurer qu'elle est correctement initialisée
-oauth = OAuth()
+# Third-party libraries
+import requests
+from flask import session, redirect, flash, url_for, request
+from flask_login import login_user, logout_user
+from oauthlib.oauth2 import WebApplicationClient
+
+# Internal imports
+from dash_apps.config import Config
+from dash_apps.auth.models import User
+
+# Configuration OAuth pour Google
+GOOGLE_CLIENT_ID = Config.GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = Config.GOOGLE_CLIENT_SECRET
+GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
+
+# Client OAuth 2
+client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 def setup_oauth(app):
     """
-    Configure l'authentification OAuth avec les clu00e9s d'API Google
+    Configure l'authentification OAuth avec les clés d'API Google
     """
-    oauth.init_app(app)
-    oauth.register(
-        name='google',
-        client_id=Config.GOOGLE_CLIENT_ID,
-        client_secret=Config.GOOGLE_CLIENT_SECRET,
-        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-        client_kwargs={'scope': 'openid email profile'}
-    )
+    # Augmenter la durée de session pour éviter les problèmes de state
+    app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 heure
+    app.config['SESSION_COOKIE_SECURE'] = False  # Permet les cookies en HTTP
+    app.config['SESSION_COOKIE_HTTPONLY'] = True  # Protège les cookies des scripts
+
+def get_google_provider_cfg():
+    """
+    Récupère la configuration du fournisseur Google OAuth
+    """
+    return requests.get(GOOGLE_DISCOVERY_URL).json()
 
 def google_login():
     """
     Démarre le processus d'authentification Google
+    en suivant le flux OAuth2 standard
     """
-    # Générer un state aléatoire pour la sécurité
-    state = secrets.token_hex(16)
-    session['_google_authlib_state_'] = state
+    # Nettoyer la session et la rendre permanente
+    session.clear()
+    session.permanent = True
     
-    # Rediriger vers Google pour l'authentification
-    redirect_uri = Config.OAUTH_REDIRECT_URI
-    return oauth.google.authorize_redirect(redirect_uri)
+    # Récupérer l'endpoint d'autorisation de Google
+    google_provider_cfg = get_google_provider_cfg()
+    authorization_endpoint = google_provider_cfg["authorization_endpoint"]
+    
+    # Préparer la requête pour la connexion Google
+    request_uri = client.prepare_request_uri(
+        authorization_endpoint,
+        redirect_uri=Config.OAUTH_REDIRECT_URI,  # Le /callback est déjà inclus dans la config
+        scope=["openid", "email", "profile"],
+    )
+    
+    # Rediriger l'utilisateur vers Google
+    return redirect(request_uri)
 
 def google_callback():
     """
     Fonction de callback après l'authentification Google
+    Suit le flux OAuth2 standard pour échanger le code contre un token
     """
     try:
-        # Récupérer le token d'accès
-        token = oauth.google.authorize_access_token()
+        # Récupérer le code d'autorisation envoyé par Google
+        code = request.args.get("code")
+        if not code:
+            raise Exception("Code d'autorisation manquant dans la réponse de Google")
+            
+        # Récupérer l'endpoint de token depuis la configuration Google
+        google_provider_cfg = get_google_provider_cfg()
+        token_endpoint = google_provider_cfg["token_endpoint"]
+        
+        # Préparer la requête pour obtenir les tokens
+        token_url, headers, body = client.prepare_token_request(
+            token_endpoint,
+            authorization_response=request.url,
+            redirect_url=request.base_url,
+            code=code
+        )
+        
+        # Envoyer la requête pour obtenir les tokens
+        token_response = requests.post(
+            token_url,
+            headers=headers,
+            data=body,
+            auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
+        )
+        
+        # Analyser la réponse du token
+        client.parse_request_body_response(json.dumps(token_response.json()))
         
         # Récupérer les informations de l'utilisateur
-        resp = oauth.google.get('https://www.googleapis.com/oauth2/v3/userinfo')
-        user_info = resp.json()
+        userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
+        uri, headers, body = client.add_token(userinfo_endpoint)
+        userinfo_response = requests.get(uri, headers=headers, data=body)
+        user_info = userinfo_response.json()
+        
+        # Vérifier que l'email est vérifié
+        if not user_info.get("email_verified", False):
+            raise Exception("Email non vérifié par Google")
+            
+        # Extraire les informations nécessaires
         email = user_info.get('email', '')
         name = user_info.get('name', '')
         picture = user_info.get('picture', '')
-        user_id = user_info.get('sub', '')  # Google unique ID
-        
-        # Tous les emails sont autorisés maintenant
-        # Pas de vérification de domaine
-        
-        # Sans base de données, on crée un User en mémoire
-        user = User(
-            id=user_id,
-            email=email,
-            name=name,
-            profile_pic=picture,
-            tags=''
-        )
-        
-        # Connecter l'utilisateur avec remember=True pour maintenir la session plus longtemps
-        login_user(user, remember=True)
-        
-        # Stockage dans la session
-        session['logged_in'] = True
-        session['user_id'] = user_id
-        session['user_email'] = email
-        session['user_name'] = name
-        session['profile_pic'] = picture
-        session.modified = True
-        
-        return redirect('/')
+        user_id = user_info.get('sub', '')  # ID unique Google
         
     except Exception as e:
-        flash(f"Erreur d'authentification: {str(e)}", "danger")
-        print(f"ERREUR OAUTH: {str(e)}")  # Log dans la console
+        error_str = str(e)
+        print(f"Erreur d'authentification: {str(e)}")
+        
+        # Créer un message d'erreur approprié
+        if "access_denied" in error_str.lower():
+            error_msg = "⚠️ ATTENTION : ÉCHEC DE CONNEXION - Accès refusé par Google. Veuillez vérifier votre compte ou contacter l'administrateur."
+            error_category = "danger"
+        elif "mismatching_state" in error_str.lower():
+            error_msg = "⚠️ ATTENTION : ÉCHEC DE CONNEXION - Erreur de sécurité. Veuillez réessayer ou vider le cache de votre navigateur."
+            error_category = "warning"
+        elif "invalid_client" in error_str.lower():
+            error_msg = "⚠️ ATTENTION : ÉCHEC DE CONNEXION - Configuration incorrecte de l'authentification. Contactez l'administrateur."
+            error_category = "danger"
+        elif "missing_token" in error_str.lower():
+            error_msg = "⚠️ ATTENTION : ÉCHEC DE CONNEXION - Vous n'êtes pas autorisé à accéder à cette application. Veuillez contacter l'administrateur."
+            error_category = "danger"
+        else:
+            error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Une erreur s'est produite : {error_str}"
+            error_category = "danger"
+        
+        # Nettoyer la session
+        session.clear()
+        session.modified = True
+        
+        # Afficher le message d'erreur
+        flash(error_msg, error_category)
         return redirect('/login')
+    
+    # Si on n'a pas pu récupérer l'email, c'est une erreur
+    if not email:
+        error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Impossible de récupérer l'email de l'utilisateur."
+        session.clear()
+        session['auth_error'] = error_msg
+        session.modified = True
+        flash(error_msg, "danger")
+        return redirect('/login')
+    
+    # Récupérer la liste des emails autorisés depuis la configuration
+    authorized_emails = Config.AUTHORIZED_EMAILS
+    
+    # Vérifier si l'email est dans la liste des utilisateurs de test autorisés
+    if not authorized_emails or email not in authorized_emails:
+        print(f"Email non autorisé: {email} - Non présent dans la liste des utilisateurs de test")
+        error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Vous n'êtes pas autorisé à accéder à cette application. Veuillez contacter l'administrateur."
+        
+        # Nettoyer la session et stocker le message d'erreur
+        session.clear()
+        session.modified = True
+        
+        # Afficher le message d'erreur
+        flash(error_msg, "danger")
+        return redirect('/login')
+    
+    # Sans base de données, on crée un User en mémoire
+    user = User(
+        id=user_id,
+        email=email,
+        name=name,
+        profile_pic=picture,
+        tags=''
+    )
+    
+    # Connecter l'utilisateur avec remember=True pour maintenir la session plus longtemps
+    login_user(user, remember=True)
+    
+    # Stockage dans la session
+    session['logged_in'] = True
+    session['user_id'] = user_id
+    session['user_email'] = email
+    session['user_name'] = name
+    session['profile_pic'] = picture
+    session.modified = True
+    
+    print(f"Utilisateur connecté: {email}")
+    return redirect('/')
 
 def logout():
     """
-    Déconnexion de l'utilisateur
+    Déconnexion complète de l'utilisateur - supprime toutes les sessions
     """
+    # Déconnecter l'utilisateur via Flask-Login
     logout_user()
-    session.pop('logged_in', None)
-    session.pop('user_email', None)
-    session.pop('user_name', None)
+    
+    # Effacer complètement la session
+    session.clear()
     session.modified = True
     
+    # Rediriger vers la page de login
     return redirect('/login')

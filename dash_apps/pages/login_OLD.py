@@ -36,15 +36,15 @@ def layout():
                     # Zone d'affichage des messages flash
                     html.Div(alerts, id="flash-messages", className="mb-4"),
                     
-                    # Logo et titre dans le style Klando
-                    html.H1("KLANDO", style={
-                        "color": "#730200", 
-                        "fontFamily": "Gliker, Arial, sans-serif",
-                        "marginBottom": "30px", 
-                        "fontSize": "42px",
-                        "letterSpacing": "1px",
-                        "fontWeight": "bold"
-                    }),
+                    # Logo Klando
+                    html.Div([
+                        html.Img(src="assets/icons/klando-500x173.png", style={
+                            "width": "100%", 
+                            "max-width": "280px", 
+                            "object-fit": "contain",
+                            "marginBottom": "20px"
+                        })
+                    ], style={"textAlign": "center"}),
                     
                     html.H2("Bienvenue sur KlandoDash", 
                            className="mb-3", 

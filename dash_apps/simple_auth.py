@@ -11,118 +11,21 @@ def init_auth(server):
     
     @server.route('/login')
     def login_page():
-        """Afficher la page de login"""
+        """Afficher la page de login en utilisant le template login.html"""
+        # Si l'utilisateur est déjà connecté, rediriger vers la page d'accueil
         if current_user.is_authenticated:
             return redirect('/')
         
-        # Rendre directement le HTML sans complexité
-        return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>KlandoDash - Connexion</title>
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-            <style>
-                body {
-                    background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
-                    min-height: 100vh;
-                    padding: 0 12px;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                }
-                .login-container {
-                    max-width: 450px;
-                    margin: 0 auto;
-                    padding-top: 80px;
-                    text-align: center;
-                }
-                .brand {
-                    color: #730200;
-                    font-family: 'Arial', sans-serif;
-                    margin-bottom: 30px;
-                    font-size: 42px;
-                    letter-spacing: 1px;
-                    font-weight: bold;
-                }
-                .card {
-                    border-radius: 8px;
-                    border: none;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
-                    background-color: white;
-                }
-                .btn-google {
-                    border-radius: 4px;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                }
-                .version {
-                    opacity: 0.6;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="login-container">
-                <img src="assets/icons/NewLogo.png" alt="KLANDO" height="120px" class="mb-4">
-                <h2 class="mb-3" style="color: #505050; font-weight: 500;">Bienvenue sur KlandoDash</h2>
-                <p class="text-muted mb-4">Connectez-vous pour accéder à l'application</p>
-                
-                <div class="card shadow mb-4">
-                    <div class="card-body">
-                        <h4 class="card-title mb-4" style="color: #464646; font-weight: 500;">Authentification</h4>
-                        
-                        <ul class="nav nav-tabs mb-4" id="loginTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="google-tab" data-bs-toggle="tab" data-bs-target="#google" 
-                                        type="button" role="tab" aria-selected="true">Google</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin" 
-                                        type="button" role="tab" aria-selected="false">Admin</button>
-                            </li>
-                        </ul>
-                        
-                        <div class="tab-content" id="loginTabsContent">
-                            <div class="tab-pane fade show active" id="google" role="tabpanel" aria-labelledby="google-tab">
-                                <a href="/auth/login" style="text-decoration: none;">
-                                    <button class="btn btn-danger btn-lg w-100 mb-3 btn-google">
-                                        <i class="fab fa-google me-2"></i>
-                                        Se connecter avec Google
-                                    </button>
-                                </a>
-                                
-                                <div class="text-center">
-                                    <span class="badge bg-success rounded-pill mt-2">Tous les comptes Google sont autorisés</span>
-                                </div>
-                            </div>
-                            
-                            <div class="tab-pane fade" id="admin" role="tabpanel" aria-labelledby="admin-tab">
-                                <form method="POST" action="/admin-login">
-                                    <div class="mb-3">
-                                        <label for="admin-username" class="form-label text-start d-block">Nom d'utilisateur</label>
-                                        <input type="text" class="form-control" id="admin-username" name="username" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="admin-password" class="form-label text-start d-block">Mot de passe</label>
-                                        <input type="password" class="form-control" id="admin-password" name="password" required>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary btn-lg w-100">
-                                        <i class="fas fa-lock me-2"></i>
-                                        Connexion Admin
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <p class="mt-4 text-muted small version">KlandoDash v1.0</p>
-            </div>
-            
-            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-        </body>
-        </html>
-        """
+        # Vérifier s'il y a un message d'erreur dans la session
+        auth_error = session.get('auth_error')
+        if auth_error:
+            flash(auth_error, 'danger')
+            session.pop('auth_error', None)  # Effacer le message après l'avoir utilisé
+            session.modified = True
+        
+        # Utiliser le template login.html qui inclut déjà la gestion des messages flash
+        from flask import render_template
+        return render_template('login.html')
     
     @server.route('/admin-login', methods=['POST'])
     def admin_login():
@@ -197,9 +100,10 @@ def init_auth(server):
 
 
 def is_valid_klando_user():
-    """Vérifie si l'utilisateur est authentifié"""
+    """Vérifie si l'utilisateur est authentifié (plus de vérification de domaine)"""
     try:
-        # Vérification principale via Flask-Login
+        # Tout utilisateur authentifié par Google est valide
+        # Plus de vérification de domaine, Google Cloud gère les autorisations
         return current_user.is_authenticated
     except Exception:
         # Fallback avec la session

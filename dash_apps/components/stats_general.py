@@ -41,14 +41,14 @@ def render_stats_general(trips_data):
     total_trips = len(df)
     
     # Distance totale et moyenne (si la colonne existe)
-    if "trip_distance" in df.columns:
+    if "distance" in df.columns:
         # Filtrer les valeurs NaN/None
-        df_clean = df.dropna(subset=["trip_distance"])
+        df_clean = df.dropna(subset=["distance"])
         
         if len(df_clean) > 0:
-            total_distance = round(df_clean["trip_distance"].sum(), 1)
-            avg_distance = round(df_clean["trip_distance"].mean(), 1)
-            distance_data = df_clean["trip_distance"].tolist()
+            total_distance = round(df_clean["distance"].sum(), 1)
+            avg_distance = round(df_clean["distance"].mean(), 1)
+            distance_data = df_clean["distance"].tolist()
             
             # Vérifier qu'il reste des données valides
             if distance_data and all(isinstance(d, (int, float)) for d in distance_data) and len(set(distance_data)) > 1:
@@ -70,16 +70,16 @@ def render_stats_general(trips_data):
         distance_bins = []
     
     # Total passagers (si la colonne existe)
-    if "nb_passagers" in df.columns:
+    if "seats_booked" in df.columns:
         # Filtrer les valeurs NaN/None
-        df_clean = df.dropna(subset=["nb_passagers"])
+        df_clean = df.dropna(subset=["seats_booked"])
         
         if len(df_clean) > 0:
-            total_passengers = int(df_clean["nb_passagers"].sum())
+            total_passengers = int(df_clean["seats_booked"].sum())
             
             # Générer le comptage des passagers de manière sécurisée
             try:
-                passenger_counts = df_clean["nb_passagers"].value_counts().reset_index()
+                passenger_counts = df_clean["seats_booked"].value_counts().reset_index()
                 passenger_counts.columns = ["passengers", "count"]
                 passenger_counts = passenger_counts.sort_values("passengers").to_dict('records')
             except Exception as e:

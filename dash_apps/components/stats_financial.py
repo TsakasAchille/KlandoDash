@@ -23,26 +23,27 @@ def render_stats_financial(trips_data):
     trips_df = pd.DataFrame(trips_data)
     
     # Vérifier si les colonnes financières sont disponibles
-    has_price_data = 'price_per_seat' in trips_df.columns
-    has_viator_data = 'viator_income' in trips_df.columns
+    has_price_data = 'passenger_price' in trips_df.columns
+    has_driver_price_data = 'driver_price' in trips_df.columns
+    has_viator_data = False  # Pas de données Viator pour l'instant
     
     if not has_price_data and not has_viator_data:
         return dbc.Alert("Données financières insuffisantes pour l'analyse", color="warning")
     
     # Calculer les métriques financières
-    avg_price = trips_df['price_per_seat'].mean() if 'price_per_seat' in trips_df.columns else 0
-    total_price = trips_df['price_per_seat'].sum() if 'price_per_seat' in trips_df.columns else 0
+    avg_passenger_price = trips_df['passenger_price'].mean() if 'passenger_price' in trips_df.columns else 0
+    total_passenger_price = trips_df['passenger_price'].sum() if 'passenger_price' in trips_df.columns else 0
     
-    # Calculer les métriques de Viator si disponibles
-    avg_viator_income = trips_df['viator_income'].mean() if 'viator_income' in trips_df.columns else 0
-    total_viator_income = trips_df['viator_income'].sum() if 'viator_income' in trips_df.columns else 0
+    # Calculer les métriques du prix conducteur si disponibles
+    avg_driver_price = trips_df['driver_price'].mean() if 'driver_price' in trips_df.columns else 0
+    total_driver_price = trips_df['driver_price'].sum() if 'driver_price' in trips_df.columns else 0
     
     # Calculer le prix par kilomètre si les deux colonnes sont disponibles
-    if 'price_per_seat' in trips_df.columns and 'trip_distance' in trips_df.columns:
+    if 'passenger_price' in trips_df.columns and 'distance' in trips_df.columns:
         # Éviter la division par zéro
-        valid_trips = trips_df[trips_df['trip_distance'] > 0]
+        valid_trips = trips_df[trips_df['distance'] > 0]
         if not valid_trips.empty:
-            price_per_km = valid_trips['price_per_seat'] / valid_trips['trip_distance']
+            price_per_km = valid_trips['passenger_price'] / valid_trips['distance']
             avg_price_per_km = price_per_km.mean()
         else:
             avg_price_per_km = 0
@@ -82,21 +83,22 @@ def render_stats_financial(trips_data):
         return json.loads(fig_json)
     
     price_distribution = fig_to_dict(create_price_distribution(trips_df)) if has_price_data else None
-    viator_distribution = fig_to_dict(create_viator_income_distribution(trips_df)) if has_viator_data else None
-    price_distance = fig_to_dict(create_price_vs_distance(trips_df)) if has_price_data and 'trip_distance' in trips_df.columns else None
+    driver_price_distribution = fig_to_dict(create_driver_price_distribution(trips_df)) if has_driver_price_data else None
+    price_distance = fig_to_dict(create_price_vs_distance(trips_df)) if has_price_data and 'distance' in trips_df.columns else None
     income_time = fig_to_dict(create_income_time_series(trips_df)) if has_price_data and 'departure_date' in trips_df.columns else None
     
     # Préparer les données pour le template
     context = {
-        "avg_price": avg_price,
-        "total_price": total_price,
+        "avg_price": avg_passenger_price,
+        "total_price": total_passenger_price,
         "avg_price_per_km": avg_price_per_km,
-        "avg_viator_income": avg_viator_income,
-        "total_viator_income": total_viator_income,
+        "avg_driver_price": avg_driver_price,
+        "total_driver_price": total_driver_price,
         "price_distribution": price_distribution,
-        "viator_distribution": viator_distribution,
+        "driver_price_distribution": driver_price_distribution,
         "price_distance": price_distance,
-        "income_time": income_time
+        "income_time": income_time,
+        "viator_distribution": None  # Ajouter viator_distribution avec une valeur None
     }
     
     # Rendre le template
@@ -134,10 +136,10 @@ def create_price_distribution(trips_df):
     Returns:
         Un objet Figure de Plotly
     """
-    if 'price_per_seat' in trips_df.columns:
-        fig = px.histogram(trips_df, x="price_per_seat", nbins=20, 
-                         labels={"price_per_seat": "Prix par place (XOF)"},
-                         title="Distribution des prix par place",
+    if 'passenger_price' in trips_df.columns:
+        fig = px.histogram(trips_df, x="passenger_price", nbins=20, 
+                         labels={"passenger_price": "Prix passager (XOF)"},
+                         title="Distribution des prix passagers",
                          color_discrete_sequence=['#f39c12'])
         
         # Ameliorer le style du graphique
@@ -151,9 +153,9 @@ def create_price_distribution(trips_df):
         return go.Figure()
 
 
-def create_viator_income_distribution(trips_df):
+def create_driver_price_distribution(trips_df):
     """
-    Cree un graphique de distribution des revenus Viator
+    Cree un graphique de distribution des prix conducteur
     
     Args:
         trips_df: DataFrame contenant les donnes des trajets
@@ -161,11 +163,11 @@ def create_viator_income_distribution(trips_df):
     Returns:
         Un objet Figure de Plotly
     """
-    if 'viator_income' in trips_df.columns:
-        fig = px.histogram(trips_df, x="viator_income", nbins=20, 
-                         labels={"viator_income": "Revenu Viator (XOF)"},
-                         title="Distribution des revenus Viator",
-                         color_discrete_sequence=['#f39c12'])
+    if 'driver_price' in trips_df.columns:
+        fig = px.histogram(trips_df, x="driver_price", nbins=20, 
+                         labels={"driver_price": "Prix conducteur (XOF)"},
+                         title="Distribution des prix conducteurs",
+                         color_discrete_sequence=['#3366CC'])
         
         # Ameliorer le style du graphique
         fig.update_layout(
@@ -188,10 +190,10 @@ def create_price_vs_distance(trips_df):
     Returns:
         Un objet Figure de Plotly
     """
-    if 'price_per_seat' in trips_df.columns and 'trip_distance' in trips_df.columns:
-        fig = px.scatter(trips_df, x="trip_distance", y="price_per_seat", 
-                       labels={"trip_distance": "Distance (km)", "price_per_seat": "Prix par place (XOF)"},
-                       title="Relation entre prix et distance",
+    if 'passenger_price' in trips_df.columns and 'distance' in trips_df.columns:
+        fig = px.scatter(trips_df, x="distance", y="passenger_price", 
+                       labels={"distance": "Distance (km)", "passenger_price": "Prix passager (XOF)"},
+                       title="Relation entre prix passager et distance",
                        color_discrete_sequence=['#f39c12'])
         
         # Ameliorer le style du graphique
@@ -246,18 +248,18 @@ def create_income_time_series(trips_df):
             date_column = col
             break
     
-    if date_column is not None and 'price_per_seat' in trips_df.columns:
+    if date_column is not None and 'passenger_price' in trips_df.columns:
         try:
             # S'assurer que la colonne est au format datetime
             trips_df[date_column] = pd.to_datetime(trips_df[date_column])
             
             # Grouper par mois (ou autre periode selon la quantite de donnes)
             trips_df['month'] = trips_df[date_column].dt.to_period('M')
-            monthly_income = trips_df.groupby('month')['price_per_seat'].sum().reset_index()
+            monthly_income = trips_df.groupby('month')['passenger_price'].sum().reset_index()
             monthly_income['month'] = monthly_income['month'].dt.to_timestamp()
             
-            fig = px.line(monthly_income, x='month', y='price_per_seat',
-                        labels={'month': 'Mois', 'price_per_seat': 'Revenu total (XOF)'},
+            fig = px.line(monthly_income, x='month', y='passenger_price',
+                        labels={'month': 'Mois', 'passenger_price': 'Revenu total (XOF)'},
                         title="Evolution des revenus mensuels",
                         color_discrete_sequence=['#f39c12'])
             

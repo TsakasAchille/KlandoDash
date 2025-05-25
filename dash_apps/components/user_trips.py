@@ -3,7 +3,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader
 import os
-from src.data_processing.processors.trip_processor import TripProcessor
+from dash_apps.utils.data_schema import get_trips_for_user
 import datetime
 
 # Initialisation de Jinja2 pour le template des trajets utilisateur
@@ -45,14 +45,13 @@ def render_user_trips(user):
     trips_data = []
     
     try:
-        # Récupérer les trajets via TripProcessor
-        trip_processor = TripProcessor()
-        all_trips_df = trip_processor.get_all_user_trips(str(user_id))
-        passenger_trips_df = trip_processor.get_trips_for_passenger(str(user_id))
+        # Récupérer les trajets via notre nouveau module data_schema
+        driver_trips_df = get_trips_for_user(str(user_id), as_driver=True)
+        passenger_trips_df = get_trips_for_user(str(user_id), as_passenger=True)
         
         # Préparation des données pour les trajets en tant que conducteur
-        if not all_trips_df.empty and 'trip_id' in all_trips_df.columns:
-            for _, trip in all_trips_df.iterrows():
+        if not driver_trips_df.empty and 'trip_id' in driver_trips_df.columns:
+            for _, trip in driver_trips_df.iterrows():
                 trip_dict = trip.to_dict()
                 
                 # Formater les dates

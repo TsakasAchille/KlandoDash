@@ -2,7 +2,7 @@ from dash import html
 import dash_bootstrap_components as dbc
 from jinja2 import Environment, FileSystemLoader
 import os
-from src.data_processing.processors.trip_processor import TripProcessor
+from dash_apps.utils.data_schema import get_trips_for_user
 import pandas as pd
 
 # Initialisation de Jinja2 pour le template des statistiques utilisateur
@@ -36,16 +36,18 @@ def render_user_stats(user):
     
     db_error = False
     try:
-        # Récupérer les stats via TripProcessor
-        trip_processor = TripProcessor()
-        all_trips_df = trip_processor.get_all_user_trips(str(user_id))
-        passenger_trips_df = trip_processor.get_trips_for_passenger(str(user_id))
+        # Récupérer les stats via notre nouveau module data_schema
+        driver_trips_df = get_trips_for_user(user_id, as_driver=True)
+        passenger_trips_df = get_trips_for_user(user_id, as_driver=False)
         
         # Calculer les statistiques
-        total_trips_count = len(all_trips_df)
-        driver_trips_count = len(all_trips_df[all_trips_df['role']=='driver']) if 'role' in all_trips_df.columns else 0
+        total_trips_count = len(driver_trips_df) + len(passenger_trips_df)
+        driver_trips_count = len(driver_trips_df)
         passenger_trips_count = len(passenger_trips_df)
-        total_distance = all_trips_df['trip_distance'].sum() if 'trip_distance' in all_trips_df.columns and not all_trips_df.empty else 0
+        # Calcul de la distance totale - vérifie si la colonne 'distance' existe
+        driver_distance = driver_trips_df['distance'].sum() if 'distance' in driver_trips_df.columns and not driver_trips_df.empty else 0
+        passenger_distance = passenger_trips_df['distance'].sum() if 'distance' in passenger_trips_df.columns and not passenger_trips_df.empty else 0
+        total_distance = driver_distance + passenger_distance
     except Exception as e:
         import traceback
         print(f"Erreur lors de la récupération des statistiques utilisateur: {str(e)}")
