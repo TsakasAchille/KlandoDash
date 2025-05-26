@@ -1,0 +1,49 @@
+<!-- Template pour le tableau des utilisateurs autorisés -->
+<div class="users-table-container">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Rôle</th>
+                <th>Actif</th>
+                <th>Ajouté le</th>
+                <th>Mis à jour le</th>
+                <th>Ajouté par</th>
+                <th>Notes</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.email }}</td>
+                <td>{{ user.role }}</td>
+                <td>{% if user.active %}✅{% else %}❌{% endif %}</td>
+                <td>{{ user.added_at }}</td>
+                <td>{{ user.updated_at }}</td>
+                <td>{{ user.added_by }}</td>
+                <td>{{ user.notes }}</td>
+                <td>
+                    <div class="d-flex justify-content-around">
+                        <button id="toggle-{{ user.email }}" 
+                                class="btn btn-sm btn-{% if user.active %}danger{% else %}success{% endif %} mx-1" 
+                                onclick="toggleUserStatus('{{ user.email }}')">
+                            {% if user.active %}Désactiver{% else %}Activer{% endif %}
+                        </button>
+                        <button id="role-{{ user.email }}" 
+                                class="btn btn-sm btn-primary mx-1" 
+                                onclick="changeUserRole('{{ user.email }}')">
+                            Rôle
+                        </button>
+                        <button id="delete-{{ user.email }}" 
+                                class="btn btn-sm btn-danger mx-1" 
+                                onclick="deleteUser('{{ user.email }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

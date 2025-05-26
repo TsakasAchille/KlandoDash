@@ -1,0 +1,38 @@
+<!-- Template pour le formulaire d'ajout d'utilisateur -->
+<div class="user-form-container card">
+    <div class="card-header">
+        <h4 class="card-title">Ajouter un utilisateur autorisu00e9</h4>
+    </div>
+    <div class="card-body">
+        <form id="add-user-form">
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="form-group mb-3">
+                        <label for="new-email">Email</label>
+                        <input type="email" class="form-control" id="new-email" placeholder="exemple@klando-sn.com" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group mb-3">
+                        <label for="new-role">Ru00f4le</label>
+                        <select class="form-select" id="new-role">
+                            <option value="admin">Administrateur</option>
+                            <option value="user" selected>Utilisateur</option>
+                            <option value="viewer">Consultant</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group mb-3">
+                        <label for="new-notes">Notes</label>
+                        <input type="text" class="form-control" id="new-notes" placeholder="Description optionnelle">
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center mt-2">
+                <button type="button" id="add-user-btn" class="btn btn-primary mt-3">Ajouter</button>
+                <span id="add-user-result" class="ms-3"></span>
+            </div>
+        </form>
+    </div>
+</div>

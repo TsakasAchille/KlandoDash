@@ -1,0 +1,33 @@
+<!-- Template principal pour la page d'administration -->
+<div class="admin-container">
+    <h2 class="mt-4 mb-4">Administration</h2>
+    
+    <!-- Zone pour les notifications d'action -->
+    <div id="admin-notification-container" class="my-3"></div>
+    
+    <!-- Contenu principal - visible uniquement pour les admins -->
+    <div id="admin-content">
+        <!-- Panneau d'ajout d'utilisateur -->
+        <div class="card mb-4" style="border-radius: 28px; box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px; padding: 20px;">
+            {{ user_form | safe }}
+        </div>
+        
+        <!-- Tableau des utilisateurs autorisés -->
+        <div class="card" style="border-radius: 28px; box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px; padding: 20px;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title">Utilisateurs autorisés</h4>
+                <button id="refresh-users-btn" class="btn btn-secondary btn-sm ms-auto">
+                    \u23f0 Rafraichir
+                </button>
+            </div>
+            <div class="card-body">
+                {{ user_table | safe }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts JavaScript pour la page d'administration -->
+<script>
+{{ admin_js | safe }}
+</script>
