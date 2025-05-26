@@ -99,25 +99,31 @@ def init_auth(server):
                 return redirect('/login')
 
 
-def is_valid_klando_user():
+def is_valid_klando_user(user=None):
     """Vérifie si l'utilisateur est authentifié (plus de vérification de domaine)"""
+    # Utiliser l'utilisateur passé en paramètre ou current_user si non spécifié
+    user_to_check = user if user is not None else current_user
+    
     try:
         # Tout utilisateur authentifié par Google est valide
         # Plus de vérification de domaine, Google Cloud gère les autorisations
-        return current_user.is_authenticated
+        return user_to_check.is_authenticated
     except Exception:
         # Fallback avec la session
         return session.get('logged_in', False)
 
 
-def render_user_menu():
+def render_user_menu(user=None):
     """Affiche le menu utilisateur à partir des informations de Flask-Login"""
     import dash_bootstrap_components as dbc
     from dash import html
     
+    # Utiliser l'utilisateur passé en paramètre ou current_user si non spécifié
+    user_to_display = user if user is not None else current_user
+    
     # Vérifier si l'utilisateur est authentifié avec Flask-Login
     try:
-        is_authenticated = current_user.is_authenticated
+        is_authenticated = user_to_display.is_authenticated
     except:
         is_authenticated = False
     
@@ -126,9 +132,9 @@ def render_user_menu():
 
     # Récupérer les données utilisateur
     try:
-        username = getattr(current_user, 'name', None)
-        email = getattr(current_user, 'email', None)
-        profile_pic_url = getattr(current_user, 'profile_pic', None)
+        username = getattr(user_to_display, 'name', None)
+        email = getattr(user_to_display, 'email', None)
+        profile_pic_url = getattr(user_to_display, 'profile_pic', None)
     except:
         # Fallback: utiliser les données de session
         username = session.get('user_name')

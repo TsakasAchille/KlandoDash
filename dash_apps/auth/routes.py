@@ -23,11 +23,8 @@ def show_login():
     logout_user()
     session.clear()
     
-    # Rendre le template HTML pour la page de login
-    try:
-        return render_template('login.html')
-    except Exception as e:
-        return f"Erreur lors du chargement du template: {str(e)}"
+    # Rediriger vers la page de login Dash
+    return redirect('/login')
 
 @auth_bp.route('/login')
 def login():
