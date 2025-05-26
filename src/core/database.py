@@ -179,8 +179,9 @@ class Transaction(Base):
     error_message = Column(String, nullable=True)
     has_transactions = Column(Boolean, nullable=True)
     transaction_metadata = Column(JSON, nullable=True)
-
+    
     def to_dict(self):
+        """Convertit l'objet en dictionnaire"""
         return {
             "id": self.id,
             "user_id": self.user_id,
@@ -196,6 +197,31 @@ class Transaction(Base):
             "error_message": self.error_message,
             "has_transactions": self.has_transactions,
             "transaction_metadata": self.transaction_metadata
+        }
+
+
+class DashAuthorizedUser(Base):
+    __tablename__ = "dash_authorized_users"
+    
+    # Dans la table réelle, email est la clé primaire (pas de colonne id)
+    email = Column(String, primary_key=True)
+    active = Column(Boolean, default=True)
+    role = Column(String, nullable=True)
+    added_at = Column(DateTime, nullable=True)  # équivalent à created_at
+    updated_at = Column(DateTime, nullable=True)
+    added_by = Column(String, nullable=True)  # personne qui a ajouté l'utilisateur
+    notes = Column(String, nullable=True)  # remarques additionnelles
+    
+    def to_dict(self):
+        """Convertit l'objet en dictionnaire"""
+        return {
+            "email": self.email,
+            "active": self.active,
+            "role": self.role,
+            "added_at": self.added_at,
+            "updated_at": self.updated_at,
+            "added_by": self.added_by,
+            "notes": self.notes
         }
 
 

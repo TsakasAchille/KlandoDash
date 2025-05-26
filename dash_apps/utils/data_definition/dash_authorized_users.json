@@ -1,0 +1,30 @@
+[
+  {
+    "column_name": "email",
+    "data_type": "character varying"
+  },
+  {
+    "column_name": "active",
+    "data_type": "boolean"
+  },
+  {
+    "column_name": "role",
+    "data_type": "character varying"
+  },
+  {
+    "column_name": "added_at",
+    "data_type": "timestamp without time zone"
+  },
+  {
+    "column_name": "updated_at",
+    "data_type": "timestamp without time zone"
+  },
+  {
+    "column_name": "added_by",
+    "data_type": "character varying"
+  },
+  {
+    "column_name": "notes",
+    "data_type": "text"
+  }
+]

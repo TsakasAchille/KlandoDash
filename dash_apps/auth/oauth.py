@@ -16,6 +16,7 @@ from oauthlib.oauth2 import WebApplicationClient
 # Internal imports
 from dash_apps.config import Config
 from dash_apps.auth.models import User
+from src.core.database import get_session, DashAuthorizedUser
 
 # Configuration OAuth pour Google
 GOOGLE_CLIENT_ID = Config.GOOGLE_CLIENT_ID
@@ -138,7 +139,7 @@ def google_callback():
         session.clear()
         session.modified = True
         
-        # Afficher le message d'erreur
+        # Afficher le message d'erreur uniquement via flash
         flash(error_msg, error_category)
         return redirect('/login')
     
@@ -146,24 +147,37 @@ def google_callback():
     if not email:
         error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Impossible de récupérer l'email de l'utilisateur."
         session.clear()
-        session['auth_error'] = error_msg
         session.modified = True
         flash(error_msg, "danger")
         return redirect('/login')
     
-    # Récupérer la liste des emails autorisés depuis la configuration
-    authorized_emails = Config.AUTHORIZED_EMAILS
-    
-    # Vérifier si l'email est dans la liste des utilisateurs de test autorisés
-    if not authorized_emails or email not in authorized_emails:
-        print(f"Email non autorisé: {email} - Non présent dans la liste des utilisateurs de test")
-        error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Vous n'êtes pas autorisé à accéder à cette application. Veuillez contacter l'administrateur."
-        
-        # Nettoyer la session et stocker le message d'erreur
+    # Vérifier si l'email est autorisé dans la base de données Supabase
+    authorized_user = None
+    try:
+        with get_session() as db_session:
+            authorized_user = db_session.query(DashAuthorizedUser).filter(
+                DashAuthorizedUser.email == email,
+                DashAuthorizedUser.active == True
+            ).first()
+    except Exception as e:
+        print(f"Erreur lors de la vérification de l'autorisation dans la base de données: {str(e)}")
+        error_msg = f"⚠️ ATTENTION : ERREUR INTERNE - Une erreur s'est produite lors de la vérification de vos droits d'accès. Veuillez contacter l'administrateur."
         session.clear()
         session.modified = True
+        flash(error_msg, "danger")
+        return redirect('/login')
+    
+    # Vérifier si l'utilisateur est autorisé
+    if not authorized_user:
+        print(f"Email non autorisé: {email} - Non présent dans la table dash_authorized_users ou compte inactif")
+        error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Vous n'êtes pas autorisé à accéder à cette application. Veuillez contacter l'administrateur."
         
-        # Afficher le message d'erreur
+        # Nettoyer la session
+        session.clear()
+        # Ne pas stocker le message d'erreur dans la session pour u00e9viter les doublons
+        session.modified = True
+        
+        # Afficher le message d'erreur uniquement via flash
         flash(error_msg, "danger")
         return redirect('/login')
     
