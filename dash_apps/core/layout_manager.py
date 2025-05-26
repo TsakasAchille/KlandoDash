@@ -15,7 +15,7 @@ def create_main_layout():
             dbc.Col([
                 html.Div([
                     html.Div([
-                        html.Img(src="/assets/icons/klando-500x173.png", style={"width": "100%", "max-width": "180px", "object-fit": "contain"}, className="mt-4 mb-4")
+                        html.Img(src="assets/icons/klando-500x173.png", style={"width": "100%", "max-width": "180px", "object-fit": "contain"}, className="mt-4 mb-4") 
                     ], style={"text-align": "center"}),
                     dbc.Nav([
                         dbc.NavLink("Utilisateurs", href="/users", active="exact", id="nav-users", className="mb-2"),
