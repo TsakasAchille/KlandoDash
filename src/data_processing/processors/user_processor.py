@@ -9,13 +9,14 @@ class UserProcessor:
         """Retourne tous les utilisateurs de la base (DataFrame)"""
         with get_session() as session:
             users = session.query(User).all()
-            return pd.DataFrame([u.to_dict() for u in users]) if users else pd.DataFrame()
+            valid_users = [u for u in users if u is not None]
+            return pd.DataFrame([u.to_dict() for u in valid_users]) if valid_users else pd.DataFrame()
 
     @staticmethod
     def get_user_by_id(user_id):
         """Retourne un utilisateur par son ID (dict)"""
         with get_session() as session:
-            user = session.query(User).filter(User.id == user_id).first()
+            user = session.query(User).filter(User.uid == user_id).first()
             return user.to_dict() if user else None
 
     @staticmethod
@@ -24,15 +25,16 @@ class UserProcessor:
         if not user_ids:
             return pd.DataFrame()
         with get_session() as session:
-            users = session.query(User).filter(User.id.in_(user_ids)).all()
-            return pd.DataFrame([u.to_dict() for u in users]) if users else pd.DataFrame()
+            users = session.query(User).filter(User.uid.in_(user_ids)).all()
+            valid_users = [u for u in users if u is not None]
+            return pd.DataFrame([u.to_dict() for u in valid_users]) if valid_users else pd.DataFrame()
 
     @staticmethod
     def get_user_transaction_types(user_id):
         with get_session() as session:
             service_codes = (
                 session.query(Transaction.service_code)
-                .filter(Transaction.user_id == str(user_id))
+                .filter(Transaction.user_id == str(user_id))  # user_id référence users.uid
                 .distinct()
                 .all()
             )

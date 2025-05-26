@@ -80,9 +80,9 @@ class Trip(Base):
 class User(Base):
     __tablename__ = "users"
     
-    id = Column(BigInteger, primary_key=True)
-    created_at = Column(DateTime(timezone=True), nullable=True)
-    uid = Column(String, nullable=True)
+    # Clé primaire est uid et non id
+    uid = Column(String, primary_key=True)
+    updated_at = Column(DateTime(timezone=True), nullable=True)  # La base utilise updated_at et non created_at
     display_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
     first_name = Column(String, nullable=True)
@@ -91,14 +91,13 @@ class User(Base):
     birth = Column(Date, nullable=True)
     photo_url = Column(String, nullable=True)
     short_description = Column(String, nullable=True)
-    phone_verified = Column(Boolean, nullable=True)
+    # phone_verified retiré car n'existe pas dans la base de données
     
     def to_dict(self):
         """Convertit l'objet en dictionnaire"""
         return {
-            "id": self.id,
-            "created_at": self.created_at,
-            "uid": self.uid,
+            "uid": self.uid,  # uid est la clé primaire, on ne renvoie pas id
+            "updated_at": self.updated_at,
             "display_name": self.display_name,
             "email": self.email,
             "first_name": self.first_name,
@@ -106,8 +105,8 @@ class User(Base):
             "phone_number": self.phone_number,
             "birth": self.birth,
             "photo_url": self.photo_url,
-            "short_description": self.short_description,
-            "phone_verified": self.phone_verified
+            "short_description": self.short_description
+            # "phone_verified" retiré car n'existe pas dans la base de données
         }
 
 
@@ -116,7 +115,7 @@ class TripPassenger(Base):
     
     id = Column(BigInteger, primary_key=True)
     trip_id = Column(String, ForeignKey("trips.trip_id"), nullable=False)
-    passenger_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
+    passenger_id = Column(String, ForeignKey("users.uid"), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(String, nullable=True)  # ex: confirmed, pending, cancelled
     seats = Column(Integer, nullable=True, default=1)  # nombre de sièges réservés
@@ -167,7 +166,7 @@ class Chat(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=True)
+    user_id = Column(String, ForeignKey("users.uid"), nullable=True)
     external_id = Column(String, nullable=True)
     msg = Column(String, nullable=True)
     amount = Column(Integer, nullable=True)
