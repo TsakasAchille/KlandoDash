@@ -49,6 +49,9 @@ def load_all_pages():
     # Page de support
     page_layouts['/support'] = load_page_from_file('04_support.py', 'Support')
 
+    # Page d'administration
+    page_layouts['/admin'] = load_page_from_file('05_admin.py', 'Administration')
+
     # Page de profil utilisateur
     page_layouts['/user-profile'] = load_page_from_file('05_user_profile.py', 'Profil')
 

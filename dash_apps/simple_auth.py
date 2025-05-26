@@ -166,6 +166,7 @@ def render_user_menu(user=None):
                 dbc.DropdownMenuItem(f"Email: {email}", header=True, style={"fontStyle": "italic", "fontSize": "0.8rem"}),
                 dbc.DropdownMenuItem(divider=True),
                 dbc.DropdownMenuItem([html.I(className="fas fa-user me-2"), "Profil"], href="#"),
+                dbc.DropdownMenuItem([html.I(className="fas fa-shield-alt me-2"), "Administrateur"], href="/admin"),
                 dbc.DropdownMenuItem([html.I(className="fas fa-sign-out-alt me-2"), "Se déconnecter"], href="/logout"),
             ],
             nav=True,

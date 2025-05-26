@@ -66,7 +66,7 @@ def register_callbacks(app):
             ], className="p-5")
         
         # L'utilisateur est authentifié, afficher la page demandée
-        if pathname in ["/", "/trips", "/users", "/stats", "/support", "/user-profile"]:
+        if pathname in ["/", "/trips", "/users", "/stats", "/support", "/admin", "/user-profile"]:
             # Obtenir le layout de la page demandée
             page_layout = get_page_layout(pathname)
             if page_layout:
