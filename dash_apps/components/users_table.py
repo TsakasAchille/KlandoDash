@@ -29,7 +29,12 @@ def render_users_table(users_df, columns=None, selected_rows=None):
         selected_rows = []
         
     # Préparation des colonnes
-    display_columns = [col for col in users_df.columns]
+    # Afficher toutes les colonnes du schéma users.json
+    display_columns = [
+        'uid', 'display_name', 'email', 'first_name', 'name', 'phone_number', 'birth', 'photo_url', 'short_description',
+        'driver_documents_transmitted', 'driver_licence_url', 'gender', 'id_card_url', 'rating', 'rating_count',
+        'role_preference', 'updated_at', 'created_time'
+    ]
     
     if columns is None:
         # Renommage des colonnes pour plus de lisibilité

@@ -10,7 +10,8 @@
       background: transparent;
       margin: 0;
       padding: 0;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
     
     .card-container {
@@ -175,11 +176,53 @@
           </div>
           <div class="detail-text">
             <div class="detail-label">Nom</div>
-            <div class="detail-value">{{ user.get('name', user.get('display_name', user.get('first_name', '-'))) }}</div>
+            <div class="detail-value">{{ user.get('display_name', user.get('name', user.get('first_name', '-'))) }}</div>
           </div>
         </div>
-        
-        <!-- Email -->
+         <!-- Score et votes (étoiles) -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f7b500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2"/>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Note</div>
+            <div class="detail-value" style="display: flex; align-items: center; gap: 8px;">
+              {% set rating = user.get('rating', 0) %}
+              {% set votes = user.get('rating_count', 0) %}
+              <span>
+                {% for i in range(1,6) %}
+                  {% if rating >= i %}
+                    <!-- étoile pleine -->
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#f7b500" stroke="#f7b500" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2"/>
+                    </svg>
+                  {% elif rating > i-1 %}
+                    <!-- demi-étoile -->
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                      <defs>
+                        <linearGradient id="half-{{ i }}">
+                          <stop offset="50%" stop-color="#f7b500"/>
+                          <stop offset="50%" stop-color="#e0e0e0"/>
+                        </linearGradient>
+                      </defs>
+                      <polygon points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2"
+                        fill="url(#half-{{ i }})" stroke="#f7b500" stroke-width="1"/>
+                    </svg>
+                  {% else %}
+                    <!-- étoile vide -->
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e0e0e0" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2"/>
+                    </svg>
+                  {% endif %}
+                {% endfor %}
+              </span>
+              <span style="color: #888; font-size: 14px;">{{ '%.2f' % rating }}/5&nbsp;&nbsp;  &nbsp;&nbsp;{{ votes }} votes</span>
+            </div>
+          </div>
+        </div>
+          <!-- Email -->
         <div class="detail-row">
           <div class="icon-circle icon-email">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e8b317" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -220,6 +263,142 @@
             <div class="detail-value user-id">{{ user.get('uid', user.get('id', '-')) }}</div>
           </div>
         </div>
+        <!-- Description courte -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Description</div>
+            <div class="detail-value">{{ user.get('short_description', '-') }}</div>
+          </div>
+        </div>
+        <!-- Date de naissance -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Date de naissance</div>
+            <div class="detail-value">{{ user.get('birth', '-') }}</div>
+          </div>
+        </div>
+        <!-- Genre -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Genre</div>
+            <div class="detail-value">{{ user.get('gender', '-') }}</div>
+          </div>
+        </div>
+       
+        <!-- Rôle préféré -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 3v4"/>
+              <path d="M8 3v4"/>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Rôle préféré</div>
+            <div class="detail-value">{{ user.get('role_preference', '-') }}</div>
+          </div>
+        </div>
+        <!-- Documents chauffeur transmis -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <path d="M9 9h6v6H9z"/>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Documents chauffeur transmis</div>
+            <div class="detail-value">{% if user.get('driver_documents_transmitted') %}Oui{% else %}Non{% endif %}</div>
+          </div>
+        </div>
+        <!-- Permis de conduire -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <path d="M9 9h6v6H9z"/>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Permis de conduire</div>
+            <div class="detail-value">{% if user.get('driver_licence_url') %}<a href="{{ user.get('driver_licence_url') }}" target="_blank">Voir</a>{% else %}-{% endif %}</div>
+          </div>
+        </div>
+        <!-- Carte d'identité -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <path d="M9 9h6v6H9z"/>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Carte d'identité</div>
+            <div class="detail-value">{% if user.get('id_card_url') %}<a href="{{ user.get('id_card_url') }}" target="_blank">Voir</a>{% else %}-{% endif %}</div>
+          </div>
+        </div>
+        <!-- Photo de profil -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Photo de profil</div>
+            <div class="detail-value">{% if user.get('photo_url') %}<a href="{{ user.get('photo_url') }}" target="_blank">Voir</a>{% else %}-{% endif %}</div>
+          </div>
+        </div>
+        <!-- Dates -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Créé le</div>
+            <div class="detail-value">{{ user.get('created_time', '-') }}</div>
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Mis à jour le</div>
+            <div class="detail-value">{{ user.get('updated_at', '-') }}</div>
+          </div>
+        </div>
+        
+      
       </div>
     </div>
   </div>

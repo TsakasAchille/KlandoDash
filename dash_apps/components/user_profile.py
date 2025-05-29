@@ -39,7 +39,8 @@ def render_user_profile(user):
             srcDoc=html_content,
             style={
                 'width': '100%',
-                'height': '530px',  # Hauteur adaptative
+                'height': '800px',  # Hauteur augmentée pour éviter la coupure
+                'overflowY': 'scroll',  # Scroll vertical autorisé
                 'border': 'none',
                 'overflow': 'hidden',
                 'backgroundColor': 'transparent',

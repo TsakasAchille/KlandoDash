@@ -91,6 +91,14 @@ class User(Base):
     birth = Column(Date, nullable=True)
     photo_url = Column(String, nullable=True)
     short_description = Column(String, nullable=True)
+    driver_documents_transmitted = Column(Boolean, nullable=True)
+    driver_licence_url = Column(String, nullable=True)
+    gender = Column(String, nullable=True)
+    id_card_url = Column(String, nullable=True)
+    rating = Column(Float, nullable=True)
+    rating_count = Column(Integer, nullable=True)
+    role_preference = Column(String, nullable=True)
+    created_time = Column(DateTime(timezone=True), nullable=True)
     # phone_verified retiré car n'existe pas dans la base de données
     
     def to_dict(self):
@@ -105,7 +113,15 @@ class User(Base):
             "phone_number": self.phone_number,
             "birth": self.birth,
             "photo_url": self.photo_url,
-            "short_description": self.short_description
+            "short_description": self.short_description,
+            "driver_documents_transmitted": self.driver_documents_transmitted,
+            "driver_licence_url": self.driver_licence_url,
+            "gender": self.gender,
+            "id_card_url": self.id_card_url,
+            "rating": self.rating,
+            "rating_count": self.rating_count,
+            "role_preference": self.role_preference,
+            "created_time": self.created_time
             # "phone_verified" retiré car n'existe pas dans la base de données
         }
 
