@@ -114,6 +114,23 @@ def update_selected_trip_id(selected_rows, trips_data):
         return selected_trip_id
     return None
 
+# Capture du paramètre trip_id dans l'URL
+@callback(
+    Output("klando-selected-trip-id", "data", allow_duplicate=True),
+    [Input("url", "search")],
+    [State("klando-selected-trip-id", "data")],
+    prevent_initial_call=True
+)
+def update_trip_id_from_url(url_search, current_trip_id):
+    import urllib.parse
+    if url_search:
+        params = urllib.parse.parse_qs(url_search.lstrip('?'))
+        trip_id_list = params.get('trip_id')
+        if trip_id_list:
+            return trip_id_list[0]
+    # Si pas de trip_id dans l'URL, conserver la sélection actuelle
+    return current_trip_id
+
 # Mise à jour de la page courante du tableau
 @callback(
     Output("klando-page-current", "data"),

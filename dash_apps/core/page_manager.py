@@ -56,7 +56,7 @@ def load_all_pages():
     page_layouts['/user-profile'] = load_page_from_file('05_user_profile.py', 'Profil')
 
     # Page principale: la page trajets
-    page_layouts['/'] = load_page_from_file('trips_page.py', 'Accueil/Trajets')
+    page_layouts['/'] = load_page_from_file('02_trips.py', 'Accueil/Trajets')
     page_layouts['/trips'] = page_layouts['/']
     
     return page_layouts
