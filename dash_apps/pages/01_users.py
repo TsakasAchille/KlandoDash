@@ -105,7 +105,12 @@ def show_users_content(users_data, selected_rows, url_search):
     # Si pas de sélection, garder la sélection courante
     if preselect_row is None:
         preselect_row = selected_rows or []
-    table = render_users_table(users_df, selected_rows=preselect_row)
+    page_size = 10
+    page_current = 0
+    if preselect_row and len(preselect_row) > 0:
+        idx = preselect_row[0]
+        page_current = idx // page_size
+    table = render_users_table(users_df, selected_rows=preselect_row, page_current=page_current)
     # Affichage du détail utilisateur, des statistiques et des trajets si une ligne est sélectionnée
     details = None
     stats = None
