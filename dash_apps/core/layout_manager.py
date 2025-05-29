@@ -22,9 +22,10 @@ def create_main_layout():
                         dbc.NavLink("Trajets", href="/trips", active="exact", id="nav-trips", className="mb-2"),
                         dbc.NavLink("Statistiques", href="/stats", active="exact", id="nav-stats", className="mb-2"),
                         dbc.NavLink("Support", href="/support", active="exact", id="nav-support", className="mb-2"),
-                        # Lien d'administration (affiché conditionnellement par callback)
+                        # Liens d'administration (affichés conditionnellement par callback)
                         html.Div(id="admin-nav-container", children=[
-                            dbc.NavLink("Administration", href="/admin", active="exact", id="nav-admin", className="mb-2 text-danger")
+                            dbc.NavLink("Administration", href="/admin", active="exact", id="nav-admin", className="mb-2 text-danger"),
+                            dbc.NavLink("Validation Conducteurs", href="/driver-validation", active="exact", id="nav-driver-validation", className="mb-2 text-danger")
                         ], style={"display": "none"}),
                         # Temporairement désactivé car incompatible avec le nouveau système d'authentification
                         # dbc.NavLink("Membres", href="/members", active="exact", id="nav-members", className="mb-2"),

@@ -7,51 +7,50 @@ from dash_apps.utils.admin_db import is_admin
 from dash_apps.utils.user_data import update_user_field
 from flask import session
 
-def get_layout():
-    """Génère le layout de la page de validation des documents conducteur"""
-    # Vérifier si l'utilisateur est admin
+# Layout principal de la page de validation des documents conducteur
+
+def serve_layout():
     user_email = session.get('user_email', None)
     if not is_admin(user_email):
         return dbc.Container([
             html.H2("Accès refusé", style={"marginTop": "20px"}),
             dbc.Alert("Vous n'êtes pas autorisé à accéder à cette page.", color="danger")
         ], fluid=True)
-    return dbc.Container([
-        html.H2("Validation des documents conducteur", style={"marginTop": "20px"}),
-        html.P("Cette page permet aux administrateurs de vérifier et valider les documents soumis par les conducteurs.",
-               className="text-muted"),
-        
-        dbc.Card([
-            dbc.CardHeader("Liste des documents à valider"),
-            dbc.CardBody([
-                # Zone de statut et de filtrage
-                dbc.Row([
-                    dbc.Col([
-                        dbc.Badge(id="documents-count-badge", color="primary", className="me-1"),
-                        html.Span(" documents en attente de validation", className="text-muted")
-                    ], width=6),
-                    dbc.Col([
-                        dbc.FormGroup([
-                            dbc.Label("Filtrer par statut:"),
-                            dbc.RadioItems(
-                                options=[
-                                    {"label": "En attente de validation", "value": "pending"},
-                                    {"label": "Tous les documents", "value": "all"},
-                                    {"label": "Documents validés", "value": "validated"}
-                                ],
-                                value="pending",
-                                id="validation-filter",
-                                inline=True
-                            )
-                        ])
-                    ], width=6)
-                ], className="mb-3"),
-                
-                # Tableau des utilisateurs avec documents
+    else:
+        return dbc.Container([
+            html.H2("Validation des documents conducteur", style={"marginTop": "20px"}),
+            html.P("Cette page permet aux administrateurs de vérifier et valider les documents soumis par les conducteurs.",
+                   className="text-muted"),
+            dbc.Card([
+                dbc.CardHeader("Liste des documents à valider"),
+                dbc.CardBody([
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Badge(id="documents-count-badge", color="primary", className="me-1"),
+                            html.Span(" documents en attente de validation", className="text-muted")
+                        ], width=6),
+                        dbc.Col([
+                            html.Div([
+                                dbc.Label("Filtrer par statut:"),
+                                dbc.RadioItems(
+                                    options=[
+                                        {"label": "En attente de validation", "value": "pending"},
+                                        {"label": "Tous les documents", "value": "all"},
+                                        {"label": "Documents validés", "value": "validated"}
+                                    ],
+                                    value="pending",
+                                    id="validation-filter",
+                                    inline=True
+                                )
+                            ])
+                        ], width=6)
+                    ])
+                ]),
                 html.Div(id="drivers-documents-container")
             ])
         ])
-    ], fluid=True)
+
+layout = serve_layout
 
 # Chargement des données utilisateurs avec documents
 @callback(
@@ -67,10 +66,20 @@ def load_drivers_data(filter_value):
     
     # Récupérer tous les utilisateurs
     users_df = UserProcessor.get_all_users()
+
+    if "is_driver_doc_validate" not in users_df.columns:
+        users_df["is_driver_doc_validate"] = None
     
     if users_df is None or users_df.empty:
         return dbc.Alert("Aucun utilisateur trouvé dans la base de données.", color="warning"), 0
     
+    # Debug : afficher les colonnes pour comprendre le problème
+    
+    if "driver_licence_url" not in users_df.columns:
+        return dbc.Alert("Erreur : la colonne 'driver_licence_url' est absente des données reçues.", color="danger"), 0
+    # Garder seulement les utilisateurs avec un permis transmis
+    users_df = users_df[users_df["driver_licence_url"].notnull()]
+
     # Filtrer selon les paramètres
     if filter_value == "pending":
         # Documents transmis mais pas encore validés
@@ -215,5 +224,3 @@ def validate_driver_documents(n_clicks, button_id):
         print(f"Erreur lors de la validation des documents: {str(e)}")
         return False, "Échec de validation", f"Erreur: {str(e)}"
 
-# Exporter le layout pour l'application principale
-layout = get_layout()

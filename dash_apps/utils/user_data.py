@@ -1,5 +1,5 @@
 import pandas as pd
-from dash_apps.core.database import get_db_connection
+from dash_apps.core.database import engine
 
 # Fonctions de traitement des données utilisateur
 
@@ -22,7 +22,7 @@ def update_user_field(uid, field_name, field_value):
         
     try:
         # Établir une connexion à la base de données
-        conn = get_db_connection()
+        conn = engine.connect()
         if not conn:
             print("Erreur: Impossible de se connecter à la base de données.")
             return False

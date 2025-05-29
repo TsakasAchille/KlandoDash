@@ -82,11 +82,11 @@ def register_callbacks(app):
             ], className="p-5")
         
         # L'utilisateur est authentifié, afficher la page demandée
-        if pathname in ["/", "/trips", "/users", "/stats", "/support", "/admin", "/user-profile"]:
+        if pathname in ["/", "/trips", "/users", "/stats", "/support", "/admin", "/user-profile", "/driver-validation"]:
             # Obtenir le layout de la page demandée
             page_layout = get_page_layout(pathname)
             if page_layout:
-                return page_layout
+                return page_layout() if callable(page_layout) else page_layout
             else:
                 # Page non trouvée dans les layouts chargés
                 return html.Div([
