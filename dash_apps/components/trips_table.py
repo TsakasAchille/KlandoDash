@@ -16,7 +16,7 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="trips-table", page_current=0):
+def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="trips-table", page_current=0, auto_callback=True):
     """
     Retourne un dash_table.DataTable stylé selon le design moderne de l'application.
     

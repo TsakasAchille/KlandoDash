@@ -1,4 +1,4 @@
-from dash import html, dcc, callback, Input, Output, State
+from dash import html, dcc, callback, Input, Output, State, callback_context
 import dash_bootstrap_components as dbc
 import pandas as pd
 
@@ -16,6 +16,7 @@ def get_layout():
         dcc.Store(id="klando-trips-store"),
         dcc.Store(id="klando-selected-trip-id", storage_type="session"),
         dcc.Store(id="klando-page-current", data=0),
+        dcc.Store(id="klando-url-trip-id", storage_type="memory"),
         
         html.H2("Dashboard utilisateurs et trajets", style={"marginTop": "20px"}),
         dbc.Row([
@@ -137,28 +138,23 @@ def update_selected_trip_id_from_url(url_trip_id, trips_data, current_trip_id):
     # Sinon, conserver la sélection actuelle
     return current_trip_id
 
-# Mise à jour de l'ID du trajet sélectionné depuis l'URL
+# Capturer le paramètre trip_id dans l'URL et le stocker séparément
 @callback(
-    Output("klando-selected-trip-id", "data", allow_duplicate=True),
+    Output("klando-url-trip-id", "data"),
     [Input("trips-url", "search")],
-    [State("klando-trips-store", "data")],
-    prevent_initial_call=True
+    prevent_initial_call=False
 )
-def update_selected_trip_id_from_url(url_search, trips_data):
+def capture_trip_id_from_url(url_search):
     import urllib.parse
     
-    if not url_search:
-        return None
-        
-    params = urllib.parse.parse_qs(url_search.lstrip('?'))
-    trip_id_list = params.get('trip_id')
-    
-    if not trip_id_list:
-        return None
-        
-    trip_id = trip_id_list[0]
-    print(f"Sélection du trajet {trip_id} depuis l'URL")
-    return trip_id
+    if url_search:
+        params = urllib.parse.parse_qs(url_search.lstrip('?'))
+        trip_id_list = params.get('trip_id')
+        if trip_id_list:
+            return trip_id_list[0]
+    return None
+
+# Ce callback a été fusionné avec update_selected_trip_id_combined
 
 # Mise à jour de la page courante du tableau en fonction du trajet sélectionné
 @callback(
@@ -195,11 +191,12 @@ def update_page_from_selected_trip(selected_trip_id, trips_data, current_page):
     # Par défaut, on garde la page courante
     return current_page
 
-# Mise à jour de l'ID du trajet sélectionné depuis le tableau
+# Mise à jour de l'ID du trajet à partir de la sélection dans le tableau
 @callback(
-    Output("klando-selected-trip-id", "data"),
+    Output("klando-selected-trip-id", "data", allow_duplicate=True),
     [Input("klando-trips-table", "selected_rows")],
-    [State("klando-trips-store", "data")]
+    [State("klando-trips-store", "data")],
+    prevent_initial_call=True
 )
 def update_selected_trip_id(selected_rows, trips_data):
     if selected_rows and trips_data:
