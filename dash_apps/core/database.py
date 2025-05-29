@@ -93,6 +93,7 @@ class User(Base):
     short_description = Column(String, nullable=True)
     driver_documents_transmitted = Column(Boolean, nullable=True)
     driver_licence_url = Column(String, nullable=True)
+    is_driver_doc_validate = Column(Boolean, nullable=True)
     gender = Column(String, nullable=True)
     id_card_url = Column(String, nullable=True)
     rating = Column(Float, nullable=True)
@@ -116,6 +117,7 @@ class User(Base):
             "short_description": self.short_description,
             "driver_documents_transmitted": self.driver_documents_transmitted,
             "driver_licence_url": self.driver_licence_url,
+            "is_driver_doc_validate": self.is_driver_doc_validate,
             "gender": self.gender,
             "id_card_url": self.id_card_url,
             "rating": self.rating,

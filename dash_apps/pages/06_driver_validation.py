@@ -50,15 +50,66 @@ def serve_layout():
             ])
         ])
 
+import dash
+
+refresh_store_id = "driver-validation-refresh"
+
+# Ajout du Store dans le layout
+
+def serve_layout():
+    user_email = session.get('user_email', None)
+    if not is_admin(user_email):
+        return dbc.Container([
+            html.H2("Accès refusé", style={"marginTop": "20px"}),
+            dbc.Alert("Vous n'êtes pas autorisé à accéder à cette page.", color="danger")
+        ], fluid=True)
+    else:
+        return dbc.Container([
+            html.H2("Validation des documents conducteur", style={"marginTop": "20px"}),
+            html.P("Cette page permet aux administrateurs de vérifier et valider les documents soumis par les conducteurs.",
+                   className="text-muted"),
+            dcc.Store(id=refresh_store_id, data=0),
+            dbc.Card([
+                dbc.CardHeader("Liste des documents à valider"),
+                dbc.CardBody([
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Badge(id="documents-count-badge", color="primary", className="me-1"),
+                            html.Span(" documents en attente de validation", className="text-muted")
+                        ], width=6),
+                        dbc.Col([
+                            html.Div([
+                                dbc.Label("Filtrer par statut:"),
+                                dbc.RadioItems(
+                                    options=[
+                                        {"label": "En attente de validation", "value": "pending"},
+                                        {"label": "Tous les documents", "value": "all"},
+                                        {"label": "Documents validés", "value": "validated"}
+                                    ],
+                                    value="pending",
+                                    id="validation-filter",
+                                    inline=True
+                                )
+                            ])
+                        ], width=6)
+                    ])
+                ]),
+                html.Div(id="drivers-documents-container")
+            ])
+        ])
+
 layout = serve_layout
 
-# Chargement des données utilisateurs avec documents
+
+# Ajout d'un Store pour forcer le refresh après validation/dévalidation
+refresh_store_id = "driver-validation-refresh"
+
 @callback(
     [Output("drivers-documents-container", "children"),
      Output("documents-count-badge", "children")],
-    [Input("validation-filter", "value")]
+    [Input("validation-filter", "value"), Input(refresh_store_id, "data")]
 )
-def load_drivers_data(filter_value):
+def load_drivers_data(filter_value, refresh_trigger):
     # S'assurer que l'utilisateur est admin
     user_email = session.get('user_email', None)
     if not is_admin(user_email):
@@ -73,40 +124,44 @@ def load_drivers_data(filter_value):
     if users_df is None or users_df.empty:
         return dbc.Alert("Aucun utilisateur trouvé dans la base de données.", color="warning"), 0
     
-    # Debug : afficher les colonnes pour comprendre le problème
-    
     if "driver_licence_url" not in users_df.columns:
         return dbc.Alert("Erreur : la colonne 'driver_licence_url' est absente des données reçues.", color="danger"), 0
-    # Garder seulement les utilisateurs avec un permis transmis
     users_df = users_df[users_df["driver_licence_url"].notnull()]
 
-    # Filtrer selon les paramètres
     if filter_value == "pending":
-        # Documents transmis mais pas encore validés
-        filtered_df = users_df[(users_df["driver_documents_transmitted"] == True) & 
+        pending_df = users_df[(users_df["driver_documents_transmitted"] == True) & 
                               (users_df["is_driver_doc_validate"].isnull() | 
                                (users_df["is_driver_doc_validate"] == False))]
+        filtered_df = pending_df
     elif filter_value == "validated":
-        # Documents déjà validés
-        filtered_df = users_df[(users_df["driver_documents_transmitted"] == True) & 
-                              (users_df["is_driver_doc_validate"] == True)]
+        filtered_df = users_df[(users_df["is_driver_doc_validate"] == True)]
     else:  # "all"
-        # Tous les utilisateurs ayant soumis des documents
-        filtered_df = users_df[users_df["driver_documents_transmitted"] == True]
+        filtered_df = users_df[users_df["is_driver_doc_validate"] == True]
     
-    # Nombre de documents en attente
     pending_count = len(filtered_df)
     
     if filtered_df.empty:
         return dbc.Alert("Aucun utilisateur correspondant aux critères de filtrage.", color="info"), pending_count
     
-    # Construire les cards pour chaque utilisateur
     user_cards = []
     for _, user in filtered_df.iterrows():
         user_card = create_user_document_card(user)
         user_cards.append(user_card)
     
     return html.Div(user_cards), pending_count
+
+# Callback statique pour rafraîchir la liste après validation/dévalidation
+@callback(
+    Output(refresh_store_id, "data"),
+    [Input({"type": "validate-docs", "index": dash.dependencies.ALL}, "n_clicks")],
+    [State(refresh_store_id, "data")],
+    prevent_initial_call=True
+)
+def refresh_after_validation(all_n_clicks, refresh_count):
+    ctx = dash.callback_context
+    if not ctx.triggered or all(v is None for v in all_n_clicks):
+        return dash.no_update
+    return (refresh_count or 0) + 1
 
 # Fonction pour créer une carte d'utilisateur avec ses documents
 def create_user_document_card(user):
@@ -116,6 +171,18 @@ def create_user_document_card(user):
     driver_licence = user.get("driver_licence_url")
     id_card = user.get("id_card_url")
     is_validated = user.get("is_driver_doc_validate", False)
+    
+    # Détermination du texte et de la couleur du bouton
+    if is_validated:
+        btn_text = "Dévalider les documents"
+        btn_color = "danger"
+        btn_disabled = False
+        status_text = "Documents validés"
+    else:
+        btn_text = "Valider les documents"
+        btn_color = "success"
+        btn_disabled = False
+        status_text = ""
     
     return dbc.Card([
         dbc.CardHeader([
@@ -170,14 +237,14 @@ def create_user_document_card(user):
             dbc.Row([
                 dbc.Col([
                     dbc.Button(
-                        "Valider les documents" if not is_validated else "Documents validés",
+                        btn_text,
                         id={"type": "validate-docs", "index": uid},
-                        color="success" if not is_validated else "secondary",
-                        disabled=is_validated,
+                        color=btn_color,
+                        disabled=btn_disabled,
                         className="me-2"
                     ),
                     html.Span(id={"type": "validation-status", "index": uid},
-                              children="Documents validés le XX/XX/XXXX" if is_validated else "")
+                              children=status_text if not is_validated else "")
                 ], width=12, className="text-end")
             ])
         ])
@@ -211,16 +278,23 @@ def validate_driver_documents(n_clicks, button_id):
     # Extraire l'ID utilisateur du bouton
     uid = button_id["index"]
     
+    # Récupérer l'état actuel de validation (depuis la base ou via le composant, ici on toggle)
+    from dash_apps.data_processing.processors.user_processor import UserProcessor
+    users_df = UserProcessor.get_all_users()
+    user_row = users_df[users_df["uid"] == uid]
+    is_validated = False
+    if not user_row.empty:
+        is_validated = user_row.iloc[0].get("is_driver_doc_validate", False)
+    
     try:
-        # Mettre à jour le statut de validation
-        update_user_field(uid, "is_driver_doc_validate", True)
-        
-        import datetime
-        validation_date = datetime.datetime.now().strftime("%d/%m/%Y")
-        status_text = f"Documents validés le {validation_date}"
-        
-        return True, "Documents validés", status_text
+        # Toggle la validation : si déjà validé, on dévalide ; sinon on valide
+        new_status = not is_validated
+        update_user_field(uid, "is_driver_doc_validate", new_status)
+        if new_status:
+            return False, "Dévalider les documents", "Documents validés"
+        else:
+            return False, "Valider les documents", ""
     except Exception as e:
-        print(f"Erreur lors de la validation des documents: {str(e)}")
-        return False, "Échec de validation", f"Erreur: {str(e)}"
+        print(f"Erreur lors de la validation/dévalidation des documents: {str(e)}")
+        return dash.no_update, "Échec de validation", f"Erreur: {str(e)}"
 

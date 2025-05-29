@@ -1,5 +1,6 @@
 import pandas as pd
 from dash_apps.core.database import engine
+from sqlalchemy import text
 
 # Fonctions de traitement des données utilisateur
 
@@ -28,20 +29,17 @@ def update_user_field(uid, field_name, field_value):
             return False
             
         # Préparer la requête SQL pour mettre à jour le champ spécifique
-        cursor = conn.cursor()
-        query = f"UPDATE users SET {field_name} = %s, updated_at = CURRENT_TIMESTAMP WHERE uid = %s"
-        cursor.execute(query, (field_value, uid))
+        query = text(f"UPDATE users SET {field_name} = :value, updated_at = CURRENT_TIMESTAMP WHERE uid = :uid")
+        result = conn.execute(query, {"value": field_value, "uid": uid})
         
         # Vérifier si la mise à jour a réussi
-        if cursor.rowcount > 0:
+        if result.rowcount > 0:
             conn.commit()
-            cursor.close()
             conn.close()
             print(f"Champ '{field_name}' mis à jour avec succès pour l'utilisateur {uid}.")
             return True
         else:
             conn.rollback()
-            cursor.close()
             conn.close()
             print(f"Aucune mise à jour effectuée pour l'utilisateur {uid}. L'utilisateur n'existe peut-être pas.")
             return False
