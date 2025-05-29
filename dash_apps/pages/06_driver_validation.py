@@ -163,6 +163,39 @@ def refresh_after_validation(all_n_clicks, refresh_count):
         return dash.no_update
     return (refresh_count or 0) + 1
 
+# Callback pour ouvrir/fermer le modal de comparaison des documents
+@callback(
+    Output({"type": "compare-modal", "index": dash.dependencies.ALL}, "is_open"),
+    [Input({"type": "compare-docs", "index": dash.dependencies.ALL}, "n_clicks"),
+     Input({"type": "close-compare-modal", "index": dash.dependencies.ALL}, "n_clicks")],
+    [State({"type": "compare-modal", "index": dash.dependencies.ALL}, "is_open"),
+     State({"type": "compare-docs", "index": dash.dependencies.ALL}, "id")],
+    prevent_initial_call=True
+)
+def toggle_compare_modal(open_clicks, close_clicks, is_open_list, compare_docs_ids):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return is_open_list
+    triggered = ctx.triggered[0]["prop_id"].split(".")[0]
+    # Récupérer l'index du modal à ouvrir/fermer
+    import json
+    try:
+        idx = json.loads(triggered)["index"]
+    except Exception:
+        return is_open_list
+    # On ouvre si bouton comparer cliqué, on ferme si bouton fermer cliqué
+    new_states = list(is_open_list)
+    input_ids = [i["index"] for i in compare_docs_ids]
+    try:
+        pos = input_ids.index(idx)
+    except ValueError:
+        return is_open_list
+    if "compare-docs" in triggered:
+        new_states[pos] = True
+    elif "close-compare-modal" in triggered:
+        new_states[pos] = False
+    return new_states
+
 # Fonction pour créer une carte d'utilisateur avec ses documents
 def create_user_document_card(user):
     uid = user.get("uid")
@@ -243,10 +276,35 @@ def create_user_document_card(user):
                         disabled=btn_disabled,
                         className="me-2"
                     ),
+                    dbc.Button(
+                        "Comparer",
+                        id={"type": "compare-docs", "index": uid},
+                        color="info",
+                        className="me-2"
+                    ),
                     html.Span(id={"type": "validation-status", "index": uid},
                               children=status_text if not is_validated else "")
                 ], width=12, className="text-end")
-            ])
+            ]),
+            # Modal de comparaison des documents
+            dbc.Modal([
+                dbc.ModalHeader("Comparer les documents"),
+                dbc.ModalBody([
+                    dbc.Row([
+                        dbc.Col([
+                            html.H6("Permis de conduire"),
+                            html.Img(src=driver_licence, style={"width": "100%", "border": "1px solid #ddd", "borderRadius": "8px"}) if driver_licence else html.Div("Document non disponible", className="text-danger")
+                        ], width=6),
+                        dbc.Col([
+                            html.H6("Carte d'identité"),
+                            html.Img(src=id_card, style={"width": "100%", "border": "1px solid #ddd", "borderRadius": "8px"}) if id_card else html.Div("Document non disponible", className="text-danger")
+                        ], width=6)
+                    ])
+                ]),
+                dbc.ModalFooter(
+                    dbc.Button("Fermer", id={"type": "close-compare-modal", "index": uid}, className="ms-auto")
+                )
+            ], id={"type": "compare-modal", "index": uid}, size="xl")
         ])
     ], className="mb-4")
 
