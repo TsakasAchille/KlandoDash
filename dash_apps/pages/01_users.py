@@ -94,17 +94,21 @@ def show_users_content(users_data, selected_rows, url_search):
         uid_list = params.get('uid')
         if uid_list:
             uid_from_url = uid_list[0]
-    # Si un uid est présent dans l'URL, présélectionner la ligne
-    if uid_from_url:
+    # Priorité à la sélection manuelle, puis à l'URL
+    # Si l'utilisateur a déjà fait une sélection manuelle, on la garde
+    if selected_rows:
+        preselect_row = selected_rows
+    # Sinon, on essaie de sélectionner depuis l'URL (uniquement au premier chargement)
+    elif uid_from_url:
         try:
             idx = users_df.index[users_df['uid'] == uid_from_url].tolist()
             if idx:
                 preselect_row = [idx[0]]
         except Exception:
-            preselect_row = selected_rows or []
-    # Si pas de sélection, garder la sélection courante
+            preselect_row = []
+    # Par défaut, aucune sélection
     if preselect_row is None:
-        preselect_row = selected_rows or []
+        preselect_row = []
     page_size = 10
     page_current = 0
     if preselect_row and len(preselect_row) > 0:
