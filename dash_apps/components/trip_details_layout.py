@@ -7,7 +7,7 @@ from dash_apps.components.trip_map import render_trip_map
 from dash_apps.components.trip_passengers import render_trip_passengers
 from dash_apps.components.trip_driver import render_trip_driver
 from dash_apps.utils.db_utils import get_trip_passengers
-from src.core.database import get_session, User
+from dash_apps.core.database import get_session, User
 from dash_apps.components.trip_details import render_trip_card_html
 
 # Styles globaux pour une cohérence visuelle

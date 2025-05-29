@@ -3,7 +3,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 
 # Imports pour le traitement des données
-from src.data_processing.processors.user_processor import UserProcessor
+from dash_apps.data_processing.processors.user_processor import UserProcessor
 from dash_apps.components.trips_table import render_trips_table
 from dash_apps.components.trip_details_layout import create_trip_details_layout
 

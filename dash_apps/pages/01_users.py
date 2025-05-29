@@ -53,7 +53,7 @@ layout = dbc.Container([
     prevent_initial_call=False
 )
 def load_users_data(n_clicks):
-    from src.data_processing.processors.user_processor import UserProcessor
+    from dash_apps.data_processing.processors.user_processor import UserProcessor
     users_df = UserProcessor.get_all_users()
     users_data = users_df.to_dict("records") if users_df is not None else None
     return users_data
