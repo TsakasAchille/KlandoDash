@@ -1,5 +1,5 @@
 import dash_bootstrap_components as dbc
-from dash import html, dcc, callback, Input, Output
+from dash import html, dcc, callback, Input, Output, State
 import pandas as pd
 from dash import dash_table
 from dash_apps.components.users_table import render_users_table
@@ -7,8 +7,12 @@ from dash_apps.components.user_details import render_user_details
 from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
 
-layout = dbc.Container([
+def get_layout():
+    """Génère le layout de la page utilisateurs avec des IDs uniquement pour cette page"""
+    return dbc.Container([
     dcc.Location(id="users-url", refresh=False),
+    dcc.Store(id="users-page-store", storage_type="session"),
+    dcc.Store(id="klando-selected-user-id", storage_type="session"),
     html.H2("Dashboard utilisateurs", style={"marginTop": "20px"}),
     dbc.Row([
         dbc.Col([], width=9),
@@ -17,7 +21,6 @@ layout = dbc.Container([
         ], width=3)
     ]),
     html.Div(id="refresh-users-message"),
-    dcc.Store(id="users-page-store"),
     dbc.Row([
         dbc.Col([
             # DataTable vide par défaut pour que l'id existe toujours
@@ -72,11 +75,13 @@ def show_refresh_users_message(n_clicks):
     Output("user-stats-panel", "children"),
     Output("user-trips-panel", "children"),
     Output("users-table", "selected_rows"),
+    Output("klando-selected-user-id", "data"),
     Input("users-page-store", "data"),
     Input("users-table", "selected_rows"),
     Input("users-url", "search"),
+    State("klando-selected-user-id", "data"),
 )
-def show_users_content(users_data, selected_rows, url_search):
+def show_users_content(users_data, selected_rows, url_search, stored_user_id):
     import urllib.parse
     from dash_apps.components.user_stats import render_user_stats
     from dash_apps.components.user_trips import render_user_trips
@@ -95,13 +100,21 @@ def show_users_content(users_data, selected_rows, url_search):
         if uid_list:
             uid_from_url = uid_list[0]
     # Priorité à la sélection manuelle, puis à l'URL
-    # Si l'utilisateur a déjà fait une sélection manuelle, on la garde
+    # Priorité à la sélection manuelle, puis à l'URL, puis à la session
     if selected_rows:
         preselect_row = selected_rows
-    # Sinon, on essaie de sélectionner depuis l'URL (uniquement au premier chargement)
+    # Sinon, on essaie de sélectionner depuis l'URL
     elif uid_from_url:
         try:
             idx = users_df.index[users_df['uid'] == uid_from_url].tolist()
+            if idx:
+                preselect_row = [idx[0]]
+        except Exception:
+            preselect_row = []
+    # Enfin, on essaie de récupérer depuis la session
+    elif stored_user_id:
+        try:
+            idx = users_df.index[users_df['uid'] == stored_user_id].tolist()
             if idx:
                 preselect_row = [idx[0]]
         except Exception:
@@ -124,4 +137,12 @@ def show_users_content(users_data, selected_rows, url_search):
         details = render_user_details(user)
         stats = render_user_stats(user)
         trips = render_user_trips(user)
-    return table, details, stats, trips, preselect_row
+    # Récupérer l'uid de l'utilisateur sélectionné pour la session
+    selected_user_id = None
+    if preselect_row and len(preselect_row) > 0:
+        selected_user_id = users_df.iloc[preselect_row[0]].get('uid')
+        
+    return table, details, stats, trips, preselect_row, selected_user_id
+
+# Exporter le layout pour l'application principale
+layout = get_layout()
