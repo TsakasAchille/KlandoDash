@@ -35,7 +35,6 @@ def serve_layout():
                                 dbc.RadioItems(
                                     options=[
                                         {"label": "En attente de validation", "value": "pending"},
-                                        {"label": "Tous les documents", "value": "all"},
                                         {"label": "Documents validés", "value": "validated"}
                                     ],
                                     value="pending",
@@ -83,7 +82,6 @@ def serve_layout():
                                 dbc.RadioItems(
                                     options=[
                                         {"label": "En attente de validation", "value": "pending"},
-                                        {"label": "Tous les documents", "value": "all"},
                                         {"label": "Documents validés", "value": "validated"}
                                     ],
                                     value="pending",
@@ -135,8 +133,8 @@ def load_drivers_data(filter_value, refresh_trigger):
         filtered_df = pending_df
     elif filter_value == "validated":
         filtered_df = users_df[(users_df["is_driver_doc_validate"] == True)]
-    else:  # "all"
-        filtered_df = users_df[users_df["is_driver_doc_validate"] == True]
+    else:
+        filtered_df = users_df.iloc[0:0]  # empty if unknown value
     
     pending_count = len(filtered_df)
     
