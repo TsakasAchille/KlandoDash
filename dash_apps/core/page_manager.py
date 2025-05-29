@@ -49,8 +49,24 @@ def load_all_pages():
     # Page de support
     page_layouts['/support'] = load_page_from_file('04_support.py', 'Support')
 
-    # Page d'administration
+    # Pages d'administration
     page_layouts['/admin'] = load_page_from_file('05_admin.py', 'Administration')
+    
+    # Page de validation des documents conducteur
+    try:
+        driver_validation_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pages', 'admin', 'driver_validation.py')
+        spec = importlib.util.spec_from_file_location('driver_validation_module', driver_validation_path)
+        driver_validation_module = importlib.util.module_from_spec(spec)
+        sys.modules['driver_validation_module'] = driver_validation_module
+        spec.loader.exec_module(driver_validation_module)
+        
+        if hasattr(driver_validation_module, 'layout'):
+            print("Page chargée: Validation Documents Conducteur (admin/driver_validation.py)")
+            page_layouts['/admin/driver-validation'] = driver_validation_module.layout
+        else:
+            print("Pas de layout dans admin/driver_validation.py")
+    except Exception as e:
+        print(f"Erreur de chargement de admin/driver_validation.py: {str(e)}")
 
     # Page de profil utilisateur
     page_layouts['/user-profile'] = load_page_from_file('05_user_profile.py', 'Profil')

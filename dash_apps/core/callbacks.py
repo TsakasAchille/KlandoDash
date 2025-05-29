@@ -1,8 +1,10 @@
 from dash import Input, Output, callback_context, no_update
 from flask_login import current_user
+from flask import session
 from dash_apps.simple_auth import render_user_menu, is_valid_klando_user
 from dash_apps.core.page_manager import get_page_layout
 from dash_apps.core.auth_manager import handle_logout
+from dash_apps.utils.admin_db import is_admin
 import dash_bootstrap_components as dbc
 from dash import html
 
@@ -38,6 +40,20 @@ def register_callbacks(app):
             return html.Div([
                 dbc.Button("Se connecter", href="/login", color="primary", size="sm")
             ])
+            
+    # Callback pour afficher ou masquer le lien d'administration
+    @app.callback(
+        Output("admin-nav-container", "style"),
+        Input("url", "pathname")
+    )
+    def toggle_admin_link(pathname):
+        """Affiche ou masque le lien d'administration selon les droits de l'utilisateur"""
+        # Vérifier si l'utilisateur est connecté et admin
+        user_email = session.get('user_email', None)
+        if user_email and is_admin(user_email):
+            return {"display": "block"}  # Afficher le lien
+        else:
+            return {"display": "none"}  # Masquer le lien
 
     # Callback pour afficher la page demandée dans le contenu principal
     @app.callback(
