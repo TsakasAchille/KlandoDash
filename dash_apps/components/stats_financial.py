@@ -206,16 +206,16 @@ def create_price_vs_distance(trips_df):
         
         try:
             # Verifier qu'il y a suffisamment de donnes valides pour calculer une tendance
-            valid_data = trips_df.dropna(subset=['trip_distance', 'price_per_seat'])
+            valid_data = trips_df.dropna(subset=['distance', 'passenger_price'])
             
             # Verifier qu'il y a au moins 2 points de donnes diffrents
-            if len(valid_data) >= 2 and valid_data['trip_distance'].nunique() >= 2:
-                z = np.polyfit(valid_data['trip_distance'], valid_data['price_per_seat'], 1)
-                y_hat = np.poly1d(z)(valid_data['trip_distance'])
+            if len(valid_data) >= 2 and valid_data['distance'].nunique() >= 2:
+                z = np.polyfit(valid_data['distance'], valid_data['passenger_price'], 1)
+                y_hat = np.poly1d(z)(valid_data['distance'])
                 
                 fig.add_traces(
                     go.Scatter(
-                        x=valid_data['trip_distance'],
+                        x=valid_data['distance'],
                         y=y_hat,
                         mode='lines',
                         name='Tendance',

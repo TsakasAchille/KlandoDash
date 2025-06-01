@@ -5,7 +5,7 @@ from dash import dash_table
 from dash_apps.components.users_table import render_users_table
 from dash_apps.components.user_details import render_user_details
 from dash_apps.components.user_stats import render_user_stats
-from dash_apps.components.user_trips import render_user_trips
+from dash_apps.components.user_trips import render_user_trips  # TODO: adapter pour bookings si besoin
 
 def get_layout():
     """Génère le layout de la page utilisateurs avec des IDs uniquement pour cette page"""
@@ -56,9 +56,9 @@ def get_layout():
     prevent_initial_call=False
 )
 def load_users_data(n_clicks):
-    from dash_apps.data_processing.processors.user_processor import UserProcessor
-    users_df = UserProcessor.get_all_users()
-    users_data = users_df.to_dict("records") if users_df is not None else None
+    from dash_apps.repositories.user_repository import UserRepository
+    users = UserRepository.get_all_users()
+    users_data = [u.model_dump() for u in users] if users else []
     return users_data
 
 @callback(
@@ -84,7 +84,7 @@ def show_refresh_users_message(n_clicks):
 def show_users_content(users_data, selected_rows, url_search, stored_user_id):
     import urllib.parse
     from dash_apps.components.user_stats import render_user_stats
-    from dash_apps.components.user_trips import render_user_trips
+    from dash_apps.components.user_trips import render_user_trips  # TODO: adapter pour bookings si besoin
     preselect_row = None
     if not users_data:
         # Affiche un DataTable vide pour que l'Input existe toujours

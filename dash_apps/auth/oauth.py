@@ -16,7 +16,8 @@ from oauthlib.oauth2 import WebApplicationClient
 # Internal imports
 from dash_apps.config import Config
 from dash_apps.auth.models import User
-from dash_apps.core.database import get_session, DashAuthorizedUser
+from dash_apps.core.database import get_session
+from dash_apps.models.authorized_user import DashAuthorizedUser
 
 # Configuration OAuth pour Google
 GOOGLE_CLIENT_ID = Config.GOOGLE_CLIENT_ID

@@ -1,0 +1,18 @@
+{# Template Jinja2 pour afficher la liste des réservations (bookings) d'un trajet #}
+<div class="bookings-list">
+    <h4>Réservations</h4>
+    {% if bookings and bookings|length > 0 %}
+        <ul class="list-group">
+            {% for booking in bookings %}
+                <li class="list-group-item">
+                    <strong>Passager :</strong> {{ booking.get('passenger_id', '-') }}<br>
+                    <strong>Status :</strong> {{ booking.get('status', '-') }}<br>
+                    <strong>Sièges :</strong> {{ booking.get('seats', 1) }}<br>
+                    <strong>Réservé le :</strong> {{ booking.get('created_at', '-') }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="alert alert-info">Aucune réservation pour ce trajet.</div>
+    {% endif %}
+</div>

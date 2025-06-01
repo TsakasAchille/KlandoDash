@@ -4,10 +4,11 @@ import pandas as pd
 
 from dash_apps.components.trip_stats import render_trip_stats
 from dash_apps.components.trip_map import render_trip_map
-from dash_apps.components.trip_passengers import render_trip_passengers
+from dash_apps.components.bookings import render_bookings
 from dash_apps.components.trip_driver import render_trip_driver
-from dash_apps.utils.db_utils import get_trip_passengers
-from dash_apps.core.database import get_session, User
+from dash_apps.utils.db_utils import get_trip_bookings
+from dash_apps.core.database import get_session
+from dash_apps.models.user import User
 from dash_apps.components.trip_details import render_trip_card_html
 
 # Styles globaux pour une cohérence visuelle
@@ -68,14 +69,7 @@ def create_trip_details_layout(selected_trip_id, trips_data):
     
     # Récupération des passagers
     trip_id = trip_row.get("trip_id")
-    passenger_ids = get_trip_passengers(trip_id)
-    if not passenger_ids:
-        passengers_list = []
-    else:
-        with get_session() as session:
-            users = session.query(User).filter(User.uid.in_(passenger_ids)).all()
-            users_df = pd.DataFrame([u.to_dict() for u in users]) if users else pd.DataFrame()
-        passengers_list = users_df.to_dict("records") if not users_df.empty else []
+    bookings_list = get_trip_bookings(trip_id)
     
     # Génération des composants
     trip_details_card = html.Div(
@@ -96,7 +90,7 @@ def create_trip_details_layout(selected_trip_id, trips_data):
     
     trip_stats_component = render_trip_stats(trip_row)
     trip_map_component = render_trip_map(trip_row)
-    trip_passengers_component = render_trip_passengers(passengers_list)
+    bookings_component = render_bookings(bookings_list)
     trip_driver_component = render_trip_driver(trip_row)
     
     # Construction du layout en réutilisant les composants directement
@@ -123,6 +117,6 @@ def create_trip_details_layout(selected_trip_id, trips_data):
                 style=SPACING_STYLE
             ),
             # Liste des passagers
-            trip_passengers_component
+            bookings_component
         ], md=8, xs=12, style=COLUMN_STYLE)
     ], className="align-items-stretch", style={"margin": "8px 0"})

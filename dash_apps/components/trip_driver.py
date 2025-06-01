@@ -2,7 +2,8 @@ from dash import html
 import dash_bootstrap_components as dbc
 from jinja2 import Environment, FileSystemLoader
 import os
-from dash_apps.core.database import get_session, User
+from dash_apps.core.database import get_session
+from dash_apps.models.user import User
 
 # Initialisation de Jinja2 pour le template du conducteur du trajet
 template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")

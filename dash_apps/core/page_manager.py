@@ -10,30 +10,36 @@ def load_page_from_file(file_name, page_name):
     """
     Charge une page à partir d'un fichier Python et retourne son layout
     """
+    print(f"[PAGE_MANAGER] Tentative de chargement de la page: {page_name} (fichier: {file_name})")
     try:
         file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pages', file_name)
+        print(f"[PAGE_MANAGER] Chemin résolu: {file_path}")
         if not os.path.exists(file_path):
-            print(f"Fichier non trouvé: {file_path}")
+            print(f"[PAGE_MANAGER][ERREUR] Fichier non trouvé: {file_path}")
             return None
-            
-        # Définir un nom de module unique
         module_name = f"page_{file_name.replace('.py', '')}_module"
-        
-        # Charger le module via spec_from_file_location
+        print(f"[PAGE_MANAGER] Nom du module importé: {module_name}")
         spec = importlib.util.spec_from_file_location(module_name, file_path)
         page_module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = page_module
-        spec.loader.exec_module(page_module)
-        
-        # Vérifier si le layout existe
+        try:
+            spec.loader.exec_module(page_module)
+            print(f"[PAGE_MANAGER] Module {module_name} exécuté avec succès.")
+        except Exception as import_exc:
+            print(f"[PAGE_MANAGER][ERREUR IMPORT] Exception lors de l'import de {file_name}: {import_exc}")
+            import traceback
+            traceback.print_exc()
+            return None
         if hasattr(page_module, 'layout'):
-            print(f"Page chargée: {page_name} ({file_name})")
+            print(f"[PAGE_MANAGER][SUCCÈS] Layout trouvé pour {page_name} ({file_name})")
             return page_module.layout
         else:
-            print(f"Pas de layout dans {file_name}")
+            print(f"[PAGE_MANAGER][ERREUR] Pas de layout dans {file_name}")
             return None
     except Exception as e:
-        print(f"Erreur de chargement de {file_name}: {str(e)}")
+        print(f"[PAGE_MANAGER][ERREUR GLOBALE] Exception lors du chargement de {file_name}: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def load_all_pages():
@@ -59,7 +65,7 @@ def load_all_pages():
     page_layouts['/user-profile'] = load_page_from_file('05_user_profile.py', 'Profil')
 
     # Page principale: la page trajets
-    page_layouts['/'] = load_page_from_file('02_trips.py', 'Accueil/Trajets')
+    page_layouts['/'] = load_page_from_file('trips.py', 'Accueil/Trajets')
     page_layouts['/trips'] = page_layouts['/']
     
     return page_layouts

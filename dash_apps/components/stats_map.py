@@ -40,7 +40,7 @@ def render_stats_map(trips_data):
     
     # Calculer les métriques de la carte
     total_trips = len(trips_df)
-    total_distance = trips_df['trip_distance'].sum() if 'trip_distance' in trips_df.columns else 0
+    total_distance = trips_df['distance'].sum() if 'distance' in trips_df.columns else 0
     
     # Métriques de la carte
     map_metrics = [
@@ -166,7 +166,7 @@ def create_trips_summary_table(trips_df):
     
     # Sélectionner les colonnes pertinentes si elles existent
     display_columns = []
-    for col in ['departure_name', 'destination_name', 'trip_distance', 'price_per_seat', 'departure_date']:
+    for col in ['departure_name', 'destination_name', 'distance', 'passenger_price', 'departure_date']:
         if col in trips_df.columns:
             display_columns.append(col)
     

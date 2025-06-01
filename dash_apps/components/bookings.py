@@ -7,21 +7,21 @@ import dash
 # Initialisation de Jinja2 pour le template de passagers
 template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
 env = Environment(loader=FileSystemLoader(template_dir))
-passengers_template = env.get_template("passengers_template.jinja2")
+bookings_template = env.get_template("passengers_template.jinja2")
 
 # Affiche la liste des passagers/réservations d'un trajet
-def render_trip_passengers(passengers):
+def render_bookings(bookings):
     """
-    Affiche la liste des passagers (déjà enrichie, issue de la base SQL ou d'une liste).
+    Affiche la liste des réservations (déjà enrichie, issue de la base SQL ou d'une liste).
     Paramètres :
-        passengers : list[dict] | None
+        bookings : list[dict] | None
     """
-    if passengers is None:
-        passengers = []
+    if bookings is None:
+        bookings = []
         
     # Rendu du template HTML avec Jinja2
-    html_content = passengers_template.render(
-        passengers=passengers
+    html_content = bookings_template.render(
+        bookings=bookings
     )
     
     # Utiliser la même technique que pour trip_map et trip_details

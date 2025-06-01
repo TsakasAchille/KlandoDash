@@ -1,4 +1,6 @@
-from dash_apps.core.database import User, Transaction, get_session
+from dash_apps.models.user import User
+from dash_apps.core.database import get_session
+# Transaction à corriger si besoin
 import pandas as pd
 
 class UserProcessor:

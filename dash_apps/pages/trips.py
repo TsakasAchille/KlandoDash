@@ -1,9 +1,11 @@
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
-import pandas as pd
 
 # Imports pour le traitement des données
-from dash_apps.data_processing.processors.user_processor import UserProcessor
+from dash_apps.models.user import User
+from dash_apps.repositories.trip_repository import TripRepository
+from dash_apps.schemas.trip import TripSchema
+from dash_apps.core.database import get_session
 from dash_apps.components.trips_table import render_trips_table
 from dash_apps.components.trip_details_layout import create_trip_details_layout
 
@@ -40,15 +42,12 @@ def get_layout():
     [Input("klando-refresh-btn", "n_clicks")]
 )
 def load_data(n_clicks):
-    # Charger les données utilisateurs et trajets
-    users_df = UserProcessor.get_all_users()
-    # get_trip_data doit retourner un DataFrame de trajets
-    from dash_apps.utils.trip_data import get_trip_data
-    trips_df = get_trip_data()
-    
-    users_data = users_df.to_dict("records") if users_df is not None else []
-    trips_data = trips_df.to_dict("records") if trips_df is not None else []
-    
+    # Charger les données utilisateurs et trajets via SQLAlchemy
+    with get_session() as session:
+        users = session.query(User).all()
+        users_data = [u.to_dict() for u in users] if users else []
+        trips = TripRepository.list_trips(session)
+        trips_data = [t.model_dump() for t in trips] if trips else []
     return users_data, trips_data
 
 # Message de rafraîchissement
@@ -81,45 +80,31 @@ def update_trips_content(users_data, trips_data, selected_trip_id, page_current)
             className="mt-3"
         )
 
-    # Préparer les données pour affichage
-    trips_df = pd.DataFrame(trips_data)
-    
-    # Présélectionner une ligne si un trajet est déjà sélectionné
+    # Préparer les données pour affichage (plus de pandas)
     preselect_row = []
-    if selected_trip_id and 'trip_id' in trips_df.columns:
-        # Convertir selected_trip_id en string pour assurer la compatibilité des types
+    trips_list = trips_data if trips_data else []
+    # Trouver l'index du trajet sélectionné
+    if selected_trip_id and trips_list and isinstance(trips_list, list):
         selected_trip_id_str = str(selected_trip_id)
-        
-        # Convertir les trip_id en string pour une comparaison fiable
-        if 'trip_id' in trips_df.columns:
-            trips_df['trip_id_str'] = trips_df['trip_id'].astype(str)
-            idx = trips_df.index[trips_df['trip_id_str'] == selected_trip_id_str].tolist()
-            
-            if idx:
-                preselect_row = [idx[0]]
-                # Assurez-vous que la page actuelle est celle où se trouve le trajet sélectionné
-                page_size = 10  # Même valeur que dans render_trips_table
-                calculated_page = idx[0] // page_size
+        for idx, trip in enumerate(trips_list):
+            if str(trip.get('trip_id')) == selected_trip_id_str:
+                preselect_row = [idx]
+                page_size = 10
+                calculated_page = idx // page_size
                 if page_current != calculated_page:
                     page_current = calculated_page
-    
-    # Créer le tableau des trajets
+                break
+    # Créer le tableau des trajets (en passant la liste de dicts)
+    import pandas as pd
+    trips_df = pd.DataFrame(trips_list) if trips_list else pd.DataFrame()
     table = render_trips_table(trips_df, selected_rows=preselect_row, table_id="klando-trips-table", page_current=page_current)
-    
-    # Message d'instruction adapté selon qu'un trajet est sélectionné ou non
-    if preselect_row:
-        instruction = html.P("Trajet sélectionné. Les détails sont affichés ci-dessous.", 
-                          className="text-success fst-italic")
-    else:
-        instruction = html.P("Sélectionnez un trajet dans le tableau pour voir les détails.", 
-                          className="text-muted fst-italic")
-    
+    # Message d'instruction
+    instruction = html.P("Trajet sélectionné. Les détails sont affichés ci-dessous.", className="text-success fst-italic") if preselect_row else html.P("Sélectionnez un trajet dans le tableau pour voir les détails.", className="text-muted fst-italic")
     return html.Div([
         instruction, 
         table, 
         html.Hr(className="my-4")
     ])
-
 # Mise à jour de l'ID du trajet sélectionné à partir de l'URL
 @callback(
     Output("klando-selected-trip-id", "data", allow_duplicate=True),
@@ -173,26 +158,15 @@ def update_page_from_selected_trip(selected_trip_id, trips_data, current_page):
     if not selected_trip_id or not trips_data:
         return current_page
         
-    try:
-        # Trouver l'index du trajet sélectionné
-        trips_df = pd.DataFrame(trips_data)
-        if 'trip_id' in trips_df.columns:
-            # Convertir en string pour éviter les problèmes de types
-            trips_df['trip_id_str'] = trips_df['trip_id'].astype(str)
-            selected_trip_id_str = str(selected_trip_id)
-            
-            # Trouver l'indice du trajet sélectionné
-            idx = trips_df.index[trips_df['trip_id_str'] == selected_trip_id_str].tolist()
-            if idx:
-                # Calculer la page correspondante
-                page_size = 10  # Taille de page par défaut dans render_trips_table
-                calculated_page = idx[0] // page_size
-                print(f"Trajet {selected_trip_id} trouvé à l'indice {idx[0]}, page {calculated_page}")
+    # Trouver l'index du trajet sélectionné sans pandas
+    if selected_trip_id and trips_data:
+        selected_trip_id_str = str(selected_trip_id)
+        for idx, trip in enumerate(trips_data):
+            if str(trip.get('trip_id')) == selected_trip_id_str:
+                page_size = 10
+                calculated_page = idx // page_size
+                print(f"Trajet {selected_trip_id} trouvé à l'indice {idx}, page {calculated_page}")
                 return calculated_page
-    except Exception as e:
-        print(f"Erreur lors du calcul de la page: {str(e)}")
-    
-    # Par défaut, on garde la page courante
     return current_page
 
 # Mise à jour de l'ID du trajet sélectionné depuis le tableau
@@ -203,10 +177,13 @@ def update_page_from_selected_trip(selected_trip_id, trips_data, current_page):
 )
 def update_selected_trip_id(selected_rows, trips_data):
     if selected_rows and trips_data:
-        trips_df = pd.DataFrame(trips_data)
-        selected_trip_id = trips_df.iloc[selected_rows[0]]['trip_id']
-        print(f"Sélection du trajet {selected_trip_id} depuis le tableau")
-        return selected_trip_id
+        try:
+            selected_trip = trips_data[selected_rows[0]]
+            selected_trip_id = selected_trip.get('trip_id')
+            print(f"Sélection du trajet {selected_trip_id} depuis le tableau")
+            return selected_trip_id
+        except Exception as e:
+            print(f"Erreur lors de la sélection du trajet : {e}")
     return None
 
 # Capturer les changements manuels de page

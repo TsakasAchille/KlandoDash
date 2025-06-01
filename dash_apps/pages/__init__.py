@@ -1,1 +1,1 @@
-from .trips_page import layout as trips_page
+from .trips import layout as trips_page

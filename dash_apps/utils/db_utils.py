@@ -6,17 +6,18 @@ import os
 DATABASE_URL = os.environ.get("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
 
-def get_trip_passengers(trip_id):
+from dash_apps.models.bookings import Booking
+from dash_apps.core.database import get_session
+
+def get_trip_bookings(trip_id):
     """
-    Récupère la liste des IDs passagers pour un trip_id depuis la table bookings.
+    Récupère la liste complète des réservations pour un trip_id depuis la table bookings (ORM).
+    Retourne une liste de dicts (booking.to_dict()) pour chaque réservation.
     """
-    query = text("""
-        SELECT user_id as passenger_id FROM bookings WHERE trip_id = :trip_id
-    """)
-    with engine.connect() as conn:
-        try:
-            df = pd.read_sql(query, conn, params={"trip_id": trip_id})
-            return df["passenger_id"].tolist() if not df.empty else []
-        except Exception as e:
-            print(f"Error fetching passengers: {e}")
-            return []
+    try:
+        with get_session() as session:
+            bookings = session.query(Booking).filter(Booking.trip_id == trip_id).all()
+            return [b.to_dict() for b in bookings] if bookings else []
+    except Exception as e:
+        print(f"Error fetching bookings: {e}")
+        return []

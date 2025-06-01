@@ -2,9 +2,9 @@ import dash_bootstrap_components as dbc
 from dash import html, dcc, callback, Input, Output, State
 import dash
 import pandas as pd
-from dash_apps.data_processing.processors.user_processor import UserProcessor
+from dash_apps.data_processing.processors.user_processor_old import UserProcessor
 from dash_apps.utils.admin_db import is_admin
-from dash_apps.utils.user_data import update_user_field
+from dash_apps.utils.user_data_old import update_user_field
 from flask import session
 
 # Layout principal de la page de validation des documents conducteur
@@ -335,7 +335,7 @@ def validate_driver_documents(n_clicks, button_id):
     uid = button_id["index"]
     
     # Récupérer l'état actuel de validation (depuis la base ou via le composant, ici on toggle)
-    from dash_apps.data_processing.processors.user_processor import UserProcessor
+    from dash_apps.data_processing.processors.user_processor_old import UserProcessor
     users_df = UserProcessor.get_all_users()
     user_row = users_df[users_df["uid"] == uid]
     is_validated = False

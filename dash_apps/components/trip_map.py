@@ -15,7 +15,7 @@ def render_trip_map(trip_row):
     """
     Affiche une carte Leaflet du trajet à partir de la polyline.
     Args:
-        trip_row: Series ou dict contenant au moins 'trip_polyline', 'departure_name', 'destination_name'
+        trip_row: Series ou dict contenant au moins 'polyline', 'departure_name', 'destination_name'
     """
     if trip_row is None:
         return None

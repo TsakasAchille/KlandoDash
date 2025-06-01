@@ -69,6 +69,39 @@ def render_stats_general(trips_data):
         distance_data = []
         distance_bins = []
     
+    # Prix total et moyen (si la colonne existe)
+    if "passenger_price" in df.columns:
+        # Filtrer les valeurs NaN/None
+        df_clean = df.dropna(subset=["passenger_price"])
+        
+        if len(df_clean) > 0:
+            total_price = round(df_clean["passenger_price"].sum(), 1)
+            avg_price = round(df_clean["passenger_price"].mean(), 1)
+            price_data = df_clean["passenger_price"].tolist()
+        else:
+            total_price = 0
+            avg_price = 0
+            price_data = []
+    else:
+        total_price = "N/A"
+        avg_price = "N/A"
+        price_data = []
+    
+    # Places publiées et disponibles (si les colonnes existent)
+    if "seats_published" in df.columns and "seats_available" in df.columns:
+        # Filtrer les valeurs NaN/None
+        df_clean = df.dropna(subset=["seats_published", "seats_available"])
+        
+        if len(df_clean) > 0:
+            total_seats_published = int(df_clean["seats_published"].sum())
+            total_seats_available = int(df_clean["seats_available"].sum())
+        else:
+            total_seats_published = 0
+            total_seats_available = 0
+    else:
+        total_seats_published = "N/A"
+        total_seats_available = "N/A"
+    
     # Total passagers (si la colonne existe)
     if "seats_booked" in df.columns:
         # Filtrer les valeurs NaN/None
@@ -97,9 +130,14 @@ def render_stats_general(trips_data):
         "total_trips": total_trips,
         "total_distance": total_distance,
         "avg_distance": avg_distance,
+        "total_price": total_price,
+        "avg_price": avg_price,
+        "total_seats_published": total_seats_published,
+        "total_seats_available": total_seats_available,
         "total_passengers": total_passengers,
         "distance_data": json.dumps(distance_data),
         "distance_bins": json.dumps(distance_bins),
+        "price_data": json.dumps(price_data),
         "passenger_counts": passenger_counts
     }
     

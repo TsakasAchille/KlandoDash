@@ -3,9 +3,10 @@ from dash import html
 import pandas as pd
 from dash_apps.components.trip_map import render_trip_map
 from dash_apps.components.trip_stats import render_trip_stats
-from dash_apps.components.trip_passengers import render_trip_passengers
-from dash_apps.utils.db_utils import get_trip_passengers
-from dash_apps.core.database import get_session, User
+from dash_apps.components.bookings import render_bookings
+from dash_apps.utils.db_utils import get_trip_bookings
+from dash_apps.core.database import get_session
+from dash_apps.models.user import User
 import jinja2
 import os
 
@@ -76,7 +77,7 @@ def trip_details_layout(selected_trip, trips_data):
 
     # Récupération SQL des passagers
     trip_id = selected_trip.get("trip_id")
-    passenger_ids = get_trip_passengers(trip_id)
+    booking_ids = get_trip_bookings(trip_id)
     if not passenger_ids:
         passengers_list = []
     else:
@@ -85,7 +86,7 @@ def trip_details_layout(selected_trip, trips_data):
             users_df = pd.DataFrame([u.to_dict() for u in users]) if users else pd.DataFrame()
         passengers_list = users_df.to_dict("records") if not users_df.empty else []
     # Utilisation directe du composant trip_passengers avec son propre style cohérent
-    trip_passengers = render_trip_passengers(passengers_list)
+    bookings_component = render_bookings(bookings_list)
 
     # Style commun pour tous les widgets avec marge inférieure uniforme
     common_card_style = {"marginBottom": "16px"}
