@@ -1,0 +1,98 @@
+[
+    {
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "departure_date",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "departure_name",
+      "data_type": "text"
+    },
+    {
+      "column_name": "departure_schedule",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "destination_name",
+      "data_type": "text"
+    },
+    {
+      "column_name": "destination_schedule",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "seats_available",
+      "data_type": "bigint"
+    },
+    {
+      "column_name": "passenger_price",
+      "data_type": "bigint"
+    },
+    {
+      "column_name": "distance",
+      "data_type": "double precision"
+    },
+    {
+      "column_name": "precision",
+      "data_type": "text"
+    },
+    {
+      "column_name": "polyline",
+      "data_type": "text"
+    },
+    {
+      "column_name": "trip_id",
+      "data_type": "text"
+    },
+    {
+      "column_name": "driver_id",
+      "data_type": "text"
+    },
+    {
+      "column_name": "departure_latitude",
+      "data_type": "double precision"
+    },
+    {
+      "column_name": "departure_longitude",
+      "data_type": "double precision"
+    },
+    {
+      "column_name": "destination_latitude",
+      "data_type": "double precision"
+    },
+    {
+      "column_name": "destination_longitude",
+      "data_type": "double precision"
+    },
+    {
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "seats_booked",
+      "data_type": "bigint"
+    },
+    {
+      "column_name": "seats_published",
+      "data_type": "bigint"
+    },
+    {
+      "column_name": "driver_price",
+      "data_type": "bigint"
+    },
+    {
+      "column_name": "status",
+      "data_type": "text"
+    },
+    {
+      "column_name": "departure_description",
+      "data_type": "text"
+    },
+    {
+      "column_name": "destination_description",
+      "data_type": "text"
+    }
+  ]
