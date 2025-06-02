@@ -17,32 +17,12 @@ class BookingRepository:
             return BookingSchema.from_orm(booking) if booking else None
 
     @staticmethod
-    def create_booking(booking_data: BookingSchema) -> BookingSchema:
+    def get_trip_bookings(trip_id: str) -> list:
+        """
+        Récupère la liste complète des réservations pour un trip_id depuis la table bookings (ORM).
+        Retourne une liste de dicts (booking.to_dict()) pour chaque réservation.
+        """
         with SessionLocal() as db:
-            db_booking = Booking(**booking_data.model_dump(exclude_unset=True))
-            db.add(db_booking)
-            db.commit()
-            db.refresh(db_booking)
-            return BookingSchema.from_orm(db_booking)
+            bookings = db.query(Booking).filter(Booking.trip_id == trip_id).all()
+            return [b.to_dict() for b in bookings] if bookings else []
 
-    @staticmethod
-    def update_booking(trip_id: str, user_id: str, booking_data: BookingSchema) -> Optional[BookingSchema]:
-        with SessionLocal() as db:
-            booking = db.query(Booking).filter(Booking.trip_id == trip_id, Booking.user_id == user_id).first()
-            if not booking:
-                return None
-            for field, value in booking_data.model_dump(exclude_unset=True).items():
-                setattr(booking, field, value)
-            db.commit()
-            db.refresh(booking)
-            return BookingSchema.from_orm(booking)
-
-    @staticmethod
-    def delete_booking(trip_id: str, user_id: str) -> bool:
-        with SessionLocal() as db:
-            booking = db.query(Booking).filter(Booking.trip_id == trip_id, Booking.user_id == user_id).first()
-            if not booking:
-                return False
-            db.delete(booking)
-            db.commit()
-            return True

@@ -3,7 +3,10 @@ import uuid
 from datetime import datetime
 from sqlalchemy import create_engine, text, Table, Column, String, MetaData, insert, select, update, ForeignKey
 import os
-from dash_apps.utils.db_utils import engine
+# Création locale de l'engine SQLAlchemy
+DATABASE_URL = os.environ.get("DATABASE_URL")
+engine = create_engine(DATABASE_URL)
+
 
 # Fonctions pour récupérer les tickets de support depuis la base de données SQL
 

@@ -4,12 +4,19 @@ import pandas as pd
 
 from dash_apps.components.trip_stats import render_trip_stats
 from dash_apps.components.trip_map import render_trip_map
-from dash_apps.components.bookings import render_bookings
 from dash_apps.components.trip_driver import render_trip_driver
-from dash_apps.utils.db_utils import get_trip_bookings
-from dash_apps.core.database import get_session
-from dash_apps.models.user import User
-from dash_apps.components.trip_details import render_trip_card_html
+from dash_apps.repositories.booking_repository import BookingRepository
+
+
+
+def render_trip_card_html(trip_data, passengers=None):
+    import jinja2, os
+    templates_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')
+    template_loader = jinja2.FileSystemLoader(searchpath=templates_dir)
+    template_env = jinja2.Environment(loader=template_loader)
+    template = template_env.get_template('trip_details_template.jinja2')
+    return template.render(trip=trip_data, passengers=passengers or [])
+
 
 # Styles globaux pour une cohérence visuelle
 CARD_STYLE = {
@@ -69,7 +76,15 @@ def create_trip_details_layout(selected_trip_id, trips_data):
     
     # Récupération des passagers
     trip_id = trip_row.get("trip_id")
-    bookings_list = get_trip_bookings(trip_id)
+    bookings_list = BookingRepository.get_trip_bookings(trip_id)
+    if not bookings_list:
+        print("Aucun passager trouvé pour ce trajet")
+        passengers_list = []
+    else:
+        print("Passagers trouvés pour ce trajet")
+        passenger_ids = [b['user_id'] for b in bookings_list]
+        from dash_apps.repositories.user_repository import UserRepository
+        passengers_list = UserRepository.get_users_by_ids(passenger_ids)
     
     # Génération des composants
     trip_details_card = html.Div(
@@ -90,8 +105,32 @@ def create_trip_details_layout(selected_trip_id, trips_data):
     
     trip_stats_component = render_trip_stats(trip_row)
     trip_map_component = render_trip_map(trip_row)
-    bookings_component = render_bookings(bookings_list)
     trip_driver_component = render_trip_driver(trip_row)
+
+    # Nouveau composant : passagers via template avancé
+    def render_trip_passengers_html(passengers):
+        import jinja2, os
+        templates_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')
+        template_loader = jinja2.FileSystemLoader(searchpath=templates_dir)
+        template_env = jinja2.Environment(loader=template_loader)
+        template = template_env.get_template('trip_passengers_template.jinja2')
+        return template.render(passengers=passengers or [])
+
+    trip_passengers_card = html.Div(
+        html.Iframe(
+            srcDoc=render_trip_passengers_html(passengers_list),
+            style={
+                'width': '100%',
+                'height': '650px',
+                'border': 'none',
+                'overflow': 'hidden',
+                'backgroundColor': 'transparent',
+                'borderRadius': '18px'
+            },
+            sandbox='allow-scripts allow-top-navigation-by-user-activation',
+        ),
+        style=CARD_STYLE
+    )
     
     # Construction du layout en réutilisant les composants directement
     return dbc.Row([
@@ -116,7 +155,7 @@ def create_trip_details_layout(selected_trip_id, trips_data):
                 ),
                 style=SPACING_STYLE
             ),
-            # Liste des passagers
-            bookings_component
+            # Liste des passagers (nouveau template)
+            html.Div(trip_passengers_card, style=SPACING_STYLE)
         ], md=8, xs=12, style=COLUMN_STYLE)
     ], className="align-items-stretch", style={"margin": "8px 0"})

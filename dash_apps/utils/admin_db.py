@@ -1,6 +1,12 @@
 # Fonctions pour gérer les utilisateurs autorisés dans la base de données
 from sqlalchemy import text
-from dash_apps.utils.db_utils import engine
+import os
+from sqlalchemy import create_engine
+
+# Récupère la DATABASE_URL depuis les variables d'environnement
+DATABASE_URL = os.environ.get("DATABASE_URL")
+engine = create_engine(DATABASE_URL)
+
 from datetime import datetime
 
 def get_all_authorized_users():
