@@ -72,24 +72,12 @@ layout = html.Div([
                     # Colonne de gauche avec les listes de tickets empilées verticalement
                     dbc.Col(
                         [
-                            # Tickets ouverts
+                            # Tickets en attente
                             dbc.Card(
                                 [
-                                    dbc.CardHeader(["Tickets Ouverts ", dbc.Badge("0", id="open-count", color="danger", className="ms-1")]),
+                                    dbc.CardHeader(["Tickets en attente ", dbc.Badge("0", id="open-count", color="warning", className="ms-1")]),
                                     dbc.CardBody([
                                         html.Div(id="open-tickets-container", style={"height": "220px", "overflowY": "auto"})
-                                    ])
-                                ],
-                                className="mb-3",
-                                style={"boxShadow": "0 2px 5px rgba(0, 0, 0, 0.1)", "borderRadius": "8px"}
-                            ),
-                            
-                            # Tickets en cours
-                            dbc.Card(
-                                [
-                                    dbc.CardHeader(["En cours ", dbc.Badge("0", id="progress-count", color="warning", className="ms-1")]),
-                                    dbc.CardBody([
-                                        html.Div(id="progress-tickets-container", style={"height": "220px", "overflowY": "auto"})
                                     ])
                                 ],
                                 className="mb-3",

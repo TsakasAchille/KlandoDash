@@ -6,60 +6,62 @@ Ce fichier contient tous les callbacks liés à la gestion des tickets et commen
 from dash import callback, Input, Output, State, ctx, ALL, html
 from dash_apps.components.support_tickets import render_tickets_list, render_ticket_details
 from dash_apps.utils.support_db import (
-    get_all_tickets,
-    get_ticket_by_id,
     get_comments_for_ticket,
-    update_ticket_status as db_update_ticket_status,
     add_comment as db_add_comment
 )
+from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
+from dash_apps.core.database import get_session
+
 import uuid
 from datetime import datetime
 
 
 # Callback pour charger les données des tickets
 @callback(
-    Output("support-tickets-store", "data"),
-    Input("support-refresh-btn", "n_clicks")
+    [Output("support-tickets-store", "data"), Output("selected-ticket-store", "data", allow_duplicate=True)],
+    [Input("support-refresh-btn", "n_clicks"),
+     Input({"type": "update-status-btn", "index": ALL}, "n_clicks")],
+    [State("selected-ticket-store", "data"),
+     State("support-tickets-store", "data"),
+     State({"type": "status-dropdown", "index": ALL}, "value")],
+    prevent_initial_call='initial_duplicate'
 )
-def load_support_tickets(n_clicks):
-    print(f"[DEBUG] Tentative de chargement des tickets... (n_clicks={n_clicks})")
-    
-    # Récupérer les tickets depuis la base de données
-    tickets = get_all_tickets()
-    
-    # Si nous n'avons pas pu récupérer de tickets (erreur), utiliser des données fictives pour l'exemple
-    if not tickets:
-        print("[WARNING] Aucun ticket trouvé en base de données. Utilisation de données fictives.")
-        tickets = [
-            {
-                "ticket_id": str(uuid.uuid4()),
-                "user_id": "user123",
-                "objet": "Problème de réservation",
-                "message": "Je n'arrive pas à finaliser ma réservation pour le trajet Paris-Lyon.",
-                "status": "open",
-                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "contact_preference": "email",
-                "phone": "+33612345678",
-                "mail": "user123@example.com"
-            }
-        ]
-    
-    # Initialiser le dictionnaire de commentaires
+def unified_tickets_callback(refresh_click, update_status_clicks, selected_ticket, tickets_data, status_dropdown_values):
+    from dash import ctx
+    triggered = ctx.triggered_id
+    # Gestion du clic sur un bouton dynamique
+    if isinstance(triggered, dict) and triggered.get("type") == "update-status-btn":
+        ticket_id = triggered.get("index")
+        # Trouver la valeur du dropdown associé
+        new_status = None
+        try:
+            # L’index du bouton cliqué est celui dont la valeur vient de changer (en général, valeur la plus grande)
+            if update_status_clicks:
+                idx = max(range(len(update_status_clicks)), key=lambda i: update_status_clicks[i] or 0)
+                ticket_id = triggered.get("index")
+                new_status = status_dropdown_values[idx]
+                print(f"[DEBUG] Mapping bouton {ticket_id} à dropdown index {idx} -> valeur {new_status}")
+                if not ticket_id or not new_status:
+                    return tickets_data
+                print(f"[DEBUG] Mise à jour du statut du ticket {ticket_id} -> {new_status}")
+                with get_session() as session:
+                    SupportTicketRepository.update_ticket(session, ticket_id, {"status": new_status})
+        except Exception as e:
+            print(f"[ERROR] Impossible de retrouver la valeur du dropdown pour le ticket {ticket_id}: {e}")
+            return tickets_data
+    # Dans tous les cas, on recharge la liste (refresh ou update)
+    with get_session() as session:
+        tickets = SupportTicketRepository.list_tickets(session)
+        tickets = [t.model_dump() for t in tickets]
     comments = {}
-    
-    # Récupérer les commentaires pour chaque ticket
     for ticket in tickets:
         ticket_id = ticket["ticket_id"]
         ticket_comments = get_comments_for_ticket(ticket_id)
         if ticket_comments:
             comments[ticket_id] = ticket_comments
-    
-    # Combiner tickets et commentaires
     data = {"tickets": tickets, "comments": comments}
-    
-    print(f"[DEBUG] {len(tickets)} tickets chargés")
-    return data
+    print(f"[DEBUG] {len(tickets)} tickets chargés (après refresh/update)")
+    return data, None
 
 
 # Callback pour mettre à jour les 3 listes de tickets et les compteurs
@@ -67,12 +69,9 @@ def load_support_tickets(n_clicks):
 [
     # Contenu des listes
     Output("open-tickets-container", "children"),
-    Output("progress-tickets-container", "children"),
     Output("closed-tickets-container", "children"),
-    
     # Compteurs
     Output("open-count", "children"),
-    Output("progress-count", "children"),
     Output("closed-count", "children"),
 ],
 [
@@ -91,21 +90,18 @@ def update_tickets_lists(tickets_data, selected_ticket):
     selected_id = selected_ticket.get("ticket_id") if selected_ticket else None
     
     # Séparer les tickets par statut
-    open_tickets = [t for t in tickets_data["tickets"] if t.get("status") == "open"]
-    progress_tickets = [t for t in tickets_data["tickets"] if t.get("status") == "in progress"]
-    closed_tickets = [t for t in tickets_data["tickets"] if t.get("status") == "closed"]
+    pending_tickets = [t for t in tickets_data["tickets"] if t.get("status") == "PENDING"]
+    closed_tickets = [t for t in tickets_data["tickets"] if t.get("status") == "CLOSED"]
     
     # Rendre chaque liste avec la fonction de rendu
-    open_list = render_tickets_list(open_tickets, selected_id) if open_tickets else html.Div("Aucun ticket ouvert", className="text-muted text-center py-4")
-    progress_list = render_tickets_list(progress_tickets, selected_id) if progress_tickets else html.Div("Aucun ticket en cours", className="text-muted text-center py-4")
+    pending_list = render_tickets_list(pending_tickets, selected_id) if pending_tickets else html.Div("Aucun ticket en attente", className="text-muted text-center py-4")
     closed_list = render_tickets_list(closed_tickets, selected_id) if closed_tickets else html.Div("Aucun ticket fermé", className="text-muted text-center py-4")
     
     # Mettre à jour les compteurs
-    open_count = str(len(open_tickets))
-    progress_count = str(len(progress_tickets))
+    pending_count = str(len(pending_tickets))
     closed_count = str(len(closed_tickets))
     
-    return open_list, progress_list, closed_list, open_count, progress_count, closed_count
+    return pending_list, closed_list, pending_count, closed_count
 
 
 # Callback pour stocker le ticket sélectionné
@@ -160,51 +156,6 @@ def display_ticket_details(selected_ticket, tickets_data):
 
 
 # Callback pour mettre à jour le statut d'un ticket
-@callback(
-    Output("support-tickets-store", "data", allow_duplicate=True),
-    Input({"type": "update-status-btn", "index": ALL}, "n_clicks"),
-    State({"type": "status-dropdown", "index": ALL}, "value"),
-    State("selected-ticket-store", "data"),
-    State("support-tickets-store", "data"),
-    prevent_initial_call=True
-)
-def update_ticket_status_callback(btn_clicks, status_values, selected_ticket, tickets_data):
-    # Vérifier si un bouton a été cliqué
-    if not any(btn_clicks) or not selected_ticket or not selected_ticket.get("ticket_id"):
-        return tickets_data
-    
-    # Récupérer l'ID du ticket sélectionné
-    ticket_id = selected_ticket["ticket_id"]
-    
-    # Trouver la valeur du statut correspondant au ticket sélectionné
-    # en cherchant l'élément qui a le même index (ticket_id)
-    new_status = None
-    for i, clicks in enumerate(btn_clicks):
-        if clicks:  # Si ce bouton a été cliqué
-            if i < len(status_values):
-                new_status = status_values[i]
-                break
-    
-    if not new_status:
-        return tickets_data
-    
-    # Mettre à jour le statut dans la base de données
-    success = db_update_ticket_status(ticket_id, new_status)
-    
-    if success:
-        # Mettre à jour les données localement pour éviter de recharger tous les tickets
-        updated_tickets = tickets_data.copy()
-        for i, ticket in enumerate(updated_tickets["tickets"]):
-            if ticket["ticket_id"] == ticket_id:
-                updated_tickets["tickets"][i]["status"] = new_status
-                updated_tickets["tickets"][i]["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                break
-        
-        print(f"[DEBUG] Statut du ticket {ticket_id} mis à jour avec succès: {new_status}")
-        return updated_tickets
-    else:
-        print(f"[ERROR] Échec de la mise à jour du statut pour le ticket {ticket_id}")
-        return tickets_data
 
 
 # Callback pour ajouter un commentaire à un ticket

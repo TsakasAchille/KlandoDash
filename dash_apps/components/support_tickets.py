@@ -55,11 +55,10 @@ def render_tickets_list(tickets, selected_ticket_id=None):
     
     for ticket in tickets:
         # Définir les classes et textes selon le statut
-        status = ticket.get("status", "open")
+        status = ticket.get("status", "PENDING")
         status_mapping = {
-            "open": {"color": "danger", "text": "Ouvert"},
-            "in progress": {"color": "warning", "text": "En cours"},
-            "closed": {"color": "success", "text": "Fermé"}
+            "PENDING": {"color": "warning", "text": "En attente"},
+            "CLOSED": {"color": "success", "text": "Fermé"}
         }
         
         # Valeurs par défaut si le statut n'est pas reconnu
@@ -95,7 +94,7 @@ def render_tickets_list(tickets, selected_ticket_id=None):
                         [
                             html.Div(
                                 [
-                                    html.Div(ticket["objet"], style={"fontWeight": "600", "marginBottom": "4px"}),
+                                    html.Div(ticket["subject"], style={"fontWeight": "600", "marginBottom": "4px"}),
                                     html.Div(["De: ", html.Span(ticket["user_id"], style={"fontStyle": "italic"})], style={"fontSize": "12px", "color": "#666"})
                                 ],
                                 style={"flex": "1"}
@@ -156,11 +155,10 @@ def render_ticket_details(ticket, comments):
     from dash_apps.utils.template_utils import render_template_with_iframe
     
     # Définir les classes et textes selon le statut
-    status = ticket.get("status", "open")
+    status = ticket.get("status", "PENDING")
     status_mapping = {
-        "open": {"class": "danger", "text": "Ouvert"},
-        "in progress": {"class": "warning", "text": "En cours"},
-        "closed": {"class": "success", "text": "Fermé"}
+        "PENDING": {"class": "warning", "text": "En attente"},
+        "CLOSED": {"class": "success", "text": "Fermé"}
     }
     
     # Valeurs par défaut si le statut n'est pas reconnu
@@ -215,9 +213,8 @@ def render_ticket_details(ticket, comments):
                             dcc.Dropdown(
                                 id={"type": "status-dropdown", "index": ticket["ticket_id"]},
                                 options=[
-                                    {"label": "Ouvert", "value": "open"},
-                                    {"label": "En cours", "value": "in progress"},
-                                    {"label": "Fermé", "value": "closed"}
+                                    {"label": "En attente", "value": "PENDING"},
+                                    {"label": "Fermé", "value": "CLOSED"}
                                 ],
                                 value=ticket["status"],
                                 className="mb-2"
