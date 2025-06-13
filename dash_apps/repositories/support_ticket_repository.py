@@ -2,7 +2,8 @@ from dash_apps.models.support_ticket import SupportTicket
 from dash_apps.schemas.support_ticket import SupportTicketSchema
 from dash_apps.core.database import SessionLocal
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy import func
+from typing import List, Optional, Dict, Any
 
 class SupportTicketRepository:
     @staticmethod
@@ -49,3 +50,62 @@ class SupportTicketRepository:
     @staticmethod
     def delete_ticket(session: Session, ticket_id: str) -> bool:
         raise NotImplementedError("La suppression de tickets de support n'est pas autorisée via ce repository.")
+        
+    @staticmethod
+    def count_tickets(session: Session, status: Optional[str] = None) -> int:
+        """Compte le nombre total de tickets, filtré par statut si spécifié"""
+        query = session.query(func.count(SupportTicket.ticket_id))
+        if status:
+            query = query.filter(SupportTicket.status == status)
+        return query.scalar() or 0
+        
+    @staticmethod
+    def get_tickets_with_pagination(session: Session, page: int = 1, page_size: int = 10, status: Optional[str] = None) -> Dict[str, Any]:
+        """Récupère une page de tickets avec pagination et métadonnées
+        
+        Args:
+            session: Session de base de données
+            page: Numéro de page (commence à 1)
+            page_size: Nombre d'éléments par page
+            status: Filtre optionnel par statut
+            
+        Returns:
+            Un dictionnaire contenant la liste des tickets et les métadonnées de pagination
+        """
+        # Calcul de l'offset
+        skip = (page - 1) * page_size
+        
+        # Construction de la requête de base
+        query = session.query(SupportTicket)
+        
+        # Appliquer le filtre de statut si nécessaire
+        if status:
+            query = query.filter(SupportTicket.status == status)
+            
+        # Compter le nombre total
+        total_count = SupportTicketRepository.count_tickets(session, status)
+        
+        # Récupérer la page demandée
+        tickets = query.order_by(SupportTicket.created_at.desc()).offset(skip).limit(page_size).all()
+        
+        # Convertir en schémas
+        ticket_schemas = []
+        for ticket in tickets:
+            d = ticket.to_dict() if hasattr(ticket, 'to_dict') else dict(ticket)
+            if 'ticket_id' in d and not isinstance(d['ticket_id'], str):
+                d['ticket_id'] = str(d['ticket_id'])
+            ticket_schemas.append(SupportTicketSchema.model_validate(d))
+        
+        # Calculer le nombre total de pages
+        total_pages = (total_count + page_size - 1) // page_size
+        
+        # Retourner les tickets et les métadonnées de pagination
+        return {
+            "tickets": ticket_schemas,
+            "pagination": {
+                "total_count": total_count,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": total_pages
+            }
+        }

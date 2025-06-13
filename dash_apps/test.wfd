@@ -1,0 +1,116 @@
+@startuml
+title Diagramme de Séquence - KlandoDash
+
+actor Utilisateur
+participant "app.py" as App
+participant "app_factory.py" as AppFactory
+participant "auth_manager.py" as AuthManager
+participant "layout_manager.py" as LayoutManager
+participant "page_manager.py" as PageManager
+participant "callbacks.py" as Callbacks
+participant "Navigateur" as Browser
+
+' Initialisation de l'application
+Utilisateur -> App: Démarrer l'application
+activate App
+
+App -> AppFactory: create_app()
+activate AppFactory
+AppFactory -> AppFactory: Dash(__name__)
+AppFactory -> AppFactory: Configuration Flask
+AppFactory -> AppFactory: Initialisation Session
+AppFactory -> AppFactory: Register auth_bp
+AppFactory --> App: return app, server
+deactivate AppFactory
+
+App -> AuthManager: setup_authentication(server)
+activate AuthManager
+AuthManager -> AuthManager: Initialisation LoginManager
+AuthManager -> AuthManager: setup_oauth(server)
+AuthManager -> AuthManager: init_auth(server)
+AuthManager -> AuthManager: Définir user_loader
+AuthManager --> App: return login_manager
+deactivate AuthManager
+
+App -> LayoutManager: create_main_layout()
+activate LayoutManager
+LayoutManager -> LayoutManager: Création sidebar
+LayoutManager -> LayoutManager: Création espace contenu
+LayoutManager -> LayoutManager: Ajout redirection déconnexion
+LayoutManager --> App: return layout
+deactivate LayoutManager
+
+App -> PageManager: load_all_pages()
+activate PageManager
+PageManager -> PageManager: Chargement page '/users'
+PageManager -> PageManager: Chargement page '/stats'
+PageManager -> PageManager: Chargement page '/support'
+PageManager -> PageManager: Chargement page '/admin'
+PageManager -> PageManager: Chargement page '/driver-validation'
+PageManager -> PageManager: Chargement page '/user-profile'
+PageManager -> PageManager: Chargement page '/trips' (et '/')
+PageManager --> App: return page_layouts
+deactivate PageManager
+
+App -> Callbacks: register_callbacks(app)
+activate Callbacks
+Callbacks -> Callbacks: Enregistrement logout_callback
+Callbacks -> Callbacks: Enregistrement update_user_menu
+Callbacks -> Callbacks: Enregistrement toggle_admin_link
+Callbacks -> Callbacks: Enregistrement display_page
+Callbacks --> App: return None
+deactivate Callbacks
+
+' Démarrage du serveur
+App -> App: app.run(debug=True)
+App --> Browser: Servir l'application
+
+' Flux de navigation utilisateur
+Browser -> App: GET /
+activate App
+App -> Callbacks: display_page('/')
+activate Callbacks
+Callbacks -> Callbacks: Vérifier authentification
+alt Utilisateur non authentifié
+    Callbacks --> Browser: Afficher page login
+else Utilisateur authentifié
+    Callbacks -> PageManager: get_page_layout('/')
+    activate PageManager
+    PageManager --> Callbacks: return layout page d'accueil
+    deactivate PageManager
+    Callbacks --> Browser: Afficher page d'accueil
+end
+deactivate Callbacks
+deactivate App
+
+' Navigation vers une autre page
+Browser -> App: GET /trips
+activate App
+App -> Callbacks: display_page('/trips')
+activate Callbacks
+Callbacks -> Callbacks: Vérifier authentification
+Callbacks -> PageManager: get_page_layout('/trips')
+activate PageManager
+PageManager --> Callbacks: return layout page trajets
+deactivate PageManager
+Callbacks --> Browser: Afficher page trajets
+deactivate Callbacks
+deactivate App
+
+' Déconnexion
+Browser -> App: GET /logout
+activate App
+App -> Callbacks: logout_callback('/logout')
+activate Callbacks
+Callbacks -> AuthManager: handle_logout()
+activate AuthManager
+AuthManager -> AuthManager: logout_user()
+AuthManager -> AuthManager: session.clear()
+AuthManager --> Callbacks: return '/login'
+deactivate AuthManager
+Callbacks --> Browser: Redirection vers login
+deactivate Callbacks
+deactivate App
+
+deactivate App
+@enduml

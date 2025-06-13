@@ -58,11 +58,22 @@ layout = html.Div([
         ], width=3)
     ]),
     
-    # Store pour les données des tickets
+    # Store pour les données des tickets avec cache de session et timestamp
     dcc.Store(id="support-tickets-store"),
+    dcc.Store(id="support-tickets-cache", storage_type="session"),
+    dcc.Store(id="support-tickets-timestamp", storage_type="session"),
+    
+    # Store pour les données des tickets fermés avec cache de session et timestamp
+    dcc.Store(id="closed-tickets-store"),
+    dcc.Store(id="closed-tickets-cache", storage_type="session"),
+    dcc.Store(id="closed-tickets-timestamp", storage_type="session"),
     
     # Store pour le ticket sélectionné
     dcc.Store(id="selected-ticket-store"),
+    
+    # Store pour les commentaires
+    dcc.Store(id="ticket-comments-store"),
+
     
     # Layout avec deux colonnes: tickets à gauche, détails à droite
     dbc.Container(
@@ -78,6 +89,33 @@ layout = html.Div([
                                     dbc.CardHeader(["Tickets en attente ", dbc.Badge("0", id="open-count", color="warning", className="ms-1")]),
                                     dbc.CardBody([
                                         html.Div(id="open-tickets-container", style={"height": "220px", "overflowY": "auto"})
+                                    ]),
+                                    dbc.CardFooter([
+                                        dbc.Row([
+                                            dbc.Col([
+                                                dbc.Select(
+                                                    id="pagination-page-size",
+                                                    options=[
+                                                        {"label": "5 par page", "value": 5},
+                                                        {"label": "10 par page", "value": 10},
+                                                        {"label": "20 par page", "value": 20},
+                                                    ],
+                                                    value=10,
+                                                    size="sm",
+                                                    style={"width": "120px"}
+                                                )
+                                            ], width=4),
+                                            dbc.Col([
+                                                dbc.Pagination(
+                                                    id="pagination-page",
+                                                    max_value=1,
+                                                    fully_expanded=False,
+                                                    first_last=True,
+                                                    previous_next=True,
+                                                    size="sm",
+                                                )
+                                            ], width=8)
+                                        ])
                                     ])
                                 ],
                                 className="mb-3",
@@ -89,7 +127,35 @@ layout = html.Div([
                                 [
                                     dbc.CardHeader(["Tickets Fermés ", dbc.Badge("0", id="closed-count", color="success", className="ms-1")]),
                                     dbc.CardBody([
-                                        html.Div(id="closed-tickets-container", style={"height": "220px", "overflowY": "auto"})
+                                        html.Div(id="closed-tickets-container", style={"height": "220px", "overflowY": "auto"}),
+                                        # Contrôles de pagination pour tickets fermés
+                                        dbc.Row([
+                                            dbc.Col([
+                                                dbc.InputGroup([
+                                                    dbc.Select(
+                                                        id="closed-pagination-page-size",
+                                                        options=[
+                                                        {"label": "5 par page", "value": 5},
+                                                        {"label": "10 par page", "value": 10},
+                                                        {"label": "20 par page", "value": 20},
+                                                        ],
+                                                        value=10,
+                                                        size="sm",
+                                                        style={"width": "120px"}
+                                                    )
+                                                ])
+                                            ], width=4),
+                                            dbc.Col([
+                                                dbc.Pagination(
+                                                    id="closed-pagination-page",
+                                                    max_value=1,
+                                                    fully_expanded=False,
+                                                    first_last=True,
+                                                    previous_next=True,
+                                                    size="sm",
+                                                )
+                                            ], width=8)
+                                        ])
                                     ])
                                 ],
                                 style={"boxShadow": "0 2px 5px rgba(0, 0, 0, 0.1)", "borderRadius": "8px"}

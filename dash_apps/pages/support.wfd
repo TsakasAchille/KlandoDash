@@ -1,0 +1,85 @@
+@startuml
+actor Utilisateur
+
+participant "Dash (04_support.py)" as Dash
+participant "dcc.Store" as Store
+participant "support_callbacks.py" as Callbacks
+participant "SupportTicketRepository" as RepoTicket
+participant "SupportCommentRepository" as RepoComment
+participant "DB (SupportTicket/Comment)" as DB
+
+' === 1. Chargement de la page ===
+Utilisateur -> Dash : Accède à /support
+Dash -> Store : Initialise les Stores (tickets, sélection, cache, timestamp)
+Dash -> Callbacks : update_tickets_data(page, page_size, refresh_clicks, last_update)
+alt Cache trop vieux ou refresh demandé
+    Callbacks -> RepoTicket : get_tickets_with_pagination(session, page, page_size, status)
+    RepoTicket -> DB : SELECT * FROM support_tickets LIMIT ... OFFSET ...
+    DB --> RepoTicket : Liste[SupportTicket]
+    RepoTicket -> Callbacks : {"tickets": List[SupportTicketSchema], "pagination": ...}
+    Callbacks -> Store : Met à jour support-tickets-store, cache, timestamp
+else Cache OK
+    Callbacks -> Store : Utilise support-tickets-cache
+end
+Dash -> Callbacks : update_tickets_lists(tickets_data, selected_ticket)
+Callbacks -> Dash : Affiche tickets ouverts/fermés
+
+' === 2. Pagination ===
+Utilisateur -> Dash : Change page ou page_size
+Dash -> Callbacks : update_tickets_data(new_page, new_page_size, ...)
+alt Cache trop vieux ou refresh demandé
+    Callbacks -> RepoTicket : get_tickets_with_pagination(session, new_page, new_page_size, status)
+    RepoTicket -> DB : SELECT * FROM support_tickets LIMIT ... OFFSET ...
+    DB --> RepoTicket : Liste[SupportTicket]
+    RepoTicket -> Callbacks : {"tickets": List[SupportTicketSchema], "pagination": ...}
+    Callbacks -> Store : Met à jour support-tickets-store, cache, timestamp
+else Cache OK
+    Callbacks -> Store : Utilise support-tickets-cache
+end
+Dash -> Callbacks : update_tickets_lists(tickets_data, selected_ticket)
+Callbacks -> Dash : Affiche tickets ouverts/fermés
+
+' === 3. Sélection d'un ticket ===
+Utilisateur -> Dash : Clique sur un ticket
+Dash -> Callbacks : update_selected_ticket(ticket_item_n_clicks, tickets_data, selected_ticket)
+Callbacks -> Store : Met à jour selected-ticket-store
+Dash -> Callbacks : display_ticket_details(selected_ticket, tickets_data)
+Callbacks -> Dash : Affiche détails du ticket
+
+' === 4. Affichage des commentaires du ticket ===
+Dash -> Callbacks : load_comments_for_ticket(ticket_id)
+Callbacks -> RepoComment : get_comments_for_ticket(session, ticket_id)
+RepoComment -> DB : SELECT * FROM support_comments WHERE ticket_id=...
+DB --> RepoComment : Liste[SupportComment]
+RepoComment -> Callbacks : List[SupportCommentSchema]
+Callbacks -> Store : Met à jour ticket-comments-store
+Dash -> Dash : Affiche les commentaires
+
+' === 5. Ajout d'un commentaire ===
+Utilisateur -> Dash : Soumet un commentaire
+Dash -> Callbacks : add_comment_callback(btn_clicks, comment_texts, selected_ticket, tickets_data)
+Callbacks -> RepoComment : add_comment(session, ticket_id, user_id, comment_text)
+RepoComment -> DB : INSERT INTO support_comments ...
+DB --> RepoComment : OK
+RepoComment -> Callbacks : SupportCommentSchema
+Callbacks -> Store : Met à jour ticket-comments-store
+Dash -> Callbacks : load_comments_for_ticket(ticket_id)
+' (séquence affichage commentaires)
+
+' === 6. Changement de statut ===
+Utilisateur -> Dash : Clique bouton 'Fermer' ou 'Réouvrir'
+Dash -> Callbacks : update_ticket_status(ticket_id, new_status)
+Callbacks -> RepoTicket : update_ticket(session, ticket_id, {"status": new_status})
+RepoTicket -> DB : UPDATE support_tickets SET status=... WHERE ticket_id=...
+DB --> RepoTicket : OK
+RepoTicket -> Callbacks : SupportTicketSchema
+Callbacks -> Store : Met à jour support-tickets-store, support-tickets-cache
+Dash -> Callbacks : update_tickets_lists(tickets_data, selected_ticket)
+Callbacks -> Dash : Affiche tickets ouverts/fermés
+
+' === 7. Schémas de données ===
+DB <-> RepoTicket : SupportTicket (SQLAlchemy)
+DB <-> RepoComment : SupportComment (SQLAlchemy)
+RepoTicket <-> Callbacks : SupportTicketSchema (Pydantic)
+RepoComment <-> Callbacks : SupportCommentSchema (Pydantic)
+@enduml
