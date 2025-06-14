@@ -59,17 +59,20 @@ layout = html.Div([
     ]),
     
     # Store pour les données des tickets avec cache de session et timestamp
-    dcc.Store(id="support-tickets-store"),
+    dcc.Store(id="support-tickets-store", storage_type="session"),
     dcc.Store(id="support-tickets-cache", storage_type="session"),
     dcc.Store(id="support-tickets-timestamp", storage_type="session"),
     
     # Store pour les données des tickets fermés avec cache de session et timestamp
-    dcc.Store(id="closed-tickets-store"),
+    dcc.Store(id="closed-tickets-store", storage_type="session"),
     dcc.Store(id="closed-tickets-cache", storage_type="session"),
     dcc.Store(id="closed-tickets-timestamp", storage_type="session"),
     
+    # Signal pour les mises à jour de tickets (évite les manipulations directes des listes)
+    dcc.Store(id="ticket-update-signal", data={"count": 0, "updated_id": None, "status": None}, storage_type="session"),
+    
     # Store pour le ticket sélectionné
-    dcc.Store(id="selected-ticket-store"),
+    dcc.Store(id="selected-ticket-store", storage_type="session"),
     
     # Store pour les commentaires
     dcc.Store(id="ticket-comments-store"),

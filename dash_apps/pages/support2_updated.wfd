@@ -8,14 +8,16 @@ participant "update_closed_tickets_data" as UCTD
 participant "load_tickets_by_page" as LTBP
 participant "SupportTicketRepository" as Repo
 database Database
-participant "process_tickets_data" as PTD
-participant "update_ticket_status" as UTS
+participant "process_ticket_status_update" as PTSU
+participant "update_ticket_stores" as UTS
+participant "update_ticket_status" as UTSt
 participant "update_pending_tickets_list" as UPTL
 participant "update_closed_tickets_list" as UCTL
 entity "support-tickets-cache" as STC
 entity "support-tickets-store" as STS
 entity "closed-tickets-cache" as CTC
 entity "closed-tickets-store" as CTS
+entity "ticket-update-signal" as TUS
 boundary DOM
 
 note over User, DOM: Flux des tickets ouverts (PENDING)
@@ -118,37 +120,62 @@ UCTL -> UCTL: render_tickets_list
 UCTL --> DOM: Affichage tickets fermés
 deactivate UCTL
 
-note over User, DOM: Flux de mise à jour du statut d'un ticket
+note over User, DOM: Flux de mise à jour du statut d'un ticket (Architecture améliorée)
 
 User -> UI: Clic sur "Mettre à jour"
-UI -> PTD: Déclenche process_tickets_data
-activate PTD
+UI -> PTSU: Déclenche process_ticket_status_update
+activate PTSU
 
-PTD -> UTS: update_ticket_status(ticket_id, new_status)
-activate UTS
-UTS -> Database: session.query et modification
-Database --> UTS: Commit réussi
-UTS --> PTD: Retourne (old_status, new_status)
-deactivate UTS
+PTSU -> UTSt: update_ticket_status(ticket_id, new_status)
+activate UTSt
+UTSt -> Database: session.query et modification
+Database --> UTSt: Commit réussi
+UTSt --> PTSU: Retourne (old_status, new_status)
+deactivate UTSt
 
-note right of PTD
+note right of PTSU
   1. Réception de l'ancien et du nouveau statut
-  2. Mise à jour des deux caches (pending et closed)
+  2. Création d'un signal de mise à jour avec:
+     - count: incrémenté à chaque mise à jour
+     - updated_id: identifiant du ticket
+     - old_status: ancien statut
+     - new_status: nouveau statut
+     - timestamp: horodatage
+  3. Émission du signal via le store ticket-update-signal
+end note
+
+PTSU --> TUS: Émet signal de mise à jour
+deactivate PTSU
+
+TUS -> UTS: Déclenche update_ticket_stores
+activate UTS
+
+note right of UTS
+  1. Détection du signal de mise à jour 
+  2. Récupération des données des tickets actuelles
   3. Suppression immédiate du ticket de la liste source
      - Si ticket fermé: retiré de pending_data["tickets"]
      - Si ticket réouvert: retiré de closed_data["tickets"]
   4. Mise à jour des compteurs de pagination
-  5. Déclenchement d'un rafraîchissement complet
 end note
 
-PTD --> STS: Mise à jour immédiate des tickets en attente
-PTD --> CTS: Mise à jour immédiate des tickets fermés
-PTD -> UI: Déclenche rafraîchissement (refresh_clicks + 1)
-deactivate PTD
+UTS --> STS: Mise à jour immédiate des tickets en attente
+UTS --> CTS: Mise à jour immédiate des tickets fermés
+deactivate UTS
 
-note over UI, UCTD: Rafraîchissement automatique
-UI -> UPTD: Déclenche le callback (refresh_clicks + 1)
-UI -> UCTD: Déclenche le callback (refresh_clicks + 1)
+TUS -> UPTD: Déclenche le callback si ticket réouvert
+TUS -> UCTD: Déclenche le callback si ticket fermé
+
+note right of UPTD
+  Vérifie si un ticket a été réouvert
+  et rafraîchit la liste complète au besoin
+end note
+
+note right of UCTD
+  Vérifie si un ticket a été fermé
+  et rafraîchit la liste complète au besoin
+end note
+
 UPTD --> PP: Met à jour la pagination
 UCTD --> CP: Met à jour la pagination
 

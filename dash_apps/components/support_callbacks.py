@@ -154,10 +154,11 @@ def validate_comment_input(btn_clicks, comment_texts, selected_ticket):
      Output("support-tickets-cache", "data"),
      Output("support-tickets-timestamp", "data")],
     [Input("pagination-page", "active_page"),
-     Input("support-refresh-btn", "n_clicks")],
+     Input("support-refresh-btn", "n_clicks"),
+     Input("ticket-update-signal", "data")],
     [State("support-tickets-timestamp", "data")]
 )
-def update_pending_tickets_data(page, refresh_clicks, last_update):
+def update_pending_tickets_data(page, refresh_clicks, update_signal, last_update):
     """
     Charge les tickets en attente pour la page demandée
     """
@@ -165,10 +166,10 @@ def update_pending_tickets_data(page, refresh_clicks, last_update):
     print("refresh_clicks", refresh_clicks)
     print("last_update", last_update)
     
-    # Vérifier si un rafraîchissement est nécessaire
-    #if not force_refresh and not need_refresh(last_update):
-    #    raise PreventUpdate
-        
+    # Les logs pour le debugging du signal de mise à jour
+    if update_signal:
+        print(f"Signal de mise à jour reçu: {update_signal}")
+    
     # Charger les tickets pour la page demandée (10 tickets par page)
     data = load_tickets_by_page(page=page or 1, page_size=10, status="PENDING")
     
@@ -185,10 +186,11 @@ def update_pending_tickets_data(page, refresh_clicks, last_update):
      Output("closed-tickets-cache", "data"),
      Output("closed-tickets-timestamp", "data")],
     [Input("closed-pagination-page", "active_page"),
-     Input("support-refresh-btn", "n_clicks")],
+     Input("support-refresh-btn", "n_clicks"),
+     Input("ticket-update-signal", "data")],
     [State("closed-tickets-timestamp", "data")]
 )
-def update_closed_tickets_data(page, refresh_clicks, last_update):
+def update_closed_tickets_data(page, refresh_clicks, update_signal, last_update):
     """
     Charge les tickets fermés pour la page demandée
     """
@@ -196,7 +198,11 @@ def update_closed_tickets_data(page, refresh_clicks, last_update):
     print("refresh_clicks", refresh_clicks)
     print("closed last_update", last_update)
     
-    # Charger les tickets fermés pour la page demandée (10 tickets par page)
+    # Les logs pour le debugging du signal de mise à jour
+    if update_signal:
+        print(f"Signal de mise à jour reçu: {update_signal}")
+        
+    # Charger les tickets pour la page demandée (10 tickets par page)
     data = load_tickets_by_page(page=page or 1, page_size=10, status="CLOSED")
     
     # Retourner le nombre total de pages pour le paginateur
@@ -207,73 +213,137 @@ def update_closed_tickets_data(page, refresh_clicks, last_update):
 
 
 @callback(
-    [Output("support-tickets-store", "data"),
-     Output("closed-tickets-store", "data"),
-     Output("support-refresh-btn", "n_clicks", allow_duplicate=True)],
-    [Input("support-tickets-cache", "data"),
-     Input("closed-tickets-cache", "data"),
-     Input({"type": "update-status-btn", "index": ALL}, "n_clicks")],
+    Output("ticket-update-signal", "data"),
+    [Input({"type": "update-status-btn", "index": ALL}, "n_clicks")],
     [State({"type": "status-dropdown", "index": ALL}, "value"),
      State("selected-ticket-store", "data"),
-     State("support-refresh-btn", "n_clicks")],
+     State("ticket-update-signal", "data")],
     prevent_initial_call=True
 )
-def process_tickets_data(cache_pending, cache_closed, status_clicks, status_values, selected_ticket, refresh_clicks):
+def process_ticket_status_update(status_clicks, status_values, selected_ticket, current_signal):
     """
-    Traite les données du cache et les met à jour si nécessaire (ex: changement de statut)
+    Traite les mises à jour de statut des tickets et émet un signal de mise à jour
+    pour déclencher le rafraîchissement des listes
     """
-    if not cache_pending or not cache_closed:
-        return no_update, no_update, no_update
-        
-    refresh_needed = False
-    pending_data = cache_pending
-    closed_data = cache_closed
-        
-    # Vérifier si le callback est déclenché par un bouton de mise à jour de statut
+    # Vérifier si le callback est déclenché par un bouton de mise à jour
     triggered = ctx.triggered_id
-    if isinstance(triggered, dict) and triggered.get("type") == "update-status-btn":
-        ticket_id = triggered.get("index")
-        try:
-            # Trouver le bouton cliqué et la valeur associée
-            if any(status_clicks):
-                idx = next((i for i, clicks in enumerate(status_clicks) if clicks), None)
-                if idx is not None and idx < len(status_values):
-                    new_status = status_values[idx]
-                    logger.info(f"Mise à jour statut: ticket {ticket_id} -> {new_status}")
-                    old_status, new_status = update_ticket_status(ticket_id, new_status)
-                    
-                    # Si le ticket en cours est modifié, mettre à jour son statut dans la sélection
-                    if selected_ticket and selected_ticket.get("ticket_id") == ticket_id:
-                        selected_ticket["status"] = new_status
-                    
-                    # Supprimer immédiatement le ticket des listes appropriées
-                    if new_status == "CLOSED" and pending_data and "tickets" in pending_data:
-                        # Retirer le ticket des tickets en attente et l'ajouter aux tickets fermés
-                        pending_data["tickets"] = [t for t in pending_data["tickets"] if t.get("ticket_id") != ticket_id]
-                        # Maj des métadonnées de pagination
-                        if "pagination" in pending_data:
-                            pending_data["pagination"]["total_count"] -= 1
-                    
-                    elif new_status != "CLOSED" and closed_data and "tickets" in closed_data:
-                        # Retirer le ticket des tickets fermés et l'ajouter aux tickets en attente
-                        closed_data["tickets"] = [t for t in closed_data["tickets"] if t.get("ticket_id") != ticket_id]
-                        # Maj des métadonnées de pagination
-                        if "pagination" in closed_data:
-                            closed_data["pagination"]["total_count"] -= 1
-                    
-                    # Indiquer qu'un rafraîchissement complet est nécessaire
-                    refresh_needed = True
-        except Exception as e:
-            logger.error(f"Erreur de mise à jour de statut: {e}")
+    if not isinstance(triggered, dict) or triggered.get("type") != "update-status-btn":
+        return no_update
+        
+    ticket_id = triggered.get("index")
+    try:
+        # Trouver le bouton cliqué et la valeur associée
+        if any(status_clicks):
+            idx = next((i for i, clicks in enumerate(status_clicks) if clicks), None)
+            if idx is not None and idx < len(status_values):
+                new_status = status_values[idx]
+                logger.info(f"Mise à jour statut: ticket {ticket_id} -> {new_status}")
+                old_status, new_status = update_ticket_status(ticket_id, new_status)
+                
+                # Si le ticket en cours est modifié, mettre à jour son statut dans la sélection
+                if selected_ticket and selected_ticket.get("ticket_id") == ticket_id:
+                    selected_ticket["status"] = new_status
+                
+                # Émettre un signal de mise à jour
+                updated_signal = {
+                    "count": current_signal.get("count", 0) + 1,
+                    "updated_id": ticket_id,
+                    "old_status": old_status,
+                    "new_status": new_status,
+                    "timestamp": datetime.now().isoformat()
+                }
+                return updated_signal
+    except Exception as e:
+        logger.error(f"Erreur de mise à jour de statut: {e}")
     
-    # Déclencher un rafraîchissement si nécessaire
-    if refresh_needed:
-        return pending_data, closed_data, (refresh_clicks or 0) + 1
-    else:
-        return pending_data, closed_data, no_update
+    return no_update
 
 
+@callback(
+    [Output("support-tickets-store", "data"),
+     Output("closed-tickets-store", "data")],
+    [Input("support-tickets-cache", "data"),
+     Input("closed-tickets-cache", "data"),
+     Input("ticket-update-signal", "data")],
+    [State("support-tickets-store", "data"),
+     State("closed-tickets-store", "data")],
+    prevent_initial_call=True
+)
+def update_ticket_stores(cache_pending, cache_closed, update_signal, current_pending, current_closed):
+    """
+    Met à jour les stores de tickets en fonction des caches et du signal de mise à jour
+    """
+    triggered_id = ctx.triggered_id
+    
+    # Si le déclenchement vient des caches, simplement transférer les données
+    if triggered_id == "support-tickets-cache" or triggered_id == "closed-tickets-cache":
+        pending_data = cache_pending if cache_pending else current_pending
+        closed_data = cache_closed if cache_closed else current_closed
+        return pending_data, closed_data
+    
+    # Si le déclenchement vient du signal de mise à jour
+    elif triggered_id == "ticket-update-signal" and update_signal:
+        # Utiliser les données actuelles comme base
+        pending_data = current_pending if current_pending else cache_pending
+        closed_data = current_closed if current_closed else cache_closed
+        
+        if not pending_data or not closed_data:
+            return no_update, no_update
 
+        # Récupérer les informations du ticket mis à jour
+        ticket_id = update_signal.get("updated_id")
+        new_status = update_signal.get("new_status")
+        old_status = update_signal.get("old_status")
+        
+        if ticket_id and new_status:
+            # Mise à jour immédiate de l'interface pour éviter le clignotement
+            if new_status == "CLOSED" and old_status != "CLOSED":
+                # Récupérer le ticket à déplacer avant de le supprimer
+                ticket_to_move = None
+                if "tickets" in pending_data:
+                    # Trouver le ticket à déplacer
+                    for t in pending_data["tickets"]:
+                        if t.get("ticket_id") == ticket_id:
+                            ticket_to_move = t.copy()
+                            ticket_to_move["status"] = "CLOSED"  # Mettre à jour le statut
+                            break
+                    
+                    # Retirer le ticket des tickets en attente
+                    pending_data["tickets"] = [t for t in pending_data["tickets"] if t.get("ticket_id") != ticket_id]
+                    if "pagination" in pending_data:
+                        pending_data["pagination"]["total_count"] -= 1
+                
+                # Ajouter le ticket à la liste des tickets fermés s'il est dans la première page
+                if ticket_to_move and "tickets" in closed_data and len(closed_data["tickets"]) < 10:
+                    closed_data["tickets"].insert(0, ticket_to_move)  # Ajouter au début de la liste
+                    if "pagination" in closed_data:
+                        closed_data["pagination"]["total_count"] += 1
+            
+            elif new_status != "CLOSED" and old_status == "CLOSED":
+                # Récupérer le ticket à déplacer avant de le supprimer
+                ticket_to_move = None
+                if "tickets" in closed_data:
+                    # Trouver le ticket à déplacer
+                    for t in closed_data["tickets"]:
+                        if t.get("ticket_id") == ticket_id:
+                            ticket_to_move = t.copy()
+                            ticket_to_move["status"] = new_status  # Mettre à jour le statut
+                            break
+                    
+                    # Retirer le ticket des tickets fermés
+                    closed_data["tickets"] = [t for t in closed_data["tickets"] if t.get("ticket_id") != ticket_id]
+                    if "pagination" in closed_data:
+                        closed_data["pagination"]["total_count"] -= 1
+                
+                # Ajouter le ticket à la liste des tickets en attente s'il est dans la première page
+                if ticket_to_move and "tickets" in pending_data and len(pending_data["tickets"]) < 10:
+                    pending_data["tickets"].insert(0, ticket_to_move)  # Ajouter au début de la liste
+                    if "pagination" in pending_data:
+                        pending_data["pagination"]["total_count"] += 1
+        
+        return pending_data, closed_data
+    
+    return no_update, no_update
 
 
 @callback(
