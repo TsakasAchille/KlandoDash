@@ -1,5 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import html, dcc, Input, Output, State
+import dash
+from dash.dependencies import Input, Output, State, MATCH, ALL
 import pandas as pd
 from datetime import datetime
 import uuid
@@ -213,19 +215,54 @@ def render_ticket_details(ticket, comments):
                 ])
             ], className="mb-3"),
 
+
+            
             # Informations du ticket en grille
             dbc.Row([
                 dbc.Col([
                     html.P([html.Strong("N° Ticket: "), html.Span(ticket.get("ticket_id", "N/A"))], className="mb-1"),
                     html.P([html.Strong("Statut: "), dbc.Badge(status_info["text"], color=status_info["color"])], className="mb-1"),
-                    html.P([html.Strong("Utilisateur: "), html.Span(ticket.get("user_id", "-"))], className="mb-1"),
+                    html.P([
+                        html.Strong("Utilisateur: "),
+                        html.Span(ticket.get("user_id", "-")),
+                        dcc.Clipboard(
+                            target_id=None,
+                            title="Copier l'ID utilisateur",
+                            style={"marginLeft": "5px", "display": "inline-block", "verticalAlign": "middle",
+                                   "cursor": "pointer", "fontSize": "1.2rem"},
+                            content=ticket.get("user_id", "-"),
+                            className="copy-btn"
+                        )
+                    ], className="mb-1"),
                     html.P([html.Strong("Créé le: "), html.Span(created_at.strftime("%d/%m/%Y %H:%M"))], className="mb-1"),
                 ], width=6),
                 dbc.Col([
                     html.P([html.Strong("Mis à jour le: "), html.Span(updated_at.strftime("%d/%m/%Y %H:%M"))], className="mb-1"),
                     html.P([html.Strong("Préférence de contact: "), html.Span(ticket.get("contact_preference", "-"))], className="mb-1"),
-                    html.P([html.Strong("Téléphone: "), html.Span(ticket.get("phone", "-"))], className="mb-1"),
-                    html.P([html.Strong("E-mail: "), html.Span(ticket.get("mail", "-"))], className="mb-1"),
+                    html.P([
+                        html.Strong("Téléphone: "),
+                        html.Span(ticket.get("phone", "-")),
+                        dcc.Clipboard(
+                            target_id=None,
+                            title="Copier le numéro de téléphone", 
+                            style={"marginLeft": "5px", "display": "inline-block", "verticalAlign": "middle",
+                                   "cursor": "pointer", "fontSize": "1.2rem"},
+                            content=ticket.get("phone", "-"),
+                            className="copy-btn"
+                        )
+                    ], className="mb-1"),
+                    html.P([
+                        html.Strong("E-mail: "),
+                        html.Span(ticket.get("mail", "-")),
+                        dcc.Clipboard(
+                            target_id=None,
+                            title="Copier l'adresse email", 
+                            style={"marginLeft": "5px", "display": "inline-block", "verticalAlign": "middle",
+                                   "cursor": "pointer", "fontSize": "1.2rem"},
+                            content=ticket.get("mail", "-"),
+                            className="copy-btn"
+                        )
+                    ], className="mb-1"),
                 ], width=6),
             ], className="mb-3"),
             
@@ -304,3 +341,6 @@ def render_ticket_details(ticket, comments):
     
     # Retourner directement la section de détails qui contient déjà tout ce dont nous avons besoin
     return details_section
+
+
+# La fonction register_copy_callbacks a été supprimée car nous utilisons maintenant dcc.Clipboard qui intègre déjà la fonctionnalité de copie
