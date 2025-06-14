@@ -273,77 +273,12 @@ def update_ticket_stores(cache_pending, cache_closed, update_signal, current_pen
     """
     Met à jour les stores de tickets en fonction des caches et du signal de mise à jour
     """
-    triggered_id = ctx.triggered_id
+    # Utiliser simplement les données des caches quand ils sont disponibles
+    # Cette approche est plus simple et maintient quand même les données à jour
+    pending_data = cache_pending if cache_pending else current_pending
+    closed_data = cache_closed if cache_closed else current_closed
     
-    # Si le déclenchement vient des caches, simplement transférer les données
-    if triggered_id == "support-tickets-cache" or triggered_id == "closed-tickets-cache":
-        pending_data = cache_pending if cache_pending else current_pending
-        closed_data = cache_closed if cache_closed else current_closed
-        return pending_data, closed_data
-    
-    # Si le déclenchement vient du signal de mise à jour
-    elif triggered_id == "ticket-update-signal" and update_signal:
-        # Utiliser les données actuelles comme base
-        pending_data = current_pending if current_pending else cache_pending
-        closed_data = current_closed if current_closed else cache_closed
-        
-        if not pending_data or not closed_data:
-            return no_update, no_update
-
-        # Récupérer les informations du ticket mis à jour
-        ticket_id = update_signal.get("updated_id")
-        new_status = update_signal.get("new_status")
-        old_status = update_signal.get("old_status")
-        
-        if ticket_id and new_status:
-            # Mise à jour immédiate de l'interface pour éviter le clignotement
-            if new_status == "CLOSED" and old_status != "CLOSED":
-                # Récupérer le ticket à déplacer avant de le supprimer
-                ticket_to_move = None
-                if "tickets" in pending_data:
-                    # Trouver le ticket à déplacer
-                    for t in pending_data["tickets"]:
-                        if t.get("ticket_id") == ticket_id:
-                            ticket_to_move = t.copy()
-                            ticket_to_move["status"] = "CLOSED"  # Mettre à jour le statut
-                            break
-                    
-                    # Retirer le ticket des tickets en attente
-                    pending_data["tickets"] = [t for t in pending_data["tickets"] if t.get("ticket_id") != ticket_id]
-                    if "pagination" in pending_data:
-                        pending_data["pagination"]["total_count"] -= 1
-                
-                # Ajouter le ticket à la liste des tickets fermés s'il est dans la première page
-                if ticket_to_move and "tickets" in closed_data and len(closed_data["tickets"]) < 10:
-                    closed_data["tickets"].insert(0, ticket_to_move)  # Ajouter au début de la liste
-                    if "pagination" in closed_data:
-                        closed_data["pagination"]["total_count"] += 1
-            
-            elif new_status != "CLOSED" and old_status == "CLOSED":
-                # Récupérer le ticket à déplacer avant de le supprimer
-                ticket_to_move = None
-                if "tickets" in closed_data:
-                    # Trouver le ticket à déplacer
-                    for t in closed_data["tickets"]:
-                        if t.get("ticket_id") == ticket_id:
-                            ticket_to_move = t.copy()
-                            ticket_to_move["status"] = new_status  # Mettre à jour le statut
-                            break
-                    
-                    # Retirer le ticket des tickets fermés
-                    closed_data["tickets"] = [t for t in closed_data["tickets"] if t.get("ticket_id") != ticket_id]
-                    if "pagination" in closed_data:
-                        closed_data["pagination"]["total_count"] -= 1
-                
-                # Ajouter le ticket à la liste des tickets en attente s'il est dans la première page
-                if ticket_to_move and "tickets" in pending_data and len(pending_data["tickets"]) < 10:
-                    pending_data["tickets"].insert(0, ticket_to_move)  # Ajouter au début de la liste
-                    if "pagination" in pending_data:
-                        pending_data["pagination"]["total_count"] += 1
-        
-        return pending_data, closed_data
-    
-    return no_update, no_update
+    return pending_data, closed_data
 
 
 @callback(
