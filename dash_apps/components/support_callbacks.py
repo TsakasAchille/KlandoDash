@@ -231,18 +231,11 @@ def process_ticket_status_update(status_clicks, status_values, selected_ticket, 
             if idx is not None and idx < len(status_values):
                 new_status = status_values[idx]
                 logger.info(f"Mise à jour statut: ticket {ticket_id} -> {new_status}")
-                old_status, new_status = update_ticket_status(ticket_id, new_status)
+                update_ticket_status(ticket_id, new_status)
                 
-                # Si le ticket en cours est modifié, mettre à jour son statut dans la sélection
-                if selected_ticket and selected_ticket.get("ticket_id") == ticket_id:
-                    selected_ticket["status"] = new_status
-                
-                # Émettre un signal de mise à jour
                 updated_signal = {
                     "count": current_signal.get("count", 0) + 1,
                     "updated_id": ticket_id,
-                    "old_status": old_status,
-                    "new_status": new_status,
                     "timestamp": datetime.now().isoformat()
                 }
                 return updated_signal
