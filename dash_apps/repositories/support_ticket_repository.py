@@ -3,7 +3,7 @@ from dash_apps.schemas.support_ticket import SupportTicketSchema
 from dash_apps.core.database import SessionLocal
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 
 class SupportTicketRepository:
     @staticmethod
@@ -58,6 +58,39 @@ class SupportTicketRepository:
         if status:
             query = query.filter(SupportTicket.status == status)
         return query.scalar() or 0
+    
+    @staticmethod
+    def update_ticket_status(session: Session, ticket_id: str, new_status: str) -> Tuple[Optional[str], Optional[str]]:
+        """Met à jour le statut d'un ticket et retourne l'ancien et le nouveau statut
+        
+        Args:
+            session: Session de base de données
+            ticket_id: Identifiant du ticket à mettre à jour
+            new_status: Nouveau statut à appliquer
+            
+        Returns:
+            Tuple contenant (ancien_statut, nouveau_statut) ou (None, None) si le ticket n'est pas trouvé
+        """
+        from datetime import datetime
+        
+        # Toujours convertir ticket_id en str
+        ticket_id_str = str(ticket_id)
+        
+        # Récupérer le ticket
+        ticket = session.query(SupportTicket).filter(SupportTicket.ticket_id == ticket_id_str).first()
+        
+        if not ticket:
+            return None, None
+            
+        # Sauvegarder l'ancien statut et appliquer le nouveau
+        old_status = ticket.status
+        ticket.status = new_status
+        ticket.updated_at = datetime.now()
+        
+        # Valider la transaction
+        session.commit()
+        
+        return old_status, new_status
         
     @staticmethod
     def convert_ticket_to_schema(ticket) -> SupportTicketSchema:

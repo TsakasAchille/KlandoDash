@@ -91,18 +91,14 @@ def load_comments_for_ticket(ticket_id):
 def update_ticket_status(ticket_id, new_status):
     """
     Met à jour le statut d'un ticket et retourne l'ancien et le nouveau statut
+    Utilise la méthode du repository pour respecter la séparation des responsabilités
     """
     try:
         with get_session() as session:
-            # Récupérer le ticket
-            ticket = session.query(SupportTicket).filter(SupportTicket.ticket_id == ticket_id).first()
-            if ticket:
-                old_status = ticket.status
-                ticket.status = new_status
-                ticket.updated_at = datetime.now()
-                session.commit()
-                logger.info(f"Ticket {ticket_id} mis à jour : {old_status} -> {new_status}")
-                return old_status, new_status
+            old_status, updated_status = SupportTicketRepository.update_ticket_status(session, ticket_id, new_status)
+            if updated_status:
+                logger.info(f"Ticket {ticket_id} mis à jour : {old_status} -> {updated_status}")
+                return old_status, updated_status
             else:
                 logger.warning(f"Ticket {ticket_id} non trouvé pour mise à jour")
                 return None, None
@@ -225,11 +221,8 @@ def process_ticket_status_update(status_clicks, status_values, selected_ticket, 
     Traite les mises à jour de statut des tickets et émet un signal de mise à jour
     pour déclencher le rafraîchissement des listes
     """
-    # Vérifier si le callback est déclenché par un bouton de mise à jour
+    # Récupérer l'id du ticket directement depuis le déclencheur
     triggered = ctx.triggered_id
-    if not isinstance(triggered, dict) or triggered.get("type") != "update-status-btn":
-        return no_update
-        
     ticket_id = triggered.get("index")
     try:
         # Trouver le bouton cliqué et la valeur associée
