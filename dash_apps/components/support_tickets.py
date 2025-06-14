@@ -238,14 +238,14 @@ def render_ticket_details(ticket, comments):
                 dbc.CardBody([
                     dbc.InputGroup([
                         dbc.Textarea(
-                            id={"type": "comment-text", "index": ticket["ticket_id"]},
+                            id={"type": "comment-textarea", "index": ticket["ticket_id"]},
                             placeholder="Votre commentaire...",
                             style={"height": "80px", "resize": "none"}
                         )
                     ], className="mb-2"),
                     dbc.Button(
                         "Ajouter",
-                        id={"type": "add-comment-btn", "index": ticket["ticket_id"]},
+                        id={"type": "comment-btn", "index": ticket["ticket_id"]},
                         color="primary"
                     )
                 ])
@@ -256,64 +256,3 @@ def render_ticket_details(ticket, comments):
     # Retourner directement la section de détails qui contient déjà tout ce dont nous avons besoin
     return details_section
 
-
-def update_ticket_status(ticket_id, new_status, tickets_data):
-    """
-    Met à jour le statut d'un ticket
-    
-    Args:
-        ticket_id: ID du ticket à mettre à jour
-        new_status: Nouveau statut à appliquer
-        tickets_data: Données des tickets
-    
-    Returns:
-        Les données des tickets mises à jour
-    """
-    updated_data = tickets_data.copy()
-    
-    for i, ticket in enumerate(updated_data["tickets"]):
-        if ticket["ticket_id"] == ticket_id:
-            updated_data["tickets"][i]["status"] = new_status
-            updated_data["tickets"][i]["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            break
-    
-    return updated_data
-
-
-def add_ticket_comment(ticket_id, comment_text, user_id, tickets_data):
-    """
-    Ajoute un commentaire à un ticket
-    
-    Args:
-        ticket_id: ID du ticket auquel ajouter un commentaire
-        comment_text: Texte du commentaire
-        user_id: ID de l'utilisateur qui ajoute le commentaire
-        tickets_data: Données des tickets
-    
-    Returns:
-        Les données des tickets mises à jour
-    """
-    updated_data = tickets_data.copy()
-    
-    # Créer un nouveau commentaire
-    new_comment = {
-        "comment_id": str(uuid.uuid4()),
-        "ticket_id": ticket_id,
-        "user_id": user_id,
-        "comment_text": comment_text,
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    
-    # Ajouter le commentaire
-    if ticket_id not in updated_data["comments"]:
-        updated_data["comments"][ticket_id] = []
-    
-    updated_data["comments"][ticket_id].append(new_comment)
-    
-    # Mettre à jour la date de mise à jour du ticket
-    for i, ticket in enumerate(updated_data["tickets"]):
-        if ticket["ticket_id"] == ticket_id:
-            updated_data["tickets"][i]["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            break
-    
-    return updated_data

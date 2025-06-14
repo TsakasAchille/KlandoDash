@@ -7,6 +7,7 @@ from dash.exceptions import PreventUpdate
 from dash_apps.components.support_tickets import render_tickets_list, render_ticket_details
 from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
 from dash_apps.repositories.support_comment_repository import SupportCommentRepository
+from dash_apps.repositories.user_repository import UserRepository
 from dash_apps.models.support_ticket import SupportTicket
 from dash_apps.core.database import get_session
 import dash_bootstrap_components as dbc
@@ -107,26 +108,32 @@ def update_ticket_status(ticket_id, new_status):
         return None, None
 
 
-def add_support_comment(ticket_id, user_id, comment_text):
+def add_support_comment(ticket_id, user_id, comment_text, user_name=None):
     """
-    Ajoute un commentaire à un ticket
+    Ajoute un commentaire à un ticket en utilisant le repository pour respecter la séparation des responsabilités
     """
     try:
-        with get_session() as db_session:
-            SupportCommentRepository.add_comment(db_session, str(ticket_id), str(user_id), comment_text)
-        logger.info(f"[add_support_comment] Commentaire ajouté: ticket={ticket_id}, user={user_id}")
-        return True
+        # DEBUG: Afficher les informations reçues
+        print(f"DEBUG ADD_COMMENT RECEIVED: ticket_id={ticket_id}, user_id={user_id}, user_name={user_name}")
+        
+        with get_session() as session:
+            # Utiliser le nom d'utilisateur si fourni, sinon utiliser l'ID
+            comment = SupportCommentRepository.add_comment(session, str(ticket_id), str(user_id), comment_text, user_name)
+            display_name = user_name or user_id
+            logger.info(f"[add_support_comment] Commentaire ajouté: ticket={ticket_id}, user={display_name}")
+            print(f"DEBUG COMMENT CREATED: comment_id={getattr(comment, 'comment_id', None)}, user_name={getattr(comment, 'user_name', None)}")
+            return comment
     except Exception as e:
         logger.error(f"[add_support_comment] Erreur: {e}")
-        return False
+        return None
 
 
 def validate_comment_input(btn_clicks, comment_texts, selected_ticket):
     """
-    Valide l'entrée d'un nouveau commentaire
+    Valide l'entrée d'un nouveau commentaire et récupère les informations de l'utilisateur connecté
     """
     if not any(btn_clicks) or not selected_ticket or not selected_ticket.get("ticket_id"):
-        return None, None, None
+        return None, None, None, None
         
     ticket_id = selected_ticket["ticket_id"]
     comment_text = None
@@ -138,10 +145,17 @@ def validate_comment_input(btn_clicks, comment_texts, selected_ticket):
             break
             
     if not comment_text or not comment_text.strip():
-        return ticket_id, None, None
+        return ticket_id, None, None, None
         
+    # Récupérer l'ID et le nom de l'utilisateur depuis la session
     user_id = session.get('user_id', 'anonymous')
-    return ticket_id, comment_text.strip(), user_id
+    user_name = session.get('user_name', 'Utilisateur')
+    
+    # DEBUG: Afficher toutes les clés disponibles dans la session
+    print(f"DEBUG SESSION KEYS: {list(session.keys())}")
+    print(f"DEBUG USER INFO: id={user_id}, name={user_name}")
+    
+    return ticket_id, comment_text.strip(), user_id, user_name
 
 
 # CALLBACKS
@@ -401,30 +415,38 @@ def display_ticket_details(selected_ticket, pending_tickets_data, closed_tickets
 
 
 @callback(
-    [Output("support-tickets-store", "data", allow_duplicate=True),
+    [Output("ticket-update-signal", "data", allow_duplicate=True),
      Output({"type": "comment-textarea", "index": ALL}, "value")],
     [Input({"type": "comment-btn", "index": ALL}, "n_clicks")],
     [State({"type": "comment-textarea", "index": ALL}, "value"),
      State("selected-ticket-store", "data"),
-     State("support-tickets-store", "data")],
+     State("ticket-update-signal", "data")],
     prevent_initial_call=True
 )
-def add_comment_callback(btn_clicks, comment_texts, selected_ticket, tickets_data):
+def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_signal):
     """
     Gère l'ajout d'un nouveau commentaire
     """
-    # Validation des entrées
-    ticket_id, comment_text, user_id = validate_comment_input(btn_clicks, comment_texts, selected_ticket)
+    # Validation des entrées et récupération du nom d'utilisateur
+    ticket_id, comment_text, user_id, user_name = validate_comment_input(btn_clicks, comment_texts, selected_ticket)
     
     if not ticket_id or not comment_text or not user_id:
-        return no_update, ["" for _ in comment_texts]
+        return no_update, [""] * len(comment_texts)
     
-    # Ajouter le commentaire
-    success = add_support_comment(ticket_id, user_id, comment_text)
+    # Ajouter le commentaire via le repository en passant le nom d'utilisateur
+    comment = add_support_comment(ticket_id, user_id, comment_text, user_name)
     
-    if not success:
-        return no_update, ["" for _ in comment_texts]
+    if comment is None:
+        return no_update, [""] * len(comment_texts)
     
-    # Rafraîchir les données (en pratique, seul le commentaire serait ajouté)
-    # Pour simplifier, on rafraîchit tout le cache
-    return tickets_data, ["" for _ in comment_texts]
+    # Émettre un signal pour déclencher le rafraîchissement des données
+    updated_signal = {
+        "count": current_signal.get("count", 0) + 1,
+        "updated_id": ticket_id,
+        "comment_added": True,
+        "timestamp": datetime.now().isoformat()
+    }
+    logger.info(f"Commentaire ajouté pour le ticket {ticket_id}")
+    
+    # Renvoyer le signal et vider le champ de commentaire
+    return updated_signal, ["" for _ in comment_texts]

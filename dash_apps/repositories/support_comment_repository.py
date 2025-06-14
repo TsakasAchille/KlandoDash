@@ -9,7 +9,12 @@ from datetime import datetime
 class SupportCommentRepository:
     @staticmethod
     def list_comments_for_ticket(session: Session, ticket_id: str) -> List[SupportCommentSchema]:
+        # Récupérer les commentaires depuis la base de données
         comments = session.query(SupportComment).filter(SupportComment.ticket_id == ticket_id).order_by(SupportComment.created_at.asc()).all()
+        
+        # Importer FlaskLogin pour accéder à la session
+        from flask import session as flask_session
+        
         comment_dicts = []
         for comment in comments:
             d = comment.to_dict() if hasattr(comment, 'to_dict') else dict(comment)
@@ -17,11 +22,28 @@ class SupportCommentRepository:
                 d['comment_id'] = str(d['comment_id'])
             if 'ticket_id' in d and not isinstance(d['ticket_id'], str):
                 d['ticket_id'] = str(d['ticket_id'])
+                
+            # Enrichir avec le nom d'utilisateur
+            user_id = d.get('user_id')
+            # Si l'utilisateur connecté est l'auteur du commentaire
+            if user_id == flask_session.get('user_id'):
+                d['user_name'] = flask_session.get('user_name', user_id)
+            else:
+                # Pour les autres utilisateurs, utiliser l'ID comme nom par défaut
+                # On pourrait éventuellement ajouter une logique pour récupérer leurs noms via une autre méthode
+                d['user_name'] = f"Utilisateur {user_id[:8]}" if user_id else "Système"
+            
             comment_dicts.append(d)
+            
+        print(f"DEBUG LOADED COMMENTS: {len(comment_dicts)} comments with names: {[c.get('user_name') for c in comment_dicts]}")
         return [SupportCommentSchema.model_validate(comment) for comment in comment_dicts]
 
     @staticmethod
-    def add_comment(session: Session, ticket_id: str, user_id: str, comment_text: str) -> SupportCommentSchema:
+    def add_comment(session: Session, ticket_id: str, user_id: str, comment_text: str, user_name: str = None) -> SupportCommentSchema:
+        # DEBUG: Afficher les paramètres reçus
+        print(f"DEBUG REPOSITORY: ticket_id={ticket_id}, user_id={user_id}, user_name={user_name}")
+        
+        # Créer le commentaire en base de données
         comment = SupportComment(
             ticket_id=ticket_id,
             user_id=user_id,
@@ -31,9 +53,19 @@ class SupportCommentRepository:
         session.add(comment)
         session.commit()
         session.refresh(comment)
+        
+        # Convertir en dictionnaire pour la validation Pydantic
         d = comment.to_dict() if hasattr(comment, 'to_dict') else dict(comment)
         if 'comment_id' in d and not isinstance(d['comment_id'], str):
             d['comment_id'] = str(d['comment_id'])
         if 'ticket_id' in d and not isinstance(d['ticket_id'], str):
             d['ticket_id'] = str(d['ticket_id'])
-        return SupportCommentSchema.model_validate(d)
+        
+        # Ajouter le nom d'utilisateur pour l'affichage (non stocké en base)
+        d['user_name'] = user_name or user_id
+        print(f"DEBUG REPOSITORY AFTER: user_name={d.get('user_name')}, user_id={d.get('user_id')}")
+        
+        # Créer le schema et vérifier ses attributs
+        schema = SupportCommentSchema.model_validate(d)
+        print(f"DEBUG SCHEMA: user_name={getattr(schema, 'user_name', None)}")
+        return schema
