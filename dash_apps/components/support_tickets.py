@@ -142,7 +142,7 @@ def render_tickets_list(tickets, selected_ticket_id=None):
 
 def render_ticket_details(ticket, comments):
     """
-    Affiche les détails d'un ticket et ses commentaires en utilisant un template Jinja2
+    Affiche les détails d'un ticket et ses commentaires en utilisant des composants Dash natifs
     
     Args:
         ticket: Le ticket à afficher
@@ -151,18 +151,16 @@ def render_ticket_details(ticket, comments):
     Returns:
         Un composant Dash pour afficher les détails du ticket
     """
-    # Importer l'utilitaire de rendu de template
-    from dash_apps.utils.template_utils import render_template_with_iframe
     
     # Définir les classes et textes selon le statut
     status = ticket.get("status", "PENDING")
     status_mapping = {
-        "PENDING": {"class": "warning", "text": "En attente"},
-        "CLOSED": {"class": "success", "text": "Fermé"}
+        "PENDING": {"color": "warning", "text": "En attente"},
+        "CLOSED": {"color": "success", "text": "Fermé"}
     }
     
     # Valeurs par défaut si le statut n'est pas reconnu
-    status_info = status_mapping.get(status, {"class": "secondary", "text": status})
+    status_info = status_mapping.get(status, {"color": "secondary", "text": status})
     
     # Formatter les dates
     created_at = parse_date(ticket["created_at"])
@@ -180,30 +178,16 @@ def render_ticket_details(ticket, comments):
             "formatted_date": comment_date.strftime("%d/%m/%Y %H:%M")
         })
     
-    # Contexte à passer au template
-    context = {
-        "ticket": ticket,
-        "status_class": status_info["class"],
-        "status_text": status_info["text"],
-        "created_date": created_at.strftime("%d/%m/%Y %H:%M"),
-        "updated_date": updated_at.strftime("%d/%m/%Y %H:%M"),
-        "comments": formatted_comments
-    }
+    # Inverser pour afficher les plus récents en premier
+    formatted_comments.reverse()
     
-    # Rendre le template dans un iframe
-    iframe = render_template_with_iframe(
-        "support_ticket_details_template.jinja2", 
-        context,
-        height="1000px", 
-        width="100%"
-    )
-    
-    # Section détails avec l'iframe et les formulaires interactifs
-    details_section = html.Div([
-        # Les composants dans l'ordre qui correspond au template modifié
-        
-        # Formulaire de mise à jour du statut (juste après le titre du ticket)
-        html.Div([
+    # Section fixe - Informations du ticket
+    fixed_section = dbc.Card([
+        dbc.CardBody([
+            # Titre du ticket
+            html.H4(ticket.get('subject', 'Sans objet'), className="mb-3"),
+            
+            # Formulaire de mise à jour du statut
             dbc.Card([
                 dbc.CardHeader("Mettre à jour le statut"),
                 dbc.CardBody([
@@ -227,34 +211,96 @@ def render_ticket_details(ticket, comments):
                         ])
                     ])
                 ])
-            ], className="mb-4")
-        ], id="status-change-form"),
-        
-        # Iframe du template pour les détails du ticket (contenant les infos et le message)
-        iframe,
-        
-        # Formulaire d'ajout de commentaire (juste avant la section des commentaires)
-        html.Div([
-            dbc.Card([
-                dbc.CardHeader("Ajouter un commentaire"),
-                dbc.CardBody([
-                    dbc.InputGroup([
-                        dbc.Textarea(
-                            id={"type": "comment-textarea", "index": ticket["ticket_id"]},
-                            placeholder="Votre commentaire...",
-                            style={"height": "80px", "resize": "none"}
-                        )
-                    ], className="mb-2"),
-                    dbc.Button(
-                        "Ajouter",
-                        id={"type": "comment-btn", "index": ticket["ticket_id"]},
-                        color="primary"
-                    )
-                ])
-            ])
-        ], id="comment-form")
+            ], className="mb-3"),
+
+            # Informations du ticket en grille
+            dbc.Row([
+                dbc.Col([
+                    html.P([html.Strong("N° Ticket: "), html.Span(ticket.get("ticket_id", "N/A"))], className="mb-1"),
+                    html.P([html.Strong("Statut: "), dbc.Badge(status_info["text"], color=status_info["color"])], className="mb-1"),
+                    html.P([html.Strong("Utilisateur: "), html.Span(ticket.get("user_id", "-"))], className="mb-1"),
+                    html.P([html.Strong("Créé le: "), html.Span(created_at.strftime("%d/%m/%Y %H:%M"))], className="mb-1"),
+                ], width=6),
+                dbc.Col([
+                    html.P([html.Strong("Mis à jour le: "), html.Span(updated_at.strftime("%d/%m/%Y %H:%M"))], className="mb-1"),
+                    html.P([html.Strong("Préférence de contact: "), html.Span(ticket.get("contact_preference", "-"))], className="mb-1"),
+                    html.P([html.Strong("Téléphone: "), html.Span(ticket.get("phone", "-"))], className="mb-1"),
+                    html.P([html.Strong("E-mail: "), html.Span(ticket.get("mail", "-"))], className="mb-1"),
+                ], width=6),
+            ], className="mb-3"),
+            
+            # Message du ticket
+            dbc.Card(
+                dbc.CardBody(ticket.get('message', 'Pas de message')),
+                className="mb-3"
+            ),
+        ])
+    ], className="mb-3")
+    
+    # Section défilante - Commentaires
+    comment_form = dbc.Card([
+        dbc.CardHeader("Ajouter un commentaire"),
+        dbc.CardBody([
+            dbc.InputGroup([
+                dbc.Textarea(
+                    id={"type": "comment-textarea", "index": ticket["ticket_id"]},
+                    placeholder="Votre commentaire...",
+                    style={"height": "80px", "resize": "none"}
+                )
+            ], className="mb-2"),
+            dbc.Button(
+                "Ajouter",
+                id={"type": "comment-btn", "index": ticket["ticket_id"]},
+                color="primary"
+            )
+        ])
+    ], className="mb-3")
+    
+    # Liste des commentaires - style fluide et continu
+    comments_container = []
+    if formatted_comments:
+        comments_list = []
+        for comment in formatted_comments:
+            comment_item = html.Div([
+                # En-tête avec auteur et date
+                html.Div([
+                    html.Span(comment["author_id"], style={"fontWeight": "bold"}),
+                    html.Span(comment["formatted_date"], 
+                             style={"float": "right", "fontSize": "0.85rem", "color": "#777"}),
+                ], style={
+                    "borderBottom": "1px solid #eaeaea",
+                    "paddingBottom": "4px",
+                    "marginBottom": "8px"
+                }),
+                # Contenu du commentaire
+                html.P(comment["content"], style={"marginBottom": "5px"})
+            ], className="comment-item", style={
+                "padding": "12px 15px",
+                "marginBottom": "12px",
+                "borderLeft": "3px solid #dee2e6",
+                "backgroundColor": "#f8f9fa",
+                "borderRadius": "4px"
+            })
+            comments_list.append(comment_item)
+        comments_container = comments_list
+    else:
+        comments_container = [html.P("Aucun commentaire pour l'instant", className="text-muted")]
+    
+    # Scrollable section with comments
+    scrollable_section = html.Div([
+        html.H5(f"Commentaires ({len(formatted_comments)})", className="mb-3"),
+        comment_form,
+        html.Hr(),
+        html.Div(comments_container, style={"maxHeight": "800px", "overflowY": "auto"}),
+    ], className="mt-3", id="comment-form")
+    
+    # Section détails avec une structure fixe et défilante
+    details_section = html.Div([
+        # Section fixe (infos ticket et statut)
+        fixed_section,
+        # Section défilante (commentaires avec formulaire au début)
+        scrollable_section
     ])
     
     # Retourner directement la section de détails qui contient déjà tout ce dont nous avons besoin
     return details_section
-
