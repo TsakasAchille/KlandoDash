@@ -25,12 +25,18 @@ class SupportCommentRepository:
                 
             # Enrichir avec le nom d'utilisateur
             user_id = d.get('user_id')
-            # Si l'utilisateur connecté est l'auteur du commentaire
-            if user_id == flask_session.get('user_id'):
+            
+            # Dans tous les cas, utiliser le nom complet s'il est disponible
+            # Le nom est peut-être déjà stocké dans le champ user_id (voir add_comment)
+            if user_id and len(user_id.split()) > 1:
+                # Si user_id ressemble déjà à un nom (contient des espaces)
+                d['user_name'] = user_id
+            elif user_id == flask_session.get('user_id'):
+                # Si c'est l'utilisateur courant, prendre son nom de la session
                 d['user_name'] = flask_session.get('user_name', user_id)
             else:
-                # Pour les autres utilisateurs, utiliser l'ID comme nom par défaut
-                d['user_name'] = f"Utilisateur {user_id[:8]}" if user_id else "Système"
+                # Pour les autres cas, afficher le nom complet disponible ou "Contact" par défaut
+                d['user_name'] = user_id if user_id else "Système"
             
             comment_dicts.append(d)
             

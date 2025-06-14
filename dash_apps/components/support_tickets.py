@@ -301,7 +301,10 @@ def render_ticket_details(ticket, comments):
             comment_item = html.Div([
                 # En-tête avec auteur et date
                 html.Div([
-                    html.Span(comment["author_id"], style={"fontWeight": "bold"}),
+                    html.Span(comment["author_id"], style={
+                        "fontWeight": "bold", 
+                        "color": "#3A506B"  # Couleur pour faire ressortir le nom
+                    }),
                     html.Span(comment["formatted_date"], 
                              style={"float": "right", "fontSize": "0.85rem", "color": "#777"}),
                 ], style={
