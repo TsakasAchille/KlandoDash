@@ -120,10 +120,10 @@ layout = html.Div([
                                 [
                                     dbc.CardHeader(["Tickets Fermés ", dbc.Badge("0", id="closed-count", color="success", className="ms-1")]),
                                     dbc.CardBody([
-                                        html.Div(id="closed-tickets-container", style={"height": "500px", "overflowY": "auto"}),
-                                        # Contrôles de pagination pour tickets fermés
+                                        html.Div(id="closed-tickets-container", style={"height": "500px", "overflowY": "auto"})
+                                    ]),
+                                    dbc.CardFooter([
                                         dbc.Row([
-                                            dbc.Col([], width=4),
                                             dbc.Col([
                                                 dbc.Pagination(
                                                     id="closed-pagination-page",
