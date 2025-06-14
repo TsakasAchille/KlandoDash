@@ -76,6 +76,9 @@ layout = html.Div([
     
     # Store pour les commentaires
     dcc.Store(id="ticket-comments-store"),
+    
+    # Signal spécifique pour les mises à jour de commentaires
+    dcc.Store(id="comment-update-signal", data={"count": 0, "updated_id": None}, storage_type="session"),
 
     
     # Layout avec deux colonnes: tickets à gauche, détails à droite

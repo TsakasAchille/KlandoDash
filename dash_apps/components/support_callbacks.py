@@ -341,13 +341,15 @@ def update_selected_ticket(ticket_item_n_clicks, pending_tickets_data, closed_ti
 
 @callback(
     Output("ticket-details-container", "children"),
-    [Input("selected-ticket-store", "data")],
+    [Input("selected-ticket-store", "data"),
+     Input("comment-update-signal", "data")],
     [State("support-tickets-store", "data"),
      State("closed-tickets-store", "data")]
 )
-def display_ticket_details(selected_ticket, pending_tickets_data, closed_tickets_data):
+def display_ticket_details(selected_ticket, comment_signal, pending_tickets_data, closed_tickets_data):
     """
     Affiche les détails du ticket sélectionné
+    Rafraîchit également les commentaires quand le signal de commentaires est modifié
     """
     # Si pas de ticket sélectionné, afficher un message
     if not selected_ticket:
@@ -360,20 +362,23 @@ def display_ticket_details(selected_ticket, pending_tickets_data, closed_tickets
     # Pour l'affichage, on n'a pas besoin des données complètes de tous les tickets
     # On utilise directement le ticket sélectionné
     ticket_id = selected_ticket["ticket_id"]
-    # Charger les commentaires à la demande
-    comments = load_comments_for_ticket(ticket_id)
     
+    # Charger les commentaires à la demande
+    # Si le signal de commentaire concerne ce ticket, ou dans tous les cas (nouveau ticket sélectionné)
+    # on recharge toujours les commentaires pour avoir les plus récents
+    comments = load_comments_for_ticket(ticket_id)
+        
     # Rendre les détails avec les commentaires
     return render_ticket_details(selected_ticket, comments)
 
 
 @callback(
-    [Output("ticket-update-signal", "data", allow_duplicate=True),
+    [Output("comment-update-signal", "data"),
      Output({"type": "comment-textarea", "index": ALL}, "value")],
     [Input({"type": "comment-btn", "index": ALL}, "n_clicks")],
     [State({"type": "comment-textarea", "index": ALL}, "value"),
      State("selected-ticket-store", "data"),
-     State("ticket-update-signal", "data")],
+     State("comment-update-signal", "data")],
     prevent_initial_call=True
 )
 def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_signal):
@@ -419,11 +424,10 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_sig
     if comment is None:
         return no_update, [""] * len(comment_texts)
     
-    # Émettre un signal pour déclencher le rafraîchissement des données
+    # Émettre un signal spécifique pour les commentaires uniquement
     updated_signal = {
         "count": current_signal.get("count", 0) + 1,
-        "updated_id": ticket_id,
-        "comment_added": True,
+        "ticket_id": ticket_id,
         "timestamp": datetime.now().isoformat()
     }
     
