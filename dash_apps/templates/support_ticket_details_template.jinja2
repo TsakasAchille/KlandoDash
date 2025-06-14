@@ -10,10 +10,34 @@
       background: transparent;
       margin: 0;
       padding: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    
+    .fixed-section {
+      flex: none;
+      background-color: #fff;
+      z-index: 10;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 10px;
+      max-height: 45%; /* Limite la hauteur de la section fixe */
+    }
+    
+    .scrollable-section {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      min-height: 55%; /* Assure que la section commentaires prend au moins cette proportion */
     }
     
     .ticket-details {
-      padding: 15px;
+      padding: 0;
     }
     
     .ticket-title {
@@ -155,73 +179,87 @@
   </style>
 </head>
 <body>
-  <div class="ticket-details">
-    <div class="ticket-title">{{ ticket.get('subject', 'Sans objet') }}</div>
-    
-    <div class="info-grid">
-      <div class="info-item">
-        <span class="info-label">N° Ticket:</span>
-        <span class="info-value">{{ ticket.get('ticket_id', 'N/A') }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Statut:</span>
-        <span class="badge badge-{{ status_class }}">{{ status_text }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Utilisateur:</span>
-        <span class="info-value">{{ ticket.get('user_id', '-') }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Créé le:</span>
-        <span class="info-value">{{ created_date }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Mis à jour le:</span>
-        <span class="info-value">{{ updated_date }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Préférence de contact:</span>
-        <span class="info-value">{{ ticket.get('contact_preference', '-') }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Téléphone:</span>
-        <span class="info-value">{{ ticket.get('phone', '-') }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">E-mail:</span>
-        <span class="info-value">{{ ticket.get('mail', '-') }}</span>
-      </div>
-    </div>
-    
-    <div class="message-card">
-      {{ ticket.get('message', 'Pas de message') }}
-    </div>
-    
-    <!-- Ce div sera remplacé par le formulaire de changement de statut dans Dash -->
-    <div id="status-change-form"></div>
-    
-    <!-- Section des commentaires, les plus récents en premier -->
-    <div class="comments-section">
-      <h4>Commentaires ({{ comments|length }})</h4>
-      {% if comments %}
-        {% for comment in comments|reverse %}
-        <div class="comment">
-          <div class="comment-header">
-            <span class="comment-author">{{ comment.get('author_id', 'Système') }}</span>
-            <span class="comment-date">{{ comment.get('formatted_date', '-') }}</span>
+  <div class="container">
+    <!-- Section fixe avec les détails du ticket -->
+    <div class="fixed-section">
+      <div class="ticket-details">
+        <div class="ticket-title">{{ ticket.get('subject', 'Sans objet') }}</div>
+        
+        <!-- Div pour le formulaire de changement de statut -->
+        <div id="status-change-form"></div>
+        
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">N° Ticket:</span>
+            <span class="info-value">{{ ticket.get('ticket_id', 'N/A') }}</span>
           </div>
-          <div class="comment-text">{{ comment.get('content', '') }}</div>
+          <div class="info-item">
+            <span class="info-label">Statut:</span>
+            <span class="badge badge-{{ status_class }}">{{ status_text }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Utilisateur:</span>
+            <span class="info-value">{{ ticket.get('user_id', '-') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Créé le:</span>
+            <span class="info-value">{{ created_date }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Mis à jour le:</span>
+            <span class="info-value">{{ updated_date }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Préférence de contact:</span>
+            <span class="info-value">{{ ticket.get('contact_preference', '-') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Téléphone:</span>
+            <span class="info-value">{{ ticket.get('phone', '-') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">E-mail:</span>
+            <span class="info-value">{{ ticket.get('mail', '-') }}</span>
+          </div>
         </div>
-        {% endfor %}
-      {% else %}
-        <p>Aucun commentaire pour l'instant</p>
-      {% endif %}
+        
+        <div class="message-card">
+          {{ ticket.get('message', 'Pas de message') }}
+        </div>
+      </div>
     </div>
     
-    <!-- Ce div sera remplacé par le formulaire d'ajout de commentaire dans Dash -->
-    <div id="comment-form"></div>
+    <!-- Section défilante avec les commentaires -->
+    <div class="scrollable-section">
+      <div style="display: flex; flex-direction: column;">
+        <!-- Titre de la section commentaires -->
+        <h4>Commentaires ({{ comments|length }})</h4>
+        
+        <!-- Formulaire d'ajout de commentaire avant la liste -->
+        <div id="comment-form" class="mb-3"></div>
+        
+        <!-- Séparateur visuel entre formulaire et liste -->
+        <hr style="margin: 10px 0; border-top: 1px solid #eee;">
+      
+        <!-- Section des commentaires, les plus récents en premier -->
+        <div class="comments-section">
+        {% if comments %}
+          {% for comment in comments|reverse %}
+          <div class="comment">
+            <div class="comment-header">
+              <span class="comment-author">{{ comment.get('author_id', 'Système') }}</span>
+              <span class="comment-date">{{ comment.get('formatted_date', '-') }}</span>
+            </div>
+            <div class="comment-text">{{ comment.get('content', '') }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p>Aucun commentaire pour l'instant</p>
+        {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
   
-  <!-- Pas de script de défilement, les commentaires récents sont affichés en premier -->
 </body>
 </html>

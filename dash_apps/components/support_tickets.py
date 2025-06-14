@@ -194,16 +194,15 @@ def render_ticket_details(ticket, comments):
     iframe = render_template_with_iframe(
         "support_ticket_details_template.jinja2", 
         context,
-        height="500px",
+        height="1000px", 
         width="100%"
     )
     
     # Section détails avec l'iframe et les formulaires interactifs
     details_section = html.Div([
-        # Iframe du template pour les détails du ticket
-        iframe,
+        # Les composants dans l'ordre qui correspond au template modifié
         
-        # Formulaire de mise à jour du statut (toujours géré par Dash)
+        # Formulaire de mise à jour du statut (juste après le titre du ticket)
         html.Div([
             dbc.Card([
                 dbc.CardHeader("Mettre à jour le statut"),
@@ -231,7 +230,10 @@ def render_ticket_details(ticket, comments):
             ], className="mb-4")
         ], id="status-change-form"),
         
-        # Formulaire d'ajout de commentaire (toujours géré par Dash)
+        # Iframe du template pour les détails du ticket (contenant les infos et le message)
+        iframe,
+        
+        # Formulaire d'ajout de commentaire (juste avant la section des commentaires)
         html.Div([
             dbc.Card([
                 dbc.CardHeader("Ajouter un commentaire"),
