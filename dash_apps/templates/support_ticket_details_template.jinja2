@@ -200,11 +200,11 @@
     <!-- Ce div sera remplacé par le formulaire de changement de statut dans Dash -->
     <div id="status-change-form"></div>
     
-    <!-- Section des commentaires -->
+    <!-- Section des commentaires, les plus récents en premier -->
     <div class="comments-section">
       <h4>Commentaires ({{ comments|length }})</h4>
       {% if comments %}
-        {% for comment in comments %}
+        {% for comment in comments|reverse %}
         <div class="comment">
           <div class="comment-header">
             <span class="comment-author">{{ comment.get('author_id', 'Système') }}</span>
@@ -221,5 +221,7 @@
     <!-- Ce div sera remplacé par le formulaire d'ajout de commentaire dans Dash -->
     <div id="comment-form"></div>
   </div>
+  
+  <!-- Pas de script de défilement, les commentaires récents sont affichés en premier -->
 </body>
 </html>
