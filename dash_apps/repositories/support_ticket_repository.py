@@ -60,6 +60,26 @@ class SupportTicketRepository:
         return query.scalar() or 0
         
     @staticmethod
+    def convert_ticket_to_schema(ticket) -> SupportTicketSchema:
+        """Convertit un modèle SupportTicket en schéma validé
+        
+        Args:
+            ticket: Objet SupportTicket de la base de données
+            
+        Returns:
+            SupportTicketSchema validé
+        """
+        # Convertir en dictionnaire selon la méthode disponible
+        d = ticket.to_dict() if hasattr(ticket, 'to_dict') else dict(ticket)
+        
+        # S'assurer que l'ID est une chaîne de caractères
+        if 'ticket_id' in d and not isinstance(d['ticket_id'], str):
+            d['ticket_id'] = str(d['ticket_id'])
+            
+        # Valider et retourner le schéma
+        return SupportTicketSchema.model_validate(d)
+        
+    @staticmethod
     def get_tickets_with_pagination(session: Session, page: int = 1, page_size: int = 10, status: Optional[str] = None) -> Dict[str, Any]:
         """Récupère une page de tickets avec pagination et métadonnées
         
@@ -89,17 +109,58 @@ class SupportTicketRepository:
         tickets = query.order_by(SupportTicket.created_at.desc()).offset(skip).limit(page_size).all()
         
         # Convertir en schémas
-        ticket_schemas = []
-        for ticket in tickets:
-            d = ticket.to_dict() if hasattr(ticket, 'to_dict') else dict(ticket)
-            if 'ticket_id' in d and not isinstance(d['ticket_id'], str):
-                d['ticket_id'] = str(d['ticket_id'])
-            ticket_schemas.append(SupportTicketSchema.model_validate(d))
+        ticket_schemas = [SupportTicketRepository.convert_ticket_to_schema(ticket) for ticket in tickets]
         
         # Calculer le nombre total de pages
         total_pages = (total_count + page_size - 1) // page_size
         
         # Retourner les tickets et les métadonnées de pagination
+        return {
+            "tickets": ticket_schemas,
+            "pagination": {
+                "total_count": total_count,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": total_pages
+            }
+        }
+    
+    @staticmethod
+    def get_tickets_by_page(session: Session, page: int = 1, page_size: int = 10, status: Optional[str] = None) -> dict:
+        """Récupère les tickets par page, version simplifiée
+        
+        Args:
+            session: Session de base de données
+            page: Numéro de la page
+            page_size: Nombre de tickets par page
+            status: Filtre optionnel par statut
+            
+        Returns:
+            Dict contenant les tickets et les informations de pagination
+        """
+        # Calculer le décalage
+        skip = (page - 1) * page_size
+        
+        # Construction de la requête de base
+        query = session.query(SupportTicket)
+        
+        # Appliquer le filtre de statut si nécessaire
+        if status:
+            query = query.filter(SupportTicket.status == status)
+        
+        # Compter le nombre total de tickets pour ce statut
+        total_count = query.count()
+        
+        # Récupérer les tickets pour la page demandée
+        tickets = query.order_by(SupportTicket.created_at.desc()).offset(skip).limit(page_size).all()
+        
+        # Convertir en schémas
+        ticket_schemas = [SupportTicketRepository.convert_ticket_to_schema(ticket) for ticket in tickets]
+        
+        # Calculer le nombre total de pages
+        total_pages = (total_count + page_size - 1) // page_size
+        
+        # Retourner les tickets et les informations de pagination
         return {
             "tickets": ticket_schemas,
             "pagination": {

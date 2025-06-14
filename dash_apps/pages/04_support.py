@@ -88,23 +88,10 @@ layout = html.Div([
                                 [
                                     dbc.CardHeader(["Tickets en attente ", dbc.Badge("0", id="open-count", color="warning", className="ms-1")]),
                                     dbc.CardBody([
-                                        html.Div(id="open-tickets-container", style={"height": "220px", "overflowY": "auto"})
+                                        html.Div(id="open-tickets-container", style={"height": "500px", "overflowY": "auto"})
                                     ]),
                                     dbc.CardFooter([
                                         dbc.Row([
-                                            dbc.Col([
-                                                dbc.Select(
-                                                    id="pagination-page-size",
-                                                    options=[
-                                                        {"label": "5 par page", "value": 5},
-                                                        {"label": "10 par page", "value": 10},
-                                                        {"label": "20 par page", "value": 20},
-                                                    ],
-                                                    value=10,
-                                                    size="sm",
-                                                    style={"width": "120px"}
-                                                )
-                                            ], width=4),
                                             dbc.Col([
                                                 dbc.Pagination(
                                                     id="pagination-page",
@@ -127,24 +114,10 @@ layout = html.Div([
                                 [
                                     dbc.CardHeader(["Tickets Fermés ", dbc.Badge("0", id="closed-count", color="success", className="ms-1")]),
                                     dbc.CardBody([
-                                        html.Div(id="closed-tickets-container", style={"height": "220px", "overflowY": "auto"}),
+                                        html.Div(id="closed-tickets-container", style={"height": "500px", "overflowY": "auto"}),
                                         # Contrôles de pagination pour tickets fermés
                                         dbc.Row([
-                                            dbc.Col([
-                                                dbc.InputGroup([
-                                                    dbc.Select(
-                                                        id="closed-pagination-page-size",
-                                                        options=[
-                                                        {"label": "5 par page", "value": 5},
-                                                        {"label": "10 par page", "value": 10},
-                                                        {"label": "20 par page", "value": 20},
-                                                        ],
-                                                        value=10,
-                                                        size="sm",
-                                                        style={"width": "120px"}
-                                                    )
-                                                ])
-                                            ], width=4),
+                                            dbc.Col([], width=4),
                                             dbc.Col([
                                                 dbc.Pagination(
                                                     id="closed-pagination-page",

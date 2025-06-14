@@ -7,6 +7,7 @@ from dash.exceptions import PreventUpdate
 from dash_apps.components.support_tickets import render_tickets_list, render_ticket_details
 from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
 from dash_apps.repositories.support_comment_repository import SupportCommentRepository
+from dash_apps.models.support_ticket import SupportTicket
 from dash_apps.core.database import get_session
 import dash_bootstrap_components as dbc
 import logging
@@ -41,18 +42,16 @@ def need_refresh(last_update, force_refresh=False, max_age_seconds=300):
         return True
 
 
-def load_paginated_tickets(page_num, page_size, status=None):
+def load_tickets_by_page(page=1, page_size=10, status=None):
     """
-    Charge une page de tickets avec la pagination
+    Charge les tickets par page, version simplifiée
     """
-    print(f"[load_paginated_tickets] Page {page_num}, {page_size} tickets/page, status={status}")
-    page_num = int(page_num) if page_num else 1
-    page_size = int(page_size) if page_size else 10
+    print(f"[load_tickets_by_page] Page {page}, {page_size} tickets/page, status={status}")
     
     try:
         with get_session() as session:
-            result = SupportTicketRepository.get_tickets_with_pagination(
-                session, page=page_num, page_size=page_size, status=status
+            result = SupportTicketRepository.get_tickets_by_page(
+                session, page=page, page_size=page_size, status=status
             )
             tickets = [t.model_dump() for t in result["tickets"]]
             pagination = result["pagination"]
@@ -64,7 +63,7 @@ def load_paginated_tickets(page_num, page_size, status=None):
             "status_filter": status
         }
     except Exception as e:
-        logger.error(f"[load_paginated_tickets] Erreur: {e}")
+        logger.error(f"[load_tickets_by_page] Erreur: {e}")
         return {
             "tickets": [],
             "pagination": {"total_count": 0, "page": 1, "page_size": page_size, "total_pages": 1},
@@ -91,20 +90,25 @@ def load_comments_for_ticket(ticket_id):
 
 def update_ticket_status(ticket_id, new_status):
     """
-    Met à jour le statut d'un ticket
+    Met à jour le statut d'un ticket et retourne l'ancien et le nouveau statut
     """
-    if not ticket_id or not new_status:
-        logger.warning(f"[update_ticket_status] Données manquantes: ticket={ticket_id}, status={new_status}")
-        return False
-        
     try:
-        logger.info(f"[update_ticket_status] Ticket {ticket_id} -> {new_status}")
         with get_session() as session:
-            SupportTicketRepository.update_ticket(session, ticket_id, {"status": new_status})
-        return True
+            # Récupérer le ticket
+            ticket = session.query(SupportTicket).filter(SupportTicket.ticket_id == ticket_id).first()
+            if ticket:
+                old_status = ticket.status
+                ticket.status = new_status
+                ticket.updated_at = datetime.now()
+                session.commit()
+                logger.info(f"Ticket {ticket_id} mis à jour : {old_status} -> {new_status}")
+                return old_status, new_status
+            else:
+                logger.warning(f"Ticket {ticket_id} non trouvé pour mise à jour")
+                return None, None
     except Exception as e:
-        logger.error(f"[update_ticket_status] Erreur pour ticket {ticket_id}: {e}")
-        return False
+        logger.error(f"Erreur lors de la mise à jour du ticket {ticket_id}: {e}")
+        return None, None
 
 
 def add_support_comment(ticket_id, user_id, comment_text):
@@ -150,17 +154,14 @@ def validate_comment_input(btn_clicks, comment_texts, selected_ticket):
      Output("support-tickets-cache", "data"),
      Output("support-tickets-timestamp", "data")],
     [Input("pagination-page", "active_page"),
-     Input("pagination-page-size", "value"),
      Input("support-refresh-btn", "n_clicks")],
     [State("support-tickets-timestamp", "data")]
 )
-def update_pending_tickets_data(page, page_size, refresh_clicks, last_update):
+def update_pending_tickets_data(page, refresh_clicks, last_update):
     """
-    Charge les tickets avec pagination et met à jour le cache
+    Charge les tickets en attente pour la page demandée
     """
-
     print("page", page)
-    print("page_size", page_size)
     print("refresh_clicks", refresh_clicks)
     print("last_update", last_update)
     
@@ -168,14 +169,14 @@ def update_pending_tickets_data(page, page_size, refresh_clicks, last_update):
     #if not force_refresh and not need_refresh(last_update):
     #    raise PreventUpdate
         
-    # Charger les tickets pour la page demandée
-    data = load_paginated_tickets(page or 1, page_size or 10,status="PENDING")
+    # Charger les tickets pour la page demandée (10 tickets par page)
+    data = load_tickets_by_page(page=page or 1, page_size=10, status="PENDING")
     
     # Retourner le nombre total de pages pour le paginateur
     total_pages = data["pagination"]["total_pages"]
-    timestamp = datetime.now().isoformat()
     
-    return total_pages, data, timestamp
+    # Utiliser le timestamp déjà inclus dans les données
+    return total_pages, data, data["timestamp"]
 
 
 # CALLBACKS
@@ -184,47 +185,49 @@ def update_pending_tickets_data(page, page_size, refresh_clicks, last_update):
      Output("closed-tickets-cache", "data"),
      Output("closed-tickets-timestamp", "data")],
     [Input("closed-pagination-page", "active_page"),
-     Input("closed-pagination-page-size", "value"),
      Input("support-refresh-btn", "n_clicks")],
     [State("closed-tickets-timestamp", "data")]
 )
-def update_closed_tickets_data(page, page_size, refresh_clicks, last_update):
+def update_closed_tickets_data(page, refresh_clicks, last_update):
     """
-    Charge les tickets fermés avec pagination et met à jour le cache
+    Charge les tickets fermés pour la page demandée
     """
-
     print("closed page", page)
-    print("closed page_size", page_size)
     print("refresh_clicks", refresh_clicks)
     print("closed last_update", last_update)
     
-    # Vérifier si un rafraîchissement est nécessaire
-    #if not force_refresh and not need_refresh(last_update):
-    #    raise PreventUpdate
-        
-    # Charger les tickets pour la page demandée
-    data = load_paginated_tickets(page or 1, page_size or 10, status="CLOSED")
+    # Charger les tickets fermés pour la page demandée (10 tickets par page)
+    data = load_tickets_by_page(page=page or 1, page_size=10, status="CLOSED")
     
     # Retourner le nombre total de pages pour le paginateur
     total_pages = data["pagination"]["total_pages"]
-    timestamp = datetime.now().isoformat()
     
-    return total_pages, data, timestamp
+    # Utiliser le timestamp déjà inclus dans les données
+    return total_pages, data, data["timestamp"]
 
 
 @callback(
-    Output("support-tickets-store", "data"),
+    [Output("support-tickets-store", "data"),
+     Output("closed-tickets-store", "data"),
+     Output("support-refresh-btn", "n_clicks", allow_duplicate=True)],
     [Input("support-tickets-cache", "data"),
+     Input("closed-tickets-cache", "data"),
      Input({"type": "update-status-btn", "index": ALL}, "n_clicks")],
     [State({"type": "status-dropdown", "index": ALL}, "value"),
-     State("selected-ticket-store", "data")]
+     State("selected-ticket-store", "data"),
+     State("support-refresh-btn", "n_clicks")],
+    prevent_initial_call=True
 )
-def process_tickets_data(cache_data, status_clicks, status_values, selected_ticket):
+def process_tickets_data(cache_pending, cache_closed, status_clicks, status_values, selected_ticket, refresh_clicks):
     """
     Traite les données du cache et les met à jour si nécessaire (ex: changement de statut)
     """
-    if not cache_data:
-        return no_update
+    if not cache_pending or not cache_closed:
+        return no_update, no_update, no_update
+        
+    refresh_needed = False
+    pending_data = cache_pending
+    closed_data = cache_closed
         
     # Vérifier si le callback est déclenché par un bouton de mise à jour de statut
     triggered = ctx.triggered_id
@@ -237,45 +240,51 @@ def process_tickets_data(cache_data, status_clicks, status_values, selected_tick
                 if idx is not None and idx < len(status_values):
                     new_status = status_values[idx]
                     logger.info(f"Mise à jour statut: ticket {ticket_id} -> {new_status}")
-                    update_ticket_status(ticket_id, new_status)
+                    old_status, new_status = update_ticket_status(ticket_id, new_status)
                     
                     # Si le ticket en cours est modifié, mettre à jour son statut dans la sélection
                     if selected_ticket and selected_ticket.get("ticket_id") == ticket_id:
                         selected_ticket["status"] = new_status
+                    
+                    # Supprimer immédiatement le ticket des listes appropriées
+                    if new_status == "CLOSED" and pending_data and "tickets" in pending_data:
+                        # Retirer le ticket des tickets en attente et l'ajouter aux tickets fermés
+                        pending_data["tickets"] = [t for t in pending_data["tickets"] if t.get("ticket_id") != ticket_id]
+                        # Maj des métadonnées de pagination
+                        if "pagination" in pending_data:
+                            pending_data["pagination"]["total_count"] -= 1
+                    
+                    elif new_status != "CLOSED" and closed_data and "tickets" in closed_data:
+                        # Retirer le ticket des tickets fermés et l'ajouter aux tickets en attente
+                        closed_data["tickets"] = [t for t in closed_data["tickets"] if t.get("ticket_id") != ticket_id]
+                        # Maj des métadonnées de pagination
+                        if "pagination" in closed_data:
+                            closed_data["pagination"]["total_count"] -= 1
+                    
+                    # Indiquer qu'un rafraîchissement complet est nécessaire
+                    refresh_needed = True
         except Exception as e:
             logger.error(f"Erreur de mise à jour de statut: {e}")
     
-    # Toujours retourner les données du cache
-    return cache_data
+    # Déclencher un rafraîchissement si nécessaire
+    if refresh_needed:
+        return pending_data, closed_data, (refresh_clicks or 0) + 1
+    else:
+        return pending_data, closed_data, no_update
 
 
-@callback(
-    Output("closed-tickets-store", "data"),
-    [Input("closed-tickets-cache", "data")]
-)
-def process_closed_tickets_data(cache_data):
-    """
-    Traite les données du cache des tickets fermés
-    """
-    if not cache_data:
-        return no_update
-    
-    # Toujours retourner les données du cache
-    return cache_data
+
 
 
 @callback(
     [Output("open-tickets-container", "children"),
-     Output("closed-tickets-container", "children"),
-     Output("open-count", "children"),
-     Output("closed-count", "children")],
+     Output("open-count", "children")],
     [Input("support-tickets-store", "data"),
-     Input("closed-tickets-store", "data"),
      Input("selected-ticket-store", "data")]
 )
-def update_tickets_lists(pending_tickets_data, closed_tickets_data, selected_ticket):
+def update_pending_tickets_list(pending_tickets_data, selected_ticket):
     """
-    Met à jour les listes de tickets par statut
+    Met à jour la liste des tickets en attente
     """
     empty_message = html.Div("Aucun ticket disponible", className="text-muted text-center py-4")
     
@@ -292,6 +301,22 @@ def update_tickets_lists(pending_tickets_data, closed_tickets_data, selected_tic
         pending_list = render_tickets_list(pending_tickets, selected_id) if pending_tickets else \
                     html.Div("Aucun ticket en attente", className="text-muted text-center py-4")
     
+    print(f"Tickets en attente: {total_pending}")
+    return pending_list, str(total_pending)
+
+
+@callback(
+    [Output("closed-tickets-container", "children"),
+     Output("closed-count", "children")],
+    [Input("closed-tickets-store", "data"),
+     Input("selected-ticket-store", "data")]
+)
+def update_closed_tickets_list(closed_tickets_data, selected_ticket):
+    """
+    Met à jour la liste des tickets fermés
+    """
+    empty_message = html.Div("Aucun ticket disponible", className="text-muted text-center py-4")
+    
     # Traitement des tickets fermés
     if not closed_tickets_data or not closed_tickets_data.get("tickets"):
         closed_list = empty_message 
@@ -305,23 +330,27 @@ def update_tickets_lists(pending_tickets_data, closed_tickets_data, selected_tic
         closed_list = render_tickets_list(closed_tickets, selected_id) if closed_tickets else \
                    html.Div("Aucun ticket fermé", className="text-muted text-center py-4")
     
-    print(f"Tickets en attente: {total_pending}, Tickets fermés: {total_closed}")
-    
-    return pending_list, closed_list, str(total_pending), str(total_closed)
+    print(f"Tickets fermés: {total_closed}")
+    return closed_list, str(total_closed)
 
 
 @callback(
     Output("selected-ticket-store", "data"),
     [Input({"type": "ticket-item", "index": ALL}, "n_clicks")],
     [State("support-tickets-store", "data"),
+     State("closed-tickets-store", "data"),
      State("selected-ticket-store", "data")]
 )
-def update_selected_ticket(ticket_item_n_clicks, tickets_data, selected_ticket):
+def update_selected_ticket(ticket_item_n_clicks, pending_tickets_data, closed_tickets_data, selected_ticket):
     """
     Gère la sélection d'un ticket
     """
-    if not ctx.triggered or not tickets_data or not tickets_data.get("tickets"):
+    if not ctx.triggered:
         return no_update
+        
+    # Vérifier si les données de tickets sont disponibles
+    has_pending_tickets = pending_tickets_data and pending_tickets_data.get("tickets")
+    has_closed_tickets = closed_tickets_data and closed_tickets_data.get("tickets")
         
     # Vérifier si un ticket a été cliqué
     triggered = ctx.triggered_id
@@ -337,8 +366,14 @@ def update_selected_ticket(ticket_item_n_clicks, tickets_data, selected_ticket):
     if selected_ticket and selected_ticket.get("ticket_id") == ticket_id:
         return no_update
         
-    # Trouver le ticket complet dans les données
-    ticket = next((t for t in tickets_data.get("tickets", []) if t.get("ticket_id") == ticket_id), None)
+    # Chercher le ticket dans les deux listes (tickets en attente et tickets fermés)
+    ticket = None
+    if has_pending_tickets:
+        ticket = next((t for t in pending_tickets_data.get("tickets", []) if t.get("ticket_id") == ticket_id), None)
+    
+    if not ticket and has_closed_tickets:
+        ticket = next((t for t in closed_tickets_data.get("tickets", []) if t.get("ticket_id") == ticket_id), None)
+        
     if ticket:
         logger.info(f"Ticket sélectionné: {ticket_id}")
         return ticket
@@ -349,17 +384,23 @@ def update_selected_ticket(ticket_item_n_clicks, tickets_data, selected_ticket):
 @callback(
     Output("ticket-details-container", "children"),
     [Input("selected-ticket-store", "data")],
-    [State("support-tickets-store", "data")]
+    [State("support-tickets-store", "data"),
+     State("closed-tickets-store", "data")]
 )
-def display_ticket_details(selected_ticket, tickets_data):
+def display_ticket_details(selected_ticket, pending_tickets_data, closed_tickets_data):
     """
     Affiche les détails du ticket sélectionné
     """
-    if not selected_ticket or not selected_ticket.get("ticket_id"):
-        return html.Div([
-            html.Div("Sélectionnez un ticket pour voir ses détails", className="text-center text-muted p-5")
-        ])
+    # Si pas de ticket sélectionné, afficher un message
+    if not selected_ticket:
+        return html.Div(
+            "Aucun ticket sélectionné", 
+            className="text-muted text-center p-5",
+            style={"fontStyle": "italic"}
+        )
     
+    # Pour l'affichage, on n'a pas besoin des données complètes de tous les tickets
+    # On utilise directement le ticket sélectionné
     ticket_id = selected_ticket["ticket_id"]
     # Charger les commentaires à la demande
     comments = load_comments_for_ticket(ticket_id)

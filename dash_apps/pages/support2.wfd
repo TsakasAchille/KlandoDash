@@ -1,0 +1,80 @@
+@startuml Support Tickets Flow
+
+actor User
+boundary UI
+participant "PendingPagination" as PP
+participant "ClosedPagination" as CP
+participant "update_pending_tickets_data" as UPTD
+participant "update_closed_tickets_data" as UCTD
+participant "load_paginated_tickets" as LPT
+participant "SupportTicketRepository" as Repo
+database Database
+participant "process_tickets_data" as PTD
+participant "process_closed_tickets_data" as PCTD
+participant "update_pending_tickets_list" as UPTL
+participant "update_closed_tickets_list" as UCTL
+entity "support-tickets-cache" as STC
+entity "support-tickets-store" as STS
+entity "closed-tickets-cache" as CTC
+entity "closed-tickets-store" as CTS
+boundary DOM
+
+note over User, DOM: Flux des tickets ouverts (PENDING)
+
+User -> PP: Change de page/taille
+PP -> UPTD: Input trigger
+activate UPTD
+UPTD -> LPT: load_paginated_tickets(status="PENDING")
+activate LPT
+LPT -> Repo: get_tickets_with_pagination
+activate Repo
+Repo -> Database: SQL Query (PENDING)
+Database --> Repo: Résultat
+deactivate Repo
+LPT --> UPTD: Données + timestamp
+deactivate LPT
+UPTD --> PP: Maj max_value
+UPTD --> STC: Stockage données
+deactivate UPTD
+
+STC -> PTD: Input trigger
+activate PTD
+PTD -> STS: Transfert données
+deactivate PTD
+
+STS -> UPTL: Input trigger
+activate UPTL
+UPTL -> UPTL: render_tickets_list
+UPTL --> DOM: Affichage tickets ouverts
+deactivate UPTL
+
+note over User, DOM: Flux des tickets fermés (CLOSED)
+
+User -> CP: Change de page/taille
+CP -> UCTD: Input trigger
+activate UCTD
+UCTD -> LPT: load_paginated_tickets(status="CLOSED")
+activate LPT
+LPT -> Repo: get_tickets_with_pagination
+activate Repo
+Repo -> Database: SQL Query (CLOSED)
+Database --> Repo: Résultat
+deactivate Repo
+LPT --> UCTD: Données + timestamp
+deactivate LPT
+UCTD --> CP: Maj max_value
+UCTD --> CTC: Stockage données
+deactivate UCTD
+
+CTC -> PCTD: Input trigger
+activate PCTD
+PCTD -> CTS: Transfert données
+deactivate PCTD
+
+CTS -> UCTL: Input trigger
+activate UCTL
+UCTL -> UCTL: render_tickets_list
+UCTL --> DOM: Affichage tickets fermés
+deactivate UCTL
+
+@enduml
