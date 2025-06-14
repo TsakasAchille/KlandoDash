@@ -108,55 +108,8 @@ def update_ticket_status(ticket_id, new_status):
         return None, None
 
 
-def add_support_comment(ticket_id, user_id, comment_text, user_name=None):
-    """
-    Ajoute un commentaire à un ticket en utilisant le repository pour respecter la séparation des responsabilités
-    """
-    try:
-        # DEBUG: Afficher les informations reçues
-        print(f"DEBUG ADD_COMMENT RECEIVED: ticket_id={ticket_id}, user_id={user_id}, user_name={user_name}")
-        
-        with get_session() as session:
-            # Utiliser le nom d'utilisateur si fourni, sinon utiliser l'ID
-            comment = SupportCommentRepository.add_comment(session, str(ticket_id), str(user_id), comment_text, user_name)
-            display_name = user_name or user_id
-            logger.info(f"[add_support_comment] Commentaire ajouté: ticket={ticket_id}, user={display_name}")
-            print(f"DEBUG COMMENT CREATED: comment_id={getattr(comment, 'comment_id', None)}, user_name={getattr(comment, 'user_name', None)}")
-            return comment
-    except Exception as e:
-        logger.error(f"[add_support_comment] Erreur: {e}")
-        return None
-
-
-def validate_comment_input(btn_clicks, comment_texts, selected_ticket):
-    """
-    Valide l'entrée d'un nouveau commentaire et récupère les informations de l'utilisateur connecté
-    """
-    if not any(btn_clicks) or not selected_ticket or not selected_ticket.get("ticket_id"):
-        return None, None, None, None
-        
-    ticket_id = selected_ticket["ticket_id"]
-    comment_text = None
-    
-    # Trouver le texte du commentaire associé au bouton cliqué
-    for i, clicks in enumerate(btn_clicks):
-        if clicks and i < len(comment_texts):
-            comment_text = comment_texts[i]
-            break
-            
-    if not comment_text or not comment_text.strip():
-        return ticket_id, None, None, None
-        
-    # Récupérer l'ID et le nom de l'utilisateur depuis la session
-    user_id = session.get('user_id', 'anonymous')
-    user_name = session.get('user_name', 'Utilisateur')
-    
-    # DEBUG: Afficher toutes les clés disponibles dans la session
-    print(f"DEBUG SESSION KEYS: {list(session.keys())}")
-    print(f"DEBUG USER INFO: id={user_id}, name={user_name}")
-    
-    return ticket_id, comment_text.strip(), user_id, user_name
-
+# Fonction supprimée : add_support_comment
+# Intégrée directement dans le callback add_comment_callback
 
 # CALLBACKS
 @callback(
@@ -427,15 +380,42 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_sig
     """
     Gère l'ajout d'un nouveau commentaire
     """
-    # Validation des entrées et récupération du nom d'utilisateur
-    ticket_id, comment_text, user_id, user_name = validate_comment_input(btn_clicks, comment_texts, selected_ticket)
-    
-    if not ticket_id or not comment_text or not user_id:
+    # Vérification des prérequis
+    if not btn_clicks or not btn_clicks[0] or not selected_ticket or not selected_ticket.get("ticket_id"):
         return no_update, [""] * len(comment_texts)
     
-    # Ajouter le commentaire via le repository en passant le nom d'utilisateur
-    comment = add_support_comment(ticket_id, user_id, comment_text, user_name)
+    # Récupérer les informations nécessaires
+    ticket_id = selected_ticket["ticket_id"]
+    comment_text = comment_texts[0] if comment_texts else ""
     
+    # Vérifier si le commentaire est vide
+    if not comment_text or not comment_text.strip():
+        return no_update, [""] * len(comment_texts)
+    
+    from flask import session
+    
+    # Récupérer directement l'ID et le nom de l'utilisateur depuis la session
+    user_id = session.get('user_id', 'anonymous')
+    user_name = session.get('user_name', 'Utilisateur')
+    
+    # Ajouter le commentaire directement via le repository
+    try:
+        with get_session() as session:
+            # Utiliser le nom d'utilisateur pour l'affichage
+            comment = SupportCommentRepository.add_comment(
+                session, 
+                str(ticket_id),
+                str(user_id),
+                comment_text.strip(),
+                user_name
+            )
+            
+            display_name = user_name or user_id
+            logger.info(f"Commentaire ajouté: ticket={ticket_id}, user={display_name}")
+    except Exception as e:
+        logger.error(f"Erreur lors de l'ajout du commentaire: {e}")
+        return no_update, [""] * len(comment_texts)
+        
     if comment is None:
         return no_update, [""] * len(comment_texts)
     
@@ -446,7 +426,6 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_sig
         "comment_added": True,
         "timestamp": datetime.now().isoformat()
     }
-    logger.info(f"Commentaire ajouté pour le ticket {ticket_id}")
     
     # Renvoyer le signal et vider le champ de commentaire
     return updated_signal, ["" for _ in comment_texts]
