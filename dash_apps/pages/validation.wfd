@@ -1,0 +1,44 @@
+@startuml
+actor Admin as AdminUser
+participant "Dash Layout\n(06_driver_validation.py)" as Layout
+participant "Dash Callbacks\n(driver_validation_callbacks.py)" as Callbacks
+participant "UI Component\n(create_user_document_card)" as UIComp
+participant "UserProcessor\n(get_all_users)" as UserProcessor
+participant "admin_db\n(is_admin)" as AdminDB
+participant "user_data_old\n(update_user_field)" as UserData
+
+== Chargement initial ou changement de filtre ==
+AdminUser -> Layout : Sélectionne un filtre (RadioItems)
+Layout -> Callbacks : Trigger callback load_drivers_data
+Callbacks -> AdminDB : is_admin(user_email)
+AdminDB --> Callbacks : True/False
+alt Si admin
+    Callbacks -> UserProcessor : get_all_users()
+    UserProcessor --> Callbacks : DataFrame utilisateurs
+    Callbacks -> UIComp : create_user_document_card(user) [pour chaque user filtré]
+    UIComp --> Callbacks : Carte utilisateur HTML
+    Callbacks -> Layout : Affiche la liste + badge
+else Non admin
+    Callbacks -> Layout : Affiche Alert \"accès refusé\"
+end
+
+== Validation d'un document ==
+AdminUser -> Layout : Clique sur \"Valider les documents\"
+Layout -> Callbacks : Trigger callback validate_driver_documents
+Callbacks -> UserProcessor : get_all_users()
+UserProcessor --> Callbacks : DataFrame utilisateurs
+Callbacks -> UserData : update_user_field(uid, \"is_driver_doc_validate\", True/False)
+UserData --> Callbacks : OK/Erreur
+Callbacks -> Layout : Met à jour bouton + statut
+
+== Ouverture d'un document ==
+AdminUser -> Layout : Clique sur \"Voir le document\"
+Layout -> Callbacks : Trigger callback toggle_modal
+Callbacks -> Layout : Ouvre/ferme le modal
+
+== Comparaison des documents ==
+AdminUser -> Layout : Clique sur \"Comparer\"
+Layout -> Callbacks : Trigger callback toggle_compare_modal
+Callbacks -> Layout : Ouvre/ferme le modal de comparaison
+
+@enduml

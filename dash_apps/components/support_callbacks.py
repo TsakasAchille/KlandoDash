@@ -108,8 +108,6 @@ def update_ticket_status(ticket_id, new_status):
         return None, None
 
 
-# Fonction supprimée : add_support_comment
-# Intégrée directement dans le callback add_comment_callback
 
 # CALLBACKS
 @callback(
@@ -230,6 +228,7 @@ def update_ticket_stores(cache_pending, cache_closed, update_signal, current_pen
     """
     Met à jour les stores de tickets en fonction des caches et du signal de mise à jour
     """
+   
     # Utiliser simplement les données des caches quand ils sont disponibles
     # Cette approche est plus simple et maintient quand même les données à jour
     pending_data = cache_pending if cache_pending else current_pending
