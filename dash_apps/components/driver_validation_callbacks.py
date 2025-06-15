@@ -37,13 +37,14 @@ def load_all_drivers_to_store(refresh_trigger):
     prevent_initial_call=True
 )
 def load_drivers_data(filter_value, drivers_data):
-    print("")
-    print("[load_drivers_data]")
+
+    
     user_email = session.get('user_email', None)
     if not is_admin(user_email):
         return dbc.Alert("Vous n'avez pas accès à cette page.", color="danger"), 0
     if not drivers_data:
         return dbc.Alert("Aucun utilisateur correspondant aux critères de filtrage.", color="info"), 0
+
     if filter_value == "pending":
         users = [u for u in drivers_data if u.get("driver_documents_transmitted") and not u.get("is_driver_doc_validated")]
     elif filter_value == "validated":

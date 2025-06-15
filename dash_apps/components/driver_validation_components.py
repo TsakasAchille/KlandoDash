@@ -10,7 +10,11 @@ def create_user_document_card(user):
     email = user.get("email", "Sans email")
     driver_licence = user.get("driver_licence_url")
     id_card = user.get("id_card_url")
-    is_validated = user.get("is_driver_doc_validate", False)
+    is_validated = user.get("is_driver_doc_validated", False)
+
+    print("uid",uid)
+    print("name :",name )
+    print("email:",email)
     
     # Détermination du texte et de la couleur du bouton
     if is_validated:
@@ -23,6 +27,11 @@ def create_user_document_card(user):
         btn_color = "success"
         btn_disabled = False
         status_text = ""
+
+    print("")
+    print("button texte : ")
+    print(btn_text)
+    print("")
     
     return dbc.Card([
         dbc.CardHeader([
