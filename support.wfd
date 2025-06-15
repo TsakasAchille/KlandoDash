@@ -1,0 +1,158 @@
+@startuml
+title Diagramme de séquence - Système de Support Technique KlandoDash
+
+' Définition des acteurs et participants
+actor Utilisateur
+participant "04_support.py" as SupportPage
+participant "support_tickets.py" as TicketComponents
+participant "support_callbacks.py" as Callbacks
+participant "template_utils.py" as Templates
+participant "SupportTicketRepository" as TicketRepo
+participant "SupportCommentRepository" as CommentRepo
+database "Base de données" as DB
+
+' Initialisation de la page de support
+Utilisateur -> SupportPage: Accéder à page /support
+activate SupportPage
+SupportPage -> Callbacks: initialisation page
+activate Callbacks
+
+' Chargement des tickets
+Callbacks -> TicketRepo: get_tickets_and_comments()
+activate TicketRepo
+TicketRepo -> DB: SELECT * FROM support_tickets
+DB --> TicketRepo: Résultats tickets
+TicketRepo --> Callbacks: Liste des tickets
+deactivate TicketRepo
+
+' Chargement des commentaires pour chaque ticket
+Callbacks -> CommentRepo: list_comments_for_ticket()
+activate CommentRepo
+CommentRepo -> DB: SELECT * FROM support_comments
+DB --> CommentRepo: Résultats commentaires
+CommentRepo --> Callbacks: Liste des commentaires
+deactivate CommentRepo
+
+' Rendu des listes de tickets
+Callbacks -> TicketComponents: render_tickets_list()
+activate TicketComponents
+TicketComponents --> Callbacks: HTML des listes (En attente/Fermés)
+deactivate TicketComponents
+
+' Mise à jour des conteneurs
+Callbacks --> SupportPage: MàJ open-tickets-container & closed-tickets-container
+deactivate Callbacks
+
+' Affichage initial au client
+SupportPage --> Utilisateur: Affichage des listes de tickets
+deactivate SupportPage
+
+' Sélection d'un ticket
+Utilisateur -> SupportPage: Clic sur un ticket
+activate SupportPage
+SupportPage -> Callbacks: update_selected_ticket()
+activate Callbacks
+
+' Récupérer détails du ticket sélectionné
+Callbacks -> TicketRepo: get_ticket()
+activate TicketRepo
+TicketRepo -> DB: SELECT * FROM support_tickets WHERE id=?
+DB --> TicketRepo: Détails ticket
+TicketRepo --> Callbacks: Détails du ticket
+deactivate TicketRepo
+
+' Récupérer commentaires du ticket
+Callbacks -> CommentRepo: list_comments_for_ticket()
+activate CommentRepo
+CommentRepo -> DB: SELECT * FROM support_comments WHERE ticket_id=?
+DB --> CommentRepo: Commentaires du ticket
+CommentRepo --> Callbacks: Liste des commentaires
+deactivate CommentRepo
+
+' Rendu détaillé du ticket avec template Jinja2
+Callbacks -> TicketComponents: render_ticket_details()
+activate TicketComponents
+TicketComponents -> Templates: render_template_with_iframe()
+activate Templates
+Templates --> TicketComponents: iframe avec HTML du template
+deactivate Templates
+TicketComponents --> Callbacks: Composant détails ticket
+deactivate TicketComponents
+
+Callbacks --> SupportPage: MàJ ticket-details-container
+deactivate Callbacks
+SupportPage --> Utilisateur: Affichage détails du ticket
+deactivate SupportPage
+
+' Ajout d'un commentaire
+Utilisateur -> SupportPage: Soumet un nouveau commentaire
+activate SupportPage
+SupportPage -> Callbacks: add_comment_callback()
+activate Callbacks
+Callbacks -> Callbacks: validate_comment_input()
+
+' Ajout en base de données
+Callbacks -> CommentRepo: add_comment()
+activate CommentRepo
+CommentRepo -> DB: INSERT INTO support_comments
+DB --> CommentRepo: Confirmation
+CommentRepo --> Callbacks: Nouveau commentaire ajouté
+deactivate CommentRepo
+
+' Rafraîchissement des données
+Callbacks -> TicketRepo: get_tickets_and_comments() 
+activate TicketRepo
+TicketRepo -> DB: SELECT * 
+DB --> TicketRepo: Données mises à jour
+TicketRepo --> Callbacks: Données actualisées
+deactivate TicketRepo
+
+' Rendu mis à jour des détails
+Callbacks -> TicketComponents: render_ticket_details()
+activate TicketComponents
+TicketComponents -> Templates: render_template_with_iframe()
+activate Templates
+Templates --> TicketComponents: iframe avec HTML mis à jour
+deactivate Templates
+TicketComponents --> Callbacks: Détails avec nouveau commentaire
+deactivate TicketComponents
+
+Callbacks --> SupportPage: MàJ ticket-details-container
+deactivate Callbacks
+SupportPage --> Utilisateur: Affichage avec le nouveau commentaire
+deactivate SupportPage
+
+' Mise à jour du statut d'un ticket
+Utilisateur -> SupportPage: Modifie le statut du ticket
+activate SupportPage
+SupportPage -> Callbacks: unified_tickets_callback()
+activate Callbacks
+
+' Mise à jour en base de données
+Callbacks -> TicketRepo: update_ticket_status()
+activate TicketRepo
+TicketRepo -> DB: UPDATE support_tickets SET status = ?
+DB --> TicketRepo: Confirmation
+TicketRepo --> Callbacks: Statut mis à jour
+deactivate TicketRepo
+
+' Rafraîchissement des données
+Callbacks -> TicketRepo: get_tickets_and_comments()
+activate TicketRepo
+TicketRepo -> DB: SELECT *
+DB --> TicketRepo: Données mises à jour
+TicketRepo --> Callbacks: Données actualisées
+deactivate TicketRepo
+
+' Mise à jour de l'affichage
+Callbacks -> TicketComponents: render_tickets_list()
+activate TicketComponents
+TicketComponents --> Callbacks: Listes mises à jour
+deactivate TicketComponents
+
+Callbacks --> SupportPage: MàJ open/closed-tickets-container
+deactivate Callbacks
+SupportPage --> Utilisateur: Affichage avec statut mis à jour
+deactivate SupportPage
+
+@enduml
