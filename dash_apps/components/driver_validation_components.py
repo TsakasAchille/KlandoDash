@@ -12,9 +12,7 @@ def create_user_document_card(user):
     id_card = user.get("id_card_url")
     is_validated = user.get("is_driver_doc_validated", False)
 
-    print("uid",uid)
-    print("name :",name )
-    print("email:",email)
+    print("create_user_document_card")
     
     # Détermination du texte et de la couleur du bouton
     if is_validated:
@@ -28,11 +26,7 @@ def create_user_document_card(user):
         btn_disabled = False
         status_text = ""
 
-    print("")
-    print("button texte : ")
-    print(btn_text)
-    print("")
-    
+
     return dbc.Card([
         dbc.CardHeader([
             html.H5(f"{name}", className="card-title"),
@@ -44,18 +38,26 @@ def create_user_document_card(user):
                 dbc.Col([
                     html.H6("Permis de conduire"),
                     html.Div([
-                        dbc.Button("Voir le document", id={"type": "view-doc", "index": f"{uid}-licence"},
-                                 color="primary", className="me-2") if driver_licence else 
-                        html.Span("Document non disponible", className="text-danger")
+                        dbc.Button(
+                            "Voir le document" if driver_licence else "Document non disponible", 
+                            id={"type": "view-doc", "index": f"{uid}-licence"},
+                            color="primary" if driver_licence else "secondary", 
+                            className="me-2",
+                            disabled=not driver_licence
+                        )
                     ])
                 ], width=6),
                 # Carte d'identité
                 dbc.Col([
                     html.H6("Carte d'identité"),
                     html.Div([
-                        dbc.Button("Voir le document", id={"type": "view-doc", "index": f"{uid}-idcard"},
-                                 color="primary", className="me-2") if id_card else 
-                        html.Span("Document non disponible", className="text-danger")
+                        dbc.Button(
+                            "Voir le document" if id_card else "Document non disponible", 
+                            id={"type": "view-doc", "index": f"{uid}-idcard"},
+                            color="primary" if id_card else "secondary", 
+                            className="me-2",
+                            disabled=not id_card
+                        )
                     ])
                 ], width=6)
             ]),
@@ -65,7 +67,8 @@ def create_user_document_card(user):
                 dbc.ModalHeader("Document"),
                 dbc.ModalBody([
                     html.Img(id={"type": "doc-img", "index": f"{uid}-licence"}, 
-                             src=driver_licence, style={"width": "100%"}) if driver_licence else 
+                             src=driver_licence if driver_licence else "", 
+                             style={"width": "100%", "display": "block" if driver_licence else "none"}) if driver_licence else 
                     html.Div("Aucune image disponible")
                 ]),
                 dbc.ModalFooter(dbc.Button("Fermer", id={"type": "close-modal", "index": f"{uid}-licence"}, className="ms-auto"))
@@ -75,7 +78,8 @@ def create_user_document_card(user):
                 dbc.ModalHeader("Document"),
                 dbc.ModalBody([
                     html.Img(id={"type": "doc-img", "index": f"{uid}-idcard"}, 
-                             src=id_card, style={"width": "100%"}) if id_card else 
+                             src=id_card if id_card else "", 
+                             style={"width": "100%", "display": "block" if id_card else "none"}) if id_card else 
                     html.Div("Aucune image disponible")
                 ]),
                 dbc.ModalFooter(dbc.Button("Fermer", id={"type": "close-modal", "index": f"{uid}-idcard"}, className="ms-auto"))
@@ -109,11 +113,15 @@ def create_user_document_card(user):
                     dbc.Row([
                         dbc.Col([
                             html.H6("Permis de conduire"),
-                            html.Img(src=driver_licence, style={"width": "100%", "border": "1px solid #ddd", "borderRadius": "8px"}) if driver_licence else html.Div("Document non disponible", className="text-danger")
+                            html.Img(src=driver_licence if driver_licence else "", 
+                                   style={"width": "100%", "border": "1px solid #ddd", "borderRadius": "8px", "display": "block" if driver_licence else "none"}) if driver_licence else 
+                            html.Div("Document non disponible", className="text-danger")
                         ], width=6),
                         dbc.Col([
                             html.H6("Carte d'identité"),
-                            html.Img(src=id_card, style={"width": "100%", "border": "1px solid #ddd", "borderRadius": "8px"}) if id_card else html.Div("Document non disponible", className="text-danger")
+                            html.Img(src=id_card if id_card else "", 
+                                   style={"width": "100%", "border": "1px solid #ddd", "borderRadius": "8px", "display": "block" if id_card else "none"}) if id_card else 
+                            html.Div("Document non disponible", className="text-danger")
                         ], width=6)
                     ])
                 ]),

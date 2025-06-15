@@ -63,6 +63,8 @@ def load_drivers_data(filter_value, drivers_data):
     prevent_initial_call=True
 )
 def refresh_after_validation(all_n_clicks, refresh_count):
+
+    print("refresh_after_validation")
     ctx = dash.callback_context
     if not ctx.triggered or all(v is None for v in all_n_clicks):
         return dash.no_update
@@ -108,6 +110,7 @@ def toggle_modal(n_open, n_close, is_open):
         return not is_open
     return is_open
 
+# Callback pour mettre à jour l'état des boutons et statuts après validation/dévalidation
 @callback(
     [Output({"type": "validate-docs", "index": dash.dependencies.MATCH}, "disabled"),
      Output({"type": "validate-docs", "index": dash.dependencies.MATCH}, "children"),
@@ -117,28 +120,55 @@ def toggle_modal(n_open, n_close, is_open):
     prevent_initial_call=True
 )
 def validate_driver_documents(n_clicks, button_id):
-
+    print(f"Validation/Dévalidation pour {button_id['index']}")
+    
     if not n_clicks:
         return dash.no_update, dash.no_update, dash.no_update
+    
     uid = button_id["index"]
     # On récupère le statut actuel via get_user_by_id
     user_obj = UserRepository.get_user_by_id(uid)
     is_validated = False
     if user_obj:
         is_validated = getattr(user_obj, "is_driver_doc_validated", False)
+    
     try:
         if is_validated:
+            # Dévalidation
             success = UserRepository.unvalidate_driver_documents(uid)
             if success:
+                # Déclenche le second callback pour le rafraîchissement
                 return False, "Valider les documents", ""
             else:
                 return dash.no_update, "Échec de dévalidation", "Erreur lors de la dévalidation"
         else:
+            # Validation
             success = UserRepository.validate_driver_documents(uid)
             if success:
+                # Déclenche le second callback pour le rafraîchissement
                 return False, "Dévalider les documents", "Documents validés"
             else:
                 return dash.no_update, "Échec de validation", "Erreur lors de la validation"
     except Exception as e:
         print(f"Erreur lors de la validation/dévalidation des documents: {str(e)}")
         return dash.no_update, "Échec de validation", f"Erreur: {str(e)}"
+
+
+# Callback séparé pour forcer le rafraîchissement après validation/dévalidation
+@callback(
+    Output(refresh_store_id, "data", allow_duplicate=True),
+    [Input({"type": "validate-docs", "index": dash.dependencies.ALL}, "children")],
+    [State(refresh_store_id, "data")],
+    prevent_initial_call=True
+)
+def force_refresh_after_validation(all_button_texts, refresh_count):
+    """
+    Ce callback surveille les changements de texte des boutons de validation
+    et force un rafraîchissement quand un bouton change d'état
+    """
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return dash.no_update
+    
+    print(f"Force refresh détecté, nouveau compteur: {(refresh_count or 0) + 1}")
+    return (refresh_count or 0) + 1
