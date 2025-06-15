@@ -125,6 +125,8 @@ def update_pending_tickets_data(page, refresh_clicks, update_signal, last_update
     """
     Charge les tickets en attente pour la page demandée
     """
+    print("")
+    print("update_pending_tickets_data")
     print("page", page)
     print("refresh_clicks", refresh_clicks)
     print("last_update", last_update)
@@ -157,6 +159,8 @@ def update_closed_tickets_data(page, refresh_clicks, update_signal, last_update)
     """
     Charge les tickets fermés pour la page demandée
     """
+    print("")
+    print("update_closed_tickets_data")
     print("closed page", page)
     print("refresh_clicks", refresh_clicks)
     print("closed last_update", last_update)
@@ -303,6 +307,13 @@ def update_selected_ticket(ticket_item_n_clicks, pending_tickets_data, closed_ti
     """
     Gère la sélection d'un ticket
     """
+    print("[DEBUG] update_selected_ticket called")
+    print("ticket_item_n_clicks:", ticket_item_n_clicks)
+    print("ctx.triggered_id:", ctx.triggered_id)
+    print("selected_ticket:", selected_ticket)
+    # Si aucun ticket n'a été cliqué (tous les n_clicks sont None ou 0), ne rien faire
+    if not ticket_item_n_clicks or all(x in (None, 0) for x in ticket_item_n_clicks):
+        return no_update
     if not ctx.triggered:
         return no_update
         
