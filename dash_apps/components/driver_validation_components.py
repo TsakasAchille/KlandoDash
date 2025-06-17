@@ -4,28 +4,45 @@ Composants UI pour la page de validation des documents conducteur (utilisé par 
 import dash_bootstrap_components as dbc
 from dash import html
 
-def create_user_document_card(user):
+def create_pending_document_card(user):
+    """Crée une carte pour un document en attente de validation."""
     uid = user.get("uid")
     name = user.get("name", "Sans nom")
     email = user.get("email", "Sans email")
     driver_licence = user.get("driver_licence_url")
     id_card = user.get("id_card_url")
-    is_validated = user.get("is_driver_doc_validated", False)
-
-    print("create_user_document_card")
     
+    print(f"Carte en attente - uid: {uid}, name: {name}, email: {email}")
+    
+    return create_document_card(uid, name, email, driver_licence, id_card, is_validated=False)
+
+
+def create_validated_document_card(user):
+    """Crée une carte pour un document déjà validé."""
+    uid = user.get("uid")
+    name = user.get("name", "Sans nom")
+    email = user.get("email", "Sans email")
+    driver_licence = user.get("driver_licence_url")
+    id_card = user.get("id_card_url")
+    
+    print(f"Carte validée - uid: {uid}, name: {name}, email: {email}")
+    
+    return create_document_card(uid, name, email, driver_licence, id_card, is_validated=True)
+
+
+def create_document_card(uid, name, email, driver_licence, id_card, is_validated):
+    """Fonction sous-jacente pour créer la carte de document."""
     # Détermination du texte et de la couleur du bouton
     if is_validated:
         btn_text = "Dévalider les documents"
         btn_color = "danger"
-        btn_disabled = False
         status_text = "Documents validés"
     else:
         btn_text = "Valider les documents"
         btn_color = "success"
-        btn_disabled = False
         status_text = ""
 
+    print(f"Bouton: {btn_text}, Couleur: {btn_color}")
 
     return dbc.Card([
         dbc.CardHeader([
@@ -93,7 +110,6 @@ def create_user_document_card(user):
                         btn_text,
                         id={"type": "validate-docs", "index": uid},
                         color=btn_color,
-                        disabled=btn_disabled,
                         className="me-2"
                     ),
                     dbc.Button(
@@ -132,4 +148,4 @@ def create_user_document_card(user):
         ])
     ], className="mb-4")
 
-__all__ = ["create_user_document_card"]
+__all__ = ["create_pending_document_card", "create_validated_document_card"]
