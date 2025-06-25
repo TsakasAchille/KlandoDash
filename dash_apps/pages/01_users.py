@@ -58,7 +58,8 @@ def get_layout():
 def load_users_data(n_clicks):
     from dash_apps.repositories.user_repository import UserRepository
     users = UserRepository.get_all_users()
-    users_data = [u.model_dump() for u in users] if users else []
+    # Convert Pydantic objects to dictionaries, handling date/datetime objects correctly
+    users_data = [u.model_dump(mode='json') for u in users] if users else []
     return users_data
 
 @callback(

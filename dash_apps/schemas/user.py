@@ -22,5 +22,6 @@ class UserSchema(BaseModel):
     created_at: Optional[datetime]
     is_driver_doc_validated: Optional[bool]
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }

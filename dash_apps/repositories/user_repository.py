@@ -11,7 +11,7 @@ class UserRepository:
                 ((User.id_card_url != None) | (User.driver_license_url != None)) & 
                 (User.is_driver_doc_validated == False)
             ).all()
-            return [UserSchema.from_orm(u) for u in users]
+            return [UserSchema.model_validate(u) for u in users]
 
     @staticmethod
     def get_validated_drivers():
@@ -19,19 +19,19 @@ class UserRepository:
             users = db.query(User).filter(
                 User.is_driver_doc_validated == True
             ).all()
-            return [UserSchema.from_orm(u) for u in users]
+            return [UserSchema.model_validate(u) for u in users]
 
     @staticmethod
     def get_all_users() -> List[UserSchema]:
         with SessionLocal() as db:
             users = db.query(User).all()
-            return [UserSchema.from_orm(u) for u in users]
+            return [UserSchema.model_validate(u) for u in users]
 
     @staticmethod
     def get_user_by_id(uid: str) -> Optional[UserSchema]:
         with SessionLocal() as db:
             user = db.query(User).filter(User.uid == uid).first()
-            return UserSchema.from_orm(user) if user else None
+            return UserSchema.model_validate(user) if user else None
 
     @staticmethod
     def validate_driver_documents(uid: str) -> bool:
