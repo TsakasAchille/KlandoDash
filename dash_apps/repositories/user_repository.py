@@ -8,7 +8,8 @@ class UserRepository:
     def get_pending_drivers():
         with SessionLocal() as db:
             users = db.query(User).filter(
-                (User.driver_documents_transmitted == True) & (User.is_driver_doc_validated == False)
+                ((User.id_card_url != None) | (User.driver_license_url != None)) & 
+                (User.is_driver_doc_validated == False)
             ).all()
             return [UserSchema.from_orm(u) for u in users]
 
@@ -16,7 +17,7 @@ class UserRepository:
     def get_validated_drivers():
         with SessionLocal() as db:
             users = db.query(User).filter(
-                (User.driver_documents_transmitted == True) & (User.is_driver_doc_validated == True)
+                User.is_driver_doc_validated == True
             ).all()
             return [UserSchema.from_orm(u) for u in users]
 

@@ -23,8 +23,8 @@ refresh_store_id = "driver-validation-refresh"
 def load_all_drivers_to_store(refresh_trigger):
     # On charge tous les conducteurs à valider ET validés
     users = UserRepository.get_pending_drivers() + UserRepository.get_validated_drivers()
-    # On ne garde que ceux qui ont un driver_licence_url non nul
-    users = [u for u in users if getattr(u, "driver_licence_url", None)]
+    # On ne garde que ceux qui ont un driver_license_url non nul
+    users = [u for u in users if getattr(u, "driver_license_url", None)]
     return [u.dict() for u in users]
 
 # Fonction utilitaire pour paginer une liste d'éléments
@@ -53,8 +53,8 @@ def update_total_documents_count(drivers_data):
         return 0
         
     # Séparation des utilisateurs en deux catégories pour le comptage
-    pending_users = [u for u in drivers_data if u.get("driver_documents_transmitted") and not u.get("is_driver_doc_validated")]
-    validated_users = [u for u in drivers_data if u.get("driver_documents_transmitted") and u.get("is_driver_doc_validated")]
+    pending_users = [u for u in drivers_data if not u.get("is_driver_doc_validated") and (u.get("id_card_url") or u.get("driver_license_url"))]
+    validated_users = [u for u in drivers_data if u.get("is_driver_doc_validated")]
     
     # Comptage du total des documents
     total_docs = len(pending_users) + len(validated_users)
@@ -78,7 +78,7 @@ def display_pending_documents(drivers_data, page_click):
     page = page_click or 1
     
     # Filtrer les utilisateurs avec documents en attente
-    pending_users = [u for u in drivers_data if u.get("driver_documents_transmitted") and not u.get("is_driver_doc_validated")]
+    pending_users = [u for u in drivers_data if not u.get("is_driver_doc_validated") and (u.get("id_card_url") or u.get("driver_license_url"))]
     
     # Pagination - 10 documents par page
     items_per_page = 10
@@ -116,7 +116,7 @@ def display_validated_documents(drivers_data, page_click):
     page = page_click or 1
     
     # Filtrer les utilisateurs avec documents validés
-    validated_users = [u for u in drivers_data if u.get("driver_documents_transmitted") and u.get("is_driver_doc_validated")]
+    validated_users = [u for u in drivers_data if u.get("is_driver_doc_validated")]
     
     # Pagination - 10 documents par page
     items_per_page = 10
