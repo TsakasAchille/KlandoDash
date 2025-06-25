@@ -134,7 +134,7 @@ def update_pending_tickets_data(page, refresh_clicks, update_signal, last_update
         print(f"Signal de mise à jour reçu: {update_signal}")
     
     # Charger les tickets pour la page demandée (10 tickets par page)
-    data = load_tickets_by_page(page=page or 1, page_size=10, status="PENDING")
+    data = load_tickets_by_page(page=page or 1, page_size=10, status="OPEN")
     
     # Retourner le nombre total de pages pour le paginateur
     total_pages = data["pagination"]["total_pages"]

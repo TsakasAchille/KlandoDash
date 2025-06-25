@@ -198,7 +198,7 @@ def render_ticket_details(ticket, comments):
                             dcc.Dropdown(
                                 id={"type": "status-dropdown", "index": ticket["ticket_id"]},
                                 options=[
-                                    {"label": "En attente", "value": "PENDING"},
+                                    {"label": "En attente", "value": "OPEN"},
                                     {"label": "Fermé", "value": "CLOSED"}
                                 ],
                                 value=ticket["status"],

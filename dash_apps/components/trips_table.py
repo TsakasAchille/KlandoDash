@@ -28,8 +28,8 @@ def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="tri
     if selected_rows is None:
         selected_rows = []
     
-    # Masquer la colonne 'polyline' et autres colonnes techniques si elles existent
-    hide_columns = ['polyline', 'geometry', 'coordinates']
+    # Masquer la colonne 'polyline', 'departure_date' et autres colonnes techniques si elles existent
+    hide_columns = ['polyline', 'geometry', 'coordinates', 'departure_date']
     display_columns = [col for col in trips_df.columns if col not in hide_columns]
     
     # Ajoute Trip ID si absent
@@ -43,7 +43,6 @@ def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="tri
             'trip_id': 'ID Trajet',
             'departure_name': 'Départ',
             'destination_name': 'Destination',
-            'departure_date': 'Date de départ',
             'departure_schedule': 'Heure de départ',
             'driver_id': 'Conducteur',
             'passenger_price': 'Prix passager',
