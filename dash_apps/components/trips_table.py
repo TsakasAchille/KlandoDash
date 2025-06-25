@@ -16,7 +16,7 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="trips-table", page_current=0, auto_callback=True):
+def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="trips-table", page_current=0, page_size=10, auto_callback=True):
     """
     Retourne un dash_table.DataTable stylé selon le design moderne de l'application.
     
@@ -124,8 +124,10 @@ def render_trips_table(trips_df, columns=None, selected_rows=None, table_id="tri
                 "cursor": "pointer"
             }
         ],
-        page_size=10,
+        page_size=page_size,
         page_current=page_current,
+        persistence=True,
+        persistence_type='session',
     )
     
     # Envelopper la table dans un conteneur style avec le meme design que les autres composants

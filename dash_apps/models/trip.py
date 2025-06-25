@@ -12,7 +12,6 @@ class Trip(Base):
     departure_name = Column(String, nullable=True)
     departure_schedule = Column(DateTime(timezone=True), nullable=True)
     destination_name = Column(String, nullable=True)
-    destination_schedule = Column(DateTime(timezone=True), nullable=True)
     seats_available = Column(Integer, nullable=True)
     seats_booked = Column(Integer, nullable=True)
     seats_published = Column(Integer, nullable=True)
@@ -39,7 +38,6 @@ class Trip(Base):
             "departure_name": self.departure_name,
             "departure_schedule": self.departure_schedule,
             "destination_name": self.destination_name,
-            "destination_schedule": self.destination_schedule,
             "seats_available": self.seats_available,
             "seats_booked": self.seats_booked,
             "seats_published": self.seats_published,

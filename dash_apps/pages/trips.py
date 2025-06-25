@@ -1,4 +1,4 @@
-from dash import html, dcc, callback, Input, Output, State
+from dash import html, dcc, callback, Input, Output, State, dash
 import dash_bootstrap_components as dbc
 
 # Imports pour le traitement des données
@@ -97,7 +97,8 @@ def update_trips_content(users_data, trips_data, selected_trip_id, page_current)
     # Créer le tableau des trajets (en passant la liste de dicts)
     import pandas as pd
     trips_df = pd.DataFrame(trips_list) if trips_list else pd.DataFrame()
-    table = render_trips_table(trips_df, selected_rows=preselect_row, table_id="klando-trips-table", page_current=page_current)
+    table = render_trips_table(trips_df, selected_rows=preselect_row, table_id="klando-trips-table", 
+                              page_current=page_current, page_size=10)
     # Message d'instruction
     instruction = html.P("Trajet sélectionné. Les détails sont affichés ci-dessous.", className="text-success fst-italic") if preselect_row else html.P("Sélectionnez un trajet dans le tableau pour voir les détails.", className="text-muted fst-italic")
     return html.Div([
@@ -189,11 +190,16 @@ def update_selected_trip_id(selected_rows, trips_data):
 # Capturer les changements manuels de page
 @callback(
     Output("klando-page-current", "data", allow_duplicate=True),
-    Input("klando-trips-table", "page_current"),
+    [Input("klando-trips-table", "page_current")],
+    [State("klando-page-current", "data")],
     prevent_initial_call=True
 )
-def update_page_from_pagination(page_current):
-    return page_current
+def update_page_from_pagination(page_current, current_page):
+    # Ne mettre à jour que si la page a réellement changé
+    if page_current is not None and page_current != current_page:
+        print(f"Changement de page: {current_page} -> {page_current}")
+        return page_current
+    return dash.no_update
 
 # Affichage des détails du trajet sélectionné
 @callback(

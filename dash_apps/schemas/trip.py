@@ -10,7 +10,6 @@ class TripSchema(BaseModel):
     departure_name: Optional[str] = None
     departure_schedule: Optional[datetime] = None
     destination_name: Optional[str] = None
-    destination_schedule: Optional[datetime] = None
     seats_available: Optional[int] = None
     seats_booked: Optional[int] = None
     seats_published: Optional[int] = None
