@@ -1,0 +1,50 @@
+                 app.py              app_factory.py          auth_manager.py           simple_auth.py            oauth.py
+Navigateur          |                      |                       |                       |                       |
+     |              |                      |                       |                       |                       |
+     |------------->|                      |                       |                       |                       |
+     |              |                      |                       |                       |                       |
+     |              |--create_app()------->|                       |                       |                       |
+     |              |                      |--Dash(name)           |                       |                       |
+     |              |                      |--Configuration Flask  |                       |                       |
+     |              |                      |--Init Session         |                       |                       |
+     |              |                      |--Register auth_bp     |                       |                       |
+     |              |<---app, server-------|                       |                       |                       |
+     |              |                      |                       |                       |                       |
+     |              |--setup_authentication(server)--------------->|                       |                       |
+     |              |                      |                       |--Init LoginManager    |                       |
+     |              |                      |                       |--setup_oauth(server)--|--------------------->|
+     |              |                      |                       |                       |                       |--Config session
+     |              |                      |                       |--init_auth(server)----|------>|              |
+     |              |                      |                       |                       |       |--Route /login |
+     |              |                      |                       |                       |       |--Route /auth/login
+     |              |                      |                       |                       |       |--Route /callback
+     |              |                      |                       |                       |       |--protect_pages|
+     |              |                      |                       |--define user_loader   |                       |
+     |              |<---login_manager-----|                       |                       |                       |
+     |              |                      |                       |                       |                       |
+     |--GET /-------|                      |                       |                       |                       |
+     |              |                      |                       |                       |--before_request----->|
+     |              |                      |                       |                       |--check auth          |
+     |<--Redirect /login                   |                       |                       |                       |
+     |              |                      |                       |                       |                       |
+     |--GET /login--|                      |                       |                       |                       |
+     |              |                      |                       |                       |--login_page()        |
+     |<--Page login-|                      |                       |                       |                       |
+     |              |                      |                       |                       |                       |
+     |--Click Connexion Google             |                       |                       |                       |
+     |--GET /auth/login                    |                       |                       |--google_login()----->|
+     |              |                      |                       |                       |                       |--Préparer URI
+     |<--Redirect vers Google              |                       |                       |                       |
+     |              |                      |                       |                       |                       |
+     |--Authentification sur Google        |                       |                       |                       |
+     |<--Redirect vers /callback           |                       |                       |                       |
+     |              |                      |                       |                       |                       |
+     |--GET /callback                      |                       |                       |--google_callback()--->|
+     |              |                      |                       |                       |                       |--Vérifier code
+     |              |                      |                       |                       |                       |--Obtenir token
+     |              |                      |                       |                       |                       |--Récupérer infos
+     |              |                      |                       |                       |                       |--Vérifier email
+     |              |                      |                       |                       |                       |--Vérifier BDD
+     |              |                      |                       |                       |                       |--login_user()
+     |<--Redirect / |                      |                       |                       |                       |
+     |              |                      |                       |                       |                       |

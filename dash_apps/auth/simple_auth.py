@@ -99,19 +99,6 @@ def init_auth(server):
                 return redirect('/login')
 
 
-def is_valid_klando_user(user=None):
-    """Vérifie si l'utilisateur est authentifié (plus de vérification de domaine)"""
-    # Utiliser l'utilisateur passé en paramètre ou current_user si non spécifié
-    user_to_check = user if user is not None else current_user
-    
-    try:
-        # Tout utilisateur authentifié par Google est valide
-        # Plus de vérification de domaine, Google Cloud gère les autorisations
-        return user_to_check.is_authenticated
-    except Exception:
-        # Fallback avec la session
-        return session.get('logged_in', False)
-
 
 def render_user_menu(user=None):
     """Affiche le menu utilisateur à partir des informations de Flask-Login"""

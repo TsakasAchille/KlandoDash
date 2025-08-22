@@ -1,6 +1,6 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
-from dash_apps.simple_auth import render_user_menu
+from dash_apps.auth.simple_auth import render_user_menu
 
 def create_main_layout():
     """

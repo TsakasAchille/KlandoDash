@@ -2,7 +2,7 @@ from flask_login import LoginManager, current_user, login_required, logout_user
 from flask import session
 from dash_apps.auth.models import User
 from dash_apps.auth.oauth import setup_oauth
-from dash_apps.simple_auth import init_auth
+from dash_apps.auth.simple_auth import init_auth
 
 def setup_authentication(server):
     """

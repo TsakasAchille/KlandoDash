@@ -1,7 +1,7 @@
 from dash import Input, Output, callback_context, no_update
 from flask_login import current_user
 from flask import session
-from dash_apps.simple_auth import render_user_menu, is_valid_klando_user
+from dash_apps.auth.simple_auth import render_user_menu
 from dash_apps.core.page_manager import get_page_layout
 from dash_apps.core.auth_manager import handle_logout
 from dash_apps.utils.admin_db import is_admin
@@ -74,13 +74,7 @@ def register_callbacks(app):
             return login_layout
         
         # Vérifier si l'utilisateur est un utilisateur Klando valide
-        if not is_valid_klando_user(current_user):
-            return html.Div([
-                html.H3("Accès refusé", className="text-danger"),
-                html.P("Seuls les utilisateurs avec une adresse email @klando-sn.com sont autorisés."),
-                dbc.Button("Retour à la page de connexion", href="/logout", color="primary")
-            ], className="p-5")
-        
+    
         # L'utilisateur est authentifié, afficher la page demandée
         if pathname in ["/", "/trips", "/users", "/stats", "/support", "/admin", "/user-profile", "/driver-validation"]:
             # Obtenir le layout de la page demandée
