@@ -24,7 +24,6 @@ def init_auth(server):
             session.modified = True
         
         # Utiliser le template login.html qui inclut déjà la gestion des messages flash
-        from flask import render_template
         return render_template('login.html')
     
     @server.route('/admin-login', methods=['POST'])
