@@ -3,10 +3,11 @@ from dash import html, dcc, callback, Input, Output, State
 import pandas as pd
 from dash import dash_table
 from dash_apps.components.users_table import render_users_table
-from dash_apps.components.user_details import render_user_details
+from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
-from dash_apps.components.user_trips import render_user_trips  # TODO: adapter pour bookings si besoin
+from dash_apps.components.user_trips import render_user_trips
 from dash_apps.repositories.user_repository import UserRepository
+
 
 def get_layout():
     """Génère le layout de la page utilisateurs avec des IDs uniquement pour cette page"""
@@ -154,8 +155,6 @@ def handle_users_selection(users_data, selected_rows, url_search, stored_user_id
 )
 def render_user_panels(selected_user_data):
     """Callback qui affiche les détails, statistiques et trajets de l'utilisateur sélectionné"""
-    from dash_apps.components.user_stats import render_user_stats
-    from dash_apps.components.user_trips import render_user_trips
     
     # Si aucun utilisateur n'est sélectionné
     if not selected_user_data:
@@ -192,7 +191,7 @@ def render_user_panels(selected_user_data):
     user = UserWrapper(user_dict)
     
     # Rendu des panneaux
-    details = render_user_details(user)
+    details = render_user_profile(user)
     stats = render_user_stats(user)
     trips = render_user_trips(user)
     
