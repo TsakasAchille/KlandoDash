@@ -108,7 +108,7 @@ def show_refresh_users_message(n_clicks):
     Output("users-current-page", "data"),
     Input("users-page-store", "data"),
     Input("users-table", "page_current"),
-    Input("selected-user-state", "data"),  # Changé de State à Input pour réagir aux sélections d'URL
+    State("selected-user-state", "data"),  # Repassé en State pour éviter un cycle de dépendance
     State("users-pagination-info", "data"),
     State("users-current-page", "data"),
 )
