@@ -14,8 +14,8 @@ def get_layout():
     return dbc.Container([
     dcc.Location(id="users-url", refresh=False),
     dcc.Store(id="users-page-store", storage_type="session"),
-    dcc.Store(id="klando-selected-user-id", storage_type="session"),
-    dcc.Store(id="selected-user-store", storage_type="session"),
+    dcc.Store(id="users-pagination-info", data={"page_count": 1, "total_users": 0}),
+    dcc.Store(id="selected-user-state", storage_type="session", data=None),  # Un seul state pour l'utilisateur sélectionné
     html.H2("Dashboard utilisateurs", style={"marginTop": "20px"}),
     dbc.Row([
         dbc.Col([], width=9),
@@ -54,6 +54,30 @@ def get_layout():
 ], fluid=True)
 
 @callback(
+    Output("users-pagination-info", "data"),
+    Input("refresh-users-btn", "n_clicks"),
+    prevent_initial_call=False
+)
+def calculate_pagination_info(n_clicks):
+    """Calcule le nombre total d'utilisateurs et les informations de pagination"""
+    # Récupérer le nombre total d'utilisateurs depuis le repository
+    total_users = UserRepository.get_users_count()
+    
+    # Calculer le nombre de pages nécessaires
+    page_size = Config.USERS_TABLE_PAGE_SIZE
+    page_count = (total_users - 1) // page_size + 1 if total_users > 0 else 1
+    
+    print("Total users:", total_users)
+    print("Page count:", page_count)
+    print("Page size:", page_size)
+
+    return {
+        "total_users": total_users,
+        "page_count": page_count,
+        "page_size": page_size
+    }
+
+@callback(
     Output("users-page-store", "data"),
     Input("refresh-users-btn", "n_clicks"),
     prevent_initial_call=False
@@ -76,14 +100,15 @@ def show_refresh_users_message(n_clicks):
 @callback(
     Output("main-users-content", "children"),
     Output("users-table", "selected_rows"),
-    Output("klando-selected-user-id", "data"),
-    Output("selected-user-store", "data"),
+    Output("selected-user-state", "data"),
     Input("users-page-store", "data"),
     Input("users-table", "selected_rows"),
     Input("users-url", "search"),
-    State("klando-selected-user-id", "data"),
+    Input("users-table", "page_current"),
+    State("selected-user-state", "data"),
+    State("users-pagination-info", "data"),
 )
-def handle_users_selection(users_data, selected_rows, url_search, stored_user_id):
+def handle_users_selection(users_data, selected_rows, url_search, page_current, stored_user_id, pagination_info):
     """Callback qui gère la table des utilisateurs et la sélection d'un utilisateur"""
     import urllib.parse
     preselect_row = None
@@ -91,8 +116,14 @@ def handle_users_selection(users_data, selected_rows, url_search, stored_user_id
     # Cas où aucune donnée utilisateur n'est disponible
     if not users_data:
         empty_df = pd.DataFrame([{"uid": "", "name": "", "email": "", "phone": "", "role": "", "created_at": ""}])
-        table = render_users_table(empty_df, selected_rows=selected_rows)
-        return table, selected_rows, None, None
+        table = render_users_table(
+            empty_df, 
+            selected_rows=selected_rows, 
+            page_current=0, 
+            page_size=Config.USERS_TABLE_PAGE_SIZE,
+            page_count=1
+        )
+        return table, selected_rows, None
     
     users_df = pd.DataFrame(users_data)
     
@@ -104,23 +135,28 @@ def handle_users_selection(users_data, selected_rows, url_search, stored_user_id
         if uid_list:
             uid_from_url = uid_list[0]
     
-    # Priorité à la sélection manuelle, puis à l'URL, puis à la session
+    # Priorité à la sélection manuelle, puis à l'URL, puis au state existant
+    current_uid = None
+    
     if selected_rows:
+        # Sélection manuelle dans le tableau
         preselect_row = selected_rows
-    # Sinon, on essaie de sélectionner depuis l'URL
     elif uid_from_url:
+        # Sélection depuis l'URL
         try:
             idx = users_df.index[users_df['uid'] == uid_from_url].tolist()
             if idx:
                 preselect_row = [idx[0]]
+                current_uid = uid_from_url
         except Exception:
             preselect_row = []
-    # Enfin, on essaie de récupérer depuis la session
-    elif stored_user_id:
+    elif stored_user_id and isinstance(stored_user_id, dict) and 'uid' in stored_user_id:
+        # Sélection depuis le state existant
         try:
-            idx = users_df.index[users_df['uid'] == stored_user_id].tolist()
+            idx = users_df.index[users_df['uid'] == stored_user_id['uid']].tolist()
             if idx:
                 preselect_row = [idx[0]]
+                current_uid = stored_user_id['uid']
         except Exception:
             preselect_row = []
     
@@ -130,26 +166,36 @@ def handle_users_selection(users_data, selected_rows, url_search, stored_user_id
     
     # Gestion de la pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
-    page_current = calculate_page_current(preselect_row, page_size)
+    
+    # Utiliser la page courante du tableau ou 0 par défaut
+    current_page = page_current if page_current is not None else 0
+    
+    # Récupérer le nombre total de pages depuis les infos de pagination
+    page_count = pagination_info.get("page_count", 1) if pagination_info else 1
     
     # Rendu de la table
-    table = render_users_table(users_df, selected_rows=preselect_row, page_current=page_current, page_size=page_size)
+    table = render_users_table(
+        users_df, 
+        selected_rows=preselect_row, 
+        page_current=current_page, 
+        page_size=page_size,
+        page_count=page_count
+    )
     
     # Préparer les données pour le store utilisateur sélectionné
-    selected_user_id = None
-    selected_user_data = None
+    selected_user_state = None
     if preselect_row and len(preselect_row) > 0:
         user = users_df.iloc[preselect_row[0]]
-        selected_user_id = user.get('uid')
-        selected_user_data = user.to_dict()
+        # Stocker toutes les infos de l'utilisateur dans un seul state
+        selected_user_state = user.to_dict()
     
-    return table, preselect_row, selected_user_id, selected_user_data
+    return table, preselect_row, selected_user_state
 
 @callback(
     Output("user-details-panel", "children"),
     Output("user-stats-panel", "children"),
     Output("user-trips-panel", "children"),
-    Input("selected-user-store", "data"),
+    Input("selected-user-state", "data"),
 )
 def render_user_panels(selected_user_data):
     """Callback qui affiche les détails, statistiques et trajets de l'utilisateur sélectionné"""
@@ -197,7 +243,18 @@ def render_user_panels(selected_user_data):
 
 # Exporter le layout pour l'application principale
 def calculate_page_current(selected_rows, page_size):
-    """Calcule le numéro de page à afficher en fonction de la sélection"""
+    """Calcule le numéro de page à afficher en fonction de la sélection
+    
+    Cette fonction détermine sur quelle page se trouve un index sélectionné,
+    en fonction de la taille de page configurée.
+    
+    Args:
+        selected_rows: Liste des indices des lignes sélectionnées dans la table
+        page_size: Nombre d'éléments par page
+        
+    Returns:
+        Le numéro de page (0-based) qui contient l'élément sélectionné
+    """
     page_current = 0
     if selected_rows and len(selected_rows) > 0:
         idx = selected_rows[0]
