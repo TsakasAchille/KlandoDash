@@ -15,7 +15,10 @@ def get_layout():
     dcc.Location(id="users-url", refresh=False),
     dcc.Store(id="users-page-store", storage_type="session"),
     dcc.Store(id="users-pagination-info", data={"page_count": 1, "total_users": 0}),
+    dcc.Store(id="users-current-page", storage_type="session", data=0),  # State pour stocker la page courante
     dcc.Store(id="selected-user-state", storage_type="session", data=None),  # Un seul state pour l'utilisateur sélectionné
+    dcc.Store(id="selected-user-from-url", storage_type="session", data=None),  # State pour la sélection depuis l'URL
+    dcc.Store(id="selected-user-from-table", storage_type="session", data=None),  # State pour la sélection manuelle
     html.H2("Dashboard utilisateurs", style={"marginTop": "20px"}),
     dbc.Row([
         dbc.Col([], width=9),
@@ -89,6 +92,8 @@ def load_users_data(n_clicks):
     return users_data
 
 
+
+
 @callback( 
     Output("refresh-users-message", "children"),
     Input("refresh-users-btn", "n_clicks"),
@@ -100,78 +105,67 @@ def show_refresh_users_message(n_clicks):
 @callback(
     Output("main-users-content", "children"),
     Output("users-table", "selected_rows"),
-    Output("selected-user-state", "data"),
+    Output("users-current-page", "data"),
     Input("users-page-store", "data"),
-    Input("users-table", "selected_rows"),
-    Input("users-url", "search"),
     Input("users-table", "page_current"),
     State("selected-user-state", "data"),
     State("users-pagination-info", "data"),
+    State("users-current-page", "data"),
 )
-def handle_users_selection(users_data, selected_rows, url_search, page_current, stored_user_id, pagination_info):
-    """Callback qui gère la table des utilisateurs et la sélection d'un utilisateur"""
-    import urllib.parse
-    preselect_row = None
+def render_users_table_callback(users_data, page_current, selected_user, pagination_info, current_page_state):
+    """Callback qui gère uniquement le rendu de la table des utilisateurs"""
+    # Initialiser la sélection et la page courante
+    preselect_row = []
     
     # Cas où aucune donnée utilisateur n'est disponible
     if not users_data:
         empty_df = pd.DataFrame([{"uid": "", "name": "", "email": "", "phone": "", "role": "", "created_at": ""}])
         table = render_users_table(
             empty_df, 
-            selected_rows=selected_rows, 
+            selected_rows=[], 
             page_current=0, 
             page_size=Config.USERS_TABLE_PAGE_SIZE,
             page_count=1
         )
-        return table, selected_rows, None
+        return table, [], 0
     
     users_df = pd.DataFrame(users_data)
     
-    # Recherche d'un paramètre uid dans l'URL
-    uid_from_url = None
-    if url_search:
-        params = urllib.parse.parse_qs(url_search.lstrip('?'))
-        uid_list = params.get('uid')
-        if uid_list:
-            uid_from_url = uid_list[0]
+    # Déterminer la page à afficher
+    if page_current is not None:
+        current_page = page_current
+    else:
+        current_page = current_page_state if current_page_state is not None else 0
+        
+    # Déterminer la sélection en fonction de selected_user
+    preselect_row = []
     
-    # Priorité à la sélection manuelle, puis à l'URL, puis au state existant
-    current_uid = None
-    
-    if selected_rows:
-        # Sélection manuelle dans le tableau
-        preselect_row = selected_rows
-    elif uid_from_url:
-        # Sélection depuis l'URL
+    # Si un utilisateur est sélectionné
+    if selected_user and isinstance(selected_user, dict) and 'uid' in selected_user:
+        uid = selected_user['uid']
+        
+        # Chercher l'index correspondant à l'uid dans le DataFrame
         try:
-            idx = users_df.index[users_df['uid'] == uid_from_url].tolist()
-            if idx:
-                preselect_row = [idx[0]]
-                current_uid = uid_from_url
-        except Exception:
+            idx = find_user_index(users_df, uid)
+            if idx is not None:
+                preselect_row = [idx]
+                # Calculer la page où se trouve l'utilisateur si nécessaire
+                if page_current is None:
+                    page_size = Config.USERS_TABLE_PAGE_SIZE
+                    current_page = idx // page_size
+        except Exception as e:
+            print(f"Erreur lors de la recherche de l'index pour l'uid {uid}: {str(e)}")
             preselect_row = []
-    elif stored_user_id and isinstance(stored_user_id, dict) and 'uid' in stored_user_id:
-        # Sélection depuis le state existant
-        try:
-            idx = users_df.index[users_df['uid'] == stored_user_id['uid']].tolist()
-            if idx:
-                preselect_row = [idx[0]]
-                current_uid = stored_user_id['uid']
-        except Exception:
-            preselect_row = []
-    
-    # Par défaut, aucune sélection
-    if preselect_row is None:
-        preselect_row = []
     
     # Gestion de la pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
     
-    # Utiliser la page courante du tableau ou 0 par défaut
-    current_page = page_current if page_current is not None else 0
-    
     # Récupérer le nombre total de pages depuis les infos de pagination
     page_count = pagination_info.get("page_count", 1) if pagination_info else 1
+    
+    # Vérifier que current_page est bien un nombre
+    if not isinstance(current_page, (int, float)):
+        current_page = 0
     
     # Rendu de la table
     table = render_users_table(
@@ -182,14 +176,8 @@ def handle_users_selection(users_data, selected_rows, url_search, page_current, 
         page_count=page_count
     )
     
-    # Préparer les données pour le store utilisateur sélectionné
-    selected_user_state = None
-    if preselect_row and len(preselect_row) > 0:
-        user = users_df.iloc[preselect_row[0]]
-        # Stocker toutes les infos de l'utilisateur dans un seul state
-        selected_user_state = user.to_dict()
-    
-    return table, preselect_row, selected_user_state
+    # Retourner le composant table, la sélection et la page courante
+    return table, preselect_row, current_page
 
 @callback(
     Output("user-details-panel", "children"),
@@ -198,15 +186,41 @@ def handle_users_selection(users_data, selected_rows, url_search, page_current, 
     Input("selected-user-state", "data"),
 )
 def render_user_panels(selected_user_data):
-    """Callback qui affiche les détails, statistiques et trajets de l'utilisateur sélectionné"""
+    """Callback qui affiche les détails, statistiques et trajets de l'utilisateur sélectionné
+    Désormais, selected_user_data ne contient que l'uid et l'index, il faut donc récupérer
+    les données complètes depuis le repository
+    """
     
     # Si aucun utilisateur n'est sélectionné
-    if not selected_user_data:
+    print("selected_user_data", selected_user_data)
+    if not selected_user_data or 'uid' not in selected_user_data:
         return None, None, None
     
-    # S'assurer que les données sont sous forme de dictionnaire avec des valeurs par défaut
-    # pour éviter les erreurs dans les templates Jinja2
-    user_dict = selected_user_data.copy()
+    # Récupérer l'uid de l'utilisateur
+    uid = selected_user_data['uid']
+    
+    # Récupérer les données complètes depuis le repository
+    try:
+        repo = UserRepository()
+        user_model = repo.get_user_by_id(uid)
+        
+        if not user_model:
+            print(f"Utilisateur non trouvé dans le repository: {uid}")
+            return None, None, None
+            
+        # Convertir le modèle en dictionnaire pour une manipulation plus facile
+        if hasattr(user_model, 'model_dump'):
+            user_dict = user_model.model_dump(mode='json')
+        else:
+            # Si user_model est déjà un dict
+            user_dict = user_model
+    except Exception as e:
+        print(f"Erreur lors de la récupération des données utilisateur: {str(e)}")
+        user_dict = {"uid": uid}  # Utiliser au moins l'uid disponible
+    
+    # Conserver l'index si disponible
+    if 'index' in selected_user_data:
+        user_dict['index'] = selected_user_data['index']
     
     # S'assurer que les champs critiques ont des valeurs par défaut
     default_fields = {
@@ -214,7 +228,11 @@ def render_user_panels(selected_user_data):
         'rating_count': 0,
         'trips_count': 0,
         'created_at': None,
-        'last_login': None
+        'last_login': None,
+        'name': "Utilisateur",
+        'email': "",
+        'phone': "",
+        'role': "user"
     }
     
     for field, default_value in default_fields.items():
@@ -234,12 +252,89 @@ def render_user_panels(selected_user_data):
     
     user = UserWrapper(user_dict)
     
+    print("user_dict après repository", user_dict)
+    
     # Rendu des panneaux
     details = render_user_profile(user)
     stats = render_user_stats(user)
     trips = render_user_trips(user)
     
     return details, stats, trips
+
+# Fonction utilitaire pour trouver l'index d'un utilisateur par son uid
+def find_user_index(users_df, uid):
+    """Recherche l'index d'un utilisateur dans le dataframe par son uid
+    
+    Args:
+        users_df: DataFrame contenant les utilisateurs
+        uid: L'identifiant unique de l'utilisateur recherché
+        
+    Returns:
+        L'index de l'utilisateur s'il est trouvé, None sinon
+    """
+    try:
+        idx = users_df.index[users_df['uid'] == uid].tolist()
+        return idx[0] if idx else None
+    except Exception:
+        return None
+
+# Callback spécifique pour gérer la sélection manuelle
+@callback(
+    Output("selected-user-from-table", "data"),
+    Input("users-table", "selected_rows"),
+    Input("users-page-store", "data"),
+    prevent_initial_call=True
+)
+def handle_manual_selection(selected_rows, users_data):
+    """Callback qui gère la sélection d'un utilisateur manuellement dans le tableau"""
+    # Si aucune donnée ou pas de sélection
+    if not users_data or not selected_rows:
+        return None
+    
+    users_df = pd.DataFrame(users_data)
+    
+    # Récupérer uniquement l'uid de l'utilisateur sélectionné
+    try:
+        idx = selected_rows[0]
+        user = users_df.iloc[idx]
+        # Retourner seulement l'uid
+        return user['uid']
+    except Exception:
+        return None
+
+# Callback spécifique pour gérer la sélection par URL
+@callback(
+    Output("selected-user-from-url", "data"),
+    Input("users-url", "search"),
+    Input("users-page-store", "data"),
+    prevent_initial_call=True
+)
+def handle_url_selection(url_search, users_data):
+    """Callback qui gère la sélection d'un utilisateur par paramètre URL"""
+    import urllib.parse
+    
+    # Si aucune donnée ou pas de recherche URL
+    if not users_data or not url_search:
+        return None
+        
+    # Recherche d'un paramètre uid dans l'URL
+    params = urllib.parse.parse_qs(url_search.lstrip('?'))
+    uid_list = params.get('uid')
+    if not uid_list:
+        return None
+        
+    uid_from_url = uid_list[0]
+    users_df = pd.DataFrame(users_data)
+
+    print(f"Recherche de l'utilisateur {uid_from_url}")
+    
+    # Vérifier si l'uid existe dans les données
+    if uid_from_url in users_df['uid'].values:
+        # Retourner directement l'uid
+        return uid_from_url
+    
+    return None
+
 
 # Exporter le layout pour l'application principale
 def calculate_page_current(selected_rows, page_size):
@@ -262,3 +357,48 @@ def calculate_page_current(selected_rows, page_size):
     return page_current
 
 layout = get_layout()
+
+
+@callback(
+    Output("selected-user-state", "data"),
+    Input("selected-user-from-table", "data"),
+    Input("selected-user-from-url", "data"),
+    Input("users-page-store", "data"),
+    prevent_initial_call=False
+)
+def consolidate_user_selection(table_selection, url_selection, users_data):
+    """Callback qui détermine l'utilisateur sélectionné en fonction du dernier changement
+    Sans priorité fixe, c'est la dernière sélection qui est retenue
+    Maintenant nous recevons directement des UIDs au lieu d'objets utilisateur
+    """
+    print("[TEST] consolidate_user_selection")
+    print("table_selection", table_selection)
+    print("url_selection", url_selection)
+
+    # Utilisation du callback context pour déterminer quel Input a déclenché le callback
+    from dash import callback_context
+    
+    # Si aucun callback n'a été déclenché ou si les deux sélections sont None
+    if not callback_context.triggered or (table_selection is None and url_selection is None):
+        return None
+    
+    # Récupérer l'id de l'input qui a déclenché le callback
+    triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+    
+    # Identifier l'uid sélectionné
+    selected_uid = None
+    
+    if triggered_id == 'selected-user-from-table' and table_selection is not None:
+        selected_uid = table_selection
+    elif triggered_id == 'selected-user-from-url' and url_selection is not None:
+        selected_uid = url_selection
+    else:
+        selected_uid = table_selection or url_selection
+    
+    # Si on a un UID, c'est suffisant pour identifier l'utilisateur
+    # L'index sera déterminé lors du rendu de la table si nécessaire
+    if selected_uid:
+        print("selected_uid", selected_uid)
+        return {"uid": selected_uid}
+        
+    return None
