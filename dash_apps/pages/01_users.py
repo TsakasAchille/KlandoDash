@@ -9,6 +9,45 @@ from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
 from dash_apps.repositories.user_repository import UserRepository
 
+def get_uid_from_index(table_index, page_size=None):
+    """Convertit un indice de tableau en UID utilisateur en utilisant directement le repository
+    
+    Args:
+        table_index (int): L'indice de la ligne sélectionnée dans le tableau (0-indexed dans la page visible)
+        page_size (int, optional): Taille de la page pour calculer l'offset. Si None, utilise Config.USERS_TABLE_PAGE_SIZE
+        
+    Returns:
+        str: L'UID de l'utilisateur correspondant à l'indice, ou None si non trouvé
+    """
+    # Vérification des paramètres
+    if table_index is None or table_index < 0:
+        return None
+        
+    try:
+        # Récupérer directement le bon utilisateur avec un offset précis
+        if page_size is None:
+            page_size = Config.USERS_TABLE_PAGE_SIZE
+        
+        # Dans UserRepository.get_all_users() nous avons les utilisateurs en ordre
+        # Pour retrouver l'uid correspondant, il suffit d'obtenir tous les utilisateurs
+        # et de prendre celui à l'index spécifié
+        users = UserRepository.get_all_users()
+        
+        if not users or table_index >= len(users):
+            print(f"Aucun utilisateur trouvé à l'indice {table_index} (total: {len(users) if users else 0})")
+            return None
+            
+        # Récupérer l'utilisateur spécifique à l'index donné
+        user = users[table_index]
+        uid = user.model_dump().get('uid') if hasattr(user, 'model_dump') else user.get('uid')
+        print(f"UID trouvé pour l'indice {table_index}: {uid}")
+        return uid
+        
+    except Exception as e:
+        print(f"Erreur lors de la conversion index -> UID via repository: {str(e)}")
+        return None
+
+
 def get_layout():
     """Génère le layout de la page utilisateurs avec des IDs uniquement pour cette page"""
     return dbc.Container([
@@ -80,6 +119,9 @@ def calculate_pagination_info(n_clicks):
         "page_size": page_size
     }
 
+
+
+
 @callback(
     Output("users-page-store", "data"),
     Input("refresh-users-btn", "n_clicks"),
@@ -90,8 +132,6 @@ def load_users_data(n_clicks):
     # Convert Pydantic objects to dictionaries, handling date/datetime objects correctly
     users_data = [u.model_dump(mode='json') for u in users] if users else []
     return users_data
-
-
 
 
 @callback( 
@@ -112,10 +152,7 @@ def show_refresh_users_message(n_clicks):
 
 )
 def render_users_table_callback(users_data, selected_user, pagination_info, current_page):
-    """Callback qui gère uniquement le rendu de la table des utilisateurs
-    
-    Cette fonction s'occupe aussi de synchroniser la sélection entre l'URL et le tableau
-    """
+    """Callback qui gère uniquement le rendu de la table des utilisateurs"""
     print(f"\n[DEBUG] Rendu table utilisateurs, selected_user={selected_user}, pagination_info={pagination_info}, current_page={current_page}")
     
     # Initialiser la sélection et la page courante
@@ -253,24 +290,23 @@ def render_user_panels(selected_user_data):
 @callback(
     Output("selected-user-from-table", "data"),
     Input("users-table", "selected_rows"),
-    State("users-page-store", "data"),
     prevent_initial_call=True
 )
-def handle_manual_selection(selected_rows, users_data):
+def handle_manual_selection(selected_rows):
     """Callback qui gère la sélection d'un utilisateur manuellement dans le tableau"""
-    # Si aucune donnée ou pas de sélection
-    if not users_data or not selected_rows:
+    print("selected_rows", selected_rows)
+    
+    # Si pas de sélection
+    if not selected_rows:
         return None
     
-    users_df = pd.DataFrame(users_data)
-    
-    # Récupérer uniquement l'uid de l'utilisateur sélectionné
+    # Utiliser la fonction utilitaire pour convertir l'indice en UID
     try:
         idx = selected_rows[0]
-        user = users_df.iloc[idx]
-        # Retourner seulement l'uid
-        return user['uid']
-    except Exception:
+        uid = get_uid_from_index(idx)
+        return uid
+    except Exception as e:
+        print(f"Erreur lors de la sélection manuelle: {str(e)}")
         return None
 
 # Callback spécifique pour gérer la sélection par URL

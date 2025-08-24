@@ -16,7 +16,7 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_users_table(users_df, columns=None, selected_rows=None, page_current=1, page_size=10, page_count=None):
+def render_users_table(users_df, columns=None, selected_rows=None, page_current=0, page_size=10, page_count=None):
     """
     Génère un tableau d'utilisateurs avec un style moderne et cohérent.
     
@@ -24,7 +24,7 @@ def render_users_table(users_df, columns=None, selected_rows=None, page_current=
         users_df: DataFrame des utilisateurs
         columns: Liste de colonnes Dash (optionnel)
         selected_rows: Lignes sélectionnées par défaut (optionnel)
-        page_current: Numéro de la page courante (commence à 1)
+        page_current: Index de la page courante (optionnel, défaut 0)
         page_size: Nombre d'éléments par page (optionnel, défaut 10)
         page_count: Nombre total de pages (optionnel)
     """
@@ -121,7 +121,7 @@ def render_users_table(users_df, columns=None, selected_rows=None, page_current=
             }
         ],
         page_size=page_size,
-        page_current=page_current - 1,  # Conversion de 1-based à 0-based pour Dash
+        page_current=page_current,
         page_count=page_count,
         page_action='native',
     )
