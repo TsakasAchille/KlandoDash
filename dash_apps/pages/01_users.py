@@ -2,6 +2,7 @@ import dash_bootstrap_components as dbc
 from dash import html, dcc, callback, Input, Output, State
 import pandas as pd
 from dash import dash_table
+from dash_apps.config import Config
 from dash_apps.components.users_table import render_users_table
 from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
@@ -128,7 +129,7 @@ def handle_users_selection(users_data, selected_rows, url_search, stored_user_id
         preselect_row = []
     
     # Gestion de la pagination
-    page_size = 5
+    page_size = Config.USERS_TABLE_PAGE_SIZE
     page_current = calculate_page_current(preselect_row, page_size)
     
     # Rendu de la table

@@ -31,3 +31,6 @@ class Config(object):
     # Base de données SQLite pour les utilisateurs
     SQLALCHEMY_DATABASE_URI = 'sqlite:///users.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Configuration des tables et pagination
+    USERS_TABLE_PAGE_SIZE = 5
