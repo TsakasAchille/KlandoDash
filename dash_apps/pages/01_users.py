@@ -8,7 +8,6 @@ from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
 from dash_apps.repositories.user_repository import UserRepository
 
-
 def get_layout():
     """Génère le layout de la page utilisateurs avec des IDs uniquement pour cette page"""
     return dbc.Container([
@@ -64,7 +63,8 @@ def load_users_data(n_clicks):
     users_data = [u.model_dump(mode='json') for u in users] if users else []
     return users_data
 
-@callback(
+
+@callback( 
     Output("refresh-users-message", "children"),
     Input("refresh-users-btn", "n_clicks"),
     prevent_initial_call=True
@@ -128,14 +128,11 @@ def handle_users_selection(users_data, selected_rows, url_search, stored_user_id
         preselect_row = []
     
     # Gestion de la pagination
-    page_size = 10
-    page_current = 0
-    if preselect_row and len(preselect_row) > 0:
-        idx = preselect_row[0]
-        page_current = idx // page_size
+    page_size = 5
+    page_current = calculate_page_current(preselect_row, page_size)
     
     # Rendu de la table
-    table = render_users_table(users_df, selected_rows=preselect_row, page_current=page_current)
+    table = render_users_table(users_df, selected_rows=preselect_row, page_current=page_current, page_size=page_size)
     
     # Préparer les données pour le store utilisateur sélectionné
     selected_user_id = None
@@ -198,4 +195,12 @@ def render_user_panels(selected_user_data):
     return details, stats, trips
 
 # Exporter le layout pour l'application principale
+def calculate_page_current(selected_rows, page_size):
+    """Calcule le numéro de page à afficher en fonction de la sélection"""
+    page_current = 0
+    if selected_rows and len(selected_rows) > 0:
+        idx = selected_rows[0]
+        page_current = idx // page_size
+    return page_current
+
 layout = get_layout()

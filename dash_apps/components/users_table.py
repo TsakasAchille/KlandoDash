@@ -16,7 +16,7 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_users_table(users_df, columns=None, selected_rows=None, page_current=0):
+def render_users_table(users_df, columns=None, selected_rows=None, page_current=0, page_size=10):
     """
     Génère un tableau d'utilisateurs avec un style moderne et cohérent.
     
@@ -117,7 +117,7 @@ def render_users_table(users_df, columns=None, selected_rows=None, page_current=
                 "cursor": "pointer"
             }
         ],
-        page_size=10,
+        page_size=page_size,
         page_current=page_current,
     )
     
