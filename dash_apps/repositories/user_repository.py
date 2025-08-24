@@ -113,7 +113,7 @@ class UserRepository:
                 
             # Compter combien d'utilisateurs ont un UID inférieur à celui-ci
             # pour déterminer sa position dans la liste complète (triée par UID)
-            position_query = db.query(func.count(User.id)).filter(User.id < user.id)
+            position_query = db.query(func.count(User.uid)).filter(User.uid < user.uid)
             position = position_query.scalar() or 0
             
             return position

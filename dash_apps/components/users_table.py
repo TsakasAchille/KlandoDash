@@ -122,8 +122,7 @@ def render_users_table(users_df, columns=None, selected_rows=None, page_current=
         ],
         page_size=page_size,
         page_current=page_current,
-        page_count=page_count,
-        page_action='native',
+        page_action='custom',
     )
     
     # Encapsulation du tableau dans une carte pour cohérence visuelle

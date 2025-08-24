@@ -3,44 +3,38 @@ from dash import html, dcc, callback, Input, Output, State
 import pandas as pd
 from dash import dash_table
 from dash_apps.config import Config
-from dash_apps.components.users_table import render_users_table
+# Import du nouveau composant personnalisé à la place du DataTable
+from dash_apps.components.custom_users_table import render_custom_users_table
 from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
 from dash_apps.repositories.user_repository import UserRepository
 
-def get_uid_from_index(table_index, page_size=None):
-    """Convertit un indice de tableau en UID utilisateur en utilisant directement le repository
+def get_uid_from_index(row_index, page_index=0):
+    """Convertit un index de ligne en UID d'utilisateur pour pagination côté serveur
     
     Args:
-        table_index (int): L'indice de la ligne sélectionnée dans le tableau (0-indexed dans la page visible)
-        page_size (int, optional): Taille de la page pour calculer l'offset. Si None, utilise Config.USERS_TABLE_PAGE_SIZE
+        row_index: L'index de la ligne dans le tableau (0-based)
+        page_index: L'index de la page (0-based)
         
     Returns:
-        str: L'UID de l'utilisateur correspondant à l'indice, ou None si non trouvé
+        L'UID de l'utilisateur correspondant ou None si non trouvé
     """
-    # Vérification des paramètres
-    if table_index is None or table_index < 0:
-        return None
-        
     try:
-        # Récupérer directement le bon utilisateur avec un offset précis
-        if page_size is None:
-            page_size = Config.USERS_TABLE_PAGE_SIZE
+        page_size = Config.USERS_TABLE_PAGE_SIZE
         
-        # Dans UserRepository.get_all_users() nous avons les utilisateurs en ordre
-        # Pour retrouver l'uid correspondant, il suffit d'obtenir tous les utilisateurs
-        # et de prendre celui à l'index spécifié
-        users = UserRepository.get_all_users()
+        # Récupérer uniquement les données nécessaires pour cette page
+        result = UserRepository.get_users_paginated(page_index, page_size)
+        users = result.get("users", [])
         
-        if not users or table_index >= len(users):
-            print(f"Aucun utilisateur trouvé à l'indice {table_index} (total: {len(users) if users else 0})")
+        if not users or row_index >= len(users):
+            print(f"Aucun utilisateur trouvé à l'index {row_index} sur la page {page_index}")
             return None
             
-        # Récupérer l'utilisateur spécifique à l'index donné
-        user = users[table_index]
-        uid = user.model_dump().get('uid') if hasattr(user, 'model_dump') else user.get('uid')
-        print(f"UID trouvé pour l'indice {table_index}: {uid}")
+        # Utiliser directement l'index relatif à la page
+        user = users[row_index]
+        uid = user.uid if hasattr(user, "uid") else user.get("uid")
+        print(f"UID trouvé pour l'indice {row_index} sur la page {page_index}: {uid}")
         return uid
         
     except Exception as e:
@@ -52,9 +46,8 @@ def get_layout():
     """Génère le layout de la page utilisateurs avec des IDs uniquement pour cette page"""
     return dbc.Container([
     dcc.Location(id="users-url", refresh=False),
-    dcc.Store(id="users-page-store", storage_type="session"),
     dcc.Store(id="users-pagination-info", data={"page_count": 1, "total_users": 0}),
-    dcc.Store(id="users-current-page", storage_type="session", data=0),  # State pour stocker la page courante
+    dcc.Store(id="users-current-page", storage_type="session", data=1),  # State pour stocker la page courante (1-indexed)
     dcc.Store(id="selected-user-state", storage_type="session", data=None),  # Un seul state pour l'utilisateur sélectionné
     dcc.Store(id="selected-user-from-url", storage_type="session", data=None),  # State pour la sélection depuis l'URL
     dcc.Store(id="selected-user-from-table", storage_type="session", data=None),  # State pour la sélection manuelle
@@ -122,16 +115,22 @@ def calculate_pagination_info(n_clicks):
 
 
 
+# Note: Le store users-page-store n'est plus utilisé pour stocker tous les utilisateurs
+# car nous utilisons maintenant un chargement à la demande page par page
+
 @callback(
-    Output("users-page-store", "data"),
+    Output("users-current-page", "data"),
     Input("refresh-users-btn", "n_clicks"),
+    State("users-current-page", "data"),
     prevent_initial_call=False
 )
-def load_users_data(n_clicks):
-    users = UserRepository.get_all_users()
-    # Convert Pydantic objects to dictionaries, handling date/datetime objects correctly
-    users_data = [u.model_dump(mode='json') for u in users] if users else []
-    return users_data
+def reset_to_first_page_on_refresh(n_clicks, current_page):
+    """Réinitialise à la première page lors d'un rafraîchissement explicite"""
+    # Si c'est le chargement initial (n_clicks=None), conserver la page actuelle
+    if n_clicks is None:
+        return current_page if current_page else 1
+    # Sinon, revenir à la première page
+    return 1
 
 
 @callback( 
@@ -144,65 +143,56 @@ def show_refresh_users_message(n_clicks):
 
 @callback(
     Output("main-users-content", "children"),
-    Output("users-table", "selected_rows"),
-    Input("users-page-store", "data"),
-    State("selected-user-state", "data"),
-    State("users-pagination-info", "data"),
-    State("users-current-page", "data")
-
+    Input("users-current-page", "data"),
+    State("selected-user-state", "data")
 )
-def render_users_table_callback(users_data, selected_user, pagination_info, current_page):
-    """Callback qui gère uniquement le rendu de la table des utilisateurs"""
-    print(f"\n[DEBUG] Rendu table utilisateurs, selected_user={selected_user}, pagination_info={pagination_info}, current_page={current_page}")
+def render_users_table_callback(current_page, selected_user):
+    """Callback qui gère uniquement le rendu de la table des utilisateurs avec pagination à la demande"""
+    print(f"\n[DEBUG] Rendu table utilisateurs, page={current_page}, selected_user={selected_user}")
     
-    # Initialiser la sélection et la page courante
-    preselect_row = []
-    
-    # Cas où aucune donnée utilisateur n'est disponible
-    if not users_data:
-        empty_df = pd.DataFrame([{"uid": "", "name": "", "email": "", "phone": "", "role": "", "created_at": ""}])
-        table = render_users_table(
-            empty_df, 
-            selected_rows=[], 
-            page_current=0, 
-            page_size=Config.USERS_TABLE_PAGE_SIZE,
-            page_count=1
-        )
-        return table, [], 0
-    
-    users_df = pd.DataFrame(users_data)
-    
-    # Utiliser directement la page courante depuis le state ou la valeur de page_current (si changement manuel)
-    current_page = pagination_info.get("page_current", 1) # Page courante (commence à 1)
-        
-    # Déterminer la sélection en fonction de selected_user
-    preselect_row = []
+    # Configuration pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
-
     
-  
-    # Gestion de la pagination
-    
-    # Récupérer le nombre total de pages depuis les infos de pagination
-    page_count = pagination_info.get("page_count", 1) if pagination_info else 1
-    
-    # Vérifier que current_page est bien un nombre
+    # Si la page n'est pas spécifiée, utiliser la page 1 par défaut
     if not isinstance(current_page, (int, float)):
         current_page = 1  # Défaut à 1 (pagination commence à 1)
-
     
-    # Rendu de la table
-    table = render_users_table(
-        users_df, 
-        selected_rows=preselect_row, 
-        page_current=current_page, 
-        page_size=page_size,
-        page_count=page_count
+    # Convertir la page en index 0-based pour l'API
+    page_index = current_page - 1 if current_page > 0 else 0
+    
+    # Récupérer uniquement les utilisateurs de la page courante (pagination côté serveur)
+    result = UserRepository.get_users_paginated(page_index, page_size)
+    users = result.get("users", [])
+    total_users = result.get("total_count", 0)
+    
+    # Calculer le nombre total de pages
+    page_count = (total_users - 1) // page_size + 1 if total_users > 0 else 1
+    
+    # Si aucun utilisateur n'est disponible
+    if not users:
+        # Utiliser notre composant personnalisé au lieu du DataTable
+        table = render_custom_users_table(
+            [], 
+            current_page=current_page,  # 1-indexed pour notre composant personnalisé
+            total_users=0, 
+            selected_uid=None
+        )
+        return table, []
+    
+    # Convertir les utilisateurs en dictionnaires pour le DataFrame
+    users_data = [u.model_dump() if hasattr(u, "model_dump") else u for u in users]
+    users_df = pd.DataFrame(users_data)
+    
+    # Rendu de la table avec notre composant personnalisé
+    table = render_custom_users_table(
+        users, 
+        current_page=current_page,  # 1-indexed pour notre composant personnalisé
+        total_users=total_users,
+        selected_uid=selected_user
     )
 
-    # Retourner le composant table et la sélection
-    # (la page courante est maintenant gérée par le nouveau callback calculate_page_current)
-    return table, preselect_row
+    # Ne retourner que le tableau
+    return table
 
 @callback(
     Output("user-details-panel", "children"),
@@ -290,11 +280,12 @@ def render_user_panels(selected_user_data):
 @callback(
     Output("selected-user-from-table", "data"),
     Input("users-table", "selected_rows"),
+    Input("users-table", "page_current"),  # Page actuelle du tableau (0-indexed)
     prevent_initial_call=True
 )
-def handle_manual_selection(selected_rows):
+def handle_manual_selection(selected_rows, page_current):
     """Callback qui gère la sélection d'un utilisateur manuellement dans le tableau"""
-    print("selected_rows", selected_rows)
+    print(f"selected_rows: {selected_rows}, page_current: {page_current}")
     
     # Si pas de sélection
     if not selected_rows:
@@ -303,86 +294,72 @@ def handle_manual_selection(selected_rows):
     # Utiliser la fonction utilitaire pour convertir l'indice en UID
     try:
         idx = selected_rows[0]
-        uid = get_uid_from_index(idx)
+        page_index = page_current if page_current is not None else 0
+        uid = get_uid_from_index(idx, page_index)
         return uid
     except Exception as e:
         print(f"Erreur lors de la sélection manuelle: {str(e)}")
         return None
 
+# Callback pour gérer le changement de page depuis le DataTable
+@callback(
+    Output("users-current-page", "data", allow_duplicate=True),
+    Input("users-table", "page_current"),
+    State("users-current-page", "data"),
+    prevent_initial_call=True
+)
+def handle_page_change(page_current, current_page):
+    """Gère le changement de page depuis le DataTable"""
+    print(f"[DEBUG] Changement de page depuis DataTable: page_current={page_current}")
+    # page_current est 0-indexed, mais nous stockons les pages en 1-indexed
+    if page_current is not None:
+        return page_current + 1
+    return current_page
+
 # Callback spécifique pour gérer la sélection par URL
 @callback(
     Output("selected-user-from-url", "data"),
+    Output("users-current-page", "data", allow_duplicate=True),  # allow_duplicate=True pour éviter le conflit
     Input("users-url", "search"),
-    State("users-page-store", "data"),
     prevent_initial_call=True
 )
-def handle_url_selection(url_search, users_data):
+def handle_url_selection(url_search):
     """Callback qui gère la sélection d'un utilisateur par paramètre URL"""
     import urllib.parse
     
-    # Si aucune donnée ou pas de recherche URL
-    if not users_data or not url_search:
-        return None
+    # Si pas de recherche URL
+    if not url_search:
+        return None, 1  # Page 1 par défaut
         
     # Recherche d'un paramètre uid dans l'URL
     params = urllib.parse.parse_qs(url_search.lstrip('?'))
     uid_list = params.get('uid')
     if not uid_list:
-        return None
+        return None, 1  # Page 1 par défaut
         
     uid_from_url = uid_list[0]
-    users_df = pd.DataFrame(users_data)
+    
+    # Vérifier si l'utilisateur existe
+    user = UserRepository.get_user_by_id(uid_from_url)
+    if not user:
+        print(f"Utilisateur {uid_from_url} non trouvé dans la base de données")
+        return None, 1
+    
+    # Déterminer la position de l'utilisateur pour trouver sa page
+    position = UserRepository.get_user_position(uid_from_url)
+    if position is not None:
+        page_size = Config.USERS_TABLE_PAGE_SIZE
+        # Calculer la page (1-indexed) où se trouve l'utilisateur
+        page_number = (position // page_size) + 1
+        print(f"Utilisateur {uid_from_url} trouvé à la position {position}, page {page_number}")
+        return uid_from_url, page_number
+    
+    # Fallback si la position n'a pas été trouvée
+    return uid_from_url, 1
 
-    print(f"Recherche de l'utilisateur {uid_from_url}")
-    
-    # Vérifier si l'uid existe dans les données
-    if uid_from_url in users_df['uid'].values:
-        # Retourner directement l'uid
-        return uid_from_url
-    
-    return None
 
-
-# Callback pour calculer la page courante en fonction de l'utilisateur sélectionné
-@callback(
-    Output("users-current-page", "data"),
-    Input("selected-user-state", "data"),
-    Input("users-page-store", "data"),
-    State("users-pagination-info", "data"),
-    prevent_initial_call=True
-)
-def calculate_page_current(selected_user, users_data, pagination_info):
-    """Calcule le numéro de page à afficher en fonction de l'utilisateur sélectionné
-    
-    Cette fonction détermine sur quelle page se trouve un utilisateur sélectionné,
-    en fonction de la taille de page configurée.
-    """
-    # Valeur par défaut
-    page_current = 0
-    
-    # Si aucun utilisateur sélectionné ou données manquantes
-    if not selected_user or not users_data or not pagination_info:
-        return page_current
-        
-    # Récupérer la taille de page depuis pagination_info (qui contient les données de pagination)
-    page_size = pagination_info.get('page_size', Config.USERS_TABLE_PAGE_SIZE)
-    print("page_size", page_size)
-    # Convertir les données utilisateurs en DataFrame
-    users_df = pd.DataFrame(users_data)
-    
-    # Trouver l'index de l'utilisateur sélectionné
-    try:
-        uid = selected_user.get('uid')
-        if uid:
-            idx = users_df.index[users_df['uid'] == uid].tolist()
-            if idx:
-                # Calculer le numéro de page (1-indexed pour l'UI)
-                page_current = (idx[0] // page_size) + 1
-                print(f"Utilisateur {uid} trouvé à l'indice {idx[0]}, page {page_current} (avec page_size={page_size})")
-    except Exception as e:
-        print(f"Erreur lors du calcul de la page: {str(e)}")
-        
-    return page_current
+# Note: Le callback calculate_page_current a été supprimé car cette fonctionnalité est 
+# maintenant gérée directement par handle_url_selection qui utilise UserRepository.get_user_position()
 
 layout = get_layout()
 
@@ -391,15 +368,13 @@ layout = get_layout()
     Output("selected-user-state", "data"),
     Input("selected-user-from-table", "data"),
     Input("selected-user-from-url", "data"),
-    Input("users-page-store", "data"),
     prevent_initial_call=False
 )
-def consolidate_user_selection(table_selection, url_selection, users_data):
+def consolidate_user_selection(table_selection, url_selection):
     """Callback qui détermine l'utilisateur sélectionné en fonction du dernier changement
     Sans priorité fixe, c'est la dernière sélection qui a déclenché le callback qui est retenue
-    Maintenant nous recevons directement des UIDs au lieu d'objets utilisateur
     """
-    print("[TEST] consolidate_user_selection")
+    print("[DEBUG] consolidate_user_selection")
     print("table_selection", table_selection)
     print("url_selection", url_selection)
 
@@ -422,18 +397,18 @@ def consolidate_user_selection(table_selection, url_selection, users_data):
     elif triggered_id == "selected-user-from-url" and url_selection is not None:
         selected_uid = url_selection
         print(f"Sélection depuis URL: {selected_uid}")
-    elif triggered_id == "users-page-store":
-        # Si le déclencheur est le store, on garde la dernière sélection connue, priorité à l'URL
-        selected_uid = url_selection if url_selection is not None else table_selection
-        print(f"Sélection depuis store, utilisation valeur existante: {selected_uid}")
     else:
         # Fallback, priorité à URL puis table
         selected_uid = url_selection if url_selection is not None else table_selection
         print(f"Autre cas, utilisation valeur existante: {selected_uid}")
     
-    # Si on a un UID, on retourne un objet avec l'UID
+    # Si on a un UID, on récupère l'utilisateur directement depuis le repository
     if selected_uid:
-        print("selected_uid final", selected_uid)
-        return {"uid": selected_uid}
+        user = UserRepository.get_user_by_id(selected_uid)
+        if user:
+            print(f"Utilisateur trouvé pour UID {selected_uid}")
+            return {"uid": selected_uid}
+        else:
+            print(f"Aucun utilisateur trouvé pour UID {selected_uid}")
     
     return None
