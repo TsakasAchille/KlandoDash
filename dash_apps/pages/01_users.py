@@ -108,14 +108,20 @@ def show_refresh_users_message(n_clicks):
     Output("users-current-page", "data"),
     Input("users-page-store", "data"),
     Input("users-table", "page_current"),
-    State("selected-user-state", "data"),
+    Input("selected-user-state", "data"),  # Changé de State à Input pour réagir aux sélections d'URL
     State("users-pagination-info", "data"),
     State("users-current-page", "data"),
 )
 def render_users_table_callback(users_data, page_current, selected_user, pagination_info, current_page_state):
-    """Callback qui gère uniquement le rendu de la table des utilisateurs"""
+    """Callback qui gère uniquement le rendu de la table des utilisateurs
+    
+    Cette fonction s'occupe aussi de synchroniser la sélection entre l'URL et le tableau
+    """
+    print(f"\n[DEBUG] Rendu table utilisateurs, page_current={page_current}, selected_user={selected_user}")
+    
     # Initialiser la sélection et la page courante
     preselect_row = []
+    target_page = page_current if page_current is not None else 0
     
     # Cas où aucune donnée utilisateur n'est disponible
     if not users_data:
@@ -252,7 +258,6 @@ def render_user_panels(selected_user_data):
     
     user = UserWrapper(user_dict)
     
-    print("user_dict après repository", user_dict)
     
     # Rendu des panneaux
     details = render_user_profile(user)
@@ -282,7 +287,7 @@ def find_user_index(users_df, uid):
 @callback(
     Output("selected-user-from-table", "data"),
     Input("users-table", "selected_rows"),
-    Input("users-page-store", "data"),
+    State("users-page-store", "data"),
     prevent_initial_call=True
 )
 def handle_manual_selection(selected_rows, users_data):
@@ -306,7 +311,7 @@ def handle_manual_selection(selected_rows, users_data):
 @callback(
     Output("selected-user-from-url", "data"),
     Input("users-url", "search"),
-    Input("users-page-store", "data"),
+    State("users-page-store", "data"),
     prevent_initial_call=True
 )
 def handle_url_selection(url_search, users_data):
