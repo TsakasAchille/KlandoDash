@@ -368,7 +368,7 @@ layout = get_layout()
 )
 def consolidate_user_selection(table_selection, url_selection, users_data):
     """Callback qui détermine l'utilisateur sélectionné en fonction du dernier changement
-    Sans priorité fixe, c'est la dernière sélection qui est retenue
+    Sans priorité fixe, c'est la dernière sélection qui a déclenché le callback qui est retenue
     Maintenant nous recevons directement des UIDs au lieu d'objets utilisateur
     """
     print("[TEST] consolidate_user_selection")
@@ -382,23 +382,30 @@ def consolidate_user_selection(table_selection, url_selection, users_data):
     if not callback_context.triggered or (table_selection is None and url_selection is None):
         return None
     
-    # Récupérer l'id de l'input qui a déclenché le callback
-    triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+    # Déterminer l'input qui a déclenché le callback
+    triggered = callback_context.triggered[0]
+    triggered_id = triggered['prop_id'].split('.')[0]
+    print(f"Input déclencheur: {triggered_id}")
     
-    # Identifier l'uid sélectionné
-    selected_uid = None
-    
-    if triggered_id == 'selected-user-from-table' and table_selection is not None:
+    # Déterminer l'UID sélectionné strictement en fonction de l'input qui a déclenché le callback
+    if triggered_id == "selected-user-from-table" and table_selection is not None:
         selected_uid = table_selection
-    elif triggered_id == 'selected-user-from-url' and url_selection is not None:
+        print(f"Sélection depuis table: {selected_uid}")
+    elif triggered_id == "selected-user-from-url" and url_selection is not None:
         selected_uid = url_selection
+        print(f"Sélection depuis URL: {selected_uid}")
+    elif triggered_id == "users-page-store":
+        # Si le déclencheur est le store, on garde la dernière sélection connue, priorité à l'URL
+        selected_uid = url_selection if url_selection is not None else table_selection
+        print(f"Sélection depuis store, utilisation valeur existante: {selected_uid}")
     else:
-        selected_uid = table_selection or url_selection
+        # Fallback, priorité à URL puis table
+        selected_uid = url_selection if url_selection is not None else table_selection
+        print(f"Autre cas, utilisation valeur existante: {selected_uid}")
     
-    # Si on a un UID, c'est suffisant pour identifier l'utilisateur
-    # L'index sera déterminé lors du rendu de la table si nécessaire
+    # Si on a un UID, on retourne un objet avec l'UID
     if selected_uid:
-        print("selected_uid", selected_uid)
+        print("selected_uid final", selected_uid)
         return {"uid": selected_uid}
-        
+    
     return None
