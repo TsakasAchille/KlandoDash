@@ -105,23 +105,21 @@ def show_refresh_users_message(n_clicks):
 @callback(
     Output("main-users-content", "children"),
     Output("users-table", "selected_rows"),
-    Output("users-current-page", "data"),
     Input("users-page-store", "data"),
-    Input("users-table", "page_current"),
-    State("selected-user-state", "data"),  # Repassé en State pour éviter un cycle de dépendance
+    State("selected-user-state", "data"),
     State("users-pagination-info", "data"),
-    State("users-current-page", "data"),
+    State("users-current-page", "data")
+
 )
-def render_users_table_callback(users_data, page_current, selected_user, pagination_info, current_page_state):
+def render_users_table_callback(users_data, selected_user, pagination_info, current_page):
     """Callback qui gère uniquement le rendu de la table des utilisateurs
     
     Cette fonction s'occupe aussi de synchroniser la sélection entre l'URL et le tableau
     """
-    print(f"\n[DEBUG] Rendu table utilisateurs, page_current={page_current}, selected_user={selected_user}")
+    print(f"\n[DEBUG] Rendu table utilisateurs, selected_user={selected_user}, pagination_info={pagination_info}, current_page={current_page}")
     
     # Initialiser la sélection et la page courante
     preselect_row = []
-    target_page = page_current if page_current is not None else 0
     
     # Cas où aucune donnée utilisateur n'est disponible
     if not users_data:
@@ -137,41 +135,24 @@ def render_users_table_callback(users_data, page_current, selected_user, paginat
     
     users_df = pd.DataFrame(users_data)
     
-    # Déterminer la page à afficher
-    if page_current is not None:
-        current_page = page_current
-    else:
-        current_page = current_page_state if current_page_state is not None else 0
+    # Utiliser directement la page courante depuis le state ou la valeur de page_current (si changement manuel)
+    current_page = pagination_info.get("page_current", 1) # Page courante (commence à 1)
         
     # Déterminer la sélection en fonction de selected_user
     preselect_row = []
-    
-    # Si un utilisateur est sélectionné
-    if selected_user and isinstance(selected_user, dict) and 'uid' in selected_user:
-        uid = selected_user['uid']
-        
-        # Chercher l'index correspondant à l'uid dans le DataFrame
-        try:
-            idx = find_user_index(users_df, uid)
-            if idx is not None:
-                preselect_row = [idx]
-                # Calculer la page où se trouve l'utilisateur si nécessaire
-                if page_current is None:
-                    page_size = Config.USERS_TABLE_PAGE_SIZE
-                    current_page = idx // page_size
-        except Exception as e:
-            print(f"Erreur lors de la recherche de l'index pour l'uid {uid}: {str(e)}")
-            preselect_row = []
-    
-    # Gestion de la pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
+
+    
+  
+    # Gestion de la pagination
     
     # Récupérer le nombre total de pages depuis les infos de pagination
     page_count = pagination_info.get("page_count", 1) if pagination_info else 1
     
     # Vérifier que current_page est bien un nombre
     if not isinstance(current_page, (int, float)):
-        current_page = 0
+        current_page = 1  # Défaut à 1 (pagination commence à 1)
+
     
     # Rendu de la table
     table = render_users_table(
@@ -181,9 +162,10 @@ def render_users_table_callback(users_data, page_current, selected_user, paginat
         page_size=page_size,
         page_count=page_count
     )
-    
-    # Retourner le composant table, la sélection et la page courante
-    return table, preselect_row, current_page
+
+    # Retourner le composant table et la sélection
+    # (la page courante est maintenant gérée par le nouveau callback calculate_page_current)
+    return table, preselect_row
 
 @callback(
     Output("user-details-panel", "children"),
@@ -266,22 +248,6 @@ def render_user_panels(selected_user_data):
     
     return details, stats, trips
 
-# Fonction utilitaire pour trouver l'index d'un utilisateur par son uid
-def find_user_index(users_df, uid):
-    """Recherche l'index d'un utilisateur dans le dataframe par son uid
-    
-    Args:
-        users_df: DataFrame contenant les utilisateurs
-        uid: L'identifiant unique de l'utilisateur recherché
-        
-    Returns:
-        L'index de l'utilisateur s'il est trouvé, None sinon
-    """
-    try:
-        idx = users_df.index[users_df['uid'] == uid].tolist()
-        return idx[0] if idx else None
-    except Exception:
-        return None
 
 # Callback spécifique pour gérer la sélection manuelle
 @callback(
@@ -341,24 +307,45 @@ def handle_url_selection(url_search, users_data):
     return None
 
 
-# Exporter le layout pour l'application principale
-def calculate_page_current(selected_rows, page_size):
-    """Calcule le numéro de page à afficher en fonction de la sélection
+# Callback pour calculer la page courante en fonction de l'utilisateur sélectionné
+@callback(
+    Output("users-current-page", "data"),
+    Input("selected-user-state", "data"),
+    Input("users-page-store", "data"),
+    State("users-pagination-info", "data"),
+    prevent_initial_call=True
+)
+def calculate_page_current(selected_user, users_data, pagination_info):
+    """Calcule le numéro de page à afficher en fonction de l'utilisateur sélectionné
     
-    Cette fonction détermine sur quelle page se trouve un index sélectionné,
+    Cette fonction détermine sur quelle page se trouve un utilisateur sélectionné,
     en fonction de la taille de page configurée.
-    
-    Args:
-        selected_rows: Liste des indices des lignes sélectionnées dans la table
-        page_size: Nombre d'éléments par page
-        
-    Returns:
-        Le numéro de page (0-based) qui contient l'élément sélectionné
     """
+    # Valeur par défaut
     page_current = 0
-    if selected_rows and len(selected_rows) > 0:
-        idx = selected_rows[0]
-        page_current = idx // page_size
+    
+    # Si aucun utilisateur sélectionné ou données manquantes
+    if not selected_user or not users_data or not pagination_info:
+        return page_current
+        
+    # Récupérer la taille de page depuis pagination_info (qui contient les données de pagination)
+    page_size = pagination_info.get('page_size', Config.USERS_TABLE_PAGE_SIZE)
+    print("page_size", page_size)
+    # Convertir les données utilisateurs en DataFrame
+    users_df = pd.DataFrame(users_data)
+    
+    # Trouver l'index de l'utilisateur sélectionné
+    try:
+        uid = selected_user.get('uid')
+        if uid:
+            idx = users_df.index[users_df['uid'] == uid].tolist()
+            if idx:
+                # Calculer le numéro de page (1-indexed pour l'UI)
+                page_current = (idx[0] // page_size) + 1
+                print(f"Utilisateur {uid} trouvé à l'indice {idx[0]}, page {page_current} (avec page_size={page_size})")
+    except Exception as e:
+        print(f"Erreur lors du calcul de la page: {str(e)}")
+        
     return page_current
 
 layout = get_layout()
