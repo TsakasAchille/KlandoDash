@@ -1,7 +1,10 @@
-import dash_bootstrap_components as dbc
-from dash import html, dcc, callback, Input, Output, State
+import math
+import json
 import pandas as pd
-from dash import dash_table
+import dash
+import dash_bootstrap_components as dbc
+from dash import dcc, html, dash_table, callback, Input, Output, State
+from dash.exceptions import PreventUpdate
 from dash_apps.config import Config
 # Import du nouveau composant personnalisé à la place du DataTable
 from dash_apps.components.custom_users_table import render_custom_users_table
@@ -9,17 +12,9 @@ from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
 from dash_apps.repositories.user_repository import UserRepository
-
+"""
 def get_uid_from_index(row_index, page_index=0):
-    """Convertit un index de ligne en UID d'utilisateur pour pagination côté serveur
-    
-    Args:
-        row_index: L'index de la ligne dans le tableau (0-based)
-        page_index: L'index de la page (0-based)
-        
-    Returns:
-        L'UID de l'utilisateur correspondant ou None si non trouvé
-    """
+
     try:
         page_size = Config.USERS_TABLE_PAGE_SIZE
         
@@ -40,17 +35,19 @@ def get_uid_from_index(row_index, page_index=0):
     except Exception as e:
         print(f"Erreur lors de la conversion index -> UID via repository: {str(e)}")
         return None
-
+"""
 
 def get_layout():
     """Génère le layout de la page utilisateurs avec des IDs uniquement pour cette page"""
     return dbc.Container([
     dcc.Location(id="users-url", refresh=False),
     dcc.Store(id="users-pagination-info", data={"page_count": 1, "total_users": 0}),
-    dcc.Store(id="users-current-page", storage_type="session", data=1),  # State pour stocker la page courante (1-indexed)
-    dcc.Store(id="selected-user-state", storage_type="session", data=None),  # Un seul state pour l'utilisateur sélectionné
-    dcc.Store(id="selected-user-from-url", storage_type="session", data=None),  # State pour la sélection depuis l'URL
-    dcc.Store(id="selected-user-from-table", storage_type="session", data=None),  # State pour la sélection manuelle
+    dcc.Store(id="users-current-page", storage_type="session", data=1),  # State pour stocker la page courante (persistant)
+    dcc.Store(id="selected-user-uid", storage_type="session", data=None),  # Store pour l'UID de l'utilisateur sélectionné (persistant)
+    dcc.Store(id="selected-user-from-url", storage_type="memory", data=None),  # State pour la sélection depuis l'URL
+    dcc.Store(id="selected-user-from-table", storage_type="memory", data=None),  # State pour la sélection manuelle
+    # Flags pour indiquer quelle source de sélection est active
+  
     html.H2("Dashboard utilisateurs", style={"marginTop": "20px"}),
     dbc.Row([
         dbc.Col([], width=9),
@@ -117,7 +114,7 @@ def calculate_pagination_info(n_clicks):
 
 # Note: Le store users-page-store n'est plus utilisé pour stocker tous les utilisateurs
 # car nous utilisons maintenant un chargement à la demande page par page
-
+"""
 @callback(
     Output("users-current-page", "data"),
     Input("refresh-users-btn", "n_clicks"),
@@ -125,13 +122,12 @@ def calculate_pagination_info(n_clicks):
     prevent_initial_call=False
 )
 def reset_to_first_page_on_refresh(n_clicks, current_page):
-    """Réinitialise à la première page lors d'un rafraîchissement explicite"""
     # Si c'est le chargement initial (n_clicks=None), conserver la page actuelle
     if n_clicks is None:
         return current_page if current_page else 1
     # Sinon, revenir à la première page
     return 1
-
+"""
 
 @callback( 
     Output("refresh-users-message", "children"),
@@ -141,15 +137,17 @@ def reset_to_first_page_on_refresh(n_clicks, current_page):
 def show_refresh_users_message(n_clicks):
     return dbc.Alert("Données utilisateurs rafraîchies!", color="success", dismissable=True)
 
+
 @callback(
     Output("main-users-content", "children"),
     Input("users-current-page", "data"),
-    State("selected-user-state", "data")
+    State("selected-user-uid", "data")
 )
 def render_users_table_callback(current_page, selected_user):
-    """Callback qui gère uniquement le rendu de la table des utilisateurs avec pagination à la demande"""
-    print(f"\n[DEBUG] Rendu table utilisateurs, page={current_page}, selected_user={selected_user}")
-    
+    #print(f"\n[DEBUG] Rendu table utilisateurs, page={current_page}, selected_user={selected_user}")
+    print("\n[DEBUG] render_users_table_callback")
+    print("current_page", current_page)
+    print("selected_user", selected_user)
     # Configuration pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
     
@@ -183,22 +181,34 @@ def render_users_table_callback(current_page, selected_user):
     users_data = [u.model_dump() if hasattr(u, "model_dump") else u for u in users]
     users_df = pd.DataFrame(users_data)
     
+    # Debug de la valeur selected_user
+   # print(f"\n[DEBUG-TABLE] Type de selected_user: {type(selected_user)}, Valeur: {selected_user}")
+    
+    # Déterminer la valeur à passer à selected_uid
+    if isinstance(selected_user, dict) and "uid" in selected_user:
+        selected_uid_value = selected_user["uid"]
+    else:
+        selected_uid_value = selected_user
+    
+   # print(f"\n[DEBUG-TABLE] Valeur envoyée à selected_uid: {selected_uid_value}")
+    
     # Rendu de la table avec notre composant personnalisé
     table = render_custom_users_table(
         users, 
         current_page=current_page,  # 1-indexed pour notre composant personnalisé
         total_users=total_users,
-        selected_uid=selected_user
+        selected_uid=selected_uid_value
     )
 
     # Ne retourner que le tableau
     return table
 
+    
 @callback(
     Output("user-details-panel", "children"),
     Output("user-stats-panel", "children"),
     Output("user-trips-panel", "children"),
-    Input("selected-user-state", "data"),
+    Input("selected-user-uid", "data"),
 )
 def render_user_panels(selected_user_data):
     """Callback qui affiche les détails, statistiques et trajets de l'utilisateur sélectionné
@@ -276,139 +286,42 @@ def render_user_panels(selected_user_data):
     return details, stats, trips
 
 
-# Callback spécifique pour gérer la sélection manuelle
+# Callback unique pour gérer la sélection utilisateur depuis la table ou l'URL
 @callback(
-    Output("selected-user-from-table", "data"),
-    Input("users-table", "selected_rows"),
-    Input("users-table", "page_current"),  # Page actuelle du tableau (0-indexed)
-    prevent_initial_call=True
+    Output("selected-user-uid", "data"),
+    [Input("users-url", "search"),
+     Input("selected-user-from-table", "data")],
 )
-def handle_manual_selection(selected_rows, page_current):
-    """Callback qui gère la sélection d'un utilisateur manuellement dans le tableau"""
-    print(f"selected_rows: {selected_rows}, page_current: {page_current}")
-    
-    # Si pas de sélection
-    if not selected_rows:
-        return None
-    
-    # Utiliser la fonction utilitaire pour convertir l'indice en UID
-    try:
-        idx = selected_rows[0]
-        page_index = page_current if page_current is not None else 0
-        uid = get_uid_from_index(idx, page_index)
-        return uid
-    except Exception as e:
-        print(f"Erreur lors de la sélection manuelle: {str(e)}")
-        return None
-
-# Callback pour gérer le changement de page depuis le DataTable
-@callback(
-    Output("users-current-page", "data", allow_duplicate=True),
-    Input("users-table", "page_current"),
-    State("users-current-page", "data"),
-    prevent_initial_call=True
-)
-def handle_page_change(page_current, current_page):
-    """Gère le changement de page depuis le DataTable"""
-    print(f"[DEBUG] Changement de page depuis DataTable: page_current={page_current}")
-    # page_current est 0-indexed, mais nous stockons les pages en 1-indexed
-    if page_current is not None:
-        return page_current + 1
-    return current_page
-
-# Callback spécifique pour gérer la sélection par URL
-@callback(
-    Output("selected-user-from-url", "data"),
-    Output("users-current-page", "data", allow_duplicate=True),  # allow_duplicate=True pour éviter le conflit
-    Input("users-url", "search"),
-    prevent_initial_call=True
-)
-def handle_url_selection(url_search):
-    """Callback qui gère la sélection d'un utilisateur par paramètre URL"""
+def handle_user_selection(url_search, table_selection):
+    from dash import ctx
     import urllib.parse
     
-    # Si pas de recherche URL
-    if not url_search:
-        return None, 1  # Page 1 par défaut
+    # Utiliser ctx.triggered pour déterminer quel input a déclenché le callback (méthode moderne)
+    # Plus fiable que callback_context.triggered
+    print(f"\n[DEBUG] Triggered: {ctx.triggered_id}")
+    
+    # Si déclencheur vide, rien à faire
+    if not ctx.triggered_id:
+        return dash.no_update
+    
+    
+    # Si déclenché par l'URL, vérifier et extraire l'uid
+    if ctx.triggered_id == "users-url" and url_search:
+        print(f"URL search: {url_search}")
+        params = urllib.parse.parse_qs(url_search.lstrip('?'))
+        uid_list = params.get('uid')
         
-    # Recherche d'un paramètre uid dans l'URL
-    params = urllib.parse.parse_qs(url_search.lstrip('?'))
-    uid_list = params.get('uid')
-    if not uid_list:
-        return None, 1  # Page 1 par défaut
-        
-    uid_from_url = uid_list[0]
+        if uid_list:
+            uid = uid_list[0]
+            selected_user = {"uid": uid}
+            print(f"Sélection depuis URL: {selected_user}")
+            return selected_user
     
-    # Vérifier si l'utilisateur existe
-    user = UserRepository.get_user_by_id(uid_from_url)
-    if not user:
-        print(f"Utilisateur {uid_from_url} non trouvé dans la base de données")
-        return None, 1
+    # Si déclenché par le tableau et il y a une sélection valide
+    if ctx.triggered_id == "selected-user-from-table" and table_selection is not None:
+        print(f"Sélection depuis tableau: {table_selection}")
+        return table_selection
     
-    # Déterminer la position de l'utilisateur pour trouver sa page
-    position = UserRepository.get_user_position(uid_from_url)
-    if position is not None:
-        page_size = Config.USERS_TABLE_PAGE_SIZE
-        # Calculer la page (1-indexed) où se trouve l'utilisateur
-        page_number = (position // page_size) + 1
-        print(f"Utilisateur {uid_from_url} trouvé à la position {position}, page {page_number}")
-        return uid_from_url, page_number
-    
-    # Fallback si la position n'a pas été trouvée
-    return uid_from_url, 1
-
-
-# Note: Le callback calculate_page_current a été supprimé car cette fonctionnalité est 
-# maintenant gérée directement par handle_url_selection qui utilise UserRepository.get_user_position()
+    return dash.no_update
 
 layout = get_layout()
-
-
-@callback(
-    Output("selected-user-state", "data"),
-    Input("selected-user-from-table", "data"),
-    Input("selected-user-from-url", "data"),
-    prevent_initial_call=False
-)
-def consolidate_user_selection(table_selection, url_selection):
-    """Callback qui détermine l'utilisateur sélectionné en fonction du dernier changement
-    Sans priorité fixe, c'est la dernière sélection qui a déclenché le callback qui est retenue
-    """
-    print("[DEBUG] consolidate_user_selection")
-    print("table_selection", table_selection)
-    print("url_selection", url_selection)
-
-    # Utilisation du callback context pour déterminer quel Input a déclenché le callback
-    from dash import callback_context
-    
-    # Si aucun callback n'a été déclenché ou si les deux sélections sont None
-    if not callback_context.triggered or (table_selection is None and url_selection is None):
-        return None
-    
-    # Déterminer l'input qui a déclenché le callback
-    triggered = callback_context.triggered[0]
-    triggered_id = triggered['prop_id'].split('.')[0]
-    print(f"Input déclencheur: {triggered_id}")
-    
-    # Déterminer l'UID sélectionné strictement en fonction de l'input qui a déclenché le callback
-    if triggered_id == "selected-user-from-table" and table_selection is not None:
-        selected_uid = table_selection
-        print(f"Sélection depuis table: {selected_uid}")
-    elif triggered_id == "selected-user-from-url" and url_selection is not None:
-        selected_uid = url_selection
-        print(f"Sélection depuis URL: {selected_uid}")
-    else:
-        # Fallback, priorité à URL puis table
-        selected_uid = url_selection if url_selection is not None else table_selection
-        print(f"Autre cas, utilisation valeur existante: {selected_uid}")
-    
-    # Si on a un UID, on récupère l'utilisateur directement depuis le repository
-    if selected_uid:
-        user = UserRepository.get_user_by_id(selected_uid)
-        if user:
-            print(f"Utilisateur trouvé pour UID {selected_uid}")
-            return {"uid": selected_uid}
-        else:
-            print(f"Aucun utilisateur trouvé pour UID {selected_uid}")
-    
-    return None

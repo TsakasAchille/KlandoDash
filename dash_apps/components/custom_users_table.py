@@ -18,6 +18,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
     Returns:
         Un composant HTML avec un tableau et des contrôles de pagination
     """
+    print(f"\n[DEBUG] render_custom_users_table appelé avec selected_uid = {selected_uid}, type: {type(selected_uid)}")
     page_size = Config.USERS_TABLE_PAGE_SIZE
     page_count = (total_users - 1) // page_size + 1 if total_users > 0 else 1
     
@@ -57,21 +58,52 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
             is_active = getattr(user, "is_active", True)
             created_at = getattr(user, "created_at", "")
             
-        is_selected = uid == selected_uid
+        # Debug pour comprendre les types et valeurs
+        #print(f"\n[DEBUG] Type de selected_uid: {type(selected_uid)}, Valeur: {selected_uid}")
+        #print(f"\n[DEBUG] Type de uid: {type(uid)}, Valeur: {uid}")
         
-        # Style pour la ligne sélectionnée
+        # Extraire l'UID de selected_uid s'il s'agit d'un dictionnaire
+        selected_uid_value = selected_uid
+        if isinstance(selected_uid, dict) and 'uid' in selected_uid:
+            selected_uid_value = selected_uid['uid']
+            #print(f"\n[DEBUG] Extraction de l'UID du dictionnaire: {selected_uid_value}")
+        
+        # Conversion en string pour la comparaison
+        uid_str = str(uid)
+        selected_uid_str = str(selected_uid_value)
+        
+        # Comparaison stricte des strings
+        is_selected = uid_str == selected_uid_str
+        
+        # Logging pour debug
+        #print(f"\n[DEBUG] Comparaison: '{uid_str}' == '{selected_uid_str}' => {is_selected}")
+
+            
+        # Style pour la ligne sélectionnée - en rouge très vif avec bordure
         row_style = {
-            "backgroundColor": "rgba(51, 102, 204, 0.05)" if is_selected else "transparent",
-            "transition": "background-color 0.2s",
-            "cursor": "pointer"
+            "backgroundColor": "#ff3547 !important" if is_selected else "transparent",
+            "transition": "all 0.2s",
+            "cursor": "pointer",
+            "border": "2px solid #dc3545 !important" if is_selected else "none",
+            "color": "white !important" if is_selected else "inherit",
+            "fontWeight": "bold !important" if is_selected else "normal",
         }
         
+        # Style pour chaque cellule de la ligne
+        cell_style = {"backgroundColor": "#ff3547 !important" if is_selected else "transparent"}
+        
         # Attributs pour la ligne
+        row_class = "user-row selected-user-row" if is_selected else "user-row"
+        
+        # Créer un ID string pour la ligne et convertir l'objet JSON en string
+        row_id_obj = {"type": "user-row", "index": uid}
+        
         row_attributes = {
-            "id": {"type": "user-row", "index": uid},
-            "className": "user-row",
+            "id": row_id_obj,  # Dash convertira automatiquement en JSON str
+            "className": row_class,
             "title": "Cliquez pour sélectionner cet utilisateur",
-            "style": row_style
+            "style": row_style,
+            "n_clicks": 0  # Permettre de capturer les clics sur la ligne
         }
         
         row = html.Tr([
@@ -80,7 +112,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
                 dbc.Button(
                     children=html.I(className="fas fa-check"),
                     id={"type": "select-user-btn", "index": uid},
-                    color="primary" if is_selected else "light",
+                    color="danger" if is_selected else "light",
                     outline=not is_selected,
                     size="sm",
                     style={
@@ -96,10 +128,10 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
                 style={"width": "40px", "cursor": "pointer"}
             ),
             # Autres colonnes
-            html.Td(name),
-            html.Td(email),
-            html.Td(phone),
-            html.Td(role),
+            html.Td(name, style=cell_style),
+            html.Td(email, style=cell_style),
+            html.Td(phone, style=cell_style),
+            html.Td(role, style=cell_style),
             html.Td(
                 html.Span(
                     "Actif",
@@ -119,9 +151,10 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
                         "borderRadius": "4px",
                         "fontSize": "12px"
                     }
-                )
+                ),
+                style=cell_style
             ),
-            html.Td(created_at),
+            html.Td(created_at, style=cell_style),
         ], **row_attributes)
         
         table_rows.append(row)
@@ -226,7 +259,6 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
     prevent_initial_call=True
 )
 def handle_pagination_buttons(prev_clicks, next_clicks, current_page):
-    """Gère les clics sur les boutons de pagination"""
     ctx = callback_context
     
     # Si aucun bouton n'a été cliqué
@@ -251,30 +283,68 @@ def handle_pagination_buttons(prev_clicks, next_clicks, current_page):
     raise PreventUpdate
 
 
-# Callback pour la sélection d'un utilisateur
+# Callbacks pour la sélection d'utilisateur (bouton ou ligne)
+# 1. Gestion des clics sur boutons
 @callback(
-    Output("selected-user-state", "data", allow_duplicate=True),
-    Input({"type": "user-row", "index": dash.ALL}, "n_clicks"),
+    Output("selected-user-uid", "data", allow_duplicate=True),
     Input({"type": "select-user-btn", "index": dash.ALL}, "n_clicks"),
     prevent_initial_call=True
 )
-def handle_user_selection(row_clicks, btn_clicks):
-    """Gère la sélection d'un utilisateur en cliquant sur une ligne ou sur le bouton"""
-    ctx = callback_context
+def handle_button_selection(btn_clicks):
+    print("\n[DEBUG] Début callback handle_button_selection")
     
-    # Si aucune ligne/bouton n'a été cliqué
+    ctx = callback_context
     if not ctx.triggered:
         raise PreventUpdate
     
     # Déterminer ce qui a été cliqué
     clicked_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    
     try:
         # Extraire le type et l'index de l'ID
         id_dict = json.loads(clicked_id)
         uid = id_dict["index"]
-        print(f"\n[DEBUG] Sélection utilisateur: {uid}")
-        # Retourner un dictionnaire avec l'uid pour compatibilité avec render_user_panels
+        print(f"\n[DEBUG] Bouton cliqué, uid: {uid}")
+        
+        # Retourner directement le UID sélectionné
+        return {"uid": uid}
+    
+    except Exception as e:
+        print(f"\n[ERROR] Erreur sélection via bouton: {str(e)}")
+        raise PreventUpdate
+        
+
+
+# 2. Gestion des clics sur les lignes
+@callback(
+    Output("selected-user-from-table", "data"),
+    Input({"type": "user-row", "index": dash.ALL}, "n_clicks"),
+    prevent_initial_call=True
+)
+def handle_row_selection(row_clicks):
+    print("\n[DEBUG] Début callback handle_row_selection")
+    print(f"\n[DEBUG] row_clicks: {row_clicks}")
+    
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+    
+    # Déterminer ce qui a été cliqué
+    clicked_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    print(f"\n[DEBUG] clicked_id: {clicked_id}")
+    
+    try:
+        # Extraire l'index (uid) de l'ID JSON
+        id_dict = json.loads(clicked_id)
+        uid = id_dict["index"]
+        print(f"\n[DEBUG] Ligne cliquée, uid extrait: {uid}")
+        
+        # Retourner l'UID extrait
         return {"uid": uid}
     except Exception as e:
-        print(f"\n[ERROR] Erreur sélection utilisateur: {e}")
+        print(f"\n[ERROR] Erreur extraction uid: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
         raise PreventUpdate
+    
+   
