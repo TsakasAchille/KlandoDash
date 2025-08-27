@@ -12,6 +12,38 @@ from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
 from dash_apps.repositories.user_repository import UserRepository
+
+
+def find_user_page_index(uid, page_size):
+    """Trouve l'index de page sur lequel se trouve l'utilisateur avec l'UID donné
+    
+    Args:
+        uid: UID de l'utilisateur à trouver
+        page_size: Taille de chaque page
+        
+    Returns:
+        Index de la page (0-based) ou None si non trouvé
+    """
+    try:
+        # Utiliser la méthode optimisée du repository pour trouver la position de l'utilisateur
+        position = UserRepository.get_user_position(uid)
+        
+        if position is not None:
+            # Calculer l'index de page (0-based)
+            page_index = position // page_size
+            # Ajouter des logs détaillés
+            print(f"Utilisateur {uid} trouvé à la position {position} (selon le repository)")
+            print(f"Taille de page: {page_size}")
+            print(f"Calcul page: {position} // {page_size} = {page_index}")
+            print(f"Page calculée (0-based): {page_index}, (1-based): {page_index + 1}")
+            return page_index
+        
+        print(f"Utilisateur {uid} non trouvé dans le repository")
+        return None
+    except Exception as e:
+        print(f"Erreur lors de la recherche de page pour l'utilisateur {uid}: {str(e)}")
+        return None
+
 """
 def get_uid_from_index(row_index, page_index=0):
 
@@ -41,12 +73,14 @@ def get_layout():
     """Génère le layout de la page utilisateurs avec des IDs uniquement pour cette page"""
     return dbc.Container([
     dcc.Location(id="users-url", refresh=False),
-    dcc.Store(id="users-pagination-info", data={"page_count": 1, "total_users": 0}),
+    #dcc.Store(id="users-pagination-info", data={"page_count": 1, "total_users": 0}),
     dcc.Store(id="users-current-page", storage_type="session", data=1),  # State pour stocker la page courante (persistant)
-    dcc.Store(id="selected-user-uid", storage_type="session", data=None),  # Store pour l'UID de l'utilisateur sélectionné (persistant)
+    dcc.Store(id="selected-user-uid", storage_type="session", data=None, clear_data=False),  # Store pour l'UID de l'utilisateur sélectionné (persistant)
+    dcc.Store(id="url-parameters", storage_type="memory", data=None),  # Store temporaire pour les paramètres d'URL
     dcc.Store(id="selected-user-from-url", storage_type="memory", data=None),  # State pour la sélection depuis l'URL
     dcc.Store(id="selected-user-from-table", storage_type="memory", data=None),  # State pour la sélection manuelle
-    # Flags pour indiquer quelle source de sélection est active
+    # Interval pour déclencher la lecture des paramètres d'URL au chargement initial (astuce pour garantir l'exécution)
+    dcc.Interval(id='url-init-trigger', interval=100, max_intervals=1),  # Exécute une seule fois au chargement
   
     html.H2("Dashboard utilisateurs", style={"marginTop": "20px"}),
     dbc.Row([
@@ -85,13 +119,13 @@ def get_layout():
     ])
 ], fluid=True)
 
+"""
 @callback(
     Output("users-pagination-info", "data"),
     Input("refresh-users-btn", "n_clicks"),
     prevent_initial_call=False
 )
 def calculate_pagination_info(n_clicks):
-    """Calcule le nombre total d'utilisateurs et les informations de pagination"""
     # Récupérer le nombre total d'utilisateurs depuis le repository
     total_users = UserRepository.get_users_count()
     
@@ -109,7 +143,7 @@ def calculate_pagination_info(n_clicks):
         "page_size": page_size
     }
 
-
+"""
 
 
 # Note: Le store users-page-store n'est plus utilisé pour stocker tous les utilisateurs
@@ -141,13 +175,36 @@ def show_refresh_users_message(n_clicks):
 @callback(
     Output("main-users-content", "children"),
     Input("users-current-page", "data"),
-    State("selected-user-uid", "data")
+    Input("selected-user-uid", "data"),  # Transformé en Input au lieu de State
+    prevent_initial_call=True  # Permettre l'exécution initiale
 )
 def render_users_table_callback(current_page, selected_user):
-    #print(f"\n[DEBUG] Rendu table utilisateurs, page={current_page}, selected_user={selected_user}")
+    from dash import ctx, no_update
     print("\n[DEBUG] render_users_table_callback")
     print("current_page", current_page)
     print("selected_user", selected_user)
+    
+    # Variable pour savoir si on doit mettre à jour la page
+    new_page = current_page
+    triggered_by_user_selection = ctx.triggered_id == "selected-user-uid"
+    
+    # Si déclenchement par sélection d'utilisateur, déterminer sur quelle page il se trouve
+    if triggered_by_user_selection and selected_user:
+        uid = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
+        if uid:
+            # Appeler notre fonction pour trouver sur quelle page se trouve l'utilisateur
+            page_index = find_user_page_index(uid, Config.USERS_TABLE_PAGE_SIZE)
+        
+        if page_index is not None:
+            # Convertir en 1-indexed pour l'interface
+            new_page = page_index + 1
+            print(f"L'utilisateur {uid} se trouve sur la page {new_page}")
+            
+            # Si différent de la page actuelle, mettre à jour
+            if new_page != current_page:
+                current_page = new_page
+                print(f"Ajustement de la page à {current_page} pour montrer l'utilisateur sélectionné")
+    
     # Configuration pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
     
@@ -200,128 +257,108 @@ def render_users_table_callback(current_page, selected_user):
         selected_uid=selected_uid_value
     )
 
-    # Ne retourner que le tableau
-    return table
+    # Retourner uniquement le tableau
+    #return table
 
     
-@callback(
-    Output("user-details-panel", "children"),
-    Output("user-stats-panel", "children"),
-    Output("user-trips-panel", "children"),
-    Input("selected-user-uid", "data"),
-)
-def render_user_panels(selected_user_data):
-    """Callback qui affiche les détails, statistiques et trajets de l'utilisateur sélectionné
-    Désormais, selected_user_data ne contient que l'uid et l'index, il faut donc récupérer
-    les données complètes depuis le repository
-    """
-    
-    # Si aucun utilisateur n'est sélectionné
-    print("selected_user_data", selected_user_data)
-    if not selected_user_data or 'uid' not in selected_user_data:
-        return None, None, None
-    
-    # Récupérer l'uid de l'utilisateur
-    uid = selected_user_data['uid']
-    
-    # Récupérer les données complètes depuis le repository
-    try:
-        repo = UserRepository()
-        user_model = repo.get_user_by_id(uid)
+    # Fetch user data if we have a selected user
+    user = None
+    if selected_uid_value:
+        # Get complete user data from repository using the selected UID
+        user = UserRepository.get_user_by_id(selected_uid_value)
         
-        if not user_model:
-            print(f"Utilisateur non trouvé dans le repository: {uid}")
-            return None, None, None
+        # Rendu des panneaux seulement si un utilisateur est sélectionné
+        if user:
+            # Convertir l'objet UserSchema en dictionnaire
+            if hasattr(user, "model_dump"):
+                # Pour Pydantic v2
+                user_dict = user.model_dump()
+            elif hasattr(user, "dict"):
+                # Pour Pydantic v1
+                user_dict = user.dict()
+            else:
+                # Fallback
+                user_dict = {k: getattr(user, k) for k in dir(user) if not k.startswith('_') and not callable(getattr(user, k))}
+                
+            # Garantir que toutes les valeurs utilisées dans les templates existent
+            # Vérifier que toutes les clés necessaires existent avec des valeurs par défaut
+            defaults = {
+                "rating": 0, 
+                "rating_count": 0,
+                "display_name": "",
+                "name": "",
+                "first_name": "",
+                "email": "",
+                "phone": "", 
+                "phone_number": "",
+                "birth": "",
+                "bio": "",
+                "gender": "",
+                "role_preference": "",
+                "created_time": "", 
+                "updated_at": ""
+            }
             
-        # Convertir le modèle en dictionnaire pour une manipulation plus facile
-        if hasattr(user_model, 'model_dump'):
-            user_dict = user_model.model_dump(mode='json')
-        else:
-            # Si user_model est déjà un dict
-            user_dict = user_model
-    except Exception as e:
-        print(f"Erreur lors de la récupération des données utilisateur: {str(e)}")
-        user_dict = {"uid": uid}  # Utiliser au moins l'uid disponible
+            # Appliquer les valeurs par défaut
+            for key, default_value in defaults.items():
+                if key not in user_dict or user_dict[key] is None:
+                    user_dict[key] = default_value
+            
+            # Afficher les informations pour debugging
+            print(f"Debug user_dict['rating']: {user_dict['rating']}, type: {type(user_dict['rating'])}")
+            
+            details = render_user_profile(user_dict)
+            stats = render_user_stats(user_dict)
+            trips = render_user_trips(user_dict)
+            return table, details, stats, trips
     
-    # Conserver l'index si disponible
-    if 'index' in selected_user_data:
-        user_dict['index'] = selected_user_data['index']
-    
-    # S'assurer que les champs critiques ont des valeurs par défaut
-    default_fields = {
-        'rating': 0,
-        'rating_count': 0,
-        'trips_count': 0,
-        'created_at': None,
-        'last_login': None,
-        'name': "Utilisateur",
-        'email': "",
-        'phone': "",
-        'role': "user"
-    }
-    
-    for field, default_value in default_fields.items():
-        if field not in user_dict or user_dict[field] is None:
-            user_dict[field] = default_value
-    
-    # Créer un objet qui supporte à la fois .get() et l'accès par index
-    class UserWrapper:
-        def __init__(self, data):
-            self.data = data
-        
-        def __getitem__(self, key):
-            return self.data.get(key)
-        
-        def get(self, key, default=None):
-            return self.data.get(key, default)
-    
-    user = UserWrapper(user_dict)
-    
-    
-    # Rendu des panneaux
-    details = render_user_profile(user)
-    stats = render_user_stats(user)
-    trips = render_user_trips(user)
-    
-    return details, stats, trips
+    # Return empty panels if no user selected or user not found
+    return table, html.Div(), html.Div(), html.Div()
 
 
 # Callback unique pour gérer la sélection utilisateur depuis la table ou l'URL
+# Callback pour la sélection depuis l'URL
 @callback(
-    Output("selected-user-uid", "data"),
-    [Input("users-url", "search"),
-     Input("selected-user-from-table", "data")],
+    Output("selected-user-uid", "data", allow_duplicate=True),
+    Input("users-url", "search"),
+    prevent_initial_call='initial_duplicate'
 )
-def handle_user_selection(url_search, table_selection):
+def handle_url_selection(url_search):
     from dash import ctx
     import urllib.parse
     
-    # Utiliser ctx.triggered pour déterminer quel input a déclenché le callback (méthode moderne)
-    # Plus fiable que callback_context.triggered
-    print(f"\n[DEBUG] Triggered: {ctx.triggered_id}")
-    
-    # Si déclencheur vide, rien à faire
-    if not ctx.triggered_id:
+    # Si aucun paramètre d'URL
+    """
+    if not url_search:
+        print("[DEBUG-URL] Pas de paramètres URL")
         return dash.no_update
+    """
+    print(f"[DEBUG-URL] URL search: {url_search}")
+    params = urllib.parse.parse_qs(url_search.lstrip('?'))
+    uid_list = params.get('uid')
     
+    if uid_list:
+        uid = uid_list[0]
+        selected_user = {"uid": uid}
+        print(f"[DEBUG-URL] Sélection depuis URL: {selected_user}")
+        # Vérifier que la valeur est correctement renvoyée
+        print(f"[DEBUG-URL] Type de retour: {type(selected_user)}")
+        return selected_user
     
-    # Si déclenché par l'URL, vérifier et extraire l'uid
-    if ctx.triggered_id == "users-url" and url_search:
-        print(f"URL search: {url_search}")
-        params = urllib.parse.parse_qs(url_search.lstrip('?'))
-        uid_list = params.get('uid')
+    print("[DEBUG-URL] Pas de paramètre uid dans l'URL")
+    #return dash.no_update
+
+# Callback pour la sélection depuis le tableau
+@callback(
+    Output("selected-user-uid", "data", allow_duplicate=True),
+    Input("selected-user-from-table", "data"),
+    prevent_initial_call=True
+)
+def handle_table_selection(table_selection):
+    if table_selection is None:
+        return dash.no_update
         
-        if uid_list:
-            uid = uid_list[0]
-            selected_user = {"uid": uid}
-            print(f"Sélection depuis URL: {selected_user}")
-            return selected_user
-    
-    # Si déclenché par le tableau et il y a une sélection valide
-    if ctx.triggered_id == "selected-user-from-table" and table_selection is not None:
-        print(f"Sélection depuis tableau: {table_selection}")
-        return table_selection
-    
-    return dash.no_update
+    print(f"Sélection depuis tableau: {table_selection}")
+    return table_selection
 
 layout = get_layout()

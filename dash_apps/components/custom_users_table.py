@@ -283,10 +283,10 @@ def handle_pagination_buttons(prev_clicks, next_clicks, current_page):
     raise PreventUpdate
 
 
-# Callbacks pour la sélection d'utilisateur (bouton ou ligne)
-# 1. Gestion des clics sur boutons
+"""
+# Callback unifié pour la sélection d'utilisateur (bouton ou ligne)
 @callback(
-    Output("selected-user-uid", "data", allow_duplicate=True),
+    Output("selected-user-from-table", "data"),
     Input({"type": "select-user-btn", "index": dash.ALL}, "n_clicks"),
     prevent_initial_call=True
 )
@@ -312,8 +312,7 @@ def handle_button_selection(btn_clicks):
     except Exception as e:
         print(f"\n[ERROR] Erreur sélection via bouton: {str(e)}")
         raise PreventUpdate
-        
-
+"""
 
 # 2. Gestion des clics sur les lignes
 @callback(
@@ -346,5 +345,3 @@ def handle_row_selection(row_clicks):
         import traceback
         print(traceback.format_exc())
         raise PreventUpdate
-    
-   

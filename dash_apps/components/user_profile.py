@@ -27,10 +27,22 @@ def render_user_profile(user):
     """
     if user is None:
         return None
+    
+    # S'assurer que toutes les variables utilisées dans le template ont des valeurs par défaut
+    # Pré-extraire les variables problématiques du dictionnaire user
+    rating = user.get("rating", 0) if isinstance(user, dict) else getattr(user, "rating", 0)
+    if rating is None:
+        rating = 0
+        
+    rating_count = user.get("rating_count", 0) if isinstance(user, dict) else getattr(user, "rating_count", 0)
+    if rating_count is None:
+        rating_count = 0
         
     # Rendu du template HTML avec Jinja2
     html_content = user_profile_template.render(
-        user=user
+        user=user,
+        rating=rating,
+        votes=rating_count
     )
     
     # Afficher le template dans un iframe comme pour les autres composants

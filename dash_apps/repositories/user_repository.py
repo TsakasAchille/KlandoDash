@@ -103,20 +103,30 @@ class UserRepository:
         Returns:
             La position de l'utilisateur (index 0-based) ou None si non trouvé
         """
-        from sqlalchemy import func
+        from sqlalchemy import func, text
         
         with SessionLocal() as db:
-            # Vérifier d'abord si l'utilisateur existe
-            user = db.query(User).filter(User.uid == user_id).first()
-            if not user:
+            try:
+                # Effectuer tout le travail en une seule requête SQL optimisée
+                # en utilisant une requête SQL brute pour plus d'efficacité
+                query = text("""
+                    WITH user_rank AS (
+                        SELECT uid, 
+                               ROW_NUMBER() OVER (ORDER BY uid) - 1 AS position
+                        FROM users
+                    )
+                    SELECT position FROM user_rank WHERE uid = :user_id
+                """)
+                
+                result = db.execute(query, {"user_id": user_id}).first()
+                
+                if result:
+                    return result[0]
                 return None
                 
-            # Compter combien d'utilisateurs ont un UID inférieur à celui-ci
-            # pour déterminer sa position dans la liste complète (triée par UID)
-            position_query = db.query(func.count(User.uid)).filter(User.uid < user.uid)
-            position = position_query.scalar() or 0
-            
-            return position
+            except Exception as e:
+                print(f"Erreur lors de la récupération de la position de l'utilisateur: {e}")
+                return None
             
     @staticmethod
     def get_users_count() -> int:
