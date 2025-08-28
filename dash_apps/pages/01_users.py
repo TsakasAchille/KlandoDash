@@ -55,7 +55,6 @@ def get_layout():
     dcc.Store(id="selected-user-uid", storage_type="session", data=None, clear_data=False),  # Store pour l'UID de l'utilisateur sélectionné (persistant)
     dcc.Store(id="url-parameters", storage_type="memory", data=None),  # Store temporaire pour les paramètres d'URL
     dcc.Store(id="selected-user-from-url", storage_type="memory", data=None),  # State pour la sélection depuis l'URL
- #   dcc.Store(id="selected-user-from-table", storage_type="memory", data=None),  # State pour la sélection manuelle
     # Interval pour déclencher la lecture des paramètres d'URL au chargement initial (astuce pour garantir l'exécution)
     dcc.Interval(id='url-init-trigger', interval=100, max_intervals=1),  # Exécute une seule fois au chargement
   
@@ -120,16 +119,36 @@ def calculate_pagination_info(n_clicks):
 
 @callback(
     Output("users-current-page", "data"),
+    Output("selected-user-uid", "data", allow_duplicate=True),
     Input("refresh-users-btn", "n_clicks"),
     State("users-current-page", "data"),
-    prevent_initial_call=False
+    State("selected-user-uid", "data"),
+    State("users-url", "search"),
+    prevent_initial_call='initial_duplicate'
 )
-def reset_to_first_page_on_refresh(n_clicks, current_page):
-    # Si c'est le chargement initial (n_clicks=None), conserver la page actuelle
-    if n_clicks is None:
-        return current_page if current_page else 1
-    # Sinon, revenir à la première page
-    return 1
+def remember_page_info_on_refresh(n_clicks, current_page, selected_user, url_search):
+    """
+    Gère le comportement lors du rafraîchissement des données ou au chargement initial.
+    """
+    print("\n[DEBUG] remember_page_info_on_refresh")
+    print(f"Refresh button clicked: {n_clicks}")
+    print(f"current_page: {current_page}")
+    print(f"selected_user: {selected_user}")
+    print(f"url_search: {url_search}")
+    
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
+    
+    # Si le bouton de rafraîchissement a été cliqué, on revient à la page 1
+    if triggered_id == "refresh-users-btn" and n_clicks is not None:
+        return 1, selected_user
+    
+    # Pour le chargement initial ou autres cas
+    if current_page is None or not isinstance(current_page, (int, float)):
+        return 1, selected_user
+    
+    # Dans tous les autres cas, on conserve la page actuelle
+    return current_page, selected_user
 
 
 @callback( 
@@ -148,9 +167,10 @@ def show_refresh_users_message(n_clicks):
     Output("main-users-content", "children"),
     Input("users-current-page", "data"),
     Input("refresh-users-btn", "n_clicks"),
+    Input("selected-user-uid", "data"),
     prevent_initial_call=True
 )
-def render_users_table_pagination(current_page, n_clicks):
+def render_users_table_pagination(current_page, n_clicks, selected_user):
     """Callback responsable uniquement de la pagination et du rendu du tableau"""
     from dash import ctx
     print("\n[DEBUG] render_users_table_pagination")
@@ -174,7 +194,7 @@ def render_users_table_pagination(current_page, n_clicks):
     
     # Récupérer l'utilisateur sélectionné du store (sans déclencher de mise à jour)
     # Pour l'afficher comme sélectionné dans le tableau
-    selected_uid_value = None
+    selected_uid_value = selected_user.get("uid") if selected_user else None
     
     # Rendu de la table avec notre composant personnalisé
     table = render_custom_users_table(
@@ -297,21 +317,22 @@ def adjust_page_for_selected_user(selected_user, current_page):
 
 # Callback unique pour gérer la sélection utilisateur depuis la table ou l'URL
 # Callback pour la sélection depuis l'URL
+
+
 @callback(
     Output("selected-user-uid", "data", allow_duplicate=True),
     Input("users-url", "search"),
-    prevent_initial_call='initial_duplicate'
+    #prevent_initial_call='initial_duplicate',
+    prevent_initial_call=True
 )
 def handle_url_selection(url_search):
     from dash import ctx
     import urllib.parse
     
     # Si aucun paramètre d'URL
-    """
-    if not url_search:
-        print("[DEBUG-URL] Pas de paramètres URL")
-        return dash.no_update
-    """
+   ##  if not url_search:
+    #    print("[DEBUG-URL] Pas de paramètres URL")
+     #   return dash.no_update
     print(f"[DEBUG-URL] URL search: {url_search}")
     params = urllib.parse.parse_qs(url_search.lstrip('?'))
     uid_list = params.get('uid')
@@ -327,20 +348,7 @@ def handle_url_selection(url_search):
     print("[DEBUG-URL] Pas de paramètre uid dans l'URL")
     #return dash.no_update
 
-"""
-# Callback pour la sélection depuis le tableau
-@callback(
-    Output("selected-user-uid", "data", allow_duplicate=True),
-    Input("selected-user-from-table", "data"),
-    prevent_initial_call=True
-)
-def handle_table_selection(table_selection):
-    if table_selection is None:
-        return dash.no_update
-        
-    print(f"Sélection depuis tableau: {table_selection}")
-    return table_selection
 
-"""
+
 
 layout = get_layout()
