@@ -61,7 +61,7 @@ def render_user_profile(uid):
         "birth": "",
         "bio": "",
         "gender": "",
-        "role_preference": "",
+        "role": "",
         "created_time": "", 
         "updated_at": ""
     }

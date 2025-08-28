@@ -87,7 +87,7 @@ class UserRepository:
             
             # Appliquer les filtres si spécifiés
             if filters:
-                # Filtre texte (nom, prénom, email)
+                # Filtre texte (nom, prénom, email, UID)
                 if filters.get("text"):
                     search_term = f'%{filters["text"]}%'
                     query = query.filter(
@@ -95,7 +95,8 @@ class UserRepository:
                             User.name.ilike(search_term),
                             User.first_name.ilike(search_term),
                             User.email.ilike(search_term),
-                            User.display_name.ilike(search_term)
+                            User.display_name.ilike(search_term),
+                            User.uid.ilike(search_term)
                         )
                     )
                 

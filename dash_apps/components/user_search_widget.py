@@ -11,7 +11,7 @@ def render_search_widget():
                 # Recherche textuelle
                 dbc.Col([
                     dbc.InputGroup([
-                        dbc.Input(id="users-search-input", placeholder="Rechercher par nom, prénom ou email...", type="text"),
+                        dbc.Input(id="users-search-input", placeholder="Rechercher par nom, prénom, email ou UID...", type="text"),
                         dbc.InputGroupText(html.I(className="fas fa-search")),
                     ])
                 ], width=6),
