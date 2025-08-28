@@ -356,6 +356,8 @@ def handle_row_selection(row_clicks):
         raise PreventUpdate
 
 # 3. Nouveau callback pour gérer uniquement la mise en surbrillance des lignes
+
+
 @callback(
     Output({"type": "user-row", "index": dash.ALL}, "style"),
     Output({"type": "user-row", "index": dash.ALL}, "className"),
@@ -369,9 +371,7 @@ def handle_row_selection(row_clicks):
     prevent_initial_call=True
 )
 def highlight_selected_row(selected_user, row_ids, button_ids):
-    """
-    Ce callback met à jour uniquement les styles des lignes sans recharger le tableau
-    """
+
     print("\n[DEBUG] Début callback highlight_selected_row")
     print(f"\n[DEBUG] selected_user: {selected_user}")
     
@@ -434,3 +434,4 @@ def highlight_selected_row(selected_user, row_ids, button_ids):
             button_outlines.append(True)
     
     return styles, classes, button_colors, button_outlines
+

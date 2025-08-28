@@ -44,30 +44,7 @@ def find_user_page_index(uid, page_size):
         print(f"Erreur lors de la recherche de page pour l'utilisateur {uid}: {str(e)}")
         return None
 
-"""
-def get_uid_from_index(row_index, page_index=0):
 
-    try:
-        page_size = Config.USERS_TABLE_PAGE_SIZE
-        
-        # Récupérer uniquement les données nécessaires pour cette page
-        result = UserRepository.get_users_paginated(page_index, page_size)
-        users = result.get("users", [])
-        
-        if not users or row_index >= len(users):
-            print(f"Aucun utilisateur trouvé à l'index {row_index} sur la page {page_index}")
-            return None
-            
-        # Utiliser directement l'index relatif à la page
-        user = users[row_index]
-        uid = user.uid if hasattr(user, "uid") else user.get("uid")
-        print(f"UID trouvé pour l'indice {row_index} sur la page {page_index}: {uid}")
-        return uid
-        
-    except Exception as e:
-        print(f"Erreur lors de la conversion index -> UID via repository: {str(e)}")
-        return None
-"""
 
 def get_layout():
     """Génère le layout de la page utilisateurs avec des IDs uniquement pour cette page"""
@@ -78,7 +55,7 @@ def get_layout():
     dcc.Store(id="selected-user-uid", storage_type="session", data=None, clear_data=False),  # Store pour l'UID de l'utilisateur sélectionné (persistant)
     dcc.Store(id="url-parameters", storage_type="memory", data=None),  # Store temporaire pour les paramètres d'URL
     dcc.Store(id="selected-user-from-url", storage_type="memory", data=None),  # State pour la sélection depuis l'URL
-  #  dcc.Store(id="selected-user-from-table", storage_type="memory", data=None),  # State pour la sélection manuelle
+ #   dcc.Store(id="selected-user-from-table", storage_type="memory", data=None),  # State pour la sélection manuelle
     # Interval pour déclencher la lecture des paramètres d'URL au chargement initial (astuce pour garantir l'exécution)
     dcc.Interval(id='url-init-trigger', interval=100, max_intervals=1),  # Exécute une seule fois au chargement
   
@@ -140,7 +117,7 @@ def calculate_pagination_info(n_clicks):
 
 # Note: Le store users-page-store n'est plus utilisé pour stocker tous les utilisateurs
 # car nous utilisons maintenant un chargement à la demande page par page
-"""
+
 @callback(
     Output("users-current-page", "data"),
     Input("refresh-users-btn", "n_clicks"),
@@ -153,7 +130,7 @@ def reset_to_first_page_on_refresh(n_clicks, current_page):
         return current_page if current_page else 1
     # Sinon, revenir à la première page
     return 1
-"""
+
 
 @callback( 
     Output("refresh-users-message", "children"),
@@ -364,5 +341,6 @@ def handle_table_selection(table_selection):
     print(f"Sélection depuis tableau: {table_selection}")
     return table_selection
 
-layout = get_layout()
 """
+
+layout = get_layout()
