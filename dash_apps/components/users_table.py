@@ -24,7 +24,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
     page_count = (total_users - 1) // page_size + 1 if total_users > 0 else 1
     
     # Créer les en-têtes du tableau
-    headers = ["", "Nom", "Email", "Téléphone", "Rôle", "Date d'inscription"]
+    headers = ["", "Nom", "Email", "Téléphone", "Rôle", "Notation", "Date d'inscription"]
     
     # Créer les lignes du tableau
     table_rows = []
@@ -38,6 +38,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
             email = user_dict.get("email", "")
             phone = user_dict.get("phone_number", "")
             role = user_dict.get("role", "")
+            rating = user_dict.get("rating", None)
             created_at = user_dict.get("created_at", "")
         # Pour les dictionnaires
         elif isinstance(user, dict):
@@ -46,6 +47,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
             email = user.get("email", "")
             phone = user.get("phone_number", "")
             role = user.get("role", "")
+            rating = user.get("rating", None)
             created_at = user.get("created_at", "")
         # Pour les objets avec attributs
         else:
@@ -54,6 +56,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
             email = getattr(user, "email", "")
             phone = getattr(user, "phone_number", "")
             role = getattr(user, "role", "")
+            rating = getattr(user, "rating", None)
             created_at = getattr(user, "created_at", "")
             
         # Debug pour comprendre les types et valeurs
@@ -130,6 +133,11 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
             html.Td(email, style=cell_style),
             html.Td(phone, style=cell_style),
             html.Td(role, style=cell_style),
+            # Afficher le rating avec formatage
+            html.Td(
+                f"{rating:.1f} ★" if rating is not None else "-",
+                style={**cell_style, "fontWeight": "bold" if rating and rating >= 4.0 else "normal"}
+            ),
             html.Td(created_at, style=cell_style),
         ], **row_attributes)
         
@@ -137,7 +145,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
     
     # Si aucun utilisateur n'est disponible, afficher une ligne vide
     if not table_rows:
-        table_rows = [html.Tr([html.Td("Aucun utilisateur trouvé", colSpan=6)])]
+        table_rows = [html.Tr([html.Td("Aucun utilisateur trouvé", colSpan=7)])]
     
     # Construire le tableau
     table = html.Table(

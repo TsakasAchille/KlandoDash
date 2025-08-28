@@ -1,4 +1,4 @@
-from dash import html, dcc
+from dash import html, dcc, Input, Output, State, callback
 import dash_bootstrap_components as dbc
 
 def render_search_widget():
@@ -72,20 +72,50 @@ def render_search_widget():
                         )
                     ], width=3),
                     
-                    # Filtrage par statut
+                    # Filtrage par validation conducteur (basé sur is_driver_doc_validated)
                     dbc.Col([
-                        html.Label("Statut"),
+                        html.Label("Validation conducteur"),
                         dcc.Dropdown(
-                            id="users-status-filter",
+                            id="users-driver-validation-filter",
                             options=[
                                 {"label": "Tous", "value": "all"},
-                                {"label": "Actifs", "value": "active"},
-                                {"label": "Inactifs", "value": "inactive"},
+                                {"label": "Validés", "value": "validated"},
+                                {"label": "Non validés", "value": "not_validated"},
                             ],
                             value="all",
                             clearable=False
                         )
-                    ], width=3)
+                    ], width=3),
+                    
+                    # Filtrage par rating
+                    dbc.Col([
+                        html.Label("Notation"),
+                        dbc.Row([
+                            dbc.Col([
+                                dcc.Dropdown(
+                                    id="users-rating-operator-filter",
+                                    options=[
+                                        {"label": "Tous", "value": "all"},
+                                        {"label": "Supérieur à", "value": "gt"},
+                                        {"label": "Inférieur à", "value": "lt"},
+                                    ],
+                                    value="all",
+                                    clearable=False
+                                )
+                            ], width=6),
+                            dbc.Col([
+                                dbc.Input(
+                                    id="users-rating-value-filter",
+                                    type="number",
+                                    min=0,
+                                    max=5,
+                                    step=0.5,
+                                    value=3,
+                                    disabled=True
+                                )
+                            ], width=6)
+                        ])
+                    ], width=6)
                 ])
             ], id="users-advanced-filters-collapse", is_open=False)
         ])
@@ -133,12 +163,27 @@ def render_active_filters(filters):
         role_label = role_map.get(filters["role"], filters["role"])
         filters_badges.append(dbc.Badge(f"Rôle: {role_label}", color="info", className="me-2"))
     
-    # Filtre statut
-    if filters.get("status") and filters["status"] != "all":
-        status_label = "Actifs" if filters["status"] == "active" else "Inactifs"
-        filters_badges.append(dbc.Badge(f"Statut: {status_label}", color="info", className="me-2"))
+    # Filtre validation conducteur
+    if filters.get("driver_validation") and filters["driver_validation"] != "all":
+        validation_label = "Validés" if filters["driver_validation"] == "validated" else "Non validés"
+        filters_badges.append(dbc.Badge(f"Validation conducteur: {validation_label}", color="info", className="me-2"))
+        
+    # Filtre rating
+    if filters.get("rating_operator") and filters["rating_operator"] != "all" and filters.get("rating_value") is not None:
+        operator_symbol = "≥" if filters["rating_operator"] == "gt" else "≤"
+        filters_badges.append(dbc.Badge(f"Notation {operator_symbol} {filters.get('rating_value')}", color="info", className="me-2"))
         
     return html.Div(
         [html.Span("Filtres actifs: ", className="me-2")] + filters_badges,
         className="mb-3 mt-2"
     )
+
+
+@callback(
+    Output("users-rating-value-filter", "disabled"),
+    Input("users-rating-operator-filter", "value")
+)
+def toggle_rating_value_input(operator):
+    """Active ou désactive le champ de valeur de rating selon l'opérateur sélectionné"""
+    # Désactiver le champ si aucun opérateur n'est sélectionné
+    return operator == "all"

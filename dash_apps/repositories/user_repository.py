@@ -121,13 +121,23 @@ class UserRepository:
                     role = filters["role"]
                     query = query.filter(User.role == role)
                 
-                # Filtrage par statut
-                if filters.get("status") and filters["status"] != "all":
-                    status = filters["status"]
-                    if status == "active":
-                        query = query.filter(User.is_active == True)
-                    elif status == "inactive":
-                        query = query.filter(User.is_active == False)
+                # Filtrage par validation conducteur
+                if filters.get("driver_validation") and filters["driver_validation"] != "all":
+                    validation_status = filters["driver_validation"]
+                    if validation_status == "validated":
+                        query = query.filter(User.is_driver_doc_validated == True)
+                    elif validation_status == "not_validated":
+                        query = query.filter(User.is_driver_doc_validated == False)
+                        
+                # Filtrage par rating
+                if filters.get("rating_operator") and filters["rating_operator"] != "all" and filters.get("rating_value") is not None:
+                    rating_value = float(filters["rating_value"])
+                    operator = filters["rating_operator"]
+                    
+                    if operator == "gt":
+                        query = query.filter(User.rating >= rating_value)
+                    elif operator == "lt":
+                        query = query.filter(User.rating <= rating_value)
             
             # Calculer le nombre total d'utilisateurs après filtrage
             total = query.count()

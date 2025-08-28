@@ -166,12 +166,14 @@ def toggle_advanced_filters(n_clicks, is_open):
     Input("users-registration-date-filter", "start_date"),
     Input("users-registration-date-filter", "end_date"),
     Input("users-role-filter", "value"),
-    Input("users-status-filter", "value"),
+    Input("users-driver-validation-filter", "value"),
+    Input("users-rating-operator-filter", "value"),
+    Input("users-rating-value-filter", "value"),
     State("users-filter-store", "data"),
     prevent_initial_call=True
 )
 def update_filters(
-    search_text, date_from, date_to, role, status, current_filters
+    search_text, date_from, date_to, role, driver_validation, rating_operator, rating_value, current_filters
 ):
     """Met à jour les filtres de recherche lorsque l'utilisateur modifie les champs"""
     ctx = dash.callback_context
@@ -189,8 +191,18 @@ def update_filters(
         current_filters["date_to"] = date_to
     elif triggered_id == "users-role-filter":
         current_filters["role"] = role
-    elif triggered_id == "users-status-filter":
-        current_filters["status"] = status
+    elif triggered_id == "users-driver-validation-filter":
+        current_filters["driver_validation"] = driver_validation
+    elif triggered_id == "users-rating-operator-filter" or triggered_id == "users-rating-value-filter":
+        if rating_operator != "all":
+            current_filters["rating_operator"] = rating_operator
+            current_filters["rating_value"] = rating_value
+        else:
+            # Si l'opérateur est réinitialisé à "all", supprimer les filtres de rating
+            if "rating_operator" in current_filters:
+                del current_filters["rating_operator"]
+            if "rating_value" in current_filters:
+                del current_filters["rating_value"]
     
     # Réinitialiser la page à 1 lorsqu'un filtre change
     # (Nous gèrerons cela dans un callback séparé)
@@ -268,12 +280,12 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
         filter_params["date_from"] = filters.get("date_from")
         filter_params["date_to"] = filters.get("date_to")
         
-    # Ajouter les filtres de rôle et statut s'ils sont différents de "all"
+    # Ajouter les filtres de rôle et validation conducteur s'ils sont différents de "all"
     if filters and filters.get("role") and filters.get("role") != "all":
         filter_params["role"] = filters.get("role")
         
-    if filters and filters.get("status") and filters.get("status") != "all":
-        filter_params["status"] = filters.get("status")
+    if filters and filters.get("driver_validation") and filters.get("driver_validation") != "all":
+        filter_params["driver_validation"] = filters.get("driver_validation")
     
     # Récupérer uniquement les utilisateurs de la page courante avec filtres (pagination côté serveur)
     result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)
