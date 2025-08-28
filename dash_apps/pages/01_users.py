@@ -132,7 +132,7 @@ def calculate_pagination_info(n_clicks):
     State("selected-user-uid", "data"),
     prevent_initial_call='initial_duplicate'
 )
-def get_page_info_on_refresh(n_clicks, url_search, current_page, selected_user):
+def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_user):
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
     
@@ -144,8 +144,15 @@ def get_page_info_on_refresh(n_clicks, url_search, current_page, selected_user):
         
         if uid_list:
             user_from_url = {"uid": uid_list[0]}
-            return current_page, user_from_url
-    
+            # On va chercher sur quelle page se trouve l'utilisateur
+            uid = uid_list[0]
+            page_index = find_user_page_index(uid, Config.USERS_TABLE_PAGE_SIZE)
+            if page_index is not None:
+                # Convertir en 1-indexed pour l'interface
+                new_page = page_index + 1
+                return new_page, user_from_url
+            else:
+                return current_page, user_from_url
     # Si refresh a été cliqué
     if triggered_id == "refresh-users-btn" and n_clicks is not None:
         return 1, selected_user
@@ -387,43 +394,6 @@ def render_user_details(selected_user):
     # Return empty panels if no user selected or user not found
     return html.Div(), html.Div(), html.Div()
 
-# Callback pour ajuster la page en fonction de la sélection d'utilisateur
-
-@callback(
-    Output("users-current-page", "data", allow_duplicate=True),
-    Input("selected-user-uid", "data"),
-    State("users-current-page", "data"),
-    prevent_initial_call=True
-)
-def adjust_page_for_selected_user(selected_user, current_page):
-    if not selected_user:
-        raise PreventUpdate
-        
-    # Extraire l'UID
-    uid = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
-    
-    if not uid:
-        raise PreventUpdate
-        
-    # Trouver sur quelle page se trouve l'utilisateur
-    page_index = find_user_page_index(uid, Config.USERS_TABLE_PAGE_SIZE)
-    
-    if page_index is None:
-        raise PreventUpdate
-        
-    # Convertir en 1-indexed pour l'interface
-    new_page = page_index + 1
-    
-    # Si la page est déjà correcte, ne rien faire
-    if new_page == current_page:
-        raise PreventUpdate
-        
-    print(f"L'utilisateur {uid} se trouve sur la page {new_page}, ajustement...")
-    return new_page
-
-
-# Callback unique pour gérer la sélection utilisateur depuis la table ou l'URL
-# Callback pour la sélection depuis l'URL
 
 
 
