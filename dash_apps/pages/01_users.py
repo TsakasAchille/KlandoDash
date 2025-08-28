@@ -127,34 +127,34 @@ def calculate_pagination_info(n_clicks):
     Output("users-current-page", "data"),
     Output("selected-user-uid", "data", allow_duplicate=True),
     Input("refresh-users-btn", "n_clicks"),
+    Input("users-url", "search"),  # Ajout de l'URL comme input
     State("users-current-page", "data"),
     State("selected-user-uid", "data"),
-    #State("users-url", "search"),
     prevent_initial_call='initial_duplicate'
 )
-def remember_page_info_on_refresh(n_clicks, current_page, selected_user):
-    """
-    Gère le comportement lors du rafraîchissement des données ou au chargement initial.
-    """
-    print("\n[DEBUG] remember_page_info_on_refresh")
-    print(f"Refresh button clicked: {n_clicks}")
-    print(f"current_page: {current_page}")
-    print(f"selected_user: {selected_user}")
-    
+def get_page_info_on_refresh(n_clicks, url_search, current_page, selected_user):
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
     
-    # Si le bouton de rafraîchissement a été cliqué, on revient à la page 1
+    # Si l'URL a changé, traiter la sélection d'utilisateur
+    if triggered_id == "users-url" and url_search:
+        import urllib.parse
+        params = urllib.parse.parse_qs(url_search.lstrip('?'))
+        uid_list = params.get('uid')
+        
+        if uid_list:
+            user_from_url = {"uid": uid_list[0]}
+            return current_page, user_from_url
+    
+    # Si refresh a été cliqué
     if triggered_id == "refresh-users-btn" and n_clicks is not None:
         return 1, selected_user
     
     # Pour le chargement initial ou autres cas
     if current_page is None or not isinstance(current_page, (int, float)):
         return 1, selected_user
-    
-    # Dans tous les autres cas, on conserve la page actuelle
+        
     return current_page, selected_user
-
 
 @callback( 
     Output("refresh-users-message", "children"),
@@ -388,6 +388,7 @@ def render_user_details(selected_user):
     return html.Div(), html.Div(), html.Div()
 
 # Callback pour ajuster la page en fonction de la sélection d'utilisateur
+
 @callback(
     Output("users-current-page", "data", allow_duplicate=True),
     Input("selected-user-uid", "data"),
@@ -395,7 +396,6 @@ def render_user_details(selected_user):
     prevent_initial_call=True
 )
 def adjust_page_for_selected_user(selected_user, current_page):
-    """Ajuste la page pour afficher l'utilisateur sélectionné"""
     if not selected_user:
         raise PreventUpdate
         
@@ -421,30 +421,9 @@ def adjust_page_for_selected_user(selected_user, current_page):
     print(f"L'utilisateur {uid} se trouve sur la page {new_page}, ajustement...")
     return new_page
 
+
 # Callback unique pour gérer la sélection utilisateur depuis la table ou l'URL
 # Callback pour la sélection depuis l'URL
-@callback(
-    Output("selected-user-uid", "data"),
-    Input("users-url", "search"),
-    prevent_initial_call=False  # Permettre l'exécution initiale pour capturer l'URL
-)
-def handle_url_selection(url_search):
-    from dash import ctx
-    import urllib.parse
-    
-    print(f"[DEBUG-URL] URL search: {url_search}")
-    params = urllib.parse.parse_qs(url_search.lstrip('?'))
-    uid_list = params.get('uid')
-    
-    if uid_list:
-        uid = uid_list[0]
-        selected_user = {"uid": uid}
-        print(f"[DEBUG-URL] Sélection depuis URL: {selected_user}")
-        print(f"[DEBUG-URL] Type de retour: {type(selected_user)}")
-        return selected_user
-    
-    print("[DEBUG-URL] Pas de paramètre uid dans l'URL")
-    return dash.no_update  # Important: retourner no_update si pas d'uid dans l'URL
 
 
 

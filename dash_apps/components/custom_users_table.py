@@ -261,9 +261,15 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
 )
 def handle_pagination_buttons(prev_clicks, next_clicks, current_page):
     ctx = callback_context
-    
+    print("\n[DEBUG] handle_pagination_buttons")
+    print("prev_clicks", prev_clicks)
+    print("next_clicks", next_clicks)
+    print("current_page", current_page)
     # Si aucun bouton n'a été cliqué
     if not ctx.triggered:
+        raise PreventUpdate
+
+    if prev_clicks is None and next_clicks is None:
         raise PreventUpdate
     
     # Déterminer quel bouton a été cliqué
@@ -275,9 +281,11 @@ def handle_pagination_buttons(prev_clicks, next_clicks, current_page):
         
     # Mettre à jour la page en fonction du bouton cliqué
     if button_id == "prev-page-btn":
+        print("max(1, current_page - 1)", max(1, current_page - 1))
         return max(1, current_page - 1)
     elif button_id == "next-page-btn":
         # On vérifiera que la page n'est pas trop grande dans le callback qui utilise cette valeur
+        print("current_page + 1", current_page + 1)
         return current_page + 1
     
     # Par défaut, ne pas changer de page
