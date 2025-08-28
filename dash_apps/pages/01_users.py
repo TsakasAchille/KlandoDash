@@ -286,6 +286,12 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
         
     if filters and filters.get("driver_validation") and filters.get("driver_validation") != "all":
         filter_params["driver_validation"] = filters.get("driver_validation")
+        
+    # Ajouter les filtres de rating s'ils existent et si l'opérateur est différent de "all"
+    if filters and filters.get("rating_operator") and filters.get("rating_operator") != "all" and filters.get("rating_value") is not None:
+        filter_params["rating_operator"] = filters.get("rating_operator")
+        filter_params["rating_value"] = filters.get("rating_value")
+        print(f"Ajout des filtres rating: {filters.get('rating_operator')}, {filters.get('rating_value')}")
     
     # Récupérer uniquement les utilisateurs de la page courante avec filtres (pagination côté serveur)
     result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)

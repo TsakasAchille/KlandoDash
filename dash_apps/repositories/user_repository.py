@@ -123,6 +123,7 @@ class UserRepository:
                 
                 # Filtrage par validation conducteur
                 if filters.get("driver_validation") and filters["driver_validation"] != "all":
+
                     validation_status = filters["driver_validation"]
                     if validation_status == "validated":
                         query = query.filter(User.is_driver_doc_validated == True)
@@ -133,11 +134,13 @@ class UserRepository:
                 if filters.get("rating_operator") and filters["rating_operator"] != "all" and filters.get("rating_value") is not None:
                     rating_value = float(filters["rating_value"])
                     operator = filters["rating_operator"]
-                    
+                    print("On est ici quoi")
                     if operator == "gt":
-                        query = query.filter(User.rating >= rating_value)
+                        # Filter rating not null AND greater or equal to rating_value
+                        query = query.filter(User.rating.isnot(None), User.rating >= rating_value)
                     elif operator == "lt":
-                        query = query.filter(User.rating <= rating_value)
+                        # Filter rating not null AND less or equal to rating_value
+                        query = query.filter(User.rating.isnot(None), User.rating <= rating_value)
             
             # Calculer le nombre total d'utilisateurs après filtrage
             total = query.count()
