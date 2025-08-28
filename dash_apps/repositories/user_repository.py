@@ -119,7 +119,7 @@ class UserRepository:
                 # Filtrage par rôle
                 if filters.get("role") and filters["role"] != "all":
                     role = filters["role"]
-                    query = query.filter(User.role_preference == role)
+                    query = query.filter(User.role == role)
                 
                 # Filtrage par statut
                 if filters.get("status") and filters["status"] != "all":

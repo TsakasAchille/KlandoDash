@@ -7,7 +7,7 @@ from dash import dcc, html, dash_table, callback, Input, Output, State
 from dash.exceptions import PreventUpdate
 from dash_apps.config import Config
 # Import du nouveau composant personnalisé à la place du DataTable
-from dash_apps.components.custom_users_table import render_custom_users_table
+from dash_apps.components.users_table import render_custom_users_table
 from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
@@ -93,31 +93,6 @@ def get_layout():
     ])
 ], fluid=True)
 
-"""
-@callback(
-    Output("users-pagination-info", "data"),
-    Input("refresh-users-btn", "n_clicks"),
-    prevent_initial_call=False
-)
-def calculate_pagination_info(n_clicks):
-    # Récupérer le nombre total d'utilisateurs depuis le repository
-    total_users = UserRepository.get_users_count()
-    
-    # Calculer le nombre de pages nécessaires
-    page_size = Config.USERS_TABLE_PAGE_SIZE
-    page_count = (total_users - 1) // page_size + 1 if total_users > 0 else 1
-    
-    print("Total users:", total_users)
-    print("Page count:", page_count)
-    print("Page size:", page_size)
-
-    return {
-        "total_users": total_users,
-        "page_count": page_count,
-        "page_size": page_size
-    }
-
-"""
 
 
 # Note: Le store users-page-store n'est plus utilisé pour stocker tous les utilisateurs
@@ -331,69 +306,20 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
 def render_user_details(selected_user):
     """Callback responsable uniquement de l'affichage des détails d'un utilisateur sélectionné"""
     print("\n[DEBUG] render_user_details")
-    print("selected_user", selected_user)
+    print(f"selected_user {selected_user}")
     
-    # Valeur par défaut
-    if not selected_user:
+    # Extraire l'UID de l'utilisateur
+    selected_uid_value = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
+    
+    if not selected_uid_value:
         return html.Div(), html.Div(), html.Div()
-    
-    # Déterminer la valeur à passer à selected_uid
-    if isinstance(selected_user, dict) and "uid" in selected_user:
-        selected_uid_value = selected_user["uid"]
-    else:
-        selected_uid_value = selected_user
-    
-    # Charger les données de l'utilisateur
-    user = None
-    if selected_uid_value:
-        user = UserRepository.get_user_by_id(selected_uid_value)
         
-        # Rendu des panneaux seulement si un utilisateur est sélectionné
-        if user:
-            # Convertir l'objet UserSchema en dictionnaire
-            if hasattr(user, "model_dump"):
-                # Pour Pydantic v2
-                user_dict = user.model_dump()
-            elif hasattr(user, "dict"):
-                # Pour Pydantic v1
-                user_dict = user.dict()
-            else:
-                # Fallback
-                user_dict = {k: getattr(user, k) for k in dir(user) if not k.startswith('_') and not callable(getattr(user, k))}
-                
-            # Garantir que toutes les valeurs utilisées dans les templates existent
-            # Vérifier que toutes les clés necessaires existent avec des valeurs par défaut
-            defaults = {
-                "rating": 0, 
-                "rating_count": 0,
-                "display_name": "",
-                "name": "",
-                "first_name": "",
-                "email": "",
-                "phone": "", 
-                "phone_number": "",
-                "birth": "",
-                "bio": "",
-                "gender": "",
-                "role_preference": "",
-                "created_time": "", 
-                "updated_at": ""
-            }
-            
-            # Appliquer les valeurs par défaut
-            for key, default_value in defaults.items():
-                if key not in user_dict or user_dict[key] is None:
-                    user_dict[key] = default_value
-            
-            # Générer les panneaux
-            details = render_user_profile(user_dict)
-            stats = render_user_stats(user_dict)
-            trips = render_user_trips(user_dict)
-            return details, stats, trips
+    # Appeler directement les fonctions de layout avec l'UID
+    details = render_user_profile(selected_uid_value)
+    stats = render_user_stats(selected_uid_value)
+    trips = render_user_trips(selected_uid_value)
     
-    # Return empty panels if no user selected or user not found
-    return html.Div(), html.Div(), html.Div()
-
+    return details, stats, trips
 
 
 

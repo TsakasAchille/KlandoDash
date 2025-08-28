@@ -20,19 +20,27 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_user_stats(user):
+def render_user_stats(uid):
     """
     Affiche les statistiques de l'utilisateur en utilisant un template Jinja2.
     
     Args:
-        user: Dictionnaire de données utilisateur
+        uid: Identifiant de l'utilisateur
     """
-    if user is None:
+    if uid is None:
         return None
         
-    user_id = user.get('uid') or user.get('id')
-    if not user_id:
-        return dbc.Alert("Impossible de trouver l'identifiant de l'utilisateur", color="warning")
+    # Importer UserRepository ici pour éviter les imports circulaires
+    from dash_apps.repositories.user_repository import UserRepository
+    
+    # Récupérer l'utilisateur pour avoir des informations de base
+    user = UserRepository.get_user_by_id(uid)
+    if user is None:
+        return dbc.Alert(f"Utilisateur introuvable (UID: {uid})", color="warning")
+        
+    # Nous n'avons pas besoin du dictionnaire utilisateur pour les statistiques
+    # mais nous garderons l'ID pour récupérer les trajets
+    user_id = uid  # Utiliser directement l'UID fourni
     
     db_error = False
     try:

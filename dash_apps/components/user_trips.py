@@ -27,19 +27,25 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_user_trips(user):
+def render_user_trips(uid):
     """
     Affiche les trajets effectués par l'utilisateur en utilisant un template Jinja2.
     
     Args:
-        user: Dictionnaire de données utilisateur
+        uid: Identifiant de l'utilisateur
     """
-    if user is None:
+    if uid is None:
         return None
+    
+    # Importer UserRepository ici pour éviter les imports circulaires
+    from dash_apps.repositories.user_repository import UserRepository
+    
+    # Vérifier que l'utilisateur existe
+    user = UserRepository.get_user_by_id(uid)
+    if user is None:
+        return dbc.Alert(f"Utilisateur introuvable (UID: {uid})", color="warning")
         
-    user_id = user.get('uid') or user.get('id')
-    if not user_id:
-        return dbc.Alert("Impossible de trouver l'identifiant de l'utilisateur", color="warning")
+    user_id = uid  # Utiliser directement l'UID fourni
     
     db_error = False
     trips_data = []
