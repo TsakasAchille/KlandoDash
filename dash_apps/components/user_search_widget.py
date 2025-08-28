@@ -105,10 +105,8 @@ def render_search_widget():
                             id="users-role-filter",
                             options=[
                                 {"label": "Tous", "value": "all"},
-                                {"label": "Admin", "value": "admin"},
                                 {"label": "Conducteur", "value": "driver"},
                                 {"label": "Passager", "value": "passenger"},
-                                {"label": "Utilisateur", "value": "user"},
                             ],
                             value="all",
                             clearable=False

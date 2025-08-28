@@ -235,13 +235,14 @@ def reset_page_on_filter_change(filters):
 
 
 @callback(
-    Output("users-filter-store", "data", allow_duplicate=True),
+    [Output("users-filter-store", "data", allow_duplicate=True),
+     Output("users-search-input", "value")],
     Input("users-reset-filters-btn", "n_clicks"),
     prevent_initial_call=True
 )
 def reset_filters(n_clicks):
-    """Réinitialise tous les filtres"""
-    return {}
+    """Réinitialise tous les filtres et vide la barre de recherche"""
+    return {}, ""
 
 
 @callback(
