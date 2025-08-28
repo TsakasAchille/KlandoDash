@@ -123,10 +123,10 @@ def calculate_pagination_info(n_clicks):
     Input("refresh-users-btn", "n_clicks"),
     State("users-current-page", "data"),
     State("selected-user-uid", "data"),
-    State("users-url", "search"),
+    #State("users-url", "search"),
     prevent_initial_call='initial_duplicate'
 )
-def remember_page_info_on_refresh(n_clicks, current_page, selected_user, url_search):
+def remember_page_info_on_refresh(n_clicks, current_page, selected_user):
     """
     Gère le comportement lors du rafraîchissement des données ou au chargement initial.
     """
@@ -134,7 +134,6 @@ def remember_page_info_on_refresh(n_clicks, current_page, selected_user, url_sea
     print(f"Refresh button clicked: {n_clicks}")
     print(f"current_page: {current_page}")
     print(f"selected_user: {selected_user}")
-    print(f"url_search: {url_search}")
     
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
@@ -317,22 +316,15 @@ def adjust_page_for_selected_user(selected_user, current_page):
 
 # Callback unique pour gérer la sélection utilisateur depuis la table ou l'URL
 # Callback pour la sélection depuis l'URL
-
-
 @callback(
-    Output("selected-user-uid", "data", allow_duplicate=True),
+    Output("selected-user-uid", "data"),
     Input("users-url", "search"),
-    #prevent_initial_call='initial_duplicate',
-    prevent_initial_call=True
+    prevent_initial_call=False  # Permettre l'exécution initiale pour capturer l'URL
 )
 def handle_url_selection(url_search):
     from dash import ctx
     import urllib.parse
     
-    # Si aucun paramètre d'URL
-   ##  if not url_search:
-    #    print("[DEBUG-URL] Pas de paramètres URL")
-     #   return dash.no_update
     print(f"[DEBUG-URL] URL search: {url_search}")
     params = urllib.parse.parse_qs(url_search.lstrip('?'))
     uid_list = params.get('uid')
@@ -341,12 +333,11 @@ def handle_url_selection(url_search):
         uid = uid_list[0]
         selected_user = {"uid": uid}
         print(f"[DEBUG-URL] Sélection depuis URL: {selected_user}")
-        # Vérifier que la valeur est correctement renvoyée
         print(f"[DEBUG-URL] Type de retour: {type(selected_user)}")
         return selected_user
     
     print("[DEBUG-URL] Pas de paramètre uid dans l'URL")
-    #return dash.no_update
+    return dash.no_update  # Important: retourner no_update si pas d'uid dans l'URL
 
 
 
