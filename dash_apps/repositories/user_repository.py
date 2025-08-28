@@ -100,21 +100,39 @@ class UserRepository:
                     )
                 
                 # Filtrage par date d'inscription
-                if filters.get("date_from"):
-                    date_from = filters["date_from"]
-                    # Si le format est une chaîne ISO (comme fourni par le DatePicker)
-                    if isinstance(date_from, str):
-                        date_from = datetime.datetime.fromisoformat(date_from.replace('Z', '+00:00'))
-                    query = query.filter(User.created_at >= date_from)
+                # Gestion des filtres de date selon le type
+                date_filter_type = filters.get("date_filter_type", "range")
+                
+                if date_filter_type == "after" and filters.get("single_date"):
+                    # Filtrer après une date spécifique
+                    single_date = filters["single_date"]
+                    if isinstance(single_date, str):
+                        single_date = datetime.datetime.fromisoformat(single_date.replace('Z', '+00:00'))
+                    query = query.filter(User.created_at >= single_date)
                     
-                if filters.get("date_to"):
-                    date_to = filters["date_to"]
-                    # Si le format est une chaîne ISO (comme fourni par le DatePicker)
-                    if isinstance(date_to, str):
-                        date_to = datetime.datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+                elif date_filter_type == "before" and filters.get("single_date"):
+                    # Filtrer avant une date spécifique
+                    single_date = filters["single_date"]
+                    if isinstance(single_date, str):
+                        single_date = datetime.datetime.fromisoformat(single_date.replace('Z', '+00:00'))
                         # Ajuster pour inclure toute la journée
-                        date_to = date_to.replace(hour=23, minute=59, second=59)
-                    query = query.filter(User.created_at <= date_to)
+                        single_date = single_date.replace(hour=23, minute=59, second=59)
+                    query = query.filter(User.created_at <= single_date)
+                    
+                else:
+                    # Filtrage par période (comportement par défaut)
+                    if filters.get("date_from"):
+                        date_from = filters["date_from"]
+                        if isinstance(date_from, str):
+                            date_from = datetime.datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+                        query = query.filter(User.created_at >= date_from)
+                        
+                    if filters.get("date_to"):
+                        date_to = filters["date_to"]
+                        if isinstance(date_to, str):
+                            date_to = datetime.datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+                            date_to = date_to.replace(hour=23, minute=59, second=59)
+                        query = query.filter(User.created_at <= date_to)
                 
                 # Filtrage par rôle
                 if filters.get("role") and filters["role"] != "all":
@@ -130,6 +148,11 @@ class UserRepository:
                     elif validation_status == "not_validated":
                         query = query.filter(User.is_driver_doc_validated == False)
                         
+                # Filtrage par genre
+                if filters.get("gender") and filters["gender"] != "all":
+                    gender = filters["gender"]
+                    query = query.filter(User.gender == gender)
+                
                 # Filtrage par rating
                 if filters.get("rating_operator") and filters["rating_operator"] != "all" and filters.get("rating_value") is not None:
                     rating_value = float(filters["rating_value"])
@@ -145,9 +168,16 @@ class UserRepository:
             # Calculer le nombre total d'utilisateurs après filtrage
             total = query.count()
             
-            # Récupérer les utilisateurs de la page demandée, triés par date de création (du plus récent au plus ancien)
-            users = query.order_by(User.created_at.desc())\
-                .offset(page * page_size)\
+            # Appliquer le tri selon les préférences
+            date_sort = filters.get("date_sort", "desc")
+            if date_sort == "asc":
+                query = query.order_by(User.created_at.asc())
+            elif date_sort == "desc":
+                query = query.order_by(User.created_at.desc())
+            # Si date_sort == "none", pas de tri spécifique par date
+            
+            # Récupérer les utilisateurs de la page demandée
+            users = query.offset(page * page_size)\
                 .limit(page_size)\
                 .all()
                 

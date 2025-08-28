@@ -24,7 +24,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
     page_count = (total_users - 1) // page_size + 1 if total_users > 0 else 1
     
     # Créer les en-têtes du tableau
-    headers = ["", "Nom", "Email", "Téléphone", "Rôle", "Notation", "Date d'inscription"]
+    headers = ["", "Nom", "Email", "Téléphone", "Rôle", "Genre", "Notation", "Date d'inscription"]
     
     # Créer les lignes du tableau
     table_rows = []
@@ -38,6 +38,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
             email = user_dict.get("email", "")
             phone = user_dict.get("phone_number", "")
             role = user_dict.get("role", "")
+            gender = user_dict.get("gender", "")
             rating = user_dict.get("rating", None)
             created_at = user_dict.get("created_at", "")
         # Pour les dictionnaires
@@ -47,6 +48,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
             email = user.get("email", "")
             phone = user.get("phone_number", "")
             role = user.get("role", "")
+            gender = user.get("gender", "")
             rating = user.get("rating", None)
             created_at = user.get("created_at", "")
         # Pour les objets avec attributs
@@ -56,6 +58,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
             email = getattr(user, "email", "")
             phone = getattr(user, "phone_number", "")
             role = getattr(user, "role", "")
+            gender = getattr(user, "gender", "")
             rating = getattr(user, "rating", None)
             created_at = getattr(user, "created_at", "")
             
@@ -133,6 +136,11 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
             html.Td(email, style=cell_style),
             html.Td(phone, style=cell_style),
             html.Td(role, style=cell_style),
+            # Afficher le genre avec formatage
+            html.Td(
+                {"man": "Homme", "woman": "Femme", "male": "Homme", "female": "Femme", "helicopter": "🚁 Helicopter", "other": "Autre"}.get(gender, "-"),
+                style=cell_style
+            ),
             # Afficher le rating avec formatage
             html.Td(
                 f"{rating:.1f} ★" if rating is not None else "-",
@@ -145,7 +153,7 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
     
     # Si aucun utilisateur n'est disponible, afficher une ligne vide
     if not table_rows:
-        table_rows = [html.Tr([html.Td("Aucun utilisateur trouvé", colSpan=7)])]
+        table_rows = [html.Tr([html.Td("Aucun utilisateur trouvé", colSpan=8)])]
     
     # Construire le tableau
     table = html.Table(

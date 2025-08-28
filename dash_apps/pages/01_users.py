@@ -165,15 +165,19 @@ def toggle_advanced_filters(n_clicks, is_open):
     Input("users-search-input", "value"),
     Input("users-registration-date-filter", "start_date"),
     Input("users-registration-date-filter", "end_date"),
+    Input("users-date-filter-type", "value"),
+    Input("users-single-date-filter", "date"),
+    Input("users-date-sort-filter", "value"),
     Input("users-role-filter", "value"),
     Input("users-driver-validation-filter", "value"),
+    Input("users-gender-filter", "value"),
     Input("users-rating-operator-filter", "value"),
     Input("users-rating-value-filter", "value"),
     State("users-filter-store", "data"),
     prevent_initial_call=True
 )
 def update_filters(
-    search_text, date_from, date_to, role, driver_validation, rating_operator, rating_value, current_filters
+    search_text, date_from, date_to, date_filter_type, single_date, date_sort, role, driver_validation, gender, rating_operator, rating_value, current_filters
 ):
     """Met à jour les filtres de recherche lorsque l'utilisateur modifie les champs"""
     ctx = dash.callback_context
@@ -189,10 +193,18 @@ def update_filters(
     elif triggered_id == "users-registration-date-filter":
         current_filters["date_from"] = date_from
         current_filters["date_to"] = date_to
+    elif triggered_id == "users-date-filter-type":
+        current_filters["date_filter_type"] = date_filter_type
+    elif triggered_id == "users-single-date-filter":
+        current_filters["single_date"] = single_date
+    elif triggered_id == "users-date-sort-filter":
+        current_filters["date_sort"] = date_sort
     elif triggered_id == "users-role-filter":
         current_filters["role"] = role
     elif triggered_id == "users-driver-validation-filter":
         current_filters["driver_validation"] = driver_validation
+    elif triggered_id == "users-gender-filter":
+        current_filters["gender"] = gender
     elif triggered_id == "users-rating-operator-filter" or triggered_id == "users-rating-value-filter":
         if rating_operator != "all":
             current_filters["rating_operator"] = rating_operator
@@ -276,9 +288,15 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
         filter_params["text"] = filters.get("text")
         
     # Ajouter les filtres de date s'ils existent
-    if filters and (filters.get("date_from") or filters.get("date_to")):
+    if filters and (filters.get("date_from") or filters.get("date_to") or filters.get("single_date")):
         filter_params["date_from"] = filters.get("date_from")
         filter_params["date_to"] = filters.get("date_to")
+        filter_params["date_filter_type"] = filters.get("date_filter_type")
+        filter_params["single_date"] = filters.get("single_date")
+        
+    # Ajouter le tri par date s'il est défini
+    if filters and filters.get("date_sort"):
+        filter_params["date_sort"] = filters.get("date_sort")
         
     # Ajouter les filtres de rôle et validation conducteur s'ils sont différents de "all"
     if filters and filters.get("role") and filters.get("role") != "all":
@@ -286,6 +304,10 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
         
     if filters and filters.get("driver_validation") and filters.get("driver_validation") != "all":
         filter_params["driver_validation"] = filters.get("driver_validation")
+        
+    # Ajouter le filtre genre s'il est différent de "all"
+    if filters and filters.get("gender") and filters.get("gender") != "all":
+        filter_params["gender"] = filters.get("gender")
         
     # Ajouter les filtres de rating s'ils existent et si l'opérateur est différent de "all"
     if filters and filters.get("rating_operator") and filters.get("rating_operator") != "all" and filters.get("rating_value") is not None:
