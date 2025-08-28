@@ -6,6 +6,7 @@ from dash.exceptions import PreventUpdate
 from dash_apps.config import Config
 from dash_apps.repositories.user_repository import UserRepository
 
+# Store pour gérer la pagination de manière locale sans déclencher le callback principal
 def render_custom_users_table(users, current_page, total_users, selected_uid=None):
     """Rendu d'un tableau personnalisé avec pagination manuelle
     
@@ -316,9 +317,10 @@ def handle_button_selection(btn_clicks):
 
 # 2. Gestion des clics sur les lignes
 @callback(
-    Output("selected-user-from-table", "data"),
+    #Output("selected-user-from-table", "data"),
+    Output("selected-user-uid", "data", allow_duplicate=True),
     Input({"type": "user-row", "index": dash.ALL}, "n_clicks"),
-    prevent_initial_call=True
+    prevent_initial_call=True  # Ceci ne suffit pas toujours avec les pattern-matching callbacks
 )
 def handle_row_selection(row_clicks):
     print("\n[DEBUG] Début callback handle_row_selection")
@@ -326,6 +328,13 @@ def handle_row_selection(row_clicks):
     
     ctx = callback_context
     if not ctx.triggered:
+        print("\n[DEBUG] Pas de déclencheur, PreventUpdate")
+        raise PreventUpdate
+    
+    # Vérifier si le callback est déclenché lors du chargement initial
+    # Les clicks seront tous à zéro lors du chargement initial
+    if not any(clicks > 0 for clicks in row_clicks):
+        print("\n[DEBUG] Tous les clicks sont à zéro, probablement un chargement initial, PreventUpdate")
         raise PreventUpdate
     
     # Déterminer ce qui a été cliqué
@@ -345,3 +354,83 @@ def handle_row_selection(row_clicks):
         import traceback
         print(traceback.format_exc())
         raise PreventUpdate
+
+# 3. Nouveau callback pour gérer uniquement la mise en surbrillance des lignes
+@callback(
+    Output({"type": "user-row", "index": dash.ALL}, "style"),
+    Output({"type": "user-row", "index": dash.ALL}, "className"),
+    Output({"type": "select-user-btn", "index": dash.ALL}, "color"),
+    Output({"type": "select-user-btn", "index": dash.ALL}, "outline"),
+   # Input("selected-user-from-table", "data"),
+    Input("selected-user-uid", "data"),
+
+    State({"type": "user-row", "index": dash.ALL}, "id"),
+    State({"type": "select-user-btn", "index": dash.ALL}, "id"),
+    prevent_initial_call=True
+)
+def highlight_selected_row(selected_user, row_ids, button_ids):
+    """
+    Ce callback met à jour uniquement les styles des lignes sans recharger le tableau
+    """
+    print("\n[DEBUG] Début callback highlight_selected_row")
+    print(f"\n[DEBUG] selected_user: {selected_user}")
+    
+    if not selected_user or not row_ids:
+        raise PreventUpdate
+    
+    # Extraire l'uid de l'utilisateur sélectionné
+    selected_uid = None
+    if isinstance(selected_user, dict) and "uid" in selected_user:
+        selected_uid = selected_user["uid"]
+    else:
+        selected_uid = selected_user
+    
+    print(f"\n[DEBUG] UID utilisateur sélectionné: {selected_uid}")
+    
+    # Préparer les styles pour chaque ligne
+    styles = []
+    classes = []
+    button_colors = []
+    button_outlines = []
+    
+    # Styles pour les lignes
+    for row_id in row_ids:
+        if isinstance(row_id, dict) and "index" in row_id:
+            uid = row_id["index"]
+            is_selected = str(uid) == str(selected_uid)
+            
+            # Exactement les mêmes styles que ceux définis initialement
+            style = {
+                "backgroundColor": "#ff3547 !important" if is_selected else "transparent",
+                "transition": "all 0.2s",
+                "cursor": "pointer",
+                "border": "2px solid #dc3545 !important" if is_selected else "none",
+                "color": "white !important" if is_selected else "inherit",
+                "fontWeight": "bold !important" if is_selected else "normal",
+            }
+            
+            # Classe pour la ligne
+            class_name = "user-row selected-user-row" if is_selected else "user-row"
+            
+            styles.append(style)
+            classes.append(class_name)
+        else:
+            # Valeur par défaut si row_id n'est pas au format attendu
+            styles.append({})
+            classes.append("user-row")
+    
+    # Styles pour les boutons
+    for button_id in button_ids:
+        if isinstance(button_id, dict) and "index" in button_id:
+            uid = button_id["index"]
+            is_selected = str(uid) == str(selected_uid)
+            
+            # Couleur et outline du bouton
+            button_colors.append("danger" if is_selected else "light")
+            button_outlines.append(not is_selected)
+        else:
+            # Valeur par défaut
+            button_colors.append("light")
+            button_outlines.append(True)
+    
+    return styles, classes, button_colors, button_outlines
