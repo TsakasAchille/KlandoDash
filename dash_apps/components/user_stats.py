@@ -45,8 +45,8 @@ def render_user_stats(uid):
     db_error = False
     try:
         # Récupérer les stats via notre nouveau module data_schema
-        driver_trips_df = get_trips_for_user(user_id, as_driver=True)
-        passenger_trips_df = get_trips_for_user(user_id, as_driver=False)
+        driver_trips_df = get_trips_for_user(user_id, as_driver=True, as_passenger=False)
+        passenger_trips_df = get_trips_for_user(user_id, as_driver=False, as_passenger=True)
         
         # Calculer les statistiques
         total_trips_count = len(driver_trips_df) + len(passenger_trips_df)
