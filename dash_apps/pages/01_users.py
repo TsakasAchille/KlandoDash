@@ -11,6 +11,7 @@ from dash_apps.components.custom_users_table import render_custom_users_table
 from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
+from dash_apps.components.user_search_widget import render_search_widget, render_active_filters
 from dash_apps.repositories.user_repository import UserRepository
 
 
@@ -55,6 +56,7 @@ def get_layout():
     dcc.Store(id="selected-user-uid", storage_type="session", data=None, clear_data=False),  # Store pour l'UID de l'utilisateur sélectionné (persistant)
     dcc.Store(id="url-parameters", storage_type="memory", data=None),  # Store temporaire pour les paramètres d'URL
     dcc.Store(id="selected-user-from-url", storage_type="memory", data=None),  # State pour la sélection depuis l'URL
+    dcc.Store(id="users-filter-store", storage_type="session", data={}, clear_data=False),  # Store pour les filtres de recherche
     # Interval pour déclencher la lecture des paramètres d'URL au chargement initial (astuce pour garantir l'exécution)
     dcc.Interval(id='url-init-trigger', interval=100, max_intervals=1),  # Exécute une seule fois au chargement
   
@@ -66,6 +68,10 @@ def get_layout():
         ], width=3)
     ]),
     html.Div(id="refresh-users-message"),
+    # Widget de recherche
+    render_search_widget(),
+    # Affichage des filtres actifs
+    html.Div(id="users-active-filters"),
     dbc.Row([
         dbc.Col([
             # Conteneur vide qui sera rempli par le callback render_users_table_callback
@@ -159,6 +165,86 @@ def show_refresh_users_message(n_clicks):
     return dbc.Alert("Données utilisateurs rafraîchies!", color="success", dismissable=True)
 
 
+@callback(
+    Output("users-advanced-filters-collapse", "is_open"),
+    Input("users-advanced-filters-btn", "n_clicks"),
+    State("users-advanced-filters-collapse", "is_open"),
+    prevent_initial_call=True
+)
+def toggle_advanced_filters(n_clicks, is_open):
+    """Ouvre ou ferme le panneau des filtres avancés"""
+    if n_clicks:
+        return not is_open
+    return is_open
+
+
+@callback(
+    Output("users-filter-store", "data"),
+    Input("users-search-input", "value"),
+    Input("users-registration-date-filter", "start_date"),
+    Input("users-registration-date-filter", "end_date"),
+    Input("users-role-filter", "value"),
+    Input("users-status-filter", "value"),
+    State("users-filter-store", "data"),
+    prevent_initial_call=True
+)
+def update_filters(
+    search_text, date_from, date_to, role, status, current_filters
+):
+    """Met à jour les filtres de recherche lorsque l'utilisateur modifie les champs"""
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    
+    # Initialiser les filtres s'ils n'existent pas
+    if not current_filters:
+        current_filters = {}
+    
+    # Mettre à jour le filtre approprié en fonction du champ modifié
+    if triggered_id == "users-search-input":
+        current_filters["text"] = search_text
+    elif triggered_id == "users-registration-date-filter":
+        current_filters["date_from"] = date_from
+        current_filters["date_to"] = date_to
+    elif triggered_id == "users-role-filter":
+        current_filters["role"] = role
+    elif triggered_id == "users-status-filter":
+        current_filters["status"] = status
+    
+    # Réinitialiser la page à 1 lorsqu'un filtre change
+    # (Nous gèrerons cela dans un callback séparé)
+    
+    print(f"Filtres mis à jour: {current_filters}")
+    return current_filters
+
+
+@callback(
+    Output("users-current-page", "data", allow_duplicate=True),
+    Input("users-filter-store", "data"),
+    prevent_initial_call=True
+)
+def reset_page_on_filter_change(filters):
+    """Réinitialise la page à 1 lorsque les filtres changent"""
+    # Toujours revenir à la page 1 quand un filtre change
+    return 1
+
+
+@callback(
+    Output("users-filter-store", "data", allow_duplicate=True),
+    Input("users-reset-filters-btn", "n_clicks"),
+    prevent_initial_call=True
+)
+def reset_filters(n_clicks):
+    """Réinitialise tous les filtres"""
+    return {}
+
+
+@callback(
+    Output("users-active-filters", "children"),
+    Input("users-filter-store", "data"),
+)
+def display_active_filters(filters):
+    """Affiche les filtres actifs sous forme de badges"""
+    return render_active_filters(filters)
 
 
 
@@ -167,14 +253,16 @@ def show_refresh_users_message(n_clicks):
     Input("users-current-page", "data"),
     Input("refresh-users-btn", "n_clicks"),
     Input("selected-user-uid", "data"),
+    Input("users-filter-store", "data"),
     prevent_initial_call=True
 )
-def render_users_table_pagination(current_page, n_clicks, selected_user):
+def render_users_table_pagination(current_page, n_clicks, selected_user, filters):
     """Callback responsable uniquement de la pagination et du rendu du tableau"""
     from dash import ctx
     print("\n[DEBUG] render_users_table_pagination")
     print("current_page", current_page)
     print("Trigger:", ctx.triggered_id)
+    print("Filters:", filters)
     
     # Configuration pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
@@ -186,8 +274,27 @@ def render_users_table_pagination(current_page, n_clicks, selected_user):
     # Convertir la page en index 0-based pour l'API
     page_index = current_page - 1 if current_page > 0 else 0
     
-    # Récupérer uniquement les utilisateurs de la page courante (pagination côté serveur)
-    result = UserRepository.get_users_paginated(page_index, page_size)
+    # Préparer les filtres pour le repository
+    filter_params = {}
+    
+    # Ajouter le filtre texte s'il existe
+    if filters and filters.get("text"):
+        filter_params["text"] = filters.get("text")
+        
+    # Ajouter les filtres de date s'ils existent
+    if filters and (filters.get("date_from") or filters.get("date_to")):
+        filter_params["date_from"] = filters.get("date_from")
+        filter_params["date_to"] = filters.get("date_to")
+        
+    # Ajouter les filtres de rôle et statut s'ils sont différents de "all"
+    if filters and filters.get("role") and filters.get("role") != "all":
+        filter_params["role"] = filters.get("role")
+        
+    if filters and filters.get("status") and filters.get("status") != "all":
+        filter_params["status"] = filters.get("status")
+    
+    # Récupérer uniquement les utilisateurs de la page courante avec filtres (pagination côté serveur)
+    result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)
     users = result.get("users", [])
     total_users = result.get("total_count", 0)
     

@@ -60,24 +60,80 @@ class UserRepository:
             return [u.to_dict() for u in users] if users else []
             
     @staticmethod
-    def get_users_paginated(page: int = 0, page_size: int = 10) -> dict:
-        """Récupère les utilisateurs de façon paginée
+    def get_users_paginated(page: int = 0, page_size: int = 10, filters: dict = None) -> dict:
+        """Récupère les utilisateurs de façon paginée avec filtrage optionnel
         
         Args:
             page: Numéro de page (commence à 0)
             page_size: Nombre d'éléments par page
+            filters: Dictionnaire des filtres à appliquer avec les clés suivantes:
+                - text: Recherche par nom, prénom ou email
+                - date_from: Date d'inscription minimale
+                - date_to: Date d'inscription maximale
+                - role: Filtrer par rôle (admin, driver, passenger, user)
+                - status: Filtrer par statut (active, inactive)
             
         Returns:
             Un dictionnaire contenant:
             - users: Liste des utilisateurs de la page
-            - total_count: Nombre total d'utilisateurs
+            - total_count: Nombre total d'utilisateurs après filtrage
         """
+        from sqlalchemy import or_, and_, func
+        import datetime
+        
         with SessionLocal() as db:
-            # Calculer le nombre total d'utilisateurs
-            total = db.query(User).count()
+            # Commencer avec une requête de base
+            query = db.query(User)
             
-            # Récupérer les utilisateurs de la page demandée
-            users = db.query(User).order_by(User.uid)\
+            # Appliquer les filtres si spécifiés
+            if filters:
+                # Filtre texte (nom, prénom, email)
+                if filters.get("text"):
+                    search_term = f'%{filters["text"]}%'
+                    query = query.filter(
+                        or_(
+                            User.name.ilike(search_term),
+                            User.first_name.ilike(search_term),
+                            User.email.ilike(search_term),
+                            User.display_name.ilike(search_term)
+                        )
+                    )
+                
+                # Filtrage par date d'inscription
+                if filters.get("date_from"):
+                    date_from = filters["date_from"]
+                    # Si le format est une chaîne ISO (comme fourni par le DatePicker)
+                    if isinstance(date_from, str):
+                        date_from = datetime.datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+                    query = query.filter(User.created_at >= date_from)
+                    
+                if filters.get("date_to"):
+                    date_to = filters["date_to"]
+                    # Si le format est une chaîne ISO (comme fourni par le DatePicker)
+                    if isinstance(date_to, str):
+                        date_to = datetime.datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+                        # Ajuster pour inclure toute la journée
+                        date_to = date_to.replace(hour=23, minute=59, second=59)
+                    query = query.filter(User.created_at <= date_to)
+                
+                # Filtrage par rôle
+                if filters.get("role") and filters["role"] != "all":
+                    role = filters["role"]
+                    query = query.filter(User.role_preference == role)
+                
+                # Filtrage par statut
+                if filters.get("status") and filters["status"] != "all":
+                    status = filters["status"]
+                    if status == "active":
+                        query = query.filter(User.is_active == True)
+                    elif status == "inactive":
+                        query = query.filter(User.is_active == False)
+            
+            # Calculer le nombre total d'utilisateurs après filtrage
+            total = query.count()
+            
+            # Récupérer les utilisateurs de la page demandée, triés par date de création (du plus récent au plus ancien)
+            users = query.order_by(User.created_at.desc())\
                 .offset(page * page_size)\
                 .limit(page_size)\
                 .all()
@@ -112,7 +168,7 @@ class UserRepository:
                 query = text("""
                     WITH user_rank AS (
                         SELECT uid, 
-                               ROW_NUMBER() OVER (ORDER BY uid) - 1 AS position
+                               ROW_NUMBER() OVER (ORDER BY created_at DESC) - 1 AS position
                         FROM users
                     )
                     SELECT position FROM user_rank WHERE uid = :user_id
