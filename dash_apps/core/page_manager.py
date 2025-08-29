@@ -49,6 +49,9 @@ def load_all_pages():
     # Page d'utilisateurs
     page_layouts['/users'] = load_page_from_file('01_users.py', 'Utilisateurs')
 
+    # Page des trajets
+    page_layouts['/trips'] = load_page_from_file('02_trips.py', 'Trajets')
+
     # Page de statistiques
     page_layouts['/stats'] = load_page_from_file('03_stats.py', 'Statistiques')
 
@@ -65,8 +68,8 @@ def load_all_pages():
     page_layouts['/user-profile'] = load_page_from_file('05_user_profile.py', 'Profil')
 
     # Page principale: la page trajets
-    page_layouts['/'] = load_page_from_file('trips.py', 'Accueil/Trajets')
-    page_layouts['/trips'] = page_layouts['/']
+   # page_layouts['/'] = load_page_from_file('trips.py', 'Accueil/Trajets')
+    #page_layouts['/trips'] = page_layouts['/']
     
     return page_layouts
 

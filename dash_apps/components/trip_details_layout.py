@@ -41,55 +41,56 @@ def create_trip_details_layout(selected_trip_id, trips_data):
     
     Args:
         selected_trip_id: ID du trajet sélectionné
-        trips_data: Données des trajets
+        trips_data: Données des trajets (peut être None)
         
     Returns:
         Un composant Dash à afficher
     """
+    print(f"\n[DEBUG] create_trip_details_layout")
+    print(f"selected_trip_id {selected_trip_id}")
+    print(f"trips_data {trips_data}")
+    
     # Validation des données d'entrée
-    if selected_trip_id is None or trips_data is None or len(trips_data) == 0:
+    if selected_trip_id is None:
         return dbc.Alert(f"Veuillez sélectionner un trajet dans le tableau.", color="info")
     
-    trips_df = pd.DataFrame(trips_data)
+    # Récupérer les données du trajet depuis le repository
+    from dash_apps.repositories.trip_repository import TripRepository
     
-    # Vérification de la validité des données
-    if 'trip_id' not in trips_df.columns:
-        return dbc.Alert("Erreur: la colonne 'trip_id' est absente dans les données.", color="danger")
-    
-    # Gestion du type de l'ID du trajet
-    selected_trip_id_type = type(trips_df['trip_id'].iloc[0]) if not trips_df.empty else None
-    if selected_trip_id_type and selected_trip_id_type != type(selected_trip_id):
-        try:
-            if selected_trip_id_type == int:
-                selected_trip_id = int(selected_trip_id)
-            elif selected_trip_id_type == str:
-                selected_trip_id = str(selected_trip_id)
-        except:
-            pass
-    
-    # Récupération du trajet sélectionné
-    selected_trip = trips_df[trips_df["trip_id"] == selected_trip_id]
-    if selected_trip.empty:
-        return dbc.Alert(f"Trajet introuvable. ID: {selected_trip_id}", color="danger")
-    
-    trip_row = selected_trip.iloc[0]
+    try:
+        trip = TripRepository.get_trip_by_id(selected_trip_id)
+        if not trip:
+            return dbc.Alert(f"Trajet avec l'ID {selected_trip_id} non trouvé.", color="warning")
+        
+        # Convertir le schéma Pydantic en dictionnaire
+        trip_dict = trip.model_dump()
+        print(f"[DEBUG] Trajet trouvé: {trip_dict}")
+        
+    except Exception as e:
+        print(f"[ERROR] Erreur lors de la récupération du trajet: {str(e)}")
+        return dbc.Alert(f"Erreur lors de la récupération des détails du trajet: {str(e)}", color="danger")
     
     # Récupération des passagers
-    trip_id = trip_row.get("trip_id")
-    bookings_list = BookingRepository.get_trip_bookings(trip_id)
-    if not bookings_list:
-        print("Aucun passager trouvé pour ce trajet")
+    trip_id = trip_dict.get("trip_id")
+    try:
+        from dash_apps.repositories.booking_repository import BookingRepository
+        bookings_list = BookingRepository.get_trip_bookings(trip_id)
+        if not bookings_list:
+            print("Aucun passager trouvé pour ce trajet")
+            passengers_list = []
+        else:
+            print("Passagers trouvés pour ce trajet")
+            passenger_ids = [b['user_id'] for b in bookings_list]
+            from dash_apps.repositories.user_repository import UserRepository
+            passengers_list = UserRepository.get_users_by_ids(passenger_ids)
+    except Exception as e:
+        print(f"[WARNING] Erreur lors de la récupération des passagers: {str(e)}")
         passengers_list = []
-    else:
-        print("Passagers trouvés pour ce trajet")
-        passenger_ids = [b['user_id'] for b in bookings_list]
-        from dash_apps.repositories.user_repository import UserRepository
-        passengers_list = UserRepository.get_users_by_ids(passenger_ids)
     
     # Génération des composants
     trip_details_card = html.Div(
         html.Iframe(
-            srcDoc=render_trip_card_html(trip_row),
+            srcDoc=render_trip_card_html(trip_dict),
             style={
                 'width': '100%',
                 'height': '600px',
@@ -103,9 +104,9 @@ def create_trip_details_layout(selected_trip_id, trips_data):
         style=CARD_STYLE
     )
     
-    trip_stats_component = render_trip_stats(trip_row)
-    trip_map_component = render_trip_map(trip_row)
-    trip_driver_component = render_trip_driver(trip_row)
+    trip_stats_component = render_trip_stats(trip_dict)
+    trip_map_component = render_trip_map(trip_dict)
+    trip_driver_component = render_trip_driver(trip_dict)
 
     # Nouveau composant : passagers via template avancé
     def render_trip_passengers_html(passengers):
