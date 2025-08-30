@@ -101,13 +101,12 @@ def register_callbacks(app):
         Output("chatbot-window", "className"),
         Output("chatbot-window", "style"),
         Input("open-chatbot-bubble", "n_clicks"),
-        Input("close-chatbot-window", "n_clicks"),
         Input("minimize-chatbot-window", "n_clicks"),
         State("chatbot-window", "className"),
         State("chatbot-window", "style"),
         prevent_initial_call=True,
     )
-    def control_chatbot_window(n_open, n_close, n_min, class_name, style):
+    def control_chatbot_window(n_open, n_min, class_name, style):
         ctx = callback_context
         if style is None:
             style = {}
@@ -124,29 +123,13 @@ def register_callbacks(app):
 
         if trig == "open-chatbot-bubble":
             classes.add("show")
-            classes.discard("minimized")
             style.update({"display": "block"})
             return " ".join(sorted(classes)), style
-        elif trig == "close-chatbot-window":
-            # Hide window
+        elif trig == "minimize-chatbot-window":
+            # Minimize should hide the window and return to bubble
             classes.discard("show")
-            classes.discard("minimized")
             style.update({"display": "none"})
             return " ".join(sorted(classes)), style
-        elif trig == "minimize-chatbot-window":
-            # Toggle minimized if window is open
-            if "show" in classes:
-                if "minimized" in classes:
-                    classes.discard("minimized")
-                else:
-                    classes.add("minimized")
-                style.update({"display": "block"})
-                return " ".join(sorted(classes)), style
-            else:
-                # If not open, open it
-                classes.add("show")
-                style.update({"display": "block"})
-                return " ".join(sorted(classes)), style
         return class_name, style
 
     # --- Auto open chatbot once per session ---

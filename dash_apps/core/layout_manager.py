@@ -70,29 +70,31 @@ def create_main_layout():
             className="chatbot-bubble",
         ),
 
-        # Floating Chatbot window
+        # Floating Chatbot container
         html.Div([
+            # Chatbot window
             html.Div([
                 html.Div([
                     html.Div([
-                        html.Span("Assistant Klando", className="chatbot-title"),
-                        html.Small("  – Bonjour ! Comment puis-je aider ?", className="ms-2")
-                    ]),
-                    html.Div([
-                        dbc.Button(html.I(className="fas fa-external-link-alt"), href="https://klandochatbot.onrender.com/", target="_blank", id="popout-chatbot-window", size="sm", color="secondary", outline=True, className="me-1", title="Ouvrir dans un nouvel onglet"),
-                        dbc.Button(html.I(className="fas fa-minus"), id="minimize-chatbot-window", size="sm", color="secondary", outline=True, className="me-1"),
-                        dbc.Button(html.I(className="fas fa-times"), id="close-chatbot-window", size="sm", color="secondary", outline=True),
-                    ], className="d-flex align-items-center")
-                ], className="d-flex justify-content-between align-items-center"),
-            ], className="chatbot-header"),
-            html.Div([
-                html.Iframe(
-                    src="https://klandochatbot.onrender.com/",
-                    className="chatbot-iframe",
-                    allow="clipboard-write; microphone; display-capture; autoplay",
-                    title="Assistant Klando",
-                )
-            ], className="chatbot-body")
+                        html.Div([
+                            html.Span("Yobe", className="chatbot-title"),
+                        ]),
+                        html.Div([
+                            dbc.Button(html.I(className="fas fa-minus"), id="minimize-chatbot-window", size="sm", color="secondary", outline=True, className="me-1", title="Réduire"),
+                        ], className="d-flex align-items-center")
+                    ], className="d-flex justify-content-between align-items-center"),
+                ], className="chatbot-header chatbot-dragger"),
+                html.Div([
+                    html.Iframe(
+                        src="https://klandochatbot.onrender.com/",
+                        className="chatbot-iframe",
+                        allow="clipboard-write; display-capture; autoplay",
+                        title="Yobe",
+                    )
+                ], className="chatbot-body"),
+                # Resize handle inside window
+                html.Div(className="chatbot-resizer"),
+            ], className="chatbot-window-inner")
         ], id="chatbot-window", className="chatbot-window", style={"display": "none"}),
     ], fluid=True, style={"height": "100vh"})
     
