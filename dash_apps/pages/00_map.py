@@ -18,25 +18,6 @@ def _trip_to_option(trip):
         return {"label": trip.trip_id, "value": trip.trip_id}
 
 
-def _polyline_to_geojson(p):
-    try:
-        if isinstance(p, bytes):
-            p = p.decode('utf-8')
-        coords_latlon = polyline_lib.decode(p)  # [(lat, lon), ...]
-        # GeoJSON expects [lon, lat]
-        coords_lonlat = [[lon, lat] for (lat, lon) in coords_latlon]
-        return {
-            "type": "FeatureCollection",
-            "features": [
-                {
-                    "type": "Feature",
-                    "geometry": {"type": "LineString", "coordinates": coords_lonlat},
-                    "properties": {},
-                }
-            ],
-        }
-    except Exception:
-        return None
 
 
 def create_maplibre_container(style_height="80vh"):
@@ -109,18 +90,21 @@ layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             html.Label("Nombre de derniers trajets à afficher"),
-            dcc.Slider(
-                id="map-trip-count",
-                min=1 if _TRIPS else 0,
-                max=len(_TRIPS) if _TRIPS else 0,
-                step=1,
-                value=min(3, len(_TRIPS)) if _TRIPS else 0,
-                persistence=True,
-                persistence_type="session",
-                updatemode="mouseup",
-                tooltip={"placement": "bottom", "always_visible": False},
-                included=False,
-            )
+            dbc.InputGroup([
+                dbc.Button("−", id="map-trip-dec", color="secondary", outline=True),
+                dcc.Input(
+                    id="map-trip-count",
+                    type="number",
+                    min=1 if _TRIPS else 0,
+                    max=len(_TRIPS) if _TRIPS else 0,
+                    step=1,
+                    value=min(3, len(_TRIPS)) if _TRIPS else 0,
+                    persistence=True,
+                    persistence_type="session",
+                    style={"width": "90px", "textAlign": "center"}
+                ),
+                dbc.Button("+", id="map-trip-inc", color="secondary", outline=True),
+            ])
         ], md=12)
     ], className="mb-2"),
     dbc.Row([
@@ -146,6 +130,32 @@ layout = dbc.Container([
     ]),
 ], fluid=True)
 
+
+@callback(
+    Output("map-trip-count", "value"),
+    Input("map-trip-inc", "n_clicks"),
+    Input("map-trip-dec", "n_clicks"),
+    State("map-trip-count", "value"),
+    prevent_initial_call=True,
+)
+def adjust_map_trip_count(n_inc, n_dec, current):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise dash.exceptions.PreventUpdate
+    trigger = ctx.triggered[0]["prop_id"].split(".")[0]
+    total = len(_TRIPS) if _TRIPS else 0
+    if total <= 0:
+        return 0
+    current = int(current or 0)
+    if trigger == "map-trip-inc":
+        new_val = current + 1
+    elif trigger == "map-trip-dec":
+        new_val = current - 1
+    else:
+        raise dash.exceptions.PreventUpdate
+    # clamp
+    new_val = max(1, min(new_val, total))
+    return new_val
 
 @callback(
     Output("home-maplibre", "data-geojson"),
