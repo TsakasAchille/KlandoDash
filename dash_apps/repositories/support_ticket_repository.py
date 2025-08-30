@@ -196,6 +196,33 @@ class SupportTicketRepository:
     def has_signalement_for_trip(trip_id: str) -> bool:
         """Indique si un trip a au moins un signalement associé."""
         return (SupportTicketRepository.get_trip_signalements_count(trip_id) or 0) > 0
+
+    @staticmethod
+    def list_signalements_for_trip(trip_id: str) -> List[SupportTicketSchema]:
+        """Retourne la liste des tickets associés à un trajet via le sujet.
+        Critères: subject contient '[Signalement trajet]' et l'ID du trajet.
+        """
+        if not trip_id:
+            return []
+        trip_id_str = str(trip_id).strip()
+        with SessionLocal() as db:
+            tickets = (
+                db.query(SupportTicket)
+                .filter(
+                    func.lower(SupportTicket.subject).like('%[signalement trajet]%'),
+                    SupportTicket.subject.ilike(f'%{trip_id_str}%')
+                )
+                .order_by(SupportTicket.created_at.desc())
+                .all()
+            )
+            # Convertir en schémas
+            schemas = []
+            for t in tickets:
+                d = t.to_dict() if hasattr(t, 'to_dict') else dict(t)
+                if 'ticket_id' in d and not isinstance(d['ticket_id'], str):
+                    d['ticket_id'] = str(d['ticket_id'])
+                schemas.append(SupportTicketSchema.model_validate(d))
+            return schemas
     
     @staticmethod
     def get_tickets_by_page(session: Session, page: int = 1, page_size: int = 10, status: Optional[str] = None,

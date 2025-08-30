@@ -3,6 +3,7 @@ Callbacks pour la page de support technique - Version optimisée avec pagination
 """
 
 from dash import callback, Input, Output, State, ctx, ALL, html, no_update, dcc
+from urllib.parse import parse_qs
 from dash.exceptions import PreventUpdate
 from dash_apps.components.support_tickets import render_tickets_list, render_ticket_details
 from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
@@ -338,12 +339,14 @@ def reset_closed_pagination_on_filters(category, subtype):
 
 @callback(
     Output("selected-ticket-store", "data"),
-    [Input({"type": "ticket-item", "index": ALL}, "n_clicks")],
+    [Input({"type": "ticket-item", "index": ALL}, "n_clicks"),
+     Input("url", "pathname"),
+     Input("url", "search")],
     [State("support-tickets-store", "data"),
      State("closed-tickets-store", "data"),
-     State("selected-ticket-store", "data")]
+    State("selected-ticket-store", "data")]
 )
-def update_selected_ticket(ticket_item_n_clicks, pending_tickets_data, closed_tickets_data, selected_ticket):
+def update_selected_ticket(ticket_item_n_clicks, pathname, search, pending_tickets_data, closed_tickets_data, selected_ticket):
     """
     Gère la sélection d'un ticket
     """
@@ -351,6 +354,35 @@ def update_selected_ticket(ticket_item_n_clicks, pending_tickets_data, closed_ti
     print("ticket_item_n_clicks:", ticket_item_n_clicks)
     print("ctx.triggered_id:", ctx.triggered_id)
     print("selected_ticket:", selected_ticket)
+
+    # 1) Pré-sélection via URL: /support?ticket_id=...
+    try:
+        if pathname == "/support" and search:
+            qs = parse_qs(search.lstrip('?'))
+            url_ticket_id = (qs.get('ticket_id') or [None])[0]
+            if url_ticket_id:
+                # Ne rien faire si déjà sélectionné
+                if selected_ticket and str(selected_ticket.get("ticket_id")) == str(url_ticket_id):
+                    pass
+                else:
+                    # Chercher le ticket dans les stores
+                    ticket = None
+                    if pending_tickets_data and pending_tickets_data.get("tickets"):
+                        ticket = next((t for t in pending_tickets_data["tickets"] if str(t.get("ticket_id")) == str(url_ticket_id)), None)
+                    if not ticket and closed_tickets_data and closed_tickets_data.get("tickets"):
+                        ticket = next((t for t in closed_tickets_data["tickets"] if str(t.get("ticket_id")) == str(url_ticket_id)), None)
+                    # Si pas trouvé, charger depuis la base
+                    if not ticket:
+                        from dash_apps.core.database import get_session
+                        with get_session() as session:
+                            from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
+                            schema = SupportTicketRepository.get_ticket(session, str(url_ticket_id))
+                            ticket = schema.model_dump() if schema else None
+                    if ticket:
+                        return ticket
+    except Exception as e:
+        logger.error(f"Erreur lors de la pré-sélection via URL: {e}")
+    # 2) Sélection via clic sur un ticket
     # Si aucun ticket n'a été cliqué (tous les n_clicks sont None ou 0), ne rien faire
     if not ticket_item_n_clicks or all(x in (None, 0) for x in ticket_item_n_clicks):
         return no_update

@@ -89,23 +89,41 @@ def create_trip_details_layout(selected_trip_id, trips_data):
     
     # Vérifier s'il existe des signalements associés à ce trajet
     signalements_count = 0
+    signalements_list = []
     try:
         from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
         signalements_count = SupportTicketRepository.get_trip_signalements_count(trip_id)
+        # Charger la liste détaillée pour les boutons de navigation
+        if signalements_count > 0:
+            signalements_list = SupportTicketRepository.list_signalements_for_trip(trip_id)
     except Exception as e:
         # En cas d'erreur, on n'empêche pas l'affichage des détails
         signalements_count = 0
+        signalements_list = []
 
     # Génération des composants
+    # Notice + boutons pour accéder aux signalements sur la page Support
+    signalement_buttons = []
+    if signalements_list:
+        for idx, t in enumerate(signalements_list, start=1):
+            label = f"Voir signalement {idx}"
+            href = f"/support?ticket_id={t.ticket_id}"
+            signalement_buttons.append(
+                dbc.Button(label, color="warning", outline=True, size="sm", className="me-2 mb-2", href=href)
+            )
+
     signalement_notice = (
-        dbc.Alert(
-            [
-                html.I(className="fas fa-exclamation-triangle me-2"),
-                f"Ce trajet a {signalements_count} signalement(s)."
-            ],
-            color="warning",
-            className="mb-3",
-        ) if signalements_count > 0 else html.Div()
+        html.Div([
+            dbc.Alert(
+                [
+                    html.I(className="fas fa-exclamation-triangle me-2"),
+                    f"Ce trajet a {signalements_count} signalement(s)."
+                ],
+                color="warning",
+                className="mb-2",
+            ),
+            html.Div(signalement_buttons)
+        ]) if signalements_count > 0 else html.Div()
     )
 
     trip_details_card = html.Div(
