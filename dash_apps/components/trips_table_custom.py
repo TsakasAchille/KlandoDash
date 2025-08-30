@@ -22,8 +22,8 @@ def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id
     page_size = Config.USERS_TABLE_PAGE_SIZE
     page_count = (total_trips - 1) // page_size + 1 if total_trips > 0 else 1
     
-    # Créer les en-têtes du tableau
-    headers = ["", "Origine", "Destination", "Date", "Heure", "Places", "Prix", "Statut"]
+    # Créer les en-têtes du tableau (Checkbox en première colonne, puis ID Trajet)
+    headers = ["", "ID Trajet", "Origine", "Destination", "Date", "Heure", "Places", "Prix", "Statut"]
     
     # Créer les lignes du tableau
     table_rows = []
@@ -119,7 +119,7 @@ def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id
         }
         
         row = html.Tr([
-            # Case à cocher ou indicateur de sélection
+            # Bouton de sélection (première colonne)
             html.Td(
                 dbc.Button(
                     children=html.I(className="fas fa-check"),
@@ -139,6 +139,8 @@ def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id
                 ),
                 style={"width": "40px", "cursor": "pointer"}
             ),
+            # ID du trajet (deuxième colonne)
+            html.Td(trip_id_str, style=cell_style),
             # Autres colonnes
             html.Td(origin[:30] + "..." if len(origin) > 30 else origin, style=cell_style),
             html.Td(destination[:30] + "..." if len(destination) > 30 else destination, style=cell_style),
@@ -153,7 +155,7 @@ def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id
     
     # Si aucun trajet n'est disponible, afficher une ligne vide
     if not table_rows:
-        table_rows = [html.Tr([html.Td("Aucun trajet trouvé", colSpan=8)])]
+        table_rows = [html.Tr([html.Td("Aucun trajet trouvé", colSpan=9)])]
     
     # Construire le tableau
     table = html.Table(
