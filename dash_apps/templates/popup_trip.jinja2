@@ -1,0 +1,39 @@
+{# Popup HTML fragment for a trip, rendered server-side. Keep it lightweight (no <html>/<body>) #}
+<div class="klp klcar">
+  <div class="klp__accent"></div>
+  <div class="klp__body">
+    <div class="klcar__header" style="display:flex;align-items:center;gap:10px;">
+      {% if driver_avatar_url %}
+      <img src="{{ driver_avatar_url }}" alt="avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid #eee;"/>
+      {% endif %}
+      <div class="klcar__driver-meta" style="min-width:0;">
+        <div class="klcar__driver-name" style="font-weight:600;font-size:14px;color:#1f2d3d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          {{ driver_name or 'Conducteur' }}
+        </div>
+        <div class="klcar__trip" style="font-size:12px;color:#5b6b7b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          {{ departure_name or '-' }} → {{ destination_name or '-' }}
+        </div>
+      </div>
+    </div>
+
+    <div class="klcar__stats" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <span class="klp__badge klp__badge--price" style="background:#eef7ff;color:#1a73e8;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:600;">
+        {{ passenger_price if passenger_price is not none else '—' }} CFA
+      </span>
+      <span class="klp__badge" style="background:#f6f7f9;color:#394b59;border-radius:999px;padding:4px 8px;font-size:12px;">
+        {{ seats_booked or 0 }}/{{ seats_available or 0 }} places
+      </span>
+    </div>
+
+    {% if trip_id or driver_id %}
+    <div class="klcar__links" style="margin-top:8px;display:flex;gap:10px;">
+      {% if trip_id %}
+      <a href="/bookings/{{ trip_id }}" style="font-size:12px;color:#1a73e8;text-decoration:none;">Détails trajet</a>
+      {% endif %}
+      {% if driver_id %}
+      <a href="/users/{{ driver_id }}" style="font-size:12px;color:#1a73e8;text-decoration:none;">Profil conducteur</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>

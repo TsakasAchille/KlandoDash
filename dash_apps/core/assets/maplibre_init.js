@@ -172,6 +172,30 @@
           'line-opacity': 0.85
         }
       });
+      // Selected highlight layer (drawn above base), filtered by trip_id
+      map.addLayer({
+        id: 'route-line-selected',
+        type: 'line',
+        source: sourceId,
+        filter: ['==', ['get', 'trip_id'], '__none__'], // initially none selected
+        paint: {
+          'line-color': ['coalesce', ['get', 'color'], '#ff7f0e'],
+          'line-width': 6,
+          'line-opacity': 1.0
+        }
+      });
+      // Wide invisible hit layer to enlarge clickable area along the whole polyline
+      map.addLayer({
+        id: 'route-line-hit',
+        type: 'line',
+        source: sourceId,
+        filter: ['==', ['geometry-type'], 'LineString'],
+        paint: {
+          'line-color': '#000000',
+          'line-opacity': 0.01, // nearly invisible but hit-testable
+          'line-width': 24
+        }
+      });
       // Start/End points for visibility if present
       map.addLayer({
         id: 'route-points',
@@ -187,6 +211,187 @@
           'circle-stroke-color': '#ffffff'
         }
       });
+      // Center marker source/layer for selected polyline midpoint
+      if (!map.getSource('route-center')) {
+        map.addSource('route-center', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      }
+      var ensureCenterIcon = function () {
+        try {
+          if (map.hasImage && map.hasImage('route-center-icon')) return Promise.resolve(true);
+          return new Promise(function (resolve) {
+            var url = '/assets/icons/v.png';
+            map.loadImage(url, function (err, img) {
+              try {
+                if (!err && img && map.addImage) { map.addImage('route-center-icon', img, { sdf: false }); }
+              } catch (_) {}
+              resolve(true);
+            });
+          });
+        } catch (e) { return Promise.resolve(false); }
+      };
+      if (!map.getLayer('route-center-symbol')) {
+        map.addLayer({
+          id: 'route-center-symbol',
+          type: 'symbol',
+          source: 'route-center',
+          layout: {
+            'icon-image': 'route-center-icon',
+            'icon-size': 0.25,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true
+          }
+        });
+      }
+      // Interactions: click to open car popup, hover feedback
+      try {
+        // Simple HTML for car popup (fallback)
+        var buildCarPopupHtml = function (props) {
+          var safe = function (v, d) { return (v === undefined || v === null || v === '') ? (d || '-') : String(v); };
+          var driverName = safe(props && props.driver_name, 'Conducteur');
+          var fromTo = safe(props && props.departure_name, '') + ' → ' + safe(props && props.destination_name, '');
+          var price = safe(props && props.passenger_price, '—');
+          var seats = safe(props && props.seats_booked, '0') + '/' + safe(props && props.seats_available, '0');
+          return (
+            '<div class="klp klcar">\n' +
+            '  <div class="klp__accent"></div>\n' +
+            '  <div class="klp__body">\n' +
+            '    <div class="klcar__header">\n' +
+            '      <div class="klcar__driver-meta">\n' +
+            '        <div class="klcar__driver-name">' + driverName + '</div>\n' +
+            '        <div class="klcar__trip">' + fromTo + '</div>\n' +
+            '      </div>\n' +
+            '    </div>\n' +
+            '    <div class="klcar__stats">\n' +
+            '      <span class="klp__badge klp__badge--price">' + price + ' CFA</span>\n' +
+            '      <span class="klp__badge">' + seats + ' places</span>\n' +
+            '    </div>\n' +
+            '  </div>\n' +
+            '</div>'
+          );
+        };
+
+        // Fetch server-rendered popup via Flask + Jinja template
+        var fetchTripPopupHtml = function (props) {
+          try {
+            var payload = {
+              driver_name: props && props.driver_name,
+              departure_name: props && props.departure_name,
+              destination_name: props && props.destination_name,
+              passenger_price: props && props.passenger_price,
+              seats_booked: props && props.seats_booked,
+              seats_available: props && props.seats_available,
+              driver_avatar_url: props && props.driver_avatar_url,
+              trip_id: props && props.trip_id,
+              driver_id: props && props.driver_id
+            };
+            return fetch('/popup/trip', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+              credentials: 'same-origin'
+            }).then(function (res) { return res.text(); });
+          } catch (e) {
+            return Promise.reject(e);
+          }
+        };
+
+        var carPopup;
+        var selectedTripId = null;
+        var lastSelection = { props: null, detailsPromise: null };
+        // Guard to prevent route click from toggling selection when center icon is clicked
+        var lastCenterClick = { t: 0, x: 0, y: 0 };
+        var suppressRouteClicksUntil = 0;
+        // Global center icon click: ensure popup opens/expands even if bubble not present
+        if (!map.__centerClickBound) {
+          try {
+            map.on('click', 'route-center-symbol', function (e) {
+              try {
+                // mark last center click
+                try {
+                  lastCenterClick = { t: Date.now(), x: e.point.x, y: e.point.y };
+                  suppressRouteClicksUntil = Date.now() + 400; // block route clicks for a short window
+                  if (e && e.preventDefault) e.preventDefault();
+                  if (e && e.originalEvent) {
+                    try { e.originalEvent.stopPropagation && e.originalEvent.stopPropagation(); } catch (_) {}
+                    try { e.originalEvent.cancelBubble = true; } catch (_) {}
+                  }
+                } catch (_) {}
+                // No on-map popup anymore for center icon click
+                return; // do nothing else
+              } catch (_) {}
+            });
+            map.__centerClickBound = true;
+          } catch (_) {}
+        }
+        map.on('mouseenter', 'route-line-hit', function () { try { map.getCanvas().style.cursor = 'pointer'; } catch (_) {} });
+        map.on('mouseleave', 'route-line-hit', function () { try { map.getCanvas().style.cursor = ''; } catch (_) {} });
+        // Pointer for center icon as well
+        try {
+          // Center icon is not interactive anymore; keep default cursor
+          map.on('mouseenter', 'route-center-symbol', function () { try { map.getCanvas().style.cursor = ''; } catch (_) {} });
+          map.on('mouseleave', 'route-center-symbol', function () { try { map.getCanvas().style.cursor = ''; } catch (_) {} });
+        } catch (_) {}
+        map.on('click', 'route-line-hit', function (e) {
+          try {
+            // If a center icon was just clicked very near this point, ignore
+            try {
+              var now = Date.now();
+              if (now < suppressRouteClicksUntil) return; // global short-circuit
+              var dt = now - (lastCenterClick.t || 0);
+              var dx = (e.point && typeof e.point.x === 'number') ? Math.abs(e.point.x - (lastCenterClick.x || 0)) : 9999;
+              var dy = (e.point && typeof e.point.y === 'number') ? Math.abs(e.point.y - (lastCenterClick.y || 0)) : 9999;
+              if (dt < 400 && dx < 12 && dy < 12) return; // swallow this click
+            } catch (_) {}
+            // Option A: clicking polyline should close any open popup
+            try { carPopup && carPopup.remove && carPopup.remove(); } catch (_) {}
+            var f = e && e.features && e.features[0];
+            var props = f && f.properties ? f.properties : {};
+            var tripId = (props && (props.trip_id || props.id || props.tripID)) ? (props.trip_id || props.id || props.tripID) : '';
+            // Toggle selection: if already selected, deselect and close popup
+            if (selectedTripId && tripId && String(selectedTripId) === String(tripId)) {
+              selectedTripId = null;
+              try { map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], '__none__']); } catch (_) {}
+              try { map.getSource('route-center') && map.getSource('route-center').setData({ type: 'FeatureCollection', features: [] }); } catch (_) {}
+              // Publish deselection to Dash
+              try { window.__map_events = window.__map_events || {}; window.__map_events.clickTripId = null; } catch (_) {}
+              return;
+            }
+
+            // Update selected highlight filter
+            selectedTripId = tripId || null;
+            try { map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], selectedTripId || '__none__']); } catch (_) {}
+            // Publish selection to Dash (used by mapbridge.poll)
+            try { window.__map_events = window.__map_events || {}; window.__map_events.clickTripId = selectedTripId; } catch (_) {}
+
+            // Prefetch server-rendered HTML for full card
+            var detailsPromise = fetchTripPopupHtml(props).then(function (html) { return html; }).catch(function () { return null; });
+            lastSelection.props = props; lastSelection.detailsPromise = detailsPromise;
+
+            // Compute line midpoint and update center marker source
+            var midpoint = (function getMid(geom) {
+              try {
+                var type = geom && geom.type;
+                if (type === 'LineString') {
+                  var arr = (geom.coordinates || []); var n = arr.length; if (!n) return null; return arr[Math.floor(n / 2)];
+                } else if (type === 'MultiLineString') {
+                  var first = (geom.coordinates && geom.coordinates[0]) || []; var m = first.length; if (!m) return null; return first[Math.floor(m / 2)];
+                } else if (type === 'Feature') {
+                  return getMid(geom.geometry);
+                }
+              } catch (_) {}
+              return null;
+            })(f && f.geometry);
+            if (midpoint && midpoint.length === 2) {
+              ensureCenterIcon().then(function () {
+                try {
+                  var fc = { type: 'FeatureCollection', features: [ { type: 'Feature', properties: { trip_id: selectedTripId }, geometry: { type: 'Point', coordinates: midpoint } } ] };
+                  map.getSource('route-center') && map.getSource('route-center').setData(fc);
+                } catch (_) {}
+              });
+            }
+          } catch (err) { console.warn('[MapLibre] car popup error', err); }
+        });
+      } catch (_) {}
       // Fit bounds if possible
       try { fitToGeojson(map, geojson); } catch (_) {}
     } catch (e) {

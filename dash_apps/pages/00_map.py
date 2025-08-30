@@ -1,9 +1,10 @@
-from dash import html, dcc, Input, Output, State, callback
+from dash import html, dcc, Input, Output, State, callback, ClientsideFunction
 import dash
 import json
 import dash_bootstrap_components as dbc
 from dash import dash_table
 from dash_apps.components.map_trips_table import render_map_trips_table
+from dash_apps.components.user_profile import render_user_profile
 from dash_apps.config import Config
 from dash_apps.repositories.trip_repository import TripRepository
 import polyline as polyline_lib
@@ -89,7 +90,11 @@ def _trips_to_table_rows(trips):
 layout = dbc.Container([
     html.H2("Carte", style={"marginTop": "20px", "marginBottom": "16px"}),
     html.P("Vue d'ensemble géographique (style JSON MapLibre)", className="text-muted"),
+    # Stores interactivité
     dcc.Store(id="map-selected-trips", storage_type="session", data=[]),
+    dcc.Store(id="map-hover-trip-id", data=None),
+    dcc.Store(id="map-click-trip-id", data=None),
+    dcc.Interval(id="map-event-poll", interval=800, n_intervals=0),
     dbc.Row([
         dbc.Col([
             html.Label("Nombre de derniers trajets à afficher"),
@@ -110,7 +115,22 @@ layout = dbc.Container([
             html.Div(id="map-trips-table-container")
         ], md=12)
     ], className="mb-3"),
-    create_maplibre_container(),
+    dbc.Row([
+        dbc.Col([
+            create_maplibre_container()
+        ], md=9),
+        dbc.Col([
+            html.Div(id="map-side-panel", children=html.Div("Sélectionnez un trajet sur la carte"),
+                     style={
+                         "backgroundColor": "white",
+                         "borderRadius": "12px",
+                         "boxShadow": "0 4px 12px rgba(0,0,0,0.08)",
+                         "padding": "12px",
+                         "height": "80vh",
+                         "overflow": "auto"
+                     })
+        ], md=3)
+    ]),
 ], fluid=True)
 
 
@@ -148,13 +168,24 @@ def update_map_geojson(count, selected_ids):
                 p = p.decode('utf-8')
             coords_latlon = polyline_lib.decode(p)  # [(lat, lon), ...]
             coords_lonlat = [[lon, lat] for (lat, lon) in coords_latlon]
+            # propriétés enrichies pour interactions
+            props = {
+                "trip_id": getattr(trip, 'trip_id', None),
+                "color": palette[idx % len(palette)],
+                "driver_id": getattr(trip, 'driver_id', None),
+                "driver_name": getattr(trip, 'driver_name', None) if hasattr(trip, 'driver_name') else None,
+                "seats_booked": getattr(trip, 'seats_booked', None),
+                "seats_available": getattr(trip, 'seats_available', None),
+                "passenger_price": getattr(trip, 'passenger_price', None),
+                "distance": getattr(trip, 'distance', None),
+                "departure_name": getattr(trip, 'departure_name', None),
+                "destination_name": getattr(trip, 'destination_name', None),
+                "departure_schedule": str(getattr(trip, 'departure_schedule', '') or ''),
+            }
             features.append({
                 "type": "Feature",
                 "geometry": {"type": "LineString", "coordinates": coords_lonlat},
-                "properties": {
-                    "trip_id": getattr(trip, 'trip_id', None),
-                    "color": palette[idx % len(palette)],
-                },
+                "properties": props,
             })
             if coords_lonlat:
                 start = coords_lonlat[0]
@@ -164,8 +195,8 @@ def update_map_geojson(count, selected_ids):
                     "geometry": {"type": "Point", "coordinates": start},
                     "properties": {
                         "role": "start",
-                        "trip_id": getattr(trip, 'trip_id', None),
-                        "color": palette[idx % len(palette)],
+                        "trip_id": props["trip_id"],
+                        "color": props["color"],
                     },
                 })
                 features.append({
@@ -173,10 +204,24 @@ def update_map_geojson(count, selected_ids):
                     "geometry": {"type": "Point", "coordinates": end},
                     "properties": {
                         "role": "end",
-                        "trip_id": getattr(trip, 'trip_id', None),
-                        "color": palette[idx % len(palette)],
+                        "trip_id": props["trip_id"],
+                        "color": props["color"],
                     },
                 })
+                # point milieu pour icône voiture
+                try:
+                    mid = coords_lonlat[len(coords_lonlat)//2]
+                    features.append({
+                        "type": "Feature",
+                        "geometry": {"type": "Point", "coordinates": mid},
+                        "properties": {
+                            "role": "car",
+                            "trip_id": props["trip_id"],
+                            "color": props["color"],
+                        },
+                    })
+                except Exception:
+                    pass
         except Exception:
             continue
     if not features:
@@ -228,3 +273,33 @@ def sync_selection(count, checkbox_values, checkbox_ids):
     # Safety: limit to visible last N trips
     visible = {getattr(t, 'trip_id', None) for t in _TRIPS[:count] if getattr(t, 'trip_id', None)}
     return [sid for sid in selected if sid in visible]
+
+
+# --- Clientside bridge: poll window.__map_events and update Stores ---
+dash.clientside_callback(
+    ClientsideFunction(namespace="mapbridge", function_name="poll"),
+    Output("map-hover-trip-id", "data"),
+    Output("map-click-trip-id", "data"),
+    Input("map-event-poll", "n_intervals"),
+)
+
+
+@callback(
+    Output("map-side-panel", "children"),
+    Input("map-click-trip-id", "data"),
+    prevent_initial_call=False,
+)
+def render_side_panel(selected_trip_id):
+    # Fallback texte si rien
+    if not selected_trip_id:
+        return html.Div("Sélectionnez un trajet sur la carte")
+    # Retrouver le trajet
+    trip = next((t for t in _TRIPS if getattr(t, 'trip_id', None) == selected_trip_id), None)
+    if not trip:
+        return html.Div([html.Strong("Trajet:"), html.Span(f" {selected_trip_id}")])
+    # Afficher directement le profil conducteur à gauche
+    driver_id = getattr(trip, 'driver_id', None)
+    if driver_id:
+        return render_user_profile(driver_id)
+    # Fallback minimal si pas de driver_id
+    return html.Div([html.Strong("Trajet:"), html.Span(f" {selected_trip_id}")])

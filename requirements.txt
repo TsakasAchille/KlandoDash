@@ -44,3 +44,4 @@ tornado==6.4.2
 traitlets==5.14.3
 watchdog==4.0.2
 xlsxwriter==3.2.3
+dash-bootstrap-components==1.6.0

@@ -1,0 +1,174 @@
+/* MapLibre popup theming for Klando */
+.maplibregl-popup.klando-popup { z-index: 10; }
+.maplibregl-popup.klando-popup .maplibregl-popup-tip { display: none; } /* cleaner card look */
+.maplibregl-popup.klando-popup .maplibregl-popup-content {
+  padding: 0; /* padding handled inside body */
+  border-radius: 28px; /* align with CARD_STYLE */
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px; /* align with CARD_STYLE */
+  border: 1px solid #e7ecf3;
+  background: #ffffff;
+  min-width: 300px;
+  max-width: 340px;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+/* Bubble mode: small circular avatar bubble that expands on hover */
+.maplibregl-popup.klando-popup.klando-bubble .maplibregl-popup-content {
+  min-width: initial;
+  max-width: initial;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid #e6eef8;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.maplibregl-popup.klando-popup.klando-bubble .maplibregl-popup-close-button { display: none; }
+.maplibregl-popup.klando-popup.klando-bubble .klbubble {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #eef4ff;
+  box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px #e6eef8;
+}
+.maplibregl-popup.klando-popup.klando-bubble .klbubble img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.maplibregl-popup.klando-popup.klando-bubble .klbubble__placeholder {
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(45deg,#e6eef8,#e6eef8 6px,#f3f6fb 6px,#f3f6fb 12px);
+  border-radius: 50%;
+}
+
+.maplibregl-popup.klando-popup .maplibregl-popup-content img { max-width: 100%; height: auto; display: block; }
+
+.klp {
+  display: block;
+}
+.klp__accent {
+  height: 4px;
+  background: linear-gradient(90deg, #0d6efd 0%, #4281ec 100%);
+}
+.klp__body { padding: 16px 18px; background: #ffffff; }
+.klp__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.klp__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e0f0ff;
+  box-shadow: inset 0 0 0 2px #ffffff, 0 0 0 2px #e6eef8; /* ring */
+  flex: 0 0 auto;
+}
+.klp__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.klp__title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+}
+.klp__subtitle {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.klp__details { background: #f8fafc; border-radius: 12px; padding: 12px; }
+.klp__row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eaeef3; }
+.klp__row:last-child { border-bottom: none; padding-bottom: 0; }
+.klp__icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.klp__icon--blue { background: #e8f3ff; }
+.klp__icon--yellow { background: #fff5d9; }
+.klp__icon--gray { background: #edf2f7; }
+.klp__label { font-weight: 500; color: #666; font-size: 12px; }
+.klp__value { font-weight: 600; color: #1c2b46; font-size: 13px; }
+.klp__grow { flex: 1; }
+
+.klp__stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0 10px;
+}
+.klp__badge {
+  background: #f0f3f8;
+  color: #333;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.klp__badge--price {
+  background: #4281ec;
+  color: #fff;
+}
+.klp__badge--valid {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.klp__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.klp__btn {
+  background: #2e7d32;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.klp__btn:hover {
+  filter: brightness(0.95);
+}
+
+/* --- Interactive Car Popup --- */
+.maplibregl-popup.klando-popup.klando-car .maplibregl-popup-content {
+  max-width: 380px;
+}
+.klcar { display: block; }
+.klcar__header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.klcar__driver { display: flex; align-items: center; gap: 12px; }
+.klcar__driver-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: #eef4ff; box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px #e6eef8; }
+.klcar__driver-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.klcar__driver-name { font-weight: 600; font-size: 14px; color: #1c2b46; }
+.klcar__driver-btn { background: #0d6efd; color: #fff; border: 0; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+.klcar__driver-btn:hover { filter: brightness(0.95); }
+
+.klcar__vehicle { position: relative; background: #f7fafc; border-radius: 14px; padding: 10px; border: 1px solid #e7ecf3; }
+.klcar__windshield { height: 10px; background: linear-gradient(180deg,#dbeafe,#eff6ff); border-radius: 8px; margin-bottom: 8px; }
+.klcar__row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.klcar__row--front { grid-template-columns: 1fr 1fr; }
+.klcar__divider { height: 8px; }
+.klcar__grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+
+.klcar__seat { position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 10px; background: #ffffff; border: 1px solid #e7ecf3; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.klcar__seat-inner { width: 90%; height: 90%; border-radius: 8px; background: #f3f6fb; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.klcar__seat--driver { background: #fff; border: 1px solid #d7e3f4; }
+.klcar__seat--copilot .klcar__seat-inner { background: #eef4ff; }
+.klcar__seat--occupied .klcar__seat-inner { background: #fff; }
+.klcar__seat img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.klcar__avatar-fallback { width: 100%; height: 100%; background: repeating-linear-gradient(45deg,#e6eef8,#e6eef8 6px,#f3f6fb 6px,#f3f6fb 12px); }
+.klcar__plus { font-size: 20px; color: #8aa0bf; }
+
+/* Mini card on seat (shown for occupied seats) */
+.klcar__mini { position: absolute; bottom: 6px; left: 6px; right: 6px; background: rgba(255,255,255,0.96); border: 1px solid #e7ecf3; border-radius: 8px; padding: 4px 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); pointer-events: none; }
+.klcar__mini-row { font-size: 11px; color: #334155; line-height: 1.2; }
