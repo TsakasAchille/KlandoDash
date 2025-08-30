@@ -49,6 +49,9 @@ def proxy_map():
     except Exception:
         abort(400, 'Invalid URL')
 
+    if parsed.scheme not in ('http', 'https'):
+        abort(400, 'Unsupported URL scheme')
+
     if parsed.hostname not in ALLOWED_HOSTS:
         abort(403, 'Upstream host not allowed')
 
@@ -56,7 +59,16 @@ def proxy_map():
     upstream_url = _append_api_key(upstream_url, Config.MAPLIBRE_API_KEY)
 
     try:
-        resp = requests.get(upstream_url, stream=True, timeout=20)
+        # Forward minimal headers that matter for range requests and content negotiation
+        fwd_headers = {}
+        if 'Range' in request.headers:
+            fwd_headers['Range'] = request.headers['Range']
+        if 'If-None-Match' in request.headers:
+            fwd_headers['If-None-Match'] = request.headers['If-None-Match']
+        if 'If-Modified-Since' in request.headers:
+            fwd_headers['If-Modified-Since'] = request.headers['If-Modified-Since']
+
+        resp = requests.get(upstream_url, stream=True, timeout=20, headers=fwd_headers)
     except requests.RequestException as e:
         logger.exception("Proxy fetch error: %s", e)
         abort(502, 'Upstream fetch failed')
@@ -74,4 +86,11 @@ def proxy_map():
         headers = [(k, v) for (k, v) in headers if k.lower() != 'content-type']
         headers.append(('Content-Type', content_type))
 
-    return Response(resp.content, status=resp.status_code, headers=headers)
+    # Add light caching when upstream didn't provide any, beneficial for tiles/glyphs
+    cache_hdr_present = any(k.lower() == 'cache-control' for k, _ in headers)
+    if not cache_hdr_present and content_type:
+        if any(substr in content_type for substr in ('protobuf', 'pbf', 'mvt', 'font', 'octet-stream', 'application/json')):
+            headers.append(('Cache-Control', 'public, max-age=3600'))
+
+    # Stream body to client without buffering everything in memory
+    return Response(resp.iter_content(chunk_size=8192), status=resp.status_code, headers=headers)

@@ -1,0 +1,18 @@
+/* Truncate long Dash rc-slider marks to prevent overlap */
+.rc-slider-mark {
+  user-select: none;
+}
+.rc-slider-mark-text {
+  max-width: 120px;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  opacity: 0.9;
+}
+/* Slightly reduce top margin to keep slider compact */
+.rc-slider {
+  margin-top: 8px;
+  margin-bottom: 18px;
+}

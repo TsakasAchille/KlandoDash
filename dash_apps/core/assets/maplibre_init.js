@@ -79,6 +79,7 @@
         style: shouldProxy(initialStyle) ? viaProxy(initialStyle) : initialStyle,
         center: [-14.452, 14.497], // default: Senegal
         zoom: 5,
+        cooperativeGestures: true,
         transformRequest: (url, resourceType) => {
           let finalUrl = url;
           try {
@@ -116,11 +117,21 @@
       map.on('load', () => {
         try { map.resize(); } catch (e) {}
         console.debug('[MapLibre][event] load');
-        console.warn('[MapLibre] Carte initialisée avec un style vide (aucun chargement distant pour l\'instant).');
-        console.warn('[MapLibre] On réactivera le style distant (via proxy si besoin) quand l\'API sera prête.');
+        // If a route GeoJSON is already present on the container, render it
+        try {
+          const dataAttr = container.getAttribute('data-geojson');
+          if (dataAttr) {
+            const gj = JSON.parse(dataAttr);
+            ensureRouteLayer(map, gj);
+          }
+        } catch (e) { console.debug('[MapLibre] no initial geojson'); }
       });
       map.on('error', (e) => {
-        console.error('[MapLibre] Map error', e && e.error ? e.error : e);
+        const err = e && e.error ? e.error : e;
+        console.error('[MapLibre] Map error', err);
+        const msgText = (err && err.message) ? String(err.message) : '';
+        const isBenign = /sprite|glyph|tile/i.test(msgText) || /404/.test(msgText || '');
+        if (isBenign) return; // ignore common non-fatal fetch errors
         if (!container.querySelector('.maplibre-error')) {
           const msg = document.createElement('div');
           msg.className = 'maplibre-error';
@@ -135,6 +146,73 @@
     } catch (e) {
       console.error('[MapLibre] Initialization error', e);
     }
+  }
+
+  function ensureRouteLayer(map, geojson) {
+    try {
+      const sourceId = 'route-geojson';
+      if (map.getSource(sourceId)) {
+        map.getSource(sourceId).setData(geojson);
+        try { fitToGeojson(map, geojson); } catch (_) {}
+        return;
+      }
+      map.addSource(sourceId, { type: 'geojson', data: geojson });
+      map.addLayer({
+        id: 'route-line',
+        type: 'line',
+        source: sourceId,
+        paint: {
+          'line-color': '#4281ec',
+          'line-width': 4,
+          'line-opacity': 0.85
+        }
+      });
+      // Start/End points for visibility if present
+      map.addLayer({
+        id: 'route-points',
+        type: 'circle',
+        source: sourceId,
+        filter: ['any', ['==', ['geometry-type'], 'Point']],
+        paint: {
+          'circle-radius': 4,
+          'circle-color': ['case', ['==', ['get', 'role'], 'start'], '#2ecc71', '#e67e22'],
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#ffffff'
+        }
+      });
+      // Fit bounds if possible
+      try { fitToGeojson(map, geojson); } catch (_) {}
+    } catch (e) {
+      console.error('[MapLibre] ensureRouteLayer error', e);
+    }
+  }
+
+  function fitToGeojson(map, geojson) {
+    const bbox = computeBbox(geojson);
+    if (bbox) {
+      map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 40, duration: 300 });
+    }
+  }
+
+  function computeBbox(geojson) {
+    try {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      const update = (x, y) => { if (x < minX) minX = x; if (y < minY) minY = y; if (x > maxX) maxX = x; if (y > maxY) maxY = y; };
+      const coordsWalk = (geom) => {
+        const type = geom.type;
+        const coords = geom.coordinates;
+        if (type === 'Point') { update(coords[0], coords[1]); }
+        else if (type === 'LineString' || type === 'MultiPoint') { coords.forEach(c => update(c[0], c[1])); }
+        else if (type === 'MultiLineString' || type === 'Polygon') { coords.forEach(r => r.forEach(c => update(c[0], c[1]))); }
+        else if (type === 'MultiPolygon') { coords.forEach(p => p.forEach(r => r.forEach(c => update(c[0], c[1])))); }
+        else if (type === 'GeometryCollection') { (geom.geometries || []).forEach(g => coordsWalk(g)); }
+      };
+      if (geojson.type === 'Feature') coordsWalk(geojson.geometry);
+      else if (geojson.type === 'FeatureCollection') (geojson.features || []).forEach(f => coordsWalk(f.geometry));
+      else coordsWalk(geojson);
+      if (minX === Infinity) return null;
+      return [minX, minY, maxX, maxY];
+    } catch (e) { return null; }
   }
 
   function onReady() {
@@ -155,8 +233,22 @@
     initAll();
 
     // Observe future dynamic additions (Dash renders async)
-    const observer = new MutationObserver(() => initAll());
-    observer.observe(document.body, { childList: true, subtree: true });
+    const observer = new MutationObserver((mutations) => {
+      let needsInitAll = false;
+      for (const m of mutations) {
+        if (m.type === 'childList') needsInitAll = true;
+        if (m.type === 'attributes' && m.target && m.target.classList && m.target.classList.contains('maplibre-container')) {
+          if (m.attributeName === 'data-geojson' && m.target.__map && m.target.getAttribute('data-geojson')) {
+            try {
+              const gj = JSON.parse(m.target.getAttribute('data-geojson'));
+              ensureRouteLayer(m.target.__map, gj);
+            } catch (_) {}
+          }
+        }
+      }
+      if (needsInitAll) initAll();
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-geojson'] });
     console.debug('[MapLibre][onReady] observer attached');
   }
 
