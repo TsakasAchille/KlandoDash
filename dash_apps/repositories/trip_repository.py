@@ -2,9 +2,11 @@ from dash_apps.models.trip import Trip
 from dash_apps.schemas.trip import TripSchema
 from dash_apps.core.database import SessionLocal
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, and_, func, exists
 from typing import List, Optional
 import datetime
+
+from dash_apps.models.support_ticket import SupportTicket
 
 class TripRepository:
     @staticmethod
@@ -112,6 +114,14 @@ class TripRepository:
                 # Filtre statut
                 if filters.get("status") and filters["status"] != "all":
                     query = query.filter(Trip.status == filters["status"])
+
+                # Filtre: trajets ayant au moins un signalement associé
+                if filters.get("has_signalement"):
+                    subq = db.query(SupportTicket.ticket_id).filter(
+                        func.lower(SupportTicket.subject).like('%[signalement trajet]%'),
+                        SupportTicket.subject.ilike(func.concat('%', Trip.trip_id, '%'))
+                    ).exists()
+                    query = query.filter(subq)
             
             # Tri par date de création (plus récent en premier par défaut)
             date_sort = filters.get("date_sort", "desc") if filters else "desc"

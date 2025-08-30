@@ -113,6 +113,17 @@ def render_trip_search_widget():
                         )
                     ], width=12)
                 ], className="mb-3"),
+
+                # 4. Avec signalement
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Checkbox(
+                            id="trips-has-signalement-filter",
+                            label="Avec signalement",
+                            value=False,
+                        )
+                    ], width=12)
+                ], className="mb-1"),
             ], id="trips-advanced-filters-collapse", is_open=False)
         ])
     ], className="mb-3")
@@ -167,6 +178,10 @@ def render_active_trip_filters(filters):
         }
         status_label = status_map.get(filters["status"], filters["status"])
         filters_badges.append(dbc.Badge(f"Statut: {status_label}", color="info", className="me-2"))
+
+    # Filtre signalement
+    if filters.get("has_signalement"):
+        filters_badges.append(dbc.Badge("Avec signalement", color="warning", className="me-2"))
         
     return html.Div(
         [html.Span("Filtres actifs: ", className="me-2")] + filters_badges,

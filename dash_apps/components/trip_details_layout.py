@@ -87,7 +87,27 @@ def create_trip_details_layout(selected_trip_id, trips_data):
         print(f"[WARNING] Erreur lors de la récupération des passagers: {str(e)}")
         passengers_list = []
     
+    # Vérifier s'il existe des signalements associés à ce trajet
+    signalements_count = 0
+    try:
+        from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
+        signalements_count = SupportTicketRepository.get_trip_signalements_count(trip_id)
+    except Exception as e:
+        # En cas d'erreur, on n'empêche pas l'affichage des détails
+        signalements_count = 0
+
     # Génération des composants
+    signalement_notice = (
+        dbc.Alert(
+            [
+                html.I(className="fas fa-exclamation-triangle me-2"),
+                f"Ce trajet a {signalements_count} signalement(s)."
+            ],
+            color="warning",
+            className="mb-3",
+        ) if signalements_count > 0 else html.Div()
+    )
+
     trip_details_card = html.Div(
         html.Iframe(
             srcDoc=render_trip_card_html(trip_dict),
@@ -137,6 +157,7 @@ def create_trip_details_layout(selected_trip_id, trips_data):
     return dbc.Row([
         dbc.Col([
             # Détails du trajet avec espacement
+            html.Div(signalement_notice, style={"marginBottom": "8px"}),
             html.Div(trip_details_card, style=SPACING_STYLE),
             # Conducteur du trajet
             html.Div(trip_driver_component, style=SPACING_STYLE),

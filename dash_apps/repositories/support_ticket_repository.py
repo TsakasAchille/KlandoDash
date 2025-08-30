@@ -175,6 +175,27 @@ class SupportTicketRepository:
                 "total_pages": total_pages
             }
         }
+
+    @staticmethod
+    def get_trip_signalements_count(trip_id: str) -> int:
+        """Retourne le nombre de signalements liés à un trip donné.
+        Le lien est détecté via le sujet contenant le tag '[Signalement trajet]'
+        et l'ID du trajet.
+        """
+        if not trip_id:
+            return 0
+        trip_id_str = str(trip_id).strip()
+        with SessionLocal() as db:
+            query = db.query(func.count(SupportTicket.ticket_id)).filter(
+                func.lower(SupportTicket.subject).like('%[signalement trajet]%'),
+                SupportTicket.subject.ilike(f'%{trip_id_str}%')
+            )
+            return query.scalar() or 0
+
+    @staticmethod
+    def has_signalement_for_trip(trip_id: str) -> bool:
+        """Indique si un trip a au moins un signalement associé."""
+        return (SupportTicketRepository.get_trip_signalements_count(trip_id) or 0) > 0
     
     @staticmethod
     def get_tickets_by_page(session: Session, page: int = 1, page_size: int = 10, status: Optional[str] = None,

@@ -166,12 +166,13 @@ def toggle_trip_filters_collapse(n_clicks, is_open):
      Input("trips-single-date-filter", "date"),
      Input("trips-date-filter-type", "value"),
      Input("trips-date-sort-filter", "value"),
-     Input("trips-status-filter", "value")],
+     Input("trips-status-filter", "value"),
+     Input("trips-has-signalement-filter", "value")],
     [State("trips-filter-store", "data")],
     prevent_initial_call=True
 )
 def update_trip_filters(search_text, date_from, date_to, single_date, date_filter_type, 
-                       date_sort, status, current_filters):
+                       date_sort, status, has_signalement, current_filters):
     """Met à jour les filtres de recherche des trajets"""
     
     # Construction du dictionnaire de filtres
@@ -182,7 +183,8 @@ def update_trip_filters(search_text, date_from, date_to, single_date, date_filte
         "single_date": single_date,
         "date_filter_type": date_filter_type or "range",
         "date_sort": date_sort or "desc",
-        "status": status or "all"
+        "status": status or "all",
+        "has_signalement": bool(has_signalement)
     }
     
     # Ne déclencher une mise à jour que si les filtres ont vraiment changé
@@ -275,6 +277,10 @@ def render_trips_table_pagination(current_page, filters, refresh_clicks, selecte
     # Filtre statut
     if filters.get("status") and filters["status"] != "all":
         filter_params["status"] = filters["status"]
+
+    # Filtre signalement
+    if filters.get("has_signalement"):
+        filter_params["has_signalement"] = True
     
     # Récupérer uniquement les trajets de la page courante avec filtres (pagination côté serveur)
     result = TripRepository.get_trips_paginated(page_index, page_size, filters=filter_params)
