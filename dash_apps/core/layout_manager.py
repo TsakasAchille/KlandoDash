@@ -62,12 +62,12 @@ def create_main_layout():
             ], width=10)
         ], className="g-0"),
 
-        # Floating Chatbot bubble (interactive)
-        html.Button(
-            html.Span(className="fas fa-comment-dots"),
+        # Floating Yode logo (interactive)
+        html.Img(
+            src="/assets/icons/yode.svg",
             id="open-chatbot-bubble",
             n_clicks=0,
-            className="chatbot-bubble",
+            className="yode-floating-logo",
         ),
 
         # Floating Chatbot container
