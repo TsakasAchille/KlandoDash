@@ -1,14 +1,60 @@
 import dash_bootstrap_components as dbc
-from dash import html, dcc, callback, Input, Output, State
+from dash import html, dcc, callback, Input, Output, State, callback_context
 import dash
-import pandas as pd
 from dash_apps.repositories.user_repository import UserRepository
 from dash_apps.utils.admin_db import is_admin
-from dash_apps.utils.user_data_old import update_user_field
 from flask import session
+from dash.exceptions import PreventUpdate
+from dash_apps.components.driver_validation_table import render_driver_validation_table
 
 # ID du store pour rafraîchissement
 refresh_store_id = "driver-validation-refresh"
+
+# Helper de log standardisé (aligné avec Users/Trips)
+def log_callback(name, inputs, states=None):
+    try:
+        import json as _json
+        def _short(s):
+            s = str(s)
+            return f"{s[:4]}…{s[-4:]}" if len(s) > 14 else s
+        def _clean(v):
+            if isinstance(v, dict):
+                out = {}
+                for k, val in v.items():
+                    if val in (None, ""):
+                        continue
+                    if isinstance(val, str) and val == "all":
+                        continue
+                    out[k] = _clean(val)
+                return out
+            if isinstance(v, list):
+                return [_clean(x) for x in v if x not in (None, "")]
+            if isinstance(v, str):
+                return _short(v)
+            return v
+        ins = _clean(inputs)
+        sts = _clean(states or {})
+        sep = "=" * 74
+        print("\n" + sep)
+        print(f"[CB] {name}")
+        print("Inputs:")
+        for k, v in ins.items():
+            try:
+                msg = _json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else str(v)
+            except Exception:
+                msg = str(v)
+            print(f"  - {k}: {msg}")
+        print("States:")
+        for k, v in sts.items():
+            try:
+                msg = _json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else str(v)
+            except Exception:
+                msg = str(v)
+            print(f"  - {k}: {msg}")
+        print(sep)
+    except Exception:
+        pass
+
 
 # Layout principal de la page de validation des documents conducteur
 def serve_layout():
@@ -21,24 +67,13 @@ def serve_layout():
     else:
         return dbc.Container([
             html.H2("Validation des documents conducteur", style={"marginTop": "20px"}),
-            html.P("Cette page permet aux administrateurs de vérifier et valider les documents soumis par les conducteurs.",
-                   className="text-muted"),
-            # Stores pour les données
-            dcc.Store(id="drivers-data-store"),
-            dcc.Store(id=refresh_store_id, data=0),
-            dbc.Card([
-                dbc.CardHeader("Documents conducteurs"),
-                dbc.CardBody([
-                    dbc.Row([
-                        dbc.Col([
-                            dbc.Badge(id="documents-count-badge", color="primary", className="me-1"),
-                            html.Span(" documents au total", className="text-muted")
-                        ], width=12)
-                    ])
-                ])
-            ]),
-            
-            # Onglets avec style amélioré
+            html.P("Cette page permet aux administrateurs de vérifier et valider les documents soumis par les conducteurs.", className="text-muted"),
+            # Stores (session) pour persister état
+            dcc.Store(id="driver-selected-uid", storage_type="session", data=None, clear_data=False),
+            dcc.Store(id="driver-current-page-pending", storage_type="session", data=1),
+            dcc.Store(id="driver-current-page-validated", storage_type="session", data=1),
+            dcc.Store(id="driver-validation-refresh", storage_type="session", data=0),
+            # En-tête
             dbc.Card([
                 dbc.CardHeader(
                     dbc.Nav([
@@ -47,33 +82,8 @@ def serve_layout():
                     ], pills=True, card=True, className="nav-justified"),
                 ),
                 dbc.CardBody([
-                    # Premier onglet
-                    html.Div([
-                        html.Div(id="pending-documents-container", className="mt-2"),
-                        dbc.Pagination(
-                            id="pending-page",
-                            max_value=1,
-                            fully_expanded=False,
-                            first_last=True,
-                            previous_next=True,
-                            active_page=1,
-                            className="mt-3"
-                        ),
-                    ], id="tab-content-1"),
-                    
-                    # Second onglet (invisible au départ)
-                    html.Div([
-                        html.Div(id="validated-documents-container", className="mt-2"),
-                        dbc.Pagination(
-                            id="validated-page",
-                            max_value=1,
-                            fully_expanded=False,
-                            first_last=True,
-                            previous_next=True,
-                            active_page=1,
-                            className="mt-3"
-                        ),
-                    ], id="tab-content-2", style={"display": "none"}),
+                    html.Div(id="pending-documents-container", className="mt-2"),
+                    html.Div(id="validated-documents-container", className="mt-2", style={"display": "none"}),
                 ]),
             ], className="mt-3")
         ])
@@ -86,10 +96,104 @@ print("[DEBUG] 06_driver_validation.py chargé")
 # DEBUG - Layout défini
 print("[DEBUG] Layout de la page driver_validation défini")
 
-# Enregistrement des callbacks de validation (modulaire)
-try:
-    from dash_apps.components import driver_validation_callbacks
-    print("[DEBUG] Module driver_validation_callbacks importé avec succès")
-except Exception as e:
-    print(f"[DEBUG] Erreur lors de l'import de driver_validation_callbacks : {e}")
+# Callbacks
+
+@callback(
+    Output("tab1-link", "active"),
+    Output("tab2-link", "active"),
+    Output("pending-documents-container", "style"),
+    Output("validated-documents-container", "style"),
+    Input("tab1-link", "n_clicks"),
+    Input("tab2-link", "n_clicks"),
+    prevent_initial_call=False
+)
+def switch_tabs(tab1_clicks, tab2_clicks):
+    ctx = callback_context
+    triggered = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else "tab1-link"
+    tab1_active = triggered != "tab2-link"
+    tab2_active = not tab1_active
+    return tab1_active, tab2_active, ({"display": "block"} if tab1_active else {"display": "none"}), ({"display": "block"} if tab2_active else {"display": "none"})
+
+
+@callback(
+    Output("pending-documents-container", "children"),
+    Input("driver-current-page-pending", "data"),
+    Input("driver-selected-uid", "data"),
+    Input("driver-validation-refresh", "data"),
+    prevent_initial_call=False
+)
+def render_pending_table(current_page, selected_uid, _refresh):
+    log_callback("render_pending_table", {"page": current_page, "selected_uid": selected_uid}, {})
+    try:
+        users = UserRepository.get_pending_drivers() or []
+    except Exception:
+        users = []
+    total = len(users)
+    page = current_page if isinstance(current_page, (int, float)) and current_page >= 1 else 1
+    page_size =  UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
+    # Align with Config.USERS_TABLE_PAGE_SIZE for consistency
+    try:
+        from dash_apps.config import Config as _Cfg
+        page_size = getattr(_Cfg, "USERS_TABLE_PAGE_SIZE", page_size)
+    except Exception:
+        pass
+    start = (page - 1) * page_size
+    end = start + page_size
+    page_users = users[start:end]
+    return render_driver_validation_table(page_users, page, total, selected_uid=selected_uid, tab="pending")
+
+
+@callback(
+    Output("validated-documents-container", "children"),
+    Input("driver-current-page-validated", "data"),
+    Input("driver-selected-uid", "data"),
+    Input("driver-validation-refresh", "data"),
+    prevent_initial_call=False
+)
+def render_validated_table(current_page, selected_uid, _refresh):
+    log_callback("render_validated_table", {"page": current_page, "selected_uid": selected_uid}, {})
+    try:
+        users = UserRepository.get_validated_drivers() or []
+    except Exception:
+        users = []
+    total = len(users)
+    page = current_page if isinstance(current_page, (int, float)) and current_page >= 1 else 1
+    page_size =  UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
+    try:
+        from dash_apps.config import Config as _Cfg
+        page_size = getattr(_Cfg, "USERS_TABLE_PAGE_SIZE", page_size)
+    except Exception:
+        pass
+    start = (page - 1) * page_size
+    end = start + page_size
+    page_users = users[start:end]
+    return render_driver_validation_table(page_users, page, total, selected_uid=selected_uid, tab="validated")
+
+
+@callback(
+    Output("driver-selected-uid", "data", allow_duplicate=True),
+    Input({"type": "dv-select-pending", "index": dash.ALL}, "n_clicks"),
+    Input({"type": "dv-select-validated", "index": dash.ALL}, "n_clicks"),
+    prevent_initial_call=True
+)
+def select_driver_from_row(pending_clicks, validated_clicks):
+    ctx = callback_context
+    log_callback("select_driver_from_row", {"pending_clicks": pending_clicks, "validated_clicks": validated_clicks}, {})
+    if not ctx.triggered:
+        raise PreventUpdate
+    # Ignore initial zeros
+    clicks = pending_clicks or []
+    clicks2 = validated_clicks or []
+    if (not any((c or 0) > 0 for c in clicks)) and (not any((c or 0) > 0 for c in clicks2)):
+        raise PreventUpdate
+    clicked_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    try:
+        import json as _json
+        id_dict = _json.loads(clicked_id)
+        uid = id_dict.get("index")
+        if uid is None:
+            raise PreventUpdate
+        return uid
+    except Exception:
+        raise PreventUpdate
 
