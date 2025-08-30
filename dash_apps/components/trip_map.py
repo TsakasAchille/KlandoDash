@@ -1,7 +1,7 @@
-import dash_leaflet as dl
 from dash import html
 import polyline
-from statistics import mean
+import json
+from dash_apps.config import Config
 
 # Couleurs KLANDO
 KLANDO_PRIMARY = "#4281ec"
@@ -11,9 +11,10 @@ KLANDO_BLUEGREY = "#3a4654"
 
 def render_trip_map(trip_row):
     """
-    Affiche une carte Leaflet du trajet à partir de la polyline.
+    Affiche le trajet via la même carte MapLibre que 00_map.
+    Construit un container MapLibre + un GeoJSON (FeatureCollection) pour le trajet.
     Args:
-        trip_row: Series ou dict contenant au moins 'polyline', 'departure_name', 'destination_name'
+        trip_row: Series ou dict contenant au moins 'polyline' OU les coords de départ/arrivée.
     """
     if trip_row is None:
         return None
@@ -24,82 +25,123 @@ def render_trip_map(trip_row):
     else:
         trip_dict = dict(trip_row)
     
-    # Si polyline présente et non vide, affiche le trajet complet
-    if 'polyline' in trip_dict and trip_dict['polyline']:
-        try:
-            # Décoder la polyline
-            polyline_str = trip_dict['polyline']
-            if isinstance(polyline_str, bytes):
-                polyline_str = polyline_str.decode('utf-8')
+    # Construire le GeoJSON pour MapLibre
+    def build_geojson_from_trip(trip: dict):
+        color = KLANDO_PRIMARY
+        features = []
+        # Essayer via polyline
+        coords_ll = []  # (lat, lon)
+        if trip.get('polyline'):
+            try:
+                polyline_str = trip['polyline']
+                if isinstance(polyline_str, bytes):
+                    polyline_str = polyline_str.decode('utf-8')
+                coords_ll = polyline.decode(polyline_str)
+            except Exception:
+                coords_ll = []
 
-            coords = polyline.decode(polyline_str)  # [(lat, lon), ...]
-            print(f"[DEBUG] Polyline décodée. Longueur: {len(coords)} points")
+        # Fallback via points départ/arrivée
+        if not coords_ll:
+            try:
+                lat1 = float(trip.get('departure_latitude'))
+                lon1 = float(trip.get('departure_longitude'))
+                lat2 = float(trip.get('destination_latitude'))
+                lon2 = float(trip.get('destination_longitude'))
+                coords_ll = [(lat1, lon1), (lat2, lon2)]
+            except Exception:
+                coords_ll = []
 
-            if not coords or len(coords) < 2:
-                raise ValueError("Polyline trop courte")
-
-            line_positions = coords
-            departure = coords[0]
-            arrival = coords[-1]
-            departure_name = trip_dict.get('departure_name', 'Départ')
-            arrival_name = trip_dict.get('destination_name', 'Arrivée')
-            center = coords[len(coords)//2]
-
-            # Utiliser directement le composant Leaflet de Dash avec un style moderne
-            return html.Div([
-                html.Div(
-                    className="card-header",
-                    children=[
-                        html.Div(
-                            className="header-icon",
-                            children="🗺️"
-                        ),
-                        html.H2("Trajet sur la carte", className="card-title", style={
-                            "fontSize": "22px",
-                            "fontWeight": "600",
-                            "color": "#333",
-                            "margin": "0",
-                            "marginLeft": "15px"
-                        })
-                    ],
-                    style={
-                        "display": "flex",
-                        "alignItems": "center",
-                        "marginBottom": "20px",
-                    }
-                ),
-                html.Div(
-                    dl.Map([
-                        dl.TileLayer(url='https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-                                    attribution='&copy; OpenStreetMap & CARTO'),
-                        dl.Polyline(positions=line_positions, color=KLANDO_PRIMARY, weight=5, opacity=0.85),
-                        dl.Marker(position=departure, children=[dl.Tooltip(f"Départ: {departure_name}")]),
-                        dl.Marker(position=arrival, children=[dl.Tooltip(f"Arrivée: {arrival_name}")]),
-                    ], center=center, zoom=12, style={
-                        'height': '500px',
-                        'width': '100%',
-                        'borderRadius': '18px',
-                        'overflow': 'hidden'
-                    }),
-                    style={
-                        "backgroundColor": "#fafcfe",
-                        "borderRadius": "18px",
-                        "padding": "10px",
-                    }
-                )
-            ], style={
-                "backgroundColor": "white",
-                "borderRadius": "28px",
-                "boxShadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px",
-                "padding": "25px",
-                "overflow": "hidden",
-                "marginBottom": "20px"
+        if len(coords_ll) >= 2:
+            # Convertir en [lon, lat] pour GeoJSON
+            line_coords = [[lng, lat] for (lat, lng) in coords_ll]
+            features.append({
+                "type": "Feature",
+                "properties": {
+                    "trip_id": trip_dict.get('trip_id'),
+                    "color": color
+                },
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": line_coords
+                }
             })
-        except Exception:
-            return html.Div("Impossible d'afficher la carte du trajet")
-    
-    # Fallback si pas de polyline
-    return html.Div("Aucune polyline disponible pour ce trajet")
+            # Points départ/arrivée pour visibilité
+            start = line_coords[0]
+            end = line_coords[-1]
+            features.append({
+                "type": "Feature",
+                "properties": {"role": "start", "color": color},
+                "geometry": {"type": "Point", "coordinates": start}
+            })
+            features.append({
+                "type": "Feature",
+                "properties": {"role": "end", "color": color},
+                "geometry": {"type": "Point", "coordinates": end}
+            })
+
+        if not features:
+            return None
+        return {"type": "FeatureCollection", "features": features}
+
+    gj = build_geojson_from_trip(trip_dict)
+    if not gj:
+        return html.Div("Impossible d'afficher la carte du trajet")
+
+    # Container MapLibre unifié (même que 00_map)
+    style_url = Config.MAPLIBRE_STYLE_URL or "https://demotiles.maplibre.org/globe.json"
+    api_key = Config.MAPLIBRE_API_KEY or ""
+
+    map_container = html.Div(
+        id="trip-maplibre-container",
+        className="maplibre-container",
+        **{
+            "data-style-url": style_url,
+            "data-api-key": api_key,
+            "data-geojson": json.dumps(gj),
+        },
+        style={
+            'height': '500px',
+            'width': '100%',
+            'borderRadius': '18px',
+            'overflow': 'hidden'
+        }
+    )
+
+    return html.Div([
+        html.Div(
+            className="card-header",
+            children=[
+                html.Div(className="header-icon", children="🗺️"),
+                html.H2("Trajet sur la carte", className="card-title", style={
+                    "fontSize": "22px",
+                    "fontWeight": "600",
+                    "color": "#333",
+                    "margin": "0",
+                    "marginLeft": "15px"
+                })
+            ],
+            style={
+                "display": "flex",
+                "alignItems": "center",
+                "marginBottom": "20px",
+            }
+        ),
+        html.Div(
+            map_container,
+            style={
+                "backgroundColor": "#fafcfe",
+                "borderRadius": "18px",
+                "padding": "10px",
+            }
+        )
+    ], style={
+        "backgroundColor": "white",
+        "borderRadius": "28px",
+        "boxShadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px",
+        "padding": "25px",
+        "overflow": "hidden",
+        "marginBottom": "20px"
+    })
 
 def render_trips_map(trips_df, max_trips=10, show_heat=True, height="600px"):
     """

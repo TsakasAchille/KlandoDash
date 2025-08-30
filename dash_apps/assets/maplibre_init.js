@@ -59,7 +59,8 @@
         style: shouldProxy(initialStyle) ? viaProxy(initialStyle) : initialStyle,
         center: [-14.452, 14.497],
         zoom: 5,
-        cooperativeGestures: true,
+        // Match core behavior: allow scroll zoom without holding Ctrl
+        cooperativeGestures: false,
         transformRequest: (url) => {
           let finalUrl = url;
           try {
@@ -81,6 +82,8 @@
           return { url: finalUrl };
         }
       });
+      // Ensure scroll zoom is enabled explicitly
+      try { map.scrollZoom.enable(); } catch (_) {}
       map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
       map.on('error', (e) => {
         const err = e && e.error ? e.error : e;
