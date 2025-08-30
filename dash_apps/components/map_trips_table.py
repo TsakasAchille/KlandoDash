@@ -10,11 +10,12 @@ def _short(text: str, n: int = 30) -> str:
     return s if len(s) <= n else s[: n - 1] + "…"
 
 
-def render_map_trips_table(trips):
+def render_map_trips_table(trips, selected_ids=None):
     """Tableau compact pour la page Carte, listant les derniers trajets
     avec un bouton "Voir trajet" qui renvoie vers /trips?trip_id=<id>.
     """
-    headers = ["#", "Départ", "Arrivée", "TripID", "Action"]
+    selected_ids = set(selected_ids or [])
+    headers = ["", "#", "Départ", "Arrivée", "TripID", "Action"]
 
     rows = []
     for i, t in enumerate(trips, start=1):
@@ -28,6 +29,14 @@ def render_map_trips_table(trips):
         )
         rows.append(
             html.Tr([
+                # Checkbox de sélection
+                html.Td(
+                    dbc.Checkbox(
+                        id={"type": "map-trip-check", "index": str(trip_id)},
+                        value=str(trip_id) in selected_ids,
+                    ),
+                    style={"width": "32px", "textAlign": "center"}
+                ),
                 html.Td(i),
                 html.Td(dep),
                 html.Td(arr),
@@ -37,7 +46,7 @@ def render_map_trips_table(trips):
         )
 
     if not rows:
-        rows = [html.Tr([html.Td("Aucun trajet", colSpan=5)])]
+        rows = [html.Tr([html.Td("Aucun trajet", colSpan=6)])]
 
     table = html.Table(
         [

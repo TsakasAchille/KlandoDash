@@ -79,7 +79,8 @@
         style: shouldProxy(initialStyle) ? viaProxy(initialStyle) : initialStyle,
         center: [-14.452, 14.497], // default: Senegal
         zoom: 5,
-        cooperativeGestures: true,
+        // Disable cooperative gestures so users don't need to hold Ctrl to scroll-zoom
+        cooperativeGestures: false,
         transformRequest: (url, resourceType) => {
           let finalUrl = url;
           try {
@@ -109,6 +110,9 @@
           return { url: finalUrl };
         }
       });
+
+      // Explicitly enable scroll zoom (should be on by default, but be explicit)
+      try { map.scrollZoom.enable(); } catch (_) {}
 
       // expose for quick inspection
       try { container.__map = map; } catch (_) {}
@@ -162,7 +166,8 @@
         type: 'line',
         source: sourceId,
         paint: {
-          'line-color': '#4281ec',
+          // Use per-feature color if provided, else default blue
+          'line-color': ['coalesce', ['get', 'color'], '#4281ec'],
           'line-width': 4,
           'line-opacity': 0.85
         }
@@ -175,7 +180,8 @@
         filter: ['any', ['==', ['geometry-type'], 'Point']],
         paint: {
           'circle-radius': 4,
-          'circle-color': ['case', ['==', ['get', 'role'], 'start'], '#2ecc71', '#e67e22'],
+          // Points inherit the same color as their parent trip when present
+          'circle-color': ['coalesce', ['get', 'color'], ['case', ['==', ['get', 'role'], 'start'], '#2ecc71', '#e67e22']],
           'circle-stroke-width': 1,
           'circle-stroke-color': '#ffffff'
         }
