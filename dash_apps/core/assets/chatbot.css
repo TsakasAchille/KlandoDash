@@ -1,0 +1,90 @@
+/* Floating chatbot bubble */
+.chatbot-bubble {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: #0d6efd;
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(13,110,253,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1100;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.chatbot-bubble:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(13,110,253,0.45); }
+.chatbot-bubble:active { transform: translateY(0); }
+.chatbot-bubble::after {
+  content: "";
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(13,110,253, 0.45);
+  animation: chatbot-pulse 2s infinite;
+  z-index: -1;
+}
+@keyframes chatbot-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(13,110,253,0.45); }
+  70% { box-shadow: 0 0 0 20px rgba(13,110,253,0); }
+  100% { box-shadow: 0 0 0 0 rgba(13,110,253,0); }
+}
+
+/* Chatbot window */
+.chatbot-window {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 380px;
+  height: 70vh;
+  max-height: 720px;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.2);
+  z-index: 1300;
+  transform: translateY(20px);
+  opacity: 0;
+  pointer-events: none;
+}
+.chatbot-window.show {
+  animation: chatbot-slide-in 250ms ease forwards;
+  pointer-events: auto;
+}
+.chatbot-window.minimized {
+  height: 56px;
+}
+@keyframes chatbot-slide-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.chatbot-header {
+  height: 56px;
+  background: #0d6efd;
+  color: #fff;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+.chatbot-title { font-weight: 600; }
+
+.chatbot-body { height: calc(100% - 56px); }
+.chatbot-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .chatbot-window {
+    width: 95vw;
+    right: 2.5vw;
+    height: 70vh;
+  }
+}

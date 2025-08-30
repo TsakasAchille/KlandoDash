@@ -28,7 +28,8 @@ def create_app():
             'https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js',
         ],
         suppress_callback_exceptions=True,
-        url_base_pathname='/'
+        url_base_pathname='/',
+        assets_folder=os.path.join(os.path.dirname(__file__), 'assets')
     )
     server = app.server
 

@@ -8,6 +8,9 @@ def create_main_layout():
     """
     layout = dbc.Container([
         dcc.Location(id="url", refresh=False),
+        # Auto-open control (once per session)
+        dcc.Store(id="chatbot-welcome-store", storage_type="session", data=None),
+        dcc.Interval(id="chatbot-autoopen-init", interval=300, max_intervals=1),
         
         # Barre latérale fixe
         dbc.Row([
@@ -57,7 +60,40 @@ def create_main_layout():
             dbc.Col([
                 html.Div(id="main-content", style={"marginLeft": "12px", "marginRight": "12px"})
             ], width=10)
-        ], className="g-0")
+        ], className="g-0"),
+
+        # Floating Chatbot bubble (interactive)
+        html.Button(
+            html.Span(className="fas fa-comment-dots"),
+            id="open-chatbot-bubble",
+            n_clicks=0,
+            className="chatbot-bubble",
+        ),
+
+        # Floating Chatbot window
+        html.Div([
+            html.Div([
+                html.Div([
+                    html.Div([
+                        html.Span("Assistant Klando", className="chatbot-title"),
+                        html.Small("  – Bonjour ! Comment puis-je aider ?", className="ms-2")
+                    ]),
+                    html.Div([
+                        dbc.Button(html.I(className="fas fa-external-link-alt"), href="https://klandochatbot.onrender.com/", target="_blank", id="popout-chatbot-window", size="sm", color="secondary", outline=True, className="me-1", title="Ouvrir dans un nouvel onglet"),
+                        dbc.Button(html.I(className="fas fa-minus"), id="minimize-chatbot-window", size="sm", color="secondary", outline=True, className="me-1"),
+                        dbc.Button(html.I(className="fas fa-times"), id="close-chatbot-window", size="sm", color="secondary", outline=True),
+                    ], className="d-flex align-items-center")
+                ], className="d-flex justify-content-between align-items-center"),
+            ], className="chatbot-header"),
+            html.Div([
+                html.Iframe(
+                    src="https://klandochatbot.onrender.com/",
+                    className="chatbot-iframe",
+                    allow="clipboard-write; microphone; display-capture; autoplay",
+                    title="Assistant Klando",
+                )
+            ], className="chatbot-body")
+        ], id="chatbot-window", className="chatbot-window", style={"display": "none"}),
     ], fluid=True, style={"height": "100vh"})
     
     # Ajouter un composant de redirection pour la déconnexion
