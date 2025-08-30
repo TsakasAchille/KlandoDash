@@ -203,7 +203,7 @@ def bootstrap_from_url(search):
         else:
             tab_out = tab
 
-        # If we have uid and a valid tab, compute page where user lies
+        # If we have uid and a valid tab, compute page where user lies (DB-consistent)
         if uid and tab:
             try:
                 page_size = UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
@@ -212,19 +212,8 @@ def bootstrap_from_url(search):
                     page_size = getattr(_Cfg, "USERS_TABLE_PAGE_SIZE", page_size)
                 except Exception:
                     pass
-                users = []
-                if tab == "pending":
-                    users = UserRepository.get_pending_drivers() or []
-                else:
-                    users = UserRepository.get_validated_drivers() or []
-                # Find index by uid or id
-                idx = None
-                for i, u in enumerate(users):
-                    u_uid = u.get("uid") or u.get("id")
-                    if u_uid == uid:
-                        idx = i
-                        break
-                if idx is not None:
+                idx = UserRepository.get_user_position_in_validation_group(uid, "validated" if tab == "validated" else "pending")
+                if isinstance(idx, int) and idx >= 0:
                     page = (idx // page_size) + 1
                     goto_out = {"tab": tab, "page": page}
                 sel_out = uid

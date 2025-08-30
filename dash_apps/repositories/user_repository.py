@@ -237,3 +237,40 @@ class UserRepository:
         """
         with SessionLocal() as db:
             return db.query(User).count()
+
+    @staticmethod
+    def get_user_position_in_validation_group(user_id: str, group: str) -> Optional[int]:
+        """Retourne la position (0-based) d'un utilisateur dans un sous-ensemble
+        filtré par statut de validation, trié par created_at DESC.
+
+        Args:
+            user_id: uid de l'utilisateur
+            group: 'pending' ou 'validated'
+
+        Returns:
+            Index 0-based ou None si non trouvé.
+        """
+        from sqlalchemy import text
+        where_clause = ""
+        if group == "validated":
+            where_clause = "WHERE is_driver_doc_validated IS TRUE"
+        elif group == "pending":
+            where_clause = "WHERE (is_driver_doc_validated IS FALSE OR is_driver_doc_validated IS NULL)"
+        else:
+            return None
+        sql = text(f"""
+            WITH ranked AS (
+              SELECT uid,
+                     ROW_NUMBER() OVER (ORDER BY created_at DESC) - 1 AS position
+              FROM users
+              {where_clause}
+            )
+            SELECT position FROM ranked WHERE uid = :uid
+        """)
+        with SessionLocal() as db:
+            try:
+                res = db.execute(sql, {"uid": user_id}).first()
+                return int(res[0]) if res else None
+            except Exception as e:
+                print(f"Erreur get_user_position_in_validation_group: {e}")
+                return None

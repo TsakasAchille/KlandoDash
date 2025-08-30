@@ -64,10 +64,23 @@ def render_driver_validation_table(users, current_page, total_count, selected_ui
     page_size = Config.USERS_TABLE_PAGE_SIZE
     page_count = (total_count - 1) // page_size + 1 if total_count > 0 else 1
 
-    headers = ["", "Nom", "Email", "Permis", "CNI", "Comparer", "Statut", "Action"]
+    headers = ["", "Nom", "Email", "Profil", "Permis", "CNI", "Comparer", "Statut", "Action"]
 
     rows = []
     modals = []
+    def _has_doc(x):
+        """Return True only if x is a non-empty, non-placeholder URL/string.
+        Handles cases where DB stores '', 'None', 'null', or None.
+        """
+        if x is None:
+            return False
+        if isinstance(x, str):
+            s = x.strip().lower()
+            if s in ("", "none", "null", "undefined", "na", "n/a"):
+                return False
+            return True
+        return bool(x)
+
     for u in users:
         if hasattr(u, "model_dump"):
             d = u.model_dump()
@@ -125,15 +138,40 @@ def render_driver_validation_table(users, current_page, total_count, selected_ui
             html.Td(name, style=cell_style),
             html.Td(email, style=cell_style),
             html.Td(
-                dbc.Button("Voir", id=view_lic_id, color="primary", size="sm", disabled=not bool(driver_license)),
+                dcc.Link(
+                    dbc.Button("Voir profil", color="primary", size="sm"),
+                    href=f"/users?uid={uid}",
+                    refresh=False,
+                ),
                 style=cell_style
             ),
             html.Td(
-                dbc.Button("Voir", id=view_idc_id, color="primary", size="sm", disabled=not bool(id_card)),
+                (
+                    dbc.Button("Voir", id=view_lic_id, color="primary", size="sm", disabled=False)
+                    if _has_doc(driver_license)
+                    else dbc.Badge("Manquant", color="secondary", pill=True)
+                ),
                 style=cell_style
             ),
             html.Td(
-                dbc.Button("Comparer", id=compare_id, color="info", size="sm", disabled=not (bool(driver_license) or bool(id_card))),
+                (
+                    dbc.Button("Voir", id=view_idc_id, color="primary", size="sm", disabled=False)
+                    if _has_doc(id_card)
+                    else dbc.Badge("Manquant", color="secondary", pill=True)
+                ),
+                style=cell_style
+            ),
+            html.Td(
+                dbc.Button(
+                    "Comparer",
+                    id=compare_id,
+                    color="info",
+                    size="sm",
+                    disabled=not (_has_doc(driver_license) or _has_doc(id_card)),
+                    title=(
+                        "Au moins un document requis" if not (_has_doc(driver_license) or _has_doc(id_card)) else ""
+                    ),
+                ),
                 style=cell_style
             ),
             html.Td("Validé" if is_validated else "En attente", style=cell_style),
@@ -143,7 +181,11 @@ def render_driver_validation_table(users, current_page, total_count, selected_ui
                     id=unvalidate_id if is_validated else validate_id,
                     color="danger" if is_validated else "success",
                     size="sm",
-                    disabled=not (bool(driver_license) or bool(id_card)) and not is_validated
+                    disabled=not (_has_doc(driver_license) or _has_doc(id_card)) and not is_validated,
+                    title=(
+                        "Au moins un document requis pour valider"
+                        if (not is_validated and not (_has_doc(driver_license) or _has_doc(id_card))) else ""
+                    ),
                 ),
                 style=cell_style
             ),
@@ -186,7 +228,7 @@ def render_driver_validation_table(users, current_page, total_count, selected_ui
         ]
 
     if not rows:
-        rows = [html.Tr([html.Td("Aucun élément", colSpan=8)])]
+        rows = [html.Tr([html.Td("Aucun élément", colSpan=9)])]
 
     table = html.Table([
         html.Thead(
@@ -259,8 +301,14 @@ def on_validate_pending(clicks, refresh_val):
         tid = ctx.triggered[0]["prop_id"].split(".")[0]
         data = _json.loads(tid)
         uid = data.get("index")
-        if uid:
-            UserRepository.validate_driver_documents(uid)
+        # Normalize UID to avoid hidden whitespace/mismatched types
+        if uid is not None:
+            try:
+                uid_norm = str(uid).strip()
+            except Exception:
+                uid_norm = uid
+            if uid_norm:
+                UserRepository.validate_driver_documents(uid_norm)
         return (refresh_val or 0) + 1
     except Exception:
         return (refresh_val or 0) + 1
@@ -282,8 +330,13 @@ def on_unvalidate_validated(clicks, refresh_val):
         tid = ctx.triggered[0]["prop_id"].split(".")[0]
         data = _json.loads(tid)
         uid = data.get("index")
-        if uid:
-            UserRepository.unvalidate_driver_documents(uid)
+        if uid is not None:
+            try:
+                uid_norm = str(uid).strip()
+            except Exception:
+                uid_norm = uid
+            if uid_norm:
+                UserRepository.unvalidate_driver_documents(uid_norm)
         return (refresh_val or 0) + 1
     except Exception:
         return (refresh_val or 0) + 1
