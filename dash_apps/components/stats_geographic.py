@@ -4,6 +4,7 @@ from jinja2 import Environment, FileSystemLoader
 import pandas as pd
 from pathlib import Path
 import json
+from dash_apps.components.stats_map import build_stats_geojson, create_maplibre_container
 
 
 def render_stats_geographic(trips_data):
@@ -168,16 +169,36 @@ def render_stats_geographic(trips_data):
     # Rendre le template
     rendered_html = template.render(**context)
     
-    # Retourner l'iframe avec le template rendu
-    return html.Iframe(
-        srcDoc=rendered_html,
-        style={
-            "width": "100%", 
-            "height": "900px", 
-            "border": "none", 
-            "overflow": "hidden",
-            "borderRadius": "18px"
-        },
-        id="stats-geographic-iframe",
-        sandbox="allow-scripts",
-    )
+    # Construire un GeoJSON pour la carte MapLibre: derniers trajets + bulles agrégées par destination
+    try:
+        gj = build_stats_geojson(trips_data, max_trips=30, include_heat=True)
+    except Exception:
+        gj = {"type": "FeatureCollection", "features": []}
+
+    map_container = create_maplibre_container(style_height="520px", geojson=gj)
+
+    # Retourner la carte custom + le panneau stats existant en dessous
+    return html.Div([
+        html.Div([
+            html.H4("Carte géographique (trajets + densité destinations)", className="mb-3"),
+            map_container
+        ], style={
+            "backgroundColor": "white",
+            "borderRadius": "18px",
+            "boxShadow": "rgba(0,0,0,0.1) 0px 1px 3px, rgba(0,0,0,0.1) 0px 10px 30px",
+            "padding": "10px",
+            "marginBottom": "20px"
+        }),
+        html.Iframe(
+            srcDoc=rendered_html,
+            style={
+                "width": "100%",
+                "height": "900px",
+                "border": "none",
+                "overflow": "hidden",
+                "borderRadius": "18px"
+            },
+            id="stats-geographic-iframe",
+            sandbox="allow-scripts",
+        )
+    ])

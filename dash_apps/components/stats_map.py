@@ -1,8 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import html, dcc, Input, Output, callback
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
+import json
 from dash_apps.config import Config
 
 def render_stats_map(trips_data):
@@ -85,7 +84,7 @@ def render_stats_map(trips_data):
         ])
     ], className="mb-4", style={"boxShadow": "0 4px 8px rgba(0, 0, 0, 0.1)"})
     
-    # Conteneur MapLibre (style JSON, pas de tuiles PNG)
+    # Conteneur MapLibre (placeholder, les données seront injectées par le callback)
     map_container = html.Div(
         id="stats-map-iframe-container",
         children=create_maplibre_container(style_height="600px"),
@@ -112,23 +111,28 @@ def render_stats_map(trips_data):
     Input("stats-trips-store", "data")
 )
 def update_map_display(max_trips, heat_values, trips_data):
-    """
-    Met à jour l'affichage de la carte. Pour l'instant, MapLibre n'utilise pas ces options côté client.
-    """
-    # On renvoie simplement le conteneur MapLibre; l'initialisation se fait côté client via JS
-    return create_maplibre_container(style_height="600px")
+    """Construit un GeoJSON: X derniers trajets + bulles agrégées par destination."""
+    show_heat = bool(heat_values and ("heat" in heat_values))
+    gj = build_stats_geojson(trips_data or [], max_trips=max_trips or 10, include_heat=show_heat)
+    return create_maplibre_container(style_height="600px", geojson=gj)
 
-def create_maplibre_container(style_height="600px"):
+def create_maplibre_container(style_height="600px", geojson=None):
     """
     Crée le conteneur pour une carte MapLibre GL initialisée côté client.
     Utilise Config.MAPLIBRE_STYLE_URL (FireStore) et ajoute la clé API aux URLs de base.
     """
     style_url = Config.MAPLIBRE_STYLE_URL or "https://demotiles.maplibre.org/globe.json"
     api_key = Config.MAPLIBRE_API_KEY or ""
+    data_attrs = {"data-style-url": style_url, "data-api-key": api_key}
+    if geojson:
+        try:
+            data_attrs["data-geojson"] = json.dumps(geojson)
+        except Exception:
+            pass
     return html.Div(
         id="maplibre-stats-map",
         className="maplibre-container",
-        **{"data-style-url": style_url, "data-api-key": api_key},
+        **data_attrs,
         style={
             "height": style_height,
             "width": "100%",
@@ -136,6 +140,99 @@ def create_maplibre_container(style_height="600px"):
             "overflow": "hidden",
         }
     )
+
+def build_stats_geojson(trips_data, max_trips=10, include_heat=True):
+    """Assemble un FeatureCollection avec:
+    - lignes pour les X derniers trajets (polyline si dispo, sinon segment direct)
+    - points agrégés par (destination_latitude, destination_longitude) avec propriété 'radius'
+    """
+    if not trips_data:
+        return {"type": "FeatureCollection", "features": []}
+    df = pd.DataFrame(trips_data).copy()
+    # Trier pour prendre les plus récents
+    for c in ["departure_date", "created_at", "updated_at", "date"]:
+        if c in df.columns:
+            try:
+                df[c] = pd.to_datetime(df[c], errors='coerce')
+            except Exception:
+                pass
+    sort_col = next((c for c in ["departure_date", "created_at", "updated_at", "date"] if c in df.columns), None)
+    if sort_col:
+        df = df.sort_values(sort_col, ascending=False)
+    df_recent = df.head(max_trips or 10)
+
+    features = []
+    # Couleur KLANDO principale
+    color = "#4281ec"
+
+    # Lignes des trajets (fallback segment si pas de polyline)
+    for _, row in df_recent.iterrows():
+        line_coords = None
+        poly = row.get('polyline')
+        if isinstance(poly, (str, bytes)) and poly:
+            try:
+                import polyline as _poly
+                if isinstance(poly, bytes):
+                    poly = poly.decode('utf-8')
+                coords_ll = _poly.decode(poly)  # (lat, lon)
+                if len(coords_ll) >= 2:
+                    line_coords = [[lng, lat] for (lat, lng) in coords_ll]
+            except Exception:
+                line_coords = None
+        if line_coords is None:
+            try:
+                lat1 = float(row.get('departure_latitude'))
+                lon1 = float(row.get('departure_longitude'))
+                lat2 = float(row.get('destination_latitude'))
+                lon2 = float(row.get('destination_longitude'))
+                line_coords = [[lon1, lat1], [lon2, lat2]]
+            except Exception:
+                line_coords = None
+        if line_coords:
+            features.append({
+                "type": "Feature",
+                "properties": {"color": color, "trip_id": row.get('trip_id')},
+                "geometry": {"type": "LineString", "coordinates": line_coords}
+            })
+            # Points départ/arrivée discrets
+            features.append({
+                "type": "Feature",
+                "properties": {"role": "start", "color": color, "radius": 3},
+                "geometry": {"type": "Point", "coordinates": line_coords[0]}
+            })
+            features.append({
+                "type": "Feature",
+                "properties": {"role": "end", "color": color, "radius": 3},
+                "geometry": {"type": "Point", "coordinates": line_coords[-1]}
+            })
+
+    # Bulles agrégées par destination (approx "par région")
+    if include_heat and all(c in df.columns for c in ["destination_latitude", "destination_longitude"]):
+        try:
+            agg = (
+                df.groupby(["destination_latitude", "destination_longitude"])\
+                  .size().reset_index(name='count')
+            )
+            if not agg.empty:
+                max_count = max(1, int(agg['count'].max()))
+                for _, r in agg.iterrows():
+                    lat = float(r['destination_latitude'])
+                    lon = float(r['destination_longitude'])
+                    # rayon entre 4 et 18 selon densité
+                    radius = 4 + 14 * (float(r['count']) / float(max_count))
+                    features.append({
+                        "type": "Feature",
+                        "properties": {
+                            "radius": radius,
+                            "color": "#d62728",
+                            "count": int(r['count'])
+                        },
+                        "geometry": {"type": "Point", "coordinates": [lon, lat]}
+                    })
+        except Exception:
+            pass
+
+    return {"type": "FeatureCollection", "features": features}
 
 def create_trips_summary_table(trips_df):
     """

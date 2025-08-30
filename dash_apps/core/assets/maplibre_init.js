@@ -179,7 +179,8 @@
         source: sourceId,
         filter: ['any', ['==', ['geometry-type'], 'Point']],
         paint: {
-          'circle-radius': 4,
+          // Support variable bubble size via per-feature 'radius', fallback to 4
+          'circle-radius': ['coalesce', ['to-number', ['get', 'radius']], 4],
           // Points inherit the same color as their parent trip when present
           'circle-color': ['coalesce', ['get', 'color'], ['case', ['==', ['get', 'role'], 'start'], '#2ecc71', '#e67e22']],
           'circle-stroke-width': 1,
