@@ -1,6 +1,8 @@
 from dash import html, dcc, Input, Output, callback
 import json
 import dash_bootstrap_components as dbc
+from dash import dash_table
+from dash_apps.components.map_trips_table import render_map_trips_table
 from dash_apps.config import Config
 from dash_apps.repositories.trip_repository import TripRepository
 import polyline as polyline_lib
@@ -69,7 +71,18 @@ def _shorten(text, n=28):
         s = ""
     return s if len(s) <= n else s[: n - 1] + "…"
 
-_MARKS = {i: _shorten(o["label"]) for i, o in enumerate(_OPTIONS)} if _OPTIONS else {}
+_MARKS = None  # We'll use a simple numeric slider (count of last trips)
+
+def _trips_to_table_rows(trips):
+    rows = []
+    for i, t in enumerate(trips, start=1):
+        rows.append({
+            "#": i,
+            "Départ": getattr(t, 'departure_name', '-') or '-',
+            "Arrivée": getattr(t, 'destination_name', '-') or '-',
+            "TripID": getattr(t, 'trip_id', '-') or '-',
+        })
+    return rows
 
 
 layout = dbc.Container([
@@ -77,17 +90,23 @@ layout = dbc.Container([
     html.P("Vue d'ensemble géographique (style JSON MapLibre)", className="text-muted"),
     dbc.Row([
         dbc.Col([
+            html.Label("Nombre de derniers trajets à afficher"),
             dcc.Slider(
-                id="map-trip-index",
-                min=0,
-                max=max(0, len(_OPTIONS) - 1),
+                id="map-trip-count",
+                min=1 if _TRIPS else 0,
+                max=len(_TRIPS) if _TRIPS else 0,
                 step=1,
-                value=0 if _OPTIONS else None,
-                marks=_MARKS,
+                value=min(3, len(_TRIPS)) if _TRIPS else 0,
                 updatemode="mouseup",
                 tooltip={"placement": "bottom", "always_visible": False},
                 included=False,
             )
+        ], md=12)
+    ], className="mb-2"),
+    dbc.Row([
+        dbc.Col([
+            # Tableau compact spécifique à la page Carte, avec lien "Voir trajet"
+            render_map_trips_table(_TRIPS)
         ], md=12)
     ], className="mb-3"),
     create_maplibre_container(),
@@ -96,30 +115,43 @@ layout = dbc.Container([
 
 @callback(
     Output("home-maplibre", "data-geojson"),
-    Input("map-trip-index", "value"),
+    Input("map-trip-count", "value"),
 )
-def update_map_geojson(selected_index):
-    if selected_index is None:
+def update_map_geojson(count):
+    if not _TRIPS or not count or count <= 0:
         return None
-    if not _TRIPS or selected_index < 0 or selected_index >= len(_TRIPS):
+    count = max(1, min(int(count), len(_TRIPS)))
+    features = []
+    for trip in _TRIPS[:count]:
+        p = getattr(trip, 'polyline', None)
+        if not p:
+            continue
+        try:
+            if isinstance(p, bytes):
+                p = p.decode('utf-8')
+            coords_latlon = polyline_lib.decode(p)  # [(lat, lon), ...]
+            coords_lonlat = [[lon, lat] for (lat, lon) in coords_latlon]
+            features.append({
+                "type": "Feature",
+                "geometry": {"type": "LineString", "coordinates": coords_lonlat},
+                "properties": {"trip_id": getattr(trip, 'trip_id', None)},
+            })
+            if coords_lonlat:
+                start = coords_lonlat[0]
+                end = coords_lonlat[-1]
+                features.append({
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": start},
+                    "properties": {"role": "start", "trip_id": getattr(trip, 'trip_id', None)},
+                })
+                features.append({
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": end},
+                    "properties": {"role": "end", "trip_id": getattr(trip, 'trip_id', None)},
+                })
+        except Exception:
+            continue
+    if not features:
         return None
-    trip = _TRIPS[selected_index]
-    p = getattr(trip, 'polyline', None)
-    if not p:
-        return None
-    gj = _polyline_to_geojson(p)
-    # enrich with start/end points if possible from the polyline
-    try:
-        if isinstance(p, bytes):
-            p = p.decode('utf-8')
-        coords_latlon = polyline_lib.decode(p)
-        if coords_latlon:
-            start = coords_latlon[0]
-            end = coords_latlon[-1]
-            start_pt = {"type": "Feature", "geometry": {"type": "Point", "coordinates": [start[1], start[0]]}, "properties": {"role": "start"}}
-            end_pt = {"type": "Feature", "geometry": {"type": "Point", "coordinates": [end[1], end[0]]}, "properties": {"role": "end"}}
-            if gj and gj.get("features") is not None:
-                gj["features"].extend([start_pt, end_pt])
-    except Exception:
-        pass
-    return json.dumps(gj) if gj else None
+    collection = {"type": "FeatureCollection", "features": features}
+    return json.dumps(collection)
