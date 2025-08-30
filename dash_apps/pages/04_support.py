@@ -57,6 +57,37 @@ layout = html.Div([
             dbc.Button("🔄 Rafraîchir les données", id="support-refresh-btn", color="primary", className="mb-4")
         ], width=3)
     ]),
+
+    # Filtres des tickets (par titre et sous-type du message)
+    dbc.Row([
+        dbc.Col([
+            dcc.Dropdown(
+                id="ticket-category-filter",
+                options=[
+                    {"label": "Tous les types", "value": "all"},
+                    {"label": "Signalement trajet", "value": "signalement_trajet"},
+                ],
+                value="all",
+                clearable=False,
+                placeholder="Filtrer par type de ticket (ex: Signalement trajet)",
+                className="mb-2"
+            )
+        ], width=6),
+        dbc.Col([
+            dcc.Dropdown(
+                id="ticket-subtype-filter",
+                options=[
+                    {"label": "Tous les sous-types", "value": "all"},
+                    {"label": "Conducteur absent", "value": "conducteur_absent"},
+                    {"label": "Conducteur en retard", "value": "conducteur_en_retard"},
+                    {"label": "Autre", "value": "autre"},
+                ],
+                value="all",
+                clearable=False,
+                placeholder="Filtrer par sous-type du message",
+            )
+        ], width=6),
+    ], className="mb-3"),
     
     # Store pour les données des tickets avec cache de session et timestamp
     dcc.Store(id="support-tickets-store", storage_type="session"),

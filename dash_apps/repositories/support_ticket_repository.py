@@ -52,11 +52,29 @@ class SupportTicketRepository:
         raise NotImplementedError("La suppression de tickets de support n'est pas autorisée via ce repository.")
         
     @staticmethod
-    def count_tickets(session: Session, status: Optional[str] = None) -> int:
-        """Compte le nombre total de tickets, filtré par statut si spécifié"""
+    def count_tickets(session: Session, status: Optional[str] = None,
+                      category: Optional[str] = None, subtype: Optional[str] = None) -> int:
+        """Compte le nombre total de tickets, filtré par statut/catégorie/sous-type si spécifié"""
         query = session.query(func.count(SupportTicket.ticket_id))
         if status:
             query = query.filter(SupportTicket.status == status)
+
+        # Appliquer les filtres de catégorie et sous-type (insensibles à la casse)
+        if category:
+            c = (category or "").lower()
+            if c == "signalement_trajet":
+                query = query.filter(func.lower(SupportTicket.subject).like('%[signalement trajet]%'))
+
+        if subtype:
+            s = (subtype or "").lower()
+            tag_map = {
+                "conducteur_absent": "[conducteur absent]",
+                "conducteur_en_retard": "[conducteur en retard]",
+                "autre": "[autre]",
+            }
+            tag = tag_map.get(s)
+            if tag:
+                query = query.filter(func.lower(SupportTicket.message).like(f'%{tag}%'))
         return query.scalar() or 0
     
     @staticmethod
@@ -159,7 +177,8 @@ class SupportTicketRepository:
         }
     
     @staticmethod
-    def get_tickets_by_page(session: Session, page: int = 1, page_size: int = 10, status: Optional[str] = None) -> dict:
+    def get_tickets_by_page(session: Session, page: int = 1, page_size: int = 10, status: Optional[str] = None,
+                            category: Optional[str] = None, subtype: Optional[str] = None) -> dict:
         """Récupère les tickets par page, version simplifiée
         
         Args:
@@ -176,14 +195,31 @@ class SupportTicketRepository:
         
         # Construction de la requête de base
         query = session.query(SupportTicket)
-        
+
         # Appliquer le filtre de statut si nécessaire
         if status:
             query = query.filter(SupportTicket.status == status)
-        
-        # Compter le nombre total de tickets pour ce statut
+
+        # Appliquer les filtres de catégorie et sous-type (insensibles à la casse)
+        if category:
+            c = (category or "").lower()
+            if c == "signalement_trajet":
+                query = query.filter(func.lower(SupportTicket.subject).like('%[signalement trajet]%'))
+
+        if subtype:
+            s = (subtype or "").lower()
+            tag_map = {
+                "conducteur_absent": "[conducteur absent]",
+                "conducteur_en_retard": "[conducteur en retard]",
+                "autre": "[autre]",
+            }
+            tag = tag_map.get(s)
+            if tag:
+                query = query.filter(func.lower(SupportTicket.message).like(f'%{tag}%'))
+
+        # Compter le nombre total filtré
         total_count = query.count()
-        
+
         # Récupérer les tickets pour la page demandée
         tickets = query.order_by(SupportTicket.created_at.desc()).offset(skip).limit(page_size).all()
         

@@ -43,7 +43,7 @@ def need_refresh(last_update, force_refresh=False, max_age_seconds=300):
         return True
 
 
-def load_tickets_by_page(page=1, page_size=10, status=None):
+def load_tickets_by_page(page=1, page_size=10, status=None, category=None, subtype=None):
     """
     Charge les tickets par page, version simplifiée
     """
@@ -52,7 +52,8 @@ def load_tickets_by_page(page=1, page_size=10, status=None):
     try:
         with get_session() as session:
             result = SupportTicketRepository.get_tickets_by_page(
-                session, page=page, page_size=page_size, status=status
+                session, page=page, page_size=page_size, status=status,
+                category=category, subtype=subtype
             )
             tickets = [t.model_dump() for t in result["tickets"]]
             pagination = result["pagination"]
@@ -116,10 +117,12 @@ def update_ticket_status(ticket_id, new_status):
      Output("support-tickets-timestamp", "data")],
     [Input("pagination-page", "active_page"),
      Input("support-refresh-btn", "n_clicks"),
-     Input("ticket-update-signal", "data")],
+     Input("ticket-update-signal", "data"),
+     Input("ticket-category-filter", "value"),
+     Input("ticket-subtype-filter", "value")],
     [State("support-tickets-timestamp", "data")]
 )
-def update_pending_tickets_data(page, refresh_clicks, update_signal, last_update):
+def update_pending_tickets_data(page, refresh_clicks, update_signal, category_filter, subtype_filter, last_update):
     """
     Charge les tickets en attente pour la page demandée
     """
@@ -133,8 +136,12 @@ def update_pending_tickets_data(page, refresh_clicks, update_signal, last_update
     if update_signal:
         print(f"Signal de mise à jour reçu: {update_signal}")
     
-    # Charger les tickets pour la page demandée (10 tickets par page)
-    data = load_tickets_by_page(page=page or 1, page_size=10, status="OPEN")
+    # Charger les tickets pour la page demandée (10 tickets par page) avec filtres serveur
+    data = load_tickets_by_page(
+        page=page or 1, page_size=10, status="OPEN",
+        category=(category_filter if category_filter != "all" else None),
+        subtype=(subtype_filter if subtype_filter != "all" else None)
+    )
     
     # Retourner le nombre total de pages pour le paginateur
     total_pages = data["pagination"]["total_pages"]
@@ -150,10 +157,12 @@ def update_pending_tickets_data(page, refresh_clicks, update_signal, last_update
      Output("closed-tickets-timestamp", "data")],
     [Input("closed-pagination-page", "active_page"),
      Input("support-refresh-btn", "n_clicks"),
-     Input("ticket-update-signal", "data")],
+     Input("ticket-update-signal", "data"),
+     Input("ticket-category-filter", "value"),
+     Input("ticket-subtype-filter", "value")],
     [State("closed-tickets-timestamp", "data")]
 )
-def update_closed_tickets_data(page, refresh_clicks, update_signal, last_update):
+def update_closed_tickets_data(page, refresh_clicks, update_signal, category_filter, subtype_filter, last_update):
     """
     Charge les tickets fermés pour la page demandée
     """
@@ -167,8 +176,12 @@ def update_closed_tickets_data(page, refresh_clicks, update_signal, last_update)
     if update_signal:
         print(f"Signal de mise à jour reçu: {update_signal}")
         
-    # Charger les tickets pour la page demandée (10 tickets par page)
-    data = load_tickets_by_page(page=page or 1, page_size=10, status="CLOSED")
+    # Charger les tickets pour la page demandée (10 tickets par page) avec filtres serveur
+    data = load_tickets_by_page(
+        page=page or 1, page_size=10, status="CLOSED",
+        category=(category_filter if category_filter != "all" else None),
+        subtype=(subtype_filter if subtype_filter != "all" else None)
+    )
     
     # Retourner le nombre total de pages pour le paginateur
     total_pages = data["pagination"]["total_pages"]
@@ -241,9 +254,11 @@ def update_ticket_stores(cache_pending, cache_closed, update_signal, current_pen
     [Output("open-tickets-container", "children"),
      Output("open-count", "children")],
     [Input("support-tickets-store", "data"),
-     Input("selected-ticket-store", "data")]
+     Input("selected-ticket-store", "data"),
+     Input("ticket-category-filter", "value"),
+     Input("ticket-subtype-filter", "value")]
 )
-def update_pending_tickets_list(pending_tickets_data, selected_ticket):
+def update_pending_tickets_list(pending_tickets_data, selected_ticket, category_filter, subtype_filter):
     """
     Met à jour la liste des tickets en attente
     """
@@ -255,6 +270,7 @@ def update_pending_tickets_list(pending_tickets_data, selected_ticket):
         total_pending = 0
     else:
         pending_tickets = pending_tickets_data["tickets"]
+        # Plus de filtrage côté client: déjà filtré par le serveur
         pending_pagination = pending_tickets_data.get("pagination", {})
         total_pending = pending_pagination.get("total_count", len(pending_tickets))
         
@@ -270,9 +286,11 @@ def update_pending_tickets_list(pending_tickets_data, selected_ticket):
     [Output("closed-tickets-container", "children"),
      Output("closed-count", "children")],
     [Input("closed-tickets-store", "data"),
-     Input("selected-ticket-store", "data")]
+     Input("selected-ticket-store", "data"),
+     Input("ticket-category-filter", "value"),
+     Input("ticket-subtype-filter", "value")]
 )
-def update_closed_tickets_list(closed_tickets_data, selected_ticket):
+def update_closed_tickets_list(closed_tickets_data, selected_ticket, category_filter, subtype_filter):
     """
     Met à jour la liste des tickets fermés
     """
@@ -284,6 +302,7 @@ def update_closed_tickets_list(closed_tickets_data, selected_ticket):
         total_closed = 0
     else:
         closed_tickets = closed_tickets_data["tickets"]
+        # Plus de filtrage côté client: déjà filtré par le serveur
         closed_pagination = closed_tickets_data.get("pagination", {})
         total_closed = closed_pagination.get("total_count", len(closed_tickets))
         
@@ -293,6 +312,28 @@ def update_closed_tickets_list(closed_tickets_data, selected_ticket):
     
     print(f"Tickets fermés: {total_closed}")
     return closed_list, str(total_closed)
+
+
+# Réinitialiser la pagination quand les filtres changent (tickets ouverts)
+@callback(
+    Output("pagination-page", "active_page"),
+    [Input("ticket-category-filter", "value"),
+     Input("ticket-subtype-filter", "value")],
+    prevent_initial_call=True
+)
+def reset_open_pagination_on_filters(category, subtype):
+    return 1
+
+
+# Réinitialiser la pagination quand les filtres changent (tickets fermés)
+@callback(
+    Output("closed-pagination-page", "active_page"),
+    [Input("ticket-category-filter", "value"),
+     Input("ticket-subtype-filter", "value")],
+    prevent_initial_call=True
+)
+def reset_closed_pagination_on_filters(category, subtype):
+    return 1
 
 
 @callback(

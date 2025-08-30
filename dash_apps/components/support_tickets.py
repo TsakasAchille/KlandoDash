@@ -1,5 +1,6 @@
 import dash_bootstrap_components as dbc
 from dash import html, dcc, Input, Output, State
+import re
 import dash
 from dash.dependencies import Input, Output, State, MATCH, ALL
 import pandas as pd
@@ -184,10 +185,23 @@ def render_ticket_details(ticket, comments):
     formatted_comments.reverse()
     
     # Section fixe - Informations du ticket
+    # Détecter un éventuel identifiant de trajet dans le sujet
+    subject_text = ticket.get('subject', '') or ''
+    subject_lower = subject_text.lower()
+    trip_url = None
+    if "[signalement trajet]" in subject_lower:
+        # Chercher un identifiant commençant par TRIP-
+        m = re.search(r"\bTRIP-[A-Za-z0-9\-]+\b", subject_text)
+        if m:
+            trip_id = m.group(0)
+            trip_url = f"/trips?trip_id={trip_id}"
+
     fixed_section = dbc.Card([
         dbc.CardBody([
             # Titre du ticket
             html.H4(ticket.get('subject', 'Sans objet'), className="mb-3"),
+            # Bouton voir trajet si applicable
+            (dbc.Button("Voir trajet", color="primary", size="sm", href=trip_url, className="mb-3") if trip_url else html.Span()),
             
             # Formulaire de mise à jour du statut
             dbc.Card([
