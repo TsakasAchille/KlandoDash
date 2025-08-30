@@ -118,6 +118,38 @@
     .not-verified {
       color: #dc3545;
     }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 14px;
+    }
+    .status-ok {
+      background: #eaf7ee;
+      color: #198754;
+      border: 1px solid #cfead7;
+    }
+    .status-pending {
+      background: #fff3f3;
+      color: #dc3545;
+      border: 1px solid #ffd6d6;
+    }
+    .btn-link-validate {
+      display: inline-block;
+      background: #0d6efd;
+      color: #fff !important;
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: opacity .15s;
+      margin-left: 12px;
+    }
+    .btn-link-validate:hover { opacity: .9; }
     
     /* Couleurs des cercles d'icônes */
     .icon-name {
@@ -382,6 +414,26 @@
           <div class="detail-text">
             <div class="detail-label">Documents chauffeur transmis</div>
             <div class="detail-value">{% if user.get('driver_documents_transmitted') %}Oui{% else %}Non{% endif %}</div>
+          </div>
+        </div>
+        <!-- Statut validation conducteur + lien validation -->
+        <div class="detail-row">
+          <div class="icon-circle icon-id">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+          </div>
+          <div class="detail-text">
+            <div class="detail-label">Statut de validation conducteur</div>
+            <div class="detail-value">
+              {% if user.get('is_driver_doc_validated') %}
+                <span class="status-badge status-ok">Validé</span>
+                <a class="btn-link-validate" href="/driver-validation?uid={{ user.get('uid', user.get('id','')) }}&tab=validated" target="_top">Ouvrir la validation</a>
+              {% else %}
+                <span class="status-badge status-pending">En attente</span>
+                <a class="btn-link-validate" href="/driver-validation?uid={{ user.get('uid', user.get('id','')) }}&tab=pending" target="_top">Ouvrir la validation</a>
+              {% endif %}
+            </div>
           </div>
         </div>
         <!-- Permis de conduire -->

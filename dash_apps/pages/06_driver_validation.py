@@ -6,6 +6,7 @@ from dash_apps.utils.admin_db import is_admin
 from flask import session
 from dash.exceptions import PreventUpdate
 from dash_apps.components.driver_validation_table import render_driver_validation_table
+from urllib.parse import parse_qs
 
 # ID du store pour rafraîchissement
 refresh_store_id = "driver-validation-refresh"
@@ -73,6 +74,9 @@ def serve_layout():
             dcc.Store(id="driver-current-page-pending", storage_type="session", data=1),
             dcc.Store(id="driver-current-page-validated", storage_type="session", data=1),
             dcc.Store(id="driver-validation-refresh", storage_type="session", data=0),
+            dcc.Store(id="driver-tab-pref", storage_type="session", data="pending"),
+            dcc.Store(id="driver-go-to", storage_type="session", data=None),
+            dcc.Location(id="driver-validation-url", refresh=False),
             # En-tête
             dbc.Card([
                 dbc.CardHeader(
@@ -105,13 +109,19 @@ print("[DEBUG] Layout de la page driver_validation défini")
     Output("validated-documents-container", "style"),
     Input("tab1-link", "n_clicks"),
     Input("tab2-link", "n_clicks"),
+    Input("driver-tab-pref", "data"),
     prevent_initial_call=False
 )
-def switch_tabs(tab1_clicks, tab2_clicks):
+def switch_tabs(tab1_clicks, tab2_clicks, tab_pref):
     ctx = callback_context
     triggered = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else "tab1-link"
-    tab1_active = triggered != "tab2-link"
-    tab2_active = not tab1_active
+    tab_pref = (tab_pref or "pending")
+    if triggered == "tab2-link" or (triggered == "driver-tab-pref" and tab_pref == "validated"):
+        tab1_active = False
+        tab2_active = True
+    else:
+        tab1_active = True
+        tab2_active = False
     return tab1_active, tab2_active, ({"display": "block"} if tab1_active else {"display": "none"}), ({"display": "block"} if tab2_active else {"display": "none"})
 
 
@@ -124,22 +134,20 @@ def switch_tabs(tab1_clicks, tab2_clicks):
 )
 def render_pending_table(current_page, selected_uid, _refresh):
     log_callback("render_pending_table", {"page": current_page, "selected_uid": selected_uid}, {})
-    try:
-        users = UserRepository.get_pending_drivers() or []
-    except Exception:
-        users = []
-    total = len(users)
-    page = current_page if isinstance(current_page, (int, float)) and current_page >= 1 else 1
-    page_size =  UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
-    # Align with Config.USERS_TABLE_PAGE_SIZE for consistency
+    page = int(current_page) if isinstance(current_page, (int, float)) and current_page >= 1 else 1
+    page_size = UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
     try:
         from dash_apps.config import Config as _Cfg
         page_size = getattr(_Cfg, "USERS_TABLE_PAGE_SIZE", page_size)
     except Exception:
         pass
-    start = (page - 1) * page_size
-    end = start + page_size
-    page_users = users[start:end]
+    # Use repository adapter with driver_validation filter (not_validated)
+    try:
+        data = UserRepository.get_users_paginated(page=page-1, page_size=page_size, filters={"driver_validation": "not_validated"})
+        page_users = data.get("users", [])
+        total = data.get("total_count", 0)
+    except Exception:
+        page_users, total = [], 0
     return render_driver_validation_table(page_users, page, total, selected_uid=selected_uid, tab="pending")
 
 
@@ -152,23 +160,99 @@ def render_pending_table(current_page, selected_uid, _refresh):
 )
 def render_validated_table(current_page, selected_uid, _refresh):
     log_callback("render_validated_table", {"page": current_page, "selected_uid": selected_uid}, {})
-    try:
-        users = UserRepository.get_validated_drivers() or []
-    except Exception:
-        users = []
-    total = len(users)
-    page = current_page if isinstance(current_page, (int, float)) and current_page >= 1 else 1
-    page_size =  UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
+    page = int(current_page) if isinstance(current_page, (int, float)) and current_page >= 1 else 1
+    page_size = UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
     try:
         from dash_apps.config import Config as _Cfg
         page_size = getattr(_Cfg, "USERS_TABLE_PAGE_SIZE", page_size)
     except Exception:
         pass
-    start = (page - 1) * page_size
-    end = start + page_size
-    page_users = users[start:end]
+    # Use repository adapter with driver_validation filter (validated)
+    try:
+        data = UserRepository.get_users_paginated(page=page-1, page_size=page_size, filters={"driver_validation": "validated"})
+        page_users = data.get("users", [])
+        total = data.get("total_count", 0)
+    except Exception:
+        page_users, total = [], 0
     return render_driver_validation_table(page_users, page, total, selected_uid=selected_uid, tab="validated")
 
+
+@callback(
+    Output("driver-selected-uid", "data", allow_duplicate=True),
+    Output("driver-tab-pref", "data"),
+    Output("driver-go-to", "data"),
+    Input("driver-validation-url", "search"),
+    prevent_initial_call="initial_duplicate"
+)
+def bootstrap_from_url(search):
+    """Parse URL (?uid=&tab=) to preselect driver and compute proper page per tab."""
+    try:
+        q = parse_qs((search or "").lstrip("?")) if search else {}
+        uid = (q.get("uid", [None]) or [None])[0]
+        tab = (q.get("tab", [None]) or [None])[0]
+        if tab not in ("pending", "validated"):
+            tab = None
+        # Default outputs
+        sel_out = dash.no_update
+        tab_out = dash.no_update
+        goto_out = dash.no_update
+
+        # Always set a default tab if none specified
+        if tab is None:
+            tab_out = "pending"
+        else:
+            tab_out = tab
+
+        # If we have uid and a valid tab, compute page where user lies
+        if uid and tab:
+            try:
+                page_size = UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
+                try:
+                    from dash_apps.config import Config as _Cfg
+                    page_size = getattr(_Cfg, "USERS_TABLE_PAGE_SIZE", page_size)
+                except Exception:
+                    pass
+                users = []
+                if tab == "pending":
+                    users = UserRepository.get_pending_drivers() or []
+                else:
+                    users = UserRepository.get_validated_drivers() or []
+                # Find index by uid or id
+                idx = None
+                for i, u in enumerate(users):
+                    u_uid = u.get("uid") or u.get("id")
+                    if u_uid == uid:
+                        idx = i
+                        break
+                if idx is not None:
+                    page = (idx // page_size) + 1
+                    goto_out = {"tab": tab, "page": page}
+                sel_out = uid
+            except Exception:
+                pass
+        return sel_out, tab_out, goto_out
+    except Exception:
+        # Fallback safe
+        return dash.no_update, "pending", dash.no_update
+
+@callback(
+    Output("driver-current-page-pending", "data", allow_duplicate=True),
+    Output("driver-current-page-validated", "data", allow_duplicate=True),
+    Input("driver-go-to", "data"),
+    prevent_initial_call=True
+)
+def apply_goto(goto):
+    if not goto or not isinstance(goto, dict):
+        raise PreventUpdate
+    tab = goto.get("tab")
+    page = goto.get("page")
+    if not page or not isinstance(page, (int, float)):
+        raise PreventUpdate
+    if tab == "pending":
+        return int(page), dash.no_update
+    elif tab == "validated":
+        return dash.no_update, int(page)
+    raise PreventUpdate
 
 @callback(
     Output("driver-selected-uid", "data", allow_duplicate=True),
