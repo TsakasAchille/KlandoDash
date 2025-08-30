@@ -139,34 +139,35 @@ def render_user_summary(uid):
 
     return dbc.Card([
         dbc.CardBody([
-            # Header: photo + name + badge + action
+            # Header: photo + button under it (left) and name/badge/rating (right)
             html.Div([
                 html.Div([
-                    html.Img(src=photo_url, style={
-                        "width": "64px", "height": "64px", "borderRadius": "50%",
-                        "objectFit": "cover", "backgroundColor": "#f2f2f2"
-                    }) if photo_url else html.Div(style={
+                    html.Img(
+                        src=photo_url,
+                        style={
+                            "width": "64px", "height": "64px", "borderRadius": "50%",
+                            "objectFit": "cover", "backgroundColor": "#f2f2f2"
+                        }
+                    ) if photo_url else html.Div(style={
                         "width": "64px", "height": "64px", "borderRadius": "50%",
                         "backgroundColor": "#e9ecef"
-                    })
-                ], style={"flex": "0 0 auto"}),
-                html.Div([
-                    html.Div([html.Strong(display_name), validated_badge], className="d-flex align-items-center gap-2"),
-                    html.Div([
-                        html.Span("Note: "), html.Strong(f"{rating:.1f}"), html.Span(f"  ({rating_count} avis)")
-                    ], className="text-muted")
-                ], style={"flex": "1 1 auto"}),
-                html.Div([
+                    }),
                     dbc.Button(
                         "Voir profil",
                         color="primary",
                         size="sm",
                         href=f"/users?uid={uid_val}",
                         external_link=False,
-                        className="ms-2"
+                        className="mt-2 w-100"
                     )
-                ], style={"flex": "0 0 auto"})
-            ], className="d-flex align-items-center gap-3 mb-3"),
+                ], className="d-flex flex-column align-items-center", style={"flex": "0 0 80px", "minWidth": "80px"}),
+                html.Div([
+                    html.Div([html.Strong(display_name), validated_badge], className="d-flex align-items-center gap-2"),
+                    html.Div([
+                        html.Span("Note: "), html.Strong(f"{rating:.1f}"), html.Span(f"  ({rating_count} avis)")
+                    ], className="text-muted")
+                ], style={"flex": "1 1 auto"})
+            ], className="d-flex align-items-start gap-3 mb-3"),
 
             # Details list
             html.Div([

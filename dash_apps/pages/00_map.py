@@ -45,7 +45,7 @@ def create_maplibre_container(style_height="80vh"):
     return html.Div(
         id="home-maplibre",
         className="maplibre-container",
-        **{"data-style-url": style_url, "data-api-key": api_key},
+        **{"data-style-url": style_url, "data-api-key": api_key, "data-selected-trip-id": ""},
         style={
             "height": style_height,
             "width": "100%",
@@ -54,6 +54,16 @@ def create_maplibre_container(style_height="80vh"):
             "boxShadow": "0 4px 12px rgba(0,0,0,0.08)",
         }
     )
+
+
+# Keep the selected trip id in a DOM attribute so MapLibre JS can re-apply highlight after reload
+@callback(
+    Output("home-maplibre", "data-selected-trip-id"),
+    Input("map-click-trip-id", "data"),
+    prevent_initial_call=False,
+)
+def expose_selected_trip_to_dom(selected_trip_id):
+    return selected_trip_id or ""
 
 
 def _get_last_trips(n=10):
@@ -94,6 +104,7 @@ layout = dbc.Container([
     dcc.Store(id="map-selected-trips", storage_type="session", data=[]),
     dcc.Store(id="map-hover-trip-id", data=None),
     dcc.Store(id="map-click-trip-id", data=None, storage_type="session"),
+    dcc.Store(id="map-detail-visible", data=False, storage_type="session"),
     dcc.Interval(id="map-event-poll", interval=800, n_intervals=0),
     dbc.Row([
         dbc.Col([
@@ -147,7 +158,8 @@ def update_map_geojson(count, selected_ids):
     count = max(1, min(int(count), len(_TRIPS)))
     # If there is a selection, use it; else default to last N trips
     visible_trips = _TRIPS[:count]
-    selected_set = set(selected_ids or [getattr(t, 'trip_id', None) for t in visible_trips])
+    # If nothing is selected, show none (do not default to all)
+    selected_set = set(selected_ids or [])
     features = []
     # Palette de couleurs pour différencier les trajets simultanés
     palette = [
@@ -227,7 +239,8 @@ def update_map_geojson(count, selected_ids):
         except Exception:
             continue
     if not features:
-        return None
+        # Send empty collection to clear previously rendered polylines
+        return json.dumps({"type": "FeatureCollection", "features": []})
     collection = {"type": "FeatureCollection", "features": features}
     return json.dumps(collection)
 
@@ -237,13 +250,14 @@ def update_map_geojson(count, selected_ids):
     Output("map-trips-table-container", "children"),
     Input("map-trip-count", "value"),
     Input("map-selected-trips", "data"),
+    Input("map-click-trip-id", "data"),
 )
-def render_map_table(count, selected_ids):
+def render_map_table(count, selected_ids, active_trip_id):
     if not _TRIPS or not count or count <= 0:
         return render_map_trips_table([], selected_ids or [])
     count = max(1, min(int(count), len(_TRIPS)))
     trips = _TRIPS[:count]
-    return render_map_trips_table(trips, selected_ids or [])
+    return render_map_trips_table(trips, selected_ids or [], active_id=active_trip_id)
 
 
 @callback(
@@ -266,8 +280,8 @@ def sync_selection(count, checkbox_values, checkbox_ids, prev_selected):
         if prev_selected:
             # Keep only those still visible
             return [sid for sid in prev_selected if sid in visible]
-        # Fallback: default to last N
-        return [getattr(t, 'trip_id', None) for t in _TRIPS[:count] if getattr(t, 'trip_id', None)]
+        # Fallback: nothing selected means show none
+        return []
 
     # If checkboxes exist, compute selection from their values
     selected = []
@@ -293,13 +307,41 @@ dash.clientside_callback(
 
 
 @callback(
-    Output("map-side-panel", "children"),
+    Output("map-click-trip-id", "data", allow_duplicate=True),
+    Output("map-detail-visible", "data", allow_duplicate=True),
+    Input("map-selected-trips", "data"),
+    Input("map-trip-count", "value"),
+    State("map-click-trip-id", "data"),
+    prevent_initial_call=True,
+)
+def clear_click_when_trip_set_changes(selected_ids, count, current_selected_id):
+    # Clear only if the current selected trip is no longer in the visible selection (or none selected)
+    selected_ids = selected_ids or []
+    if (not selected_ids) or (current_selected_id and current_selected_id not in selected_ids):
+        return None, False
+    # Otherwise, keep current state
+    return dash.no_update, dash.no_update
+
+
+# Keep a separate visibility flag in session that decides whether to show details
+@callback(
+    Output("map-detail-visible", "data"),
     Input("map-click-trip-id", "data"),
     prevent_initial_call=False,
 )
-def render_side_panel(selected_trip_id):
+def update_detail_visibility(selected_trip_id):
+    return bool(selected_trip_id)
+
+
+@callback(
+    Output("map-side-panel", "children"),
+    Input("map-click-trip-id", "data"),
+    Input("map-detail-visible", "data"),
+    prevent_initial_call=False,
+)
+def render_side_panel(selected_trip_id, detail_visible):
     # Fallback texte si rien
-    if not selected_trip_id:
+    if not detail_visible or not selected_trip_id:
         return html.Div("Sélectionnez un trajet sur la carte")
     # Retrouver le trajet
     trip = next((t for t in _TRIPS if getattr(t, 'trip_id', None) == selected_trip_id), None)

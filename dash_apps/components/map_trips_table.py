@@ -10,7 +10,7 @@ def _short(text: str, n: int = 30) -> str:
     return s if len(s) <= n else s[: n - 1] + "…"
 
 
-def render_map_trips_table(trips, selected_ids=None):
+def render_map_trips_table(trips, selected_ids=None, active_id=None):
     """Tableau compact pour la page Carte, listant les derniers trajets
     avec un bouton "Voir trajet" qui renvoie vers /trips?trip_id=<id>.
     """
@@ -20,6 +20,7 @@ def render_map_trips_table(trips, selected_ids=None):
     rows = []
     for i, t in enumerate(trips, start=1):
         trip_id = getattr(t, "trip_id", "-") or "-"
+        is_active = (str(trip_id) == str(active_id)) if active_id is not None else False
         dep = _short(getattr(t, "departure_name", "-") or "-")
         arr = _short(getattr(t, "destination_name", "-") or "-")
         link = dcc.Link(
@@ -42,7 +43,7 @@ def render_map_trips_table(trips, selected_ids=None):
                 html.Td(arr),
                 html.Td(str(trip_id)),
                 html.Td(link),
-            ])
+            ], className=("table-active" if is_active else None))
         )
 
     if not rows:

@@ -129,6 +129,13 @@
             ensureRouteLayer(map, gj);
           }
         } catch (e) { console.debug('[MapLibre] no initial geojson'); }
+        // Apply selected highlight from attribute if present
+        try {
+          const sel = container.getAttribute('data-selected-trip-id') || '';
+          map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], sel || '__none__']);
+          // Keep client bridge state in sync
+          try { window.__map_events = window.__map_events || {}; window.__map_events.clickTripId = sel || null; } catch (_) {}
+        } catch (_) {}
       });
       map.on('error', (e) => {
         const err = e && e.error ? e.error : e;
@@ -157,6 +164,20 @@
       const sourceId = 'route-geojson';
       if (map.getSource(sourceId)) {
         map.getSource(sourceId).setData(geojson);
+        // If empty, also clear selection highlight and center marker
+        try {
+          const isEmpty = !geojson || (geojson.type === 'FeatureCollection' && (!geojson.features || geojson.features.length === 0));
+          if (isEmpty) {
+            try { map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], '__none__']); } catch (_) {}
+            try { map.getSource('route-center') && map.getSource('route-center').setData({ type: 'FeatureCollection', features: [] }); } catch (_) {}
+          }
+        } catch (_) {}
+        // Re-apply highlight based on current container attribute
+        try {
+          const el = map.getContainer();
+          const sel = el && el.getAttribute ? (el.getAttribute('data-selected-trip-id') || '') : '';
+          map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], sel || '__none__']);
+        } catch (_) {}
         try { fitToGeojson(map, geojson); } catch (_) {}
         return;
       }
@@ -334,11 +355,19 @@
               ensureRouteLayer(m.target.__map, gj);
             } catch (_) {}
           }
+          if (m.attributeName === 'data-selected-trip-id' && m.target.__map) {
+            try {
+              const sel = m.target.getAttribute('data-selected-trip-id') || '';
+              m.target.__map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], sel || '__none__']);
+              // Sync client bridge state so polling doesn't re-inject stale IDs
+              try { window.__map_events = window.__map_events || {}; window.__map_events.clickTripId = sel || null; } catch (_) {}
+            } catch (_) {}
+          }
         }
       }
       if (needsInitAll) initAll();
     });
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-geojson'] });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-geojson', 'data-selected-trip-id'] });
     console.debug('[MapLibre][onReady] observer attached');
   }
 
