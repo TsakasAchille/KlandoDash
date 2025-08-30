@@ -7,6 +7,7 @@ from flask_login import LoginManager
 
 from dash_apps.config import Config
 from dash_apps.auth.routes import auth_bp
+from dash_apps.core.proxy import proxy_bp
 
 def create_app():
     """
@@ -16,8 +17,14 @@ def create_app():
     app = Dash(
         __name__, 
         external_stylesheets=[
-            dbc.themes.BOOTSTRAP, 
-            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css'
+            dbc.themes.BOOTSTRAP,
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
+            # MapLibre GL CSS
+            'https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css',
+        ],
+        external_scripts=[
+            # MapLibre GL JS
+            'https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js',
         ],
         suppress_callback_exceptions=True,
         url_base_pathname='/'
@@ -34,5 +41,7 @@ def create_app():
     
     # Enregistrer le blueprint d'authentification
     server.register_blueprint(auth_bp, url_prefix='/auth')
+    # Enregistrer le blueprint proxy (CORS bypass pour MapLibre)
+    server.register_blueprint(proxy_bp, url_prefix='/proxy')
 
     return app, server

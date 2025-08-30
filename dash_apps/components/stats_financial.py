@@ -50,6 +50,13 @@ def render_stats_financial(trips_data):
     else:
         avg_price_per_km = 0
         
+    # Helper de formatage CFA pour KPIs
+    def fmt_cfa(val):
+        try:
+            return ("{:,.0f}".format(float(val))).replace(",", " ") + " F CFA"
+        except Exception:
+            return str(val)
+
     # Créer les graphiques et les convertir en dictionnaires pour les rendre JSON-sérialisables
     import numpy as np
     import json
@@ -85,19 +92,21 @@ def render_stats_financial(trips_data):
     price_distribution = fig_to_dict(create_price_distribution(trips_df)) if has_price_data else None
     driver_price_distribution = fig_to_dict(create_driver_price_distribution(trips_df)) if has_driver_price_data else None
     price_distance = fig_to_dict(create_price_vs_distance(trips_df)) if has_price_data and 'distance' in trips_df.columns else None
-    income_time = fig_to_dict(create_income_time_series(trips_df)) if has_price_data and 'departure_date' in trips_df.columns else None
+    income_time = fig_to_dict(create_income_time_series(trips_df)) if has_price_data else None
+    top_destinations = fig_to_dict(create_top_destinations_by_revenue(trips_df)) if has_price_data and 'destination_name' in trips_df.columns else None
     
     # Préparer les données pour le template
     context = {
-        "avg_price": avg_passenger_price,
-        "total_price": total_passenger_price,
-        "avg_price_per_km": avg_price_per_km,
-        "avg_driver_price": avg_driver_price,
-        "total_driver_price": total_driver_price,
+        "avg_price": fmt_cfa(avg_passenger_price),
+        "total_price": fmt_cfa(total_passenger_price),
+        "avg_price_per_km": ("{:,.0f}".format(avg_price_per_km).replace(",", " ") + " F CFA/km") if avg_price_per_km else "0 F CFA/km",
+        "avg_driver_price": fmt_cfa(avg_driver_price),
+        "total_driver_price": fmt_cfa(total_driver_price),
         "price_distribution": price_distribution,
         "driver_price_distribution": driver_price_distribution,
         "price_distance": price_distance,
         "income_time": income_time,
+        "top_destinations": top_destinations,
         "viator_distribution": None  # Ajouter viator_distribution avec une valeur None
     }
     
@@ -137,20 +146,60 @@ def create_price_distribution(trips_df):
         Un objet Figure de Plotly
     """
     if 'passenger_price' in trips_df.columns:
-        fig = px.histogram(trips_df, x="passenger_price", nbins=20, 
-                         labels={"passenger_price": "Prix passager (XOF)"},
-                         title="Distribution des prix passagers",
-                         color_discrete_sequence=['#f39c12'])
-        
-        # Ameliorer le style du graphique
+        fig = px.histogram(
+            trips_df,
+            x="passenger_price",
+            marginal="box",
+            labels={"passenger_price": "Prix passager (F CFA)"},
+            title="Distribution des prix passagers",
+            color_discrete_sequence=['#f39c12']
+        )
+
+        # Mise en forme CFA: axe X en monnaie, hover unifié
         fig.update_layout(
             margin=dict(l=40, r=40, t=40, b=40),
+            hovermode="x unified",
         )
-        
+        fig.update_xaxes(tickprefix="F CFA ", separatethousands=True)
+        fig.update_traces(hovertemplate="Prix: %{x:,.0f} F CFA<br>Comptes: %{y}")
+
         return fig
     else:
         # Graphique vide si les donnes ne sont pas disponibles
         return go.Figure()
+
+
+def create_top_destinations_by_revenue(trips_df):
+    """
+    Top 10 destinations par revenu total (passenger_price)
+    """
+    if 'destination_name' in trips_df.columns and 'passenger_price' in trips_df.columns:
+        df = trips_df.copy()
+        grouped = (
+            df.groupby('destination_name', dropna=False)['passenger_price']
+              .sum()
+              .reset_index()
+              .sort_values('passenger_price', ascending=False)
+              .head(10)
+        )
+
+        fig = px.bar(
+            grouped,
+            x='passenger_price',
+            y='destination_name',
+            orientation='h',
+            labels={'passenger_price': 'Revenu (F CFA)', 'destination_name': 'Destination'},
+            title='Top 10 destinations par revenu',
+            color_discrete_sequence=['#4e79a7']
+        )
+        fig.update_layout(
+            margin=dict(l=40, r=40, t=40, b=40),
+            hovermode='y unified'
+        )
+        fig.update_xaxes(tickprefix="F CFA ", separatethousands=True)
+        fig.update_traces(hovertemplate="Destination: %{y}<br>Revenu: %{x:,.0f} F CFA")
+        return fig
+    return go.Figure()
 
 
 def create_driver_price_distribution(trips_df):
@@ -164,16 +213,22 @@ def create_driver_price_distribution(trips_df):
         Un objet Figure de Plotly
     """
     if 'driver_price' in trips_df.columns:
-        fig = px.histogram(trips_df, x="driver_price", nbins=20, 
-                         labels={"driver_price": "Prix conducteur (XOF)"},
-                         title="Distribution des prix conducteurs",
-                         color_discrete_sequence=['#3366CC'])
-        
-        # Ameliorer le style du graphique
+        fig = px.histogram(
+            trips_df,
+            x="driver_price",
+            marginal="box",
+            labels={"driver_price": "Prix conducteur (F CFA)"},
+            title="Distribution des prix conducteurs",
+            color_discrete_sequence=['#3366CC']
+        )
+
         fig.update_layout(
             margin=dict(l=40, r=40, t=40, b=40),
+            hovermode="x unified",
         )
-        
+        fig.update_xaxes(tickprefix="F CFA ", separatethousands=True)
+        fig.update_traces(hovertemplate="Prix: %{x:,.0f} F CFA<br>Comptes: %{y}")
+
         return fig
     else:
         # Graphique vide si les donnes ne sont pas disponibles
@@ -191,18 +246,22 @@ def create_price_vs_distance(trips_df):
         Un objet Figure de Plotly
     """
     if 'passenger_price' in trips_df.columns and 'distance' in trips_df.columns:
-        fig = px.scatter(trips_df, x="distance", y="passenger_price", 
-                       labels={"distance": "Distance (km)", "passenger_price": "Prix passager (XOF)"},
-                       title="Relation entre prix passager et distance",
-                       color_discrete_sequence=['#f39c12'])
-        
-        # Ameliorer le style du graphique
+        fig = px.scatter(
+            trips_df,
+            x="distance",
+            y="passenger_price",
+            labels={"distance": "Distance (km)", "passenger_price": "Prix passager (F CFA)"},
+            title="Relation entre prix passager et distance",
+            color_discrete_sequence=['#f39c12']
+        )
+
         fig.update_layout(
             margin=dict(l=40, r=40, t=40, b=40),
+            hovermode="x unified",
         )
-        
-        # Ajouter une ligne de tendance
-        fig.update_traces(mode='markers')
+        fig.update_yaxes(tickprefix="F CFA ", separatethousands=True)
+        fig.update_xaxes(separatethousands=True)
+        fig.update_traces(mode='markers', hovertemplate="Distance: %{x:,.1f} km<br>Prix: %{y:,.0f} F CFA")
         
         try:
             # Verifier qu'il y a suffisamment de donnes valides pour calculer une tendance
@@ -257,17 +316,39 @@ def create_income_time_series(trips_df):
             trips_df['month'] = trips_df[date_column].dt.to_period('M')
             monthly_income = trips_df.groupby('month')['passenger_price'].sum().reset_index()
             monthly_income['month'] = monthly_income['month'].dt.to_timestamp()
-            
-            fig = px.line(monthly_income, x='month', y='passenger_price',
-                        labels={'month': 'Mois', 'passenger_price': 'Revenu total (XOF)'},
-                        title="Evolution des revenus mensuels",
-                        color_discrete_sequence=['#f39c12'])
-            
-            # Ameliorer le style du graphique
-            fig.update_layout(
-                margin=dict(l=40, r=40, t=40, b=40),
+
+            # Calcul MA 3 mois
+            monthly_income['ma_3'] = monthly_income['passenger_price'].rolling(3).mean()
+
+            fig = go.Figure()
+            # Barres revenus
+            fig.add_bar(
+                x=monthly_income['month'],
+                y=monthly_income['passenger_price'],
+                name='Revenus',
+                marker_color='#f39c12',
+                hovertemplate="Mois: %{x|%Y-%m}<br>Revenus: %{y:,.0f} F CFA"
             )
-            
+            # Ligne MA 3M
+            fig.add_scatter(
+                x=monthly_income['month'],
+                y=monthly_income['ma_3'],
+                mode='lines',
+                name='Moyenne mobile (3M)',
+                line=dict(color='#2c3e50', width=2),
+                hovertemplate="Mois: %{x|%Y-%m}<br>MA(3): %{y:,.0f} F CFA"
+            )
+
+            fig.update_layout(
+                title="Évolution des revenus mensuels",
+                xaxis_title='Mois',
+                yaxis_title='Revenu total (F CFA)',
+                margin=dict(l=40, r=40, t=40, b=40),
+                hovermode='x unified',
+                legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
+            )
+            fig.update_yaxes(tickprefix="F CFA ", separatethousands=True)
+
             return fig
         except Exception as e:
             print(f"Erreur lors de la creation du graphique temporel: {str(e)}")

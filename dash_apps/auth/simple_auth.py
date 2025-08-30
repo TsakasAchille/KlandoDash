@@ -89,12 +89,24 @@ def init_auth(server):
     def protect_pages():
         """Protection de toutes les pages sauf celles d'authentification"""
         # Liste des chemins publics (non protégés)
-        public_paths = ['/login', '/admin-login', '/auth/login', '/auth/login/google/callback', '/logout', '/auth/logout']
+        public_paths = [
+            '/login',
+            '/admin-login',
+            '/auth/login',
+            '/auth/login/google/callback',
+            '/logout',
+            '/auth/logout',
+            '/proxy/map',  # Proxy MapLibre doit être accessible sans auth
+        ]
         
         # Vérifier si l'utilisateur est authentifié
         if not current_user.is_authenticated:
-            if request.path not in public_paths and not request.path.startswith('/assets/') \
-               and not request.path.startswith('/_dash'):
+            if (
+                request.path not in public_paths
+                and not request.path.startswith('/assets/')
+                and not request.path.startswith('/_dash')
+                and not request.path.startswith('/proxy/')  # Exempter tous les endpoints de proxy
+            ):
                 return redirect('/login')
 
 

@@ -3,7 +3,7 @@ from dash import html, dcc, Input, Output, callback
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash_apps.components.trip_map import render_trip_map
+from dash_apps.config import Config
 
 def render_stats_map(trips_data):
     """
@@ -71,14 +71,24 @@ def render_stats_map(trips_data):
                         step=1
                     ),
                 ], width=12),
+                dbc.Col([
+                    html.Label("Couches supplémentaires:"),
+                    dcc.Checklist(
+                        id="stats-map-show-heat",
+                        options=[{"label": " Bulles densité destinations", "value": "heat"}],
+                        value=["heat"],
+                        inputStyle={"marginRight": "6px"},
+                        labelStyle={"marginRight": "16px"}
+                    ),
+                ], width=12),
             ], className="mb-3"),
         ])
     ], className="mb-4", style={"boxShadow": "0 4px 8px rgba(0, 0, 0, 0.1)"})
     
-    # Iframe pour afficher la carte des trajets
+    # Conteneur MapLibre (style JSON, pas de tuiles PNG)
     map_container = html.Div(
         id="stats-map-iframe-container",
-        children=create_trips_map_iframe(trips_df) if has_coordinates else html.Div("Les coordonnées GPS sont manquantes pour afficher cette carte."),
+        children=create_maplibre_container(style_height="600px"),
         style={"height": "600px", "width": "100%", "borderRadius": "8px", "overflow": "hidden", "boxShadow": "0 4px 8px rgba(0, 0, 0, 0.1)"}
     )
     
@@ -98,58 +108,34 @@ def render_stats_map(trips_data):
 @callback(
     Output("stats-map-iframe-container", "children"),
     Input("stats-map-max-trips-slider", "value"),
+    Input("stats-map-show-heat", "value"),
     Input("stats-trips-store", "data")
 )
-def update_map_display(max_trips, trips_data):
+def update_map_display(max_trips, heat_values, trips_data):
     """
-    Met à jour l'affichage de la carte en fonction des filtres
-    
-    Args:
-        max_trips: Nombre maximum de trajets à afficher
-        trips_data: Données des trajets
-    
-    Returns:
-        Un composant Dash pour afficher la carte mise à jour
+    Met à jour l'affichage de la carte. Pour l'instant, MapLibre n'utilise pas ces options côté client.
     """
-    if not trips_data:
-        return html.Div("Aucune donnée de trajet disponible")
-    
-    trips_df = pd.DataFrame(trips_data)
-    
-    # Limiter le nombre de trajets selon le filtre
-    trips_df = trips_df.head(max_trips)
-    
-    # Vérifier si les colonnes de coordonnées sont disponibles
-    has_coordinates = all(col in trips_df.columns for col in ['departure_latitude', 'departure_longitude', 'destination_latitude', 'destination_longitude'])
-    
-    # Si les colonnes ont les anciens noms, les renommer pour compatibilité
-    if not has_coordinates and all(col in trips_df.columns for col in ['departure_lat', 'departure_lng', 'destination_lat', 'destination_lng']):
-        trips_df = trips_df.copy()
-        # Créer un mapping des anciens noms vers les nouveaux noms
-        column_mapping = {
-            'departure_lat': 'departure_latitude',
-            'departure_lng': 'departure_longitude',
-            'destination_lat': 'destination_latitude',
-            'destination_lng': 'destination_longitude'
-        }
-        # Renommer les colonnes
-        trips_df.rename(columns=column_mapping, inplace=True)
-        has_coordinates = True
-    
-    return create_trips_map_iframe(trips_df) if has_coordinates else html.Div("Les coordonnées GPS sont manquantes pour afficher cette carte.")
+    # On renvoie simplement le conteneur MapLibre; l'initialisation se fait côté client via JS
+    return create_maplibre_container(style_height="600px")
 
-def create_trips_map_iframe(trips_df):
+def create_maplibre_container(style_height="600px"):
     """
-    Crée un iframe pour afficher la carte des trajets
-    
-    Args:
-        trips_df: DataFrame contenant les données des trajets
-    
-    Returns:
-        Un composant Dash pour afficher la carte
+    Crée le conteneur pour une carte MapLibre GL initialisée côté client.
+    Utilise Config.MAPLIBRE_STYLE_URL (FireStore) et ajoute la clé API aux URLs de base.
     """
-    # Utiliser le composant de carte existant pour afficher plusieurs trajets
-    return render_trip_map(trips_df, show_directions=True, show_markers=True, height="600px")
+    style_url = Config.MAPLIBRE_STYLE_URL or "https://demotiles.maplibre.org/globe.json"
+    api_key = Config.MAPLIBRE_API_KEY or ""
+    return html.Div(
+        id="maplibre-stats-map",
+        className="maplibre-container",
+        **{"data-style-url": style_url, "data-api-key": api_key},
+        style={
+            "height": style_height,
+            "width": "100%",
+            "borderRadius": "8px",
+            "overflow": "hidden",
+        }
+    )
 
 def create_trips_summary_table(trips_df):
     """

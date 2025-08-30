@@ -74,19 +74,19 @@
       <!-- Prix moyen par place -->
       <div class="metric-card">
         <div class="metric-title">Prix moyen par place</div>
-        <div class="metric-value">{{ "%.2f €"|format(avg_price) if avg_price else "-" }}</div>
+        <div class="metric-value">{{ avg_price if avg_price else "-" }}</div>
       </div>
       
       <!-- Revenu total -->
       <div class="metric-card">
         <div class="metric-title">Revenu total</div>
-        <div class="metric-value">{{ "%.2f €"|format(total_price) if total_price else "-" }}</div>
+        <div class="metric-value">{{ total_price if total_price else "-" }}</div>
       </div>
       
       <!-- Prix moyen par km -->
       <div class="metric-card">
         <div class="metric-title">Prix moyen par km</div>
-        <div class="metric-value">{{ "%.2f €"|format(avg_price_per_km) if avg_price_per_km else "-" }}</div>
+        <div class="metric-value">{{ avg_price_per_km if avg_price_per_km else "-" }}</div>
       </div>
       
       <!-- Revenu moyen Viator -->
@@ -107,6 +107,12 @@
       <h3 class="chart-title">Distribution des prix par place</h3>
       <div id="price-distribution-chart" class="chart-container"></div>
     </div>
+
+    <!-- Distribution des prix conducteurs -->
+    <div class="chart-card">
+      <h3 class="chart-title">Distribution des prix conducteurs</h3>
+      <div id="driver-price-distribution-chart" class="chart-container"></div>
+    </div>
     
     <!-- Distribution des revenus Viator -->
     <div class="chart-card">
@@ -124,6 +130,12 @@
     <div class="chart-card">
       <h3 class="chart-title">Évolution des revenus dans le temps</h3>
       <div id="income-time-chart" class="chart-container"></div>
+    </div>
+
+    <!-- Top destinations par revenu -->
+    <div class="chart-card">
+      <h3 class="chart-title">Top 10 destinations par revenu</h3>
+      <div id="top-destinations-chart" class="chart-container"></div>
     </div>
   </div>
   
@@ -186,6 +198,34 @@
     } else {
       document.getElementById('income-time-chart').innerHTML = 
         '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Données temporelles insuffisantes</div>';
+    }
+
+    // Distribution des prix conducteurs
+    const driverPriceData = {{ driver_price_distribution | tojson | safe }};
+    if (driverPriceData && driverPriceData.data) {
+      Plotly.newPlot(
+        'driver-price-distribution-chart',
+        driverPriceData.data,
+        driverPriceData.layout,
+        {responsive: true}
+      );
+    } else {
+      document.getElementById('driver-price-distribution-chart').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Aucune donnée de prix conducteur</div>';
+    }
+
+    // Top destinations par revenu
+    const topDestData = {{ top_destinations | tojson | safe }};
+    if (topDestData && topDestData.data) {
+      Plotly.newPlot(
+        'top-destinations-chart',
+        topDestData.data,
+        topDestData.layout,
+        {responsive: true}
+      );
+    } else {
+      document.getElementById('top-destinations-chart').innerHTML = 
+        '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Aucune donnée de destinations</div>';
     }
   </script>
 </body>

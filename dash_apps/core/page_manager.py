@@ -46,6 +46,10 @@ def load_all_pages():
     """
     Charge toutes les pages de l'application
     """
+    # Page d'accueil (Carte)
+    page_layouts['/'] = load_page_from_file('00_map.py', 'Carte')
+    page_layouts['/map'] = page_layouts['/']
+
     # Page d'utilisateurs
     page_layouts['/users'] = load_page_from_file('01_users.py', 'Utilisateurs')
 
@@ -67,9 +71,9 @@ def load_all_pages():
     # Page de profil utilisateur
     page_layouts['/user-profile'] = load_page_from_file('05_user_profile.py', 'Profil')
 
-    # Page principale: la page trajets
-   # page_layouts['/'] = load_page_from_file('trips.py', 'Accueil/Trajets')
-    #page_layouts['/trips'] = page_layouts['/']
+    # Ancienne page principale (commentée)
+    # page_layouts['/'] = load_page_from_file('trips.py', 'Accueil/Trajets')
+    # page_layouts['/trips'] = page_layouts['/']
     
     return page_layouts
 

@@ -18,6 +18,7 @@ def create_main_layout():
                         html.Img(src="assets/icons/klando-500x173.png", style={"width": "100%", "max-width": "180px", "object-fit": "contain"}, className="mt-4 mb-4") 
                     ], style={"text-align": "center"}),
                     dbc.Nav([
+                        dbc.NavLink("Carte", href="/", active="exact", id="nav-map", className="mb-2"),
                         dbc.NavLink("Utilisateurs", href="/users", active="exact", id="nav-users", className="mb-2"),
                         dbc.NavLink("Trajets", href="/trips", active="exact", id="nav-trips", className="mb-2"),
                         dbc.NavLink("Statistiques", href="/stats", active="exact", id="nav-stats", className="mb-2"),

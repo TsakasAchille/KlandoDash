@@ -34,3 +34,8 @@ class Config(object):
     
     # Configuration des tables et pagination
     USERS_TABLE_PAGE_SIZE = 5
+
+    # MapLibre configuration
+    # Prefer MAPLIBRE_STYLE_URL; fallback to MAP_API_URL for backward compatibility
+    MAPLIBRE_STYLE_URL = os.environ.get('MAPLIBRE_STYLE_URL') or os.environ.get('MAP_API_URL', '')
+    MAPLIBRE_API_KEY = os.environ.get('MAPLIBRE_API_KEY', '')      # if required to be passed in base URLs
