@@ -272,12 +272,18 @@ def handle_trips_pagination_buttons(prev_clicks, next_clicks, current_page):
         
     # Mettre à jour la page en fonction du bouton cliqué
     if button_id == "trips-prev-btn":
-        print("max(1, current_page - 1)", max(1, current_page - 1))
-        return max(1, current_page - 1)
+        if current_page <= 1:
+            # Déjà à la première page, ne pas changer
+            print("Déjà à la première page, pas de changement")
+            raise PreventUpdate
+        new_page = current_page - 1
+        print("Passage à la page", new_page)
+        return new_page
     elif button_id == "trips-next-btn":
         # On vérifiera que la page n'est pas trop grande dans le callback qui utilise cette valeur
-        print("current_page + 1", current_page + 1)
-        return current_page + 1
+        new_page = current_page + 1
+        print("Passage à la page", new_page)
+        return new_page
     
     # Par défaut, ne pas changer de page
     raise PreventUpdate

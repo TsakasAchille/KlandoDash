@@ -15,6 +15,75 @@ from dash_apps.components.user_search_widget import render_search_widget, render
 from dash_apps.repositories.user_repository import UserRepository
 
 
+# Helper de log standardisé pour tous les callbacks (compatible Python < 3.10)
+def log_callback(name, inputs, states=None):
+    def _short_str(s):
+        try:
+            s = str(s)
+        except Exception:
+            return s
+        if len(s) > 14:
+            return f"{s[:4]}…{s[-4:]}"
+        return s
+
+    def _clean(value):
+        # Nettoyage récursif: supprime None, "", et valeurs par défaut "all"
+        if isinstance(value, dict):
+            cleaned = {}
+            for k, v in value.items():
+                if v is None or v == "":
+                    continue
+                if isinstance(v, str) and v == "all":
+                    continue
+                # Flatten pour selected_user
+                if k in ("selected_user", "selected_user_uid") and isinstance(v, dict) and "uid" in v:
+                    cleaned["selected_uid"] = _short_str(v.get("uid"))
+                    continue
+                cleaned[k] = _clean(v)
+            return cleaned
+        if isinstance(value, list):
+            return [_clean(v) for v in value if v is not None and v != ""]
+        if isinstance(value, str):
+            return _short_str(value)
+        return value
+
+    def _kv_lines(dct):
+        if not dct:
+            return ["  (none)"]
+        lines = []
+        for k, v in dct.items():
+            try:
+                if isinstance(v, (dict, list)):
+                    v_str = json.dumps(v, ensure_ascii=False)
+                else:
+                    v_str = str(v)
+            except Exception:
+                v_str = str(v)
+            lines.append(f"  - {k}: {v_str}")
+        return lines
+
+    try:
+        c_inputs = _clean(inputs)
+        c_states = _clean(states or {})
+        sep = "=" * 74
+        print("\n" + sep)
+        print(f"[CB] {name}")
+        print("Inputs:")
+        for line in _kv_lines(c_inputs):
+            print(line)
+        print("States:")
+        for line in _kv_lines(c_states):
+            print(line)
+        print(sep)
+    except Exception:
+        sep = "=" * 74
+        print("\n" + sep)
+        print(f"[CB] {name}")
+        print(f"Inputs: {inputs}")
+        print(f"States: {states or {}}")
+        print(sep)
+
+
 def find_user_page_index(uid, page_size):
     """Trouve l'index de page sur lequel se trouve l'utilisateur avec l'UID donné
     
@@ -26,23 +95,12 @@ def find_user_page_index(uid, page_size):
         Index de la page (0-based) ou None si non trouvé
     """
     try:
-        # Utiliser la méthode optimisée du repository pour trouver la position de l'utilisateur
         position = UserRepository.get_user_position(uid)
-        
         if position is not None:
-            # Calculer l'index de page (0-based)
             page_index = position // page_size
-            # Ajouter des logs détaillés
-            print(f"Utilisateur {uid} trouvé à la position {position} (selon le repository)")
-            print(f"Taille de page: {page_size}")
-            print(f"Calcul page: {position} // {page_size} = {page_index}")
-            print(f"Page calculée (0-based): {page_index}, (1-based): {page_index + 1}")
             return page_index
-        
-        print(f"Utilisateur {uid} non trouvé dans le repository")
         return None
-    except Exception as e:
-        print(f"Erreur lors de la recherche de page pour l'utilisateur {uid}: {str(e)}")
+    except Exception:
         return None
 
 
@@ -105,9 +163,14 @@ def get_layout():
     Input("users-url", "search"),  # Ajout de l'URL comme input
     State("users-current-page", "data"),
     State("selected-user-uid", "data"),
-    prevent_initial_call='initial_duplicate'
+    prevent_initial_call=True
 )
 def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_user):
+    log_callback(
+        "get_page_info_on_page_load",
+        {"n_clicks": n_clicks, "url_search": url_search},
+        {"current_page": current_page, "selected_user": selected_user}
+    )
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
     
@@ -144,6 +207,7 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_user
     prevent_initial_call=True
 )
 def show_refresh_users_message(n_clicks):
+    log_callback("show_refresh_users_message", {"n_clicks": n_clicks}, {})
     return dbc.Alert("Données utilisateurs rafraîchies!", color="success", dismissable=True)
 
 
@@ -155,6 +219,7 @@ def show_refresh_users_message(n_clicks):
 )
 def toggle_advanced_filters(n_clicks, is_open):
     """Ouvre ou ferme le panneau des filtres avancés"""
+    log_callback("toggle_advanced_filters", {"n_clicks": n_clicks}, {"is_open": is_open})
     if n_clicks:
         return not is_open
     return is_open
@@ -180,6 +245,23 @@ def update_filters(
     search_text, date_from, date_to, date_filter_type, single_date, date_sort, role, driver_validation, gender, rating_operator, rating_value, current_filters
 ):
     """Met à jour les filtres de recherche lorsque l'utilisateur modifie les champs"""
+    log_callback(
+        "update_filters",
+        {
+            "search_text": search_text,
+            "date_from": date_from,
+            "date_to": date_to,
+            "date_filter_type": date_filter_type,
+            "single_date": single_date,
+            "date_sort": date_sort,
+            "role": role,
+            "driver_validation": driver_validation,
+            "gender": gender,
+            "rating_operator": rating_operator,
+            "rating_value": rating_value,
+        },
+        {"current_filters": current_filters}
+    )
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
     
@@ -219,21 +301,20 @@ def update_filters(
     # Réinitialiser la page à 1 lorsqu'un filtre change
     # (Nous gèrerons cela dans un callback séparé)
     
-    print(f"Filtres mis à jour: {current_filters}")
     return current_filters
 
-
+"""
 @callback(
     Output("users-current-page", "data", allow_duplicate=True),
     Input("users-filter-store", "data"),
     prevent_initial_call=True
 )
 def reset_page_on_filter_change(filters):
-    """Réinitialise la page à 1 lorsque les filtres changent"""
+    log_callback("reset_page_on_filter_change", {"filters": filters}, {})
     # Toujours revenir à la page 1 quand un filtre change
     return 1
 
-
+"""
 @callback(
     [Output("users-filter-store", "data", allow_duplicate=True),
      Output("users-search-input", "value")],
@@ -242,6 +323,7 @@ def reset_page_on_filter_change(filters):
 )
 def reset_filters(n_clicks):
     """Réinitialise tous les filtres et vide la barre de recherche"""
+    log_callback("reset_filters", {"n_clicks": n_clicks}, {})
     return {}, ""
 
 
@@ -251,6 +333,7 @@ def reset_filters(n_clicks):
 )
 def display_active_filters(filters):
     """Affiche les filtres actifs sous forme de badges"""
+    log_callback("display_active_filters", {"filters": filters}, {})
     return render_active_filters(filters)
 
 
@@ -265,11 +348,11 @@ def display_active_filters(filters):
 )
 def render_users_table_pagination(current_page, n_clicks, selected_user, filters):
     """Callback responsable uniquement de la pagination et du rendu du tableau"""
-    from dash import ctx
-    print("\n[DEBUG] render_users_table_pagination")
-    print("current_page", current_page)
-    print("Trigger:", ctx.triggered_id)
-    print("Filters:", filters)
+    log_callback(
+        "render_users_table_pagination",
+        {"current_page": current_page, "n_clicks": n_clicks, "selected_user": selected_user, "filters": filters},
+        {}
+    )
     
     # Configuration pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
@@ -314,7 +397,6 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
     if filters and filters.get("rating_operator") and filters.get("rating_operator") != "all" and filters.get("rating_value") is not None:
         filter_params["rating_operator"] = filters.get("rating_operator")
         filter_params["rating_value"] = filters.get("rating_value")
-        print(f"Ajout des filtres rating: {filters.get('rating_operator')}, {filters.get('rating_value')}")
     
     # Récupérer uniquement les utilisateurs de la page courante avec filtres (pagination côté serveur)
     result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)
@@ -346,8 +428,7 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
 )
 def render_user_details(selected_user):
     """Callback responsable uniquement de l'affichage des détails d'un utilisateur sélectionné"""
-    print("\n[DEBUG] render_user_details")
-    print(f"selected_user {selected_user}")
+    log_callback("render_user_details", {"selected_user": selected_user}, {})
     
     # Extraire l'UID de l'utilisateur
     selected_uid_value = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
@@ -363,6 +444,62 @@ def render_user_details(selected_user):
     return details, stats, trips
 
 
+
+
+@callback(
+    Output("users-url", "pathname", allow_duplicate=True),  # Output factice pour permettre le callback
+    [
+        Input("users-current-page", "data"),
+        Input("selected-user-uid", "data"),
+        Input("users-filter-store", "data"),
+        Input("refresh-users-btn", "n_clicks"),
+        Input("users-search-input", "value"),
+        Input("users-registration-date-filter", "start_date"),
+        Input("users-registration-date-filter", "end_date"),
+        Input("users-date-filter-type", "value"),
+        Input("users-single-date-filter", "date"),
+        Input("users-date-sort-filter", "value"),
+        Input("users-role-filter", "value"),
+        Input("users-driver-validation-filter", "value"),
+        Input("users-gender-filter", "value"),
+        Input("users-rating-operator-filter", "value"),
+        Input("users-rating-value-filter", "value"),
+        Input("users-url", "search"),
+        Input("url-init-trigger", "n_intervals")
+    ],
+    prevent_initial_call=True
+)
+def debug_all_inputs(
+    current_page, selected_user, filter_store, refresh_clicks,
+    search_input, date_from, date_to, date_filter_type, single_date, date_sort,
+    role_filter, driver_validation, gender_filter, rating_operator, rating_value,
+    url_search, url_trigger
+):
+    """Callback de debug minimal: log standardisé de tous les inputs/states"""
+    log_callback(
+        "debug_all_inputs",
+        {
+            "current_page": current_page,
+            "selected_user": selected_user,
+            "filter_store": filter_store,
+            "refresh_clicks": refresh_clicks,
+            "search_input": search_input,
+            "date_from": date_from,
+            "date_to": date_to,
+            "date_filter_type": date_filter_type,
+            "single_date": single_date,
+            "date_sort": date_sort,
+            "role_filter": role_filter,
+            "driver_validation": driver_validation,
+            "gender_filter": gender_filter,
+            "rating_operator": rating_operator,
+            "rating_value": rating_value,
+            "url_search": url_search,
+            "url_trigger": url_trigger,
+        },
+        {}
+    )
+    return dash.no_update
 
 
 layout = get_layout()

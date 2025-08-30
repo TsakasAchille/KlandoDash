@@ -6,6 +6,73 @@ from dash.exceptions import PreventUpdate
 from dash_apps.config import Config
 from dash_apps.repositories.user_repository import UserRepository
 
+
+# Helper de log standardisé (même format que dans 01_users.py)
+def log_callback(name, inputs, states=None):
+    def _short_str(s):
+        try:
+            s = str(s)
+        except Exception:
+            return s
+        if len(s) > 14:
+            return f"{s[:4]}…{s[-4:]}"
+        return s
+
+    def _clean(value):
+        if isinstance(value, dict):
+            cleaned = {}
+            for k, v in value.items():
+                if v is None or v == "":
+                    continue
+                if isinstance(v, str) and v == "all":
+                    continue
+                if k in ("selected_user", "selected_user_uid") and isinstance(v, dict) and "uid" in v:
+                    cleaned["selected_uid"] = _short_str(v.get("uid"))
+                    continue
+                cleaned[k] = _clean(v)
+            return cleaned
+        if isinstance(value, list):
+            return [_clean(v) for v in value if v is not None and v != ""]
+        if isinstance(value, str):
+            return _short_str(value)
+        return value
+
+    def _kv_lines(dct):
+        if not dct:
+            return ["  (none)"]
+        lines = []
+        for k, v in dct.items():
+            try:
+                if isinstance(v, (dict, list)):
+                    v_str = json.dumps(v, ensure_ascii=False)
+                else:
+                    v_str = str(v)
+            except Exception:
+                v_str = str(v)
+            lines.append(f"  - {k}: {v_str}")
+        return lines
+
+    try:
+        c_inputs = _clean(inputs)
+        c_states = _clean(states or {})
+        sep = "=" * 74
+        print("\n" + sep)
+        print(f"[CB] {name}")
+        print("Inputs:")
+        for line in _kv_lines(c_inputs):
+            print(line)
+        print("States:")
+        for line in _kv_lines(c_states):
+            print(line)
+        print(sep)
+    except Exception:
+        sep = "=" * 74
+        print("\n" + sep)
+        print(f"[CB] {name}")
+        print(f"Inputs: {inputs}")
+        print(f"States: {states or {}}")
+        print(sep)
+
 # Store pour gérer la pagination de manière locale sans déclencher le callback principal
 def render_custom_users_table(users, current_page, total_users, selected_uid=None):
     """Rendu d'un tableau personnalisé avec pagination manuelle
@@ -252,10 +319,11 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
 )
 def handle_pagination_buttons(prev_clicks, next_clicks, current_page):
     ctx = callback_context
-    print("\n[DEBUG] handle_pagination_buttons")
-    print("prev_clicks", prev_clicks)
-    print("next_clicks", next_clicks)
-    print("current_page", current_page)
+    log_callback(
+        "handle_pagination_buttons",
+        {"prev_clicks": prev_clicks, "next_clicks": next_clicks},
+        {"current_page": current_page}
+    )
     # Si aucun bouton n'a été cliqué
     if not ctx.triggered:
         raise PreventUpdate
@@ -272,11 +340,9 @@ def handle_pagination_buttons(prev_clicks, next_clicks, current_page):
         
     # Mettre à jour la page en fonction du bouton cliqué
     if button_id == "prev-page-btn":
-        print("max(1, current_page - 1)", max(1, current_page - 1))
         return max(1, current_page - 1)
     elif button_id == "next-page-btn":
         # On vérifiera que la page n'est pas trop grande dans le callback qui utilise cette valeur
-        print("current_page + 1", current_page + 1)
         return current_page + 1
     
     # Par défaut, ne pas changer de page
@@ -322,36 +388,30 @@ def handle_button_selection(btn_clicks):
     prevent_initial_call=True  # Ceci ne suffit pas toujours avec les pattern-matching callbacks
 )
 def handle_row_selection(row_clicks):
-    print("\n[DEBUG] Début callback handle_row_selection")
-    print(f"\n[DEBUG] row_clicks: {row_clicks}")
+    log_callback("handle_row_selection", {"row_clicks": row_clicks}, {})
     
     ctx = callback_context
     if not ctx.triggered:
-        print("\n[DEBUG] Pas de déclencheur, PreventUpdate")
         raise PreventUpdate
     
     # Vérifier si le callback est déclenché lors du chargement initial
     # Les clicks seront tous à zéro lors du chargement initial
     if not any(clicks > 0 for clicks in row_clicks):
-        print("\n[DEBUG] Tous les clicks sont à zéro, probablement un chargement initial, PreventUpdate")
         raise PreventUpdate
     
     # Déterminer ce qui a été cliqué
     clicked_id = ctx.triggered[0]["prop_id"].split(".")[0]
-    print(f"\n[DEBUG] clicked_id: {clicked_id}")
     
     try:
         # Extraire l'index (uid) de l'ID JSON
         id_dict = json.loads(clicked_id)
         uid = id_dict["index"]
-        print(f"\n[DEBUG] Ligne cliquée, uid extrait: {uid}")
         
         # Retourner l'UID extrait
         return {"uid": uid}
     except Exception as e:
-        print(f"\n[ERROR] Erreur extraction uid: {str(e)}")
-        import traceback
-        print(traceback.format_exc())
+        # Logs d'erreur concis
+        log_callback("handle_row_selection_error", {"error": str(e), "clicked_id": clicked_id}, {})
         raise PreventUpdate
 
 # 3. Nouveau callback pour gérer uniquement la mise en surbrillance des lignes
@@ -370,9 +430,7 @@ def handle_row_selection(row_clicks):
     prevent_initial_call=True
 )
 def highlight_selected_row(selected_user, row_ids, button_ids):
-
-    print("\n[DEBUG] Début callback highlight_selected_row")
-    print(f"\n[DEBUG] selected_user: {selected_user}")
+    log_callback("highlight_selected_row", {"selected_user": selected_user}, {"row_count": len(row_ids) if row_ids else 0})
     
     if not selected_user or not row_ids:
         raise PreventUpdate
@@ -384,7 +442,7 @@ def highlight_selected_row(selected_user, row_ids, button_ids):
     else:
         selected_uid = selected_user
     
-    print(f"\n[DEBUG] UID utilisateur sélectionné: {selected_uid}")
+    # UID sélectionné nettoyé, la suite applique juste les styles
     
     # Préparer les styles pour chaque ligne
     styles = []

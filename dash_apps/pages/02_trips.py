@@ -94,14 +94,15 @@ def get_layout():
     Input("trips-url", "search"),  # Ajout de l'URL comme input
     State("trips-current-page", "data"),
     State("selected-trip-id", "data"),
-    prevent_initial_call='initial_duplicate'
+    prevent_initial_call=True
 )
 def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip):
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
-    
+    print(f"\n[DEBUG] Triggered ID: {triggered_id}")
     # Si l'URL a changé, traiter la sélection de trajet
     if triggered_id == "trips-url" and url_search:
+        print(f"\n[DEBUG] URL changée: {url_search}")
         import urllib.parse
         params = urllib.parse.parse_qs(url_search.lstrip('?'))
         trip_id_list = params.get('trip_id')
@@ -120,12 +121,17 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
                 return current_page, trip_from_url
     # Si refresh a été cliqué
     if triggered_id == "refresh-trips-btn" and n_clicks is not None:
+        print(f"\n[DEBUG] Refresh cliqué")
         return 1, selected_trip
     
+
     # Pour le chargement initial ou autres cas
     if current_page is None or not isinstance(current_page, (int, float)):
+        print(f"\n[DEBUG] Page chargée: {current_page}")
         return 1, selected_trip
         
+    print(f"\n[DEBUG] Page chargée: {current_page}")
+    print(f"\n[DEBUG] selected_trip: {selected_trip}")
     return current_page, selected_trip
 
 @callback(
@@ -224,7 +230,7 @@ def display_active_trip_filters(filters):
      Input("trips-filter-store", "data"),
      Input("refresh-trips-btn", "n_clicks")],
     [State("selected-trip-id", "data")],
-    prevent_initial_call=False
+    prevent_initial_call=True
 )
 def render_trips_table_pagination(current_page, filters, refresh_clicks, selected_trip):
     """Rendu du tableau des trajets avec pagination côté serveur"""
