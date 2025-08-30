@@ -4,7 +4,7 @@ import json
 import dash_bootstrap_components as dbc
 from dash import dash_table
 from dash_apps.components.map_trips_table import render_map_trips_table
-from dash_apps.components.user_profile import render_user_profile
+from dash_apps.components.user_profile import render_user_profile, render_user_summary
 from dash_apps.config import Config
 from dash_apps.repositories.trip_repository import TripRepository
 import polyline as polyline_lib
@@ -93,7 +93,7 @@ layout = dbc.Container([
     # Stores interactivité
     dcc.Store(id="map-selected-trips", storage_type="session", data=[]),
     dcc.Store(id="map-hover-trip-id", data=None),
-    dcc.Store(id="map-click-trip-id", data=None),
+    dcc.Store(id="map-click-trip-id", data=None, storage_type="session"),
     dcc.Interval(id="map-event-poll", interval=800, n_intervals=0),
     dbc.Row([
         dbc.Col([
@@ -104,6 +104,8 @@ layout = dbc.Container([
                 max=len(_TRIPS) if _TRIPS else 0,
                 step=1,
                 value=min(3, len(_TRIPS)) if _TRIPS else 0,
+                persistence=True,
+                persistence_type="session",
                 updatemode="mouseup",
                 tooltip={"placement": "bottom", "always_visible": False},
                 included=False,
@@ -249,16 +251,22 @@ def render_map_table(count, selected_ids):
     Input("map-trip-count", "value"),
     Input({"type": "map-trip-check", "index": dash.ALL}, "value"),
     State({"type": "map-trip-check", "index": dash.ALL}, "id"),
+    State("map-selected-trips", "data"),
     prevent_initial_call=False,
 )
-def sync_selection(count, checkbox_values, checkbox_ids):
+def sync_selection(count, checkbox_values, checkbox_ids, prev_selected):
     # If no trips or invalid count => empty selection
     if not _TRIPS or not count or count <= 0:
         return []
     count = max(1, min(int(count), len(_TRIPS)))
 
-    # If checkboxes are not in the DOM yet, preset last N trips
+    # If checkboxes are not in the DOM yet, try to preserve previous selection (session)
     if not checkbox_ids:
+        visible = {getattr(t, 'trip_id', None) for t in _TRIPS[:count] if getattr(t, 'trip_id', None)}
+        if prev_selected:
+            # Keep only those still visible
+            return [sid for sid in prev_selected if sid in visible]
+        # Fallback: default to last N
         return [getattr(t, 'trip_id', None) for t in _TRIPS[:count] if getattr(t, 'trip_id', None)]
 
     # If checkboxes exist, compute selection from their values
@@ -297,9 +305,9 @@ def render_side_panel(selected_trip_id):
     trip = next((t for t in _TRIPS if getattr(t, 'trip_id', None) == selected_trip_id), None)
     if not trip:
         return html.Div([html.Strong("Trajet:"), html.Span(f" {selected_trip_id}")])
-    # Afficher directement le profil conducteur à gauche
+    # Afficher un résumé compact du conducteur à gauche
     driver_id = getattr(trip, 'driver_id', None)
     if driver_id:
-        return render_user_profile(driver_id)
+        return render_user_summary(driver_id)
     # Fallback minimal si pas de driver_id
     return html.Div([html.Strong("Trajet:"), html.Span(f" {selected_trip_id}")])
