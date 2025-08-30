@@ -76,18 +76,23 @@ def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id
         # Formatage des données
         formatted_date = str(departure_date) if departure_date else "-"
         formatted_time = str(departure_time) if departure_time else "-"
-        formatted_price = f"{price}€" if price else "-"
+        formatted_price = f"{price} FCFA" if price else "-"
         
-        # Badge de statut
-        status_color = {
-            "active": "success",
-            "completed": "info", 
-            "cancelled": "danger"
-        }.get(status, "secondary")
-        
+        # Badge de statut (nouvelles valeurs: PENDING, CONFIRMED, CANCELED)
+        status_map_label = {
+            "PENDING": "En attente",
+            "CONFIRMED": "Confirmé",
+            "CANCELED": "Annulé",
+        }
+        status_map_color = {
+            "PENDING": "warning",
+            "CONFIRMED": "success",
+            "CANCELED": "danger",
+        }
+        status_upper = str(status).upper() if status else None
         status_badge = dbc.Badge(
-            status.title() if status else "Inconnu",
-            color=status_color,
+            status_map_label.get(status_upper, status if status else "Inconnu"),
+            color=status_map_color.get(status_upper, "secondary"),
             className="me-1"
         )
 

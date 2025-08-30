@@ -104,9 +104,9 @@ def render_trip_search_widget():
                             id="trips-status-filter",
                             options=[
                                 {"label": "Tous", "value": "all"},
-                                {"label": "Actif", "value": "active"},
-                                {"label": "Terminé", "value": "completed"},
-                                {"label": "Annulé", "value": "cancelled"},
+                                {"label": "En attente", "value": "PENDING"},
+                                {"label": "Confirmé", "value": "CONFIRMED"},
+                                {"label": "Annulé", "value": "CANCELED"},
                             ],
                             value="all",
                             clearable=False
@@ -172,11 +172,11 @@ def render_active_trip_filters(filters):
     # Filtre statut
     if filters.get("status") and filters["status"] != "all":
         status_map = {
-            "active": "Actif", 
-            "completed": "Terminé", 
-            "cancelled": "Annulé"
+            "PENDING": "En attente",
+            "CONFIRMED": "Confirmé",
+            "CANCELED": "Annulé",
         }
-        status_label = status_map.get(filters["status"], filters["status"])
+        status_label = status_map.get(filters["status"], str(filters["status"]))
         filters_badges.append(dbc.Badge(f"Statut: {status_label}", color="info", className="me-2"))
 
     # Filtre signalement

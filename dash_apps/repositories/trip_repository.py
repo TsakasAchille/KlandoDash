@@ -111,9 +111,9 @@ class TripRepository:
                         except ValueError:
                             pass
                 
-                # Filtre statut
+                # Filtre statut (insensible à la casse)
                 if filters.get("status") and filters["status"] != "all":
-                    query = query.filter(Trip.status == filters["status"])
+                    query = query.filter(func.upper(Trip.status) == str(filters["status"]).upper())
 
                 # Filtre: trajets ayant au moins un signalement associé
                 if filters.get("has_signalement"):

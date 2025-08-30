@@ -113,7 +113,7 @@
       <div class="stat-row">
         <span class="stat-label">Prix par place</span>
         <span class="stat-value highlight-value">
-          {% if trip.get("passenger_price") %}{{ trip.get("passenger_price") }} €{% else %}-{% endif %}
+          {% if trip.get("passenger_price") %}{{ trip.get("passenger_price") }} FCFA{% else %}-{% endif %}
         </span>
       </div>
       
@@ -121,7 +121,7 @@
       <div class="stat-row">
         <span class="stat-label">Prix conducteur</span>
         <span class="stat-value">
-          {% if trip.get("driver_price") %}{{ trip.get("driver_price") }} €{% else %}-{% endif %}
+          {% if trip.get("driver_price") %}{{ trip.get("driver_price") }} FCFA{% else %}-{% endif %}
         </span>
       </div>
       

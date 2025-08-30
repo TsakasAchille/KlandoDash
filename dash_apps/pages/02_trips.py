@@ -207,14 +207,34 @@ def reset_trip_page_on_filter_change(filters):
 
 
 @callback(
-    [Output("trips-filter-store", "data", allow_duplicate=True),
-     Output("trips-search-input", "value")],
+    [
+        Output("trips-filter-store", "data", allow_duplicate=True),
+        Output("trips-search-input", "value"),
+        Output("trips-creation-date-filter", "start_date"),
+        Output("trips-creation-date-filter", "end_date"),
+        Output("trips-single-date-filter", "date"),
+        Output("trips-date-filter-type", "value"),
+        Output("trips-date-sort-filter", "value"),
+        Output("trips-status-filter", "value"),
+        Output("trips-has-signalement-filter", "value"),
+    ],
     Input("trips-reset-filters-btn", "n_clicks"),
     prevent_initial_call=True
 )
 def reset_trip_filters(n_clicks):
     """Réinitialise tous les filtres et vide la barre de recherche"""
-    return {}, ""
+    # Valeurs par défaut
+    return (
+        {},              # trips-filter-store
+        "",             # search input
+        None,            # date range start
+        None,            # date range end
+        None,            # single date
+        "range",        # date filter type
+        "desc",         # date sort
+        "all",          # status
+        False,           # has signalement
+    )
 
 
 @callback(
