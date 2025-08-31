@@ -428,9 +428,10 @@ def display_active_filters(filters):
     [Input("users-current-page", "data"),
      Input("refresh-users-btn", "n_clicks"),
      Input("users-filter-store", "data")],
+     State("selected-user-uid", "data"),
     prevent_initial_call=True
 )
-def render_users_table(current_page, n_clicks, filters):
+def render_users_table(current_page, n_clicks, filters, selected_user_uid):
     """Callback pour le rendu du tableau des utilisateurs uniquement"""
     log_callback(
         "render_users_table",
@@ -503,7 +504,7 @@ def render_users_table(current_page, n_clicks, filters):
         table_rows_data, 
         current_page=current_page,
         total_users=total_users,
-        selected_uid=None  # Le tableau n'a pas besoin de connaître l'utilisateur sélectionné
+        selected_uid=selected_user_uid  # Le tableau n'a pas besoin de connaître l'utilisateur sélectionné
     )
 
     # Préchargement intelligent des panneaux pour les utilisateurs visibles
