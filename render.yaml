@@ -29,3 +29,5 @@ services:
         sync: false
       - key: MAPLIBRE_STYLE_URL
         sync: false
+      - key: USE_EMBED_MODE
+        value: false

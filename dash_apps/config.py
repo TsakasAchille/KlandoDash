@@ -22,8 +22,7 @@ class Config(object):
     
     # URL de redirection pour OAuth - doit correspondre exactement à celle configurée dans la Google Cloud Console
     # Détection automatique de l'environnement (production vs développement)
-    @classmethod
-    def get_oauth_redirect_uri(cls):
+    def _get_oauth_redirect_uri():
         # Si OAUTH_REDIRECT_URI est défini explicitement, l'utiliser
         if os.environ.get('OAUTH_REDIRECT_URI'):
             return os.environ.get('OAUTH_REDIRECT_URI')
@@ -34,7 +33,7 @@ class Config(object):
         else:
             return 'http://localhost:8050/auth/login/google/callback'
     
-    OAUTH_REDIRECT_URI = get_oauth_redirect_uri()
+    OAUTH_REDIRECT_URI = _get_oauth_redirect_uri()
     
     # Liste des emails autorisés - ceux configurés comme utilisateurs de test dans Google Cloud Console
     # Cette liste doit correspondre exactement aux utilisateurs de test configurés dans Google OAuth Console
@@ -51,3 +50,6 @@ class Config(object):
     # Prefer MAPLIBRE_STYLE_URL; fallback to MAP_API_URL for backward compatibility
     MAPLIBRE_STYLE_URL = os.environ.get('MAPLIBRE_STYLE_URL') or os.environ.get('MAP_API_URL', '')
     MAPLIBRE_API_KEY = os.environ.get('MAPLIBRE_API_KEY', '')      # if required to be passed in base URLs
+    
+    # Mode d'affichage - embed pour iframe ou normal pour HTML complet
+    USE_EMBED_MODE = os.environ.get('USE_EMBED_MODE', 'false').lower() == 'true'
