@@ -206,15 +206,24 @@ def get_layout():
     ]),
     dbc.Row([
         dbc.Col([
-            html.Div(id="user-details-panel")
+            dcc.Loading(
+                children=html.Div(id="user-details-panel"),
+                type="default"
+            )
         ], width=6),
         dbc.Col([
-            html.Div(id="user-stats-panel")
+            dcc.Loading(
+                children=html.Div(id="user-stats-panel"),
+                type="default"
+            )
         ], width=6)
     ]),
     dbc.Row([
         dbc.Col([
-            html.Div(id="user-trips-panel")
+            dcc.Loading(
+                children=html.Div(id="user-trips-panel"),
+                type="default"
+            )
         ], width=12)
     ])
 ], fluid=True)

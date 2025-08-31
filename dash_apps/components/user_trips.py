@@ -37,15 +37,8 @@ def render_user_trips(uid):
     if uid is None:
         return None
     
-    # Importer UserRepository ici pour éviter les imports circulaires
-    from dash_apps.repositories.user_repository import UserRepository
-    
-    # Vérifier que l'utilisateur existe
-    user = UserRepository.get_user_by_id(uid)
-    if user is None:
-        return dbc.Alert(f"Utilisateur introuvable (UID: {uid})", color="warning")
-        
-    user_id = uid  # Utiliser directement l'UID fourni
+    # Utiliser directement l'UID fourni
+    user_id = uid
     
     db_error = False
     trips_data = []
