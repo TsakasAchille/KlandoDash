@@ -51,8 +51,8 @@ class UsersCacheService:
         return elapsed < UsersCacheService._local_cache_ttl
     
     @staticmethod
-    def get_users_page_result(page_index: int, page_size: int, filter_params: Dict, 
-                             force_reload: bool = False) -> Dict:
+    def get_users_page_result(page_index: int, page_size: int, filter_params: Dict,
+                             force_reload: bool = False, selected_uid: Optional[str] = None) -> Dict:
         """
         Récupère le résultat brut d'une page d'utilisateurs avec cache multi-niveaux optimisé
         
@@ -68,7 +68,9 @@ class UsersCacheService:
             if (cache_key in UsersCacheService._local_cache and 
                 UsersCacheService._is_local_cache_valid(cache_key)):
                 print(f"[USERS][LOCAL CACHE HIT] {cache_key}")
-                return UsersCacheService._local_cache[cache_key]
+                cached = UsersCacheService._local_cache[cache_key]
+                # Retourner une copie enrichie avec selected_uid si nécessaire
+                return UsersCacheService._merge_selected_into_result(cached, selected_uid)
             
             # Niveau 2: Cache Redis
             cached_data = redis_cache.get_users_page(page_index, page_size, filter_params)
@@ -85,7 +87,7 @@ class UsersCacheService:
                     except Exception:
                         pass
                 
-                return cached_data
+                return UsersCacheService._merge_selected_into_result(cached_data, selected_uid)
         
         # Niveau 3: Base de données
         result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)
@@ -103,7 +105,50 @@ class UsersCacheService:
             except Exception:
                 pass
         
-        return result
+        # Enrichir le résultat avec selected_uid si demandé (sans polluer les caches persistés)
+        return UsersCacheService._merge_selected_into_result(result, selected_uid)
+
+    @staticmethod
+    def _merge_selected_into_result(result: Dict, selected_uid: Optional[str]) -> Dict:
+        """
+        Retourne une nouvelle dict result où basic_by_uid inclut selected_uid si absent,
+        sans modifier l'objet d'entrée (évite de polluer le cache partagé).
+        """
+        if not selected_uid:
+            return result
+
+        try:
+            basic_by_uid = result.get("basic_by_uid", {}) or {}
+            if selected_uid in basic_by_uid:
+                return result
+
+            # Charger l'utilisateur et construire le dict basic de la même forme que le repo
+            user_schema = UserRepository.get_user_by_id(selected_uid)
+            if not user_schema:
+                return result
+
+            u = user_schema.model_dump() if hasattr(user_schema, "model_dump") else user_schema.dict()
+            basic = {}
+            for k in [
+                "uid", "display_name", "email", "first_name", "name", "phone_number",
+                "birth", "photo_url", "bio", "driver_license_url", "gender", "id_card_url",
+                "rating", "rating_count", "role", "is_driver_doc_validated"
+            ]:
+                if k in u:
+                    basic[k] = u.get(k)
+            if "phone_number" not in basic and u.get("phone") is not None:
+                basic["phone_number"] = u.get("phone")
+            basic["created_at"] = u.get("created_at") or u.get("created_time")
+            basic["updated_at"] = u.get("updated_at") or u.get("updated_time")
+
+            # Copier result superficiellement et merger basic_by_uid
+            merged = dict(result)
+            merged_basic = dict(basic_by_uid)
+            merged_basic[selected_uid] = basic
+            merged["basic_by_uid"] = merged_basic
+            return merged
+        except Exception:
+            return result
     
     @staticmethod
     def extract_table_data(result: Dict) -> Tuple[List, int, Dict, List]:

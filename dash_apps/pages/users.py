@@ -491,8 +491,16 @@ def render_users_table(current_page, n_clicks, filters, selected_user_uid):
 
     # Utiliser le service de cache centralisé
     print(f"[TABLE] Chargement page {current_page} (index {page_index}), force_reload={force_reload}")
+    # Normaliser selected_uid (peut être dict ou str)
+    selected_uid_value = None
+    if selected_user_uid:
+        if isinstance(selected_user_uid, dict):
+            selected_uid_value = selected_user_uid.get("uid")
+        else:
+            selected_uid_value = selected_user_uid
+
     result = UsersCacheService.get_users_page_result(
-        page_index, page_size, filter_params, force_reload
+        page_index, page_size, filter_params, force_reload, selected_uid=selected_uid_value
     )
     
     # Extraire les données nécessaires pour le tableau
