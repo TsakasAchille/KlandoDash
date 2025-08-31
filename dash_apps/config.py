@@ -7,6 +7,18 @@ from pathlib import Path
 env_path = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))).joinpath('.env')
 load_dotenv(dotenv_path=env_path)
 
+# Fonction helper pour OAuth redirect URI
+def _get_oauth_redirect_uri():
+    # Si OAUTH_REDIRECT_URI est défini explicitement, l'utiliser
+    if os.environ.get('OAUTH_REDIRECT_URI'):
+        return os.environ.get('OAUTH_REDIRECT_URI')
+    
+    # Sinon, détecter l'environnement
+    if os.environ.get('RENDER'):  # Variable d'environnement Render
+        return 'https://klandodash.onrender.com/auth/login/google/callback'
+    else:
+        return 'http://localhost:8050/auth/login/google/callback'
+
 # Configuration de base
 class Config(object):
     # Clé secrète pour les sessions
@@ -21,18 +33,6 @@ class Config(object):
     ADMIN_PASSWORD = os.environ.get('APP_PASSWORD', 'KLANDO2K25')
     
     # URL de redirection pour OAuth - doit correspondre exactement à celle configurée dans la Google Cloud Console
-    # Détection automatique de l'environnement (production vs développement)
-    def _get_oauth_redirect_uri():
-        # Si OAUTH_REDIRECT_URI est défini explicitement, l'utiliser
-        if os.environ.get('OAUTH_REDIRECT_URI'):
-            return os.environ.get('OAUTH_REDIRECT_URI')
-        
-        # Sinon, détecter l'environnement
-        if os.environ.get('RENDER'):  # Variable d'environnement Render
-            return 'https://klandodash.onrender.com/auth/login/google/callback'
-        else:
-            return 'http://localhost:8050/auth/login/google/callback'
-    
     OAUTH_REDIRECT_URI = _get_oauth_redirect_uri()
     
     # Liste des emails autorisés - ceux configurés comme utilisateurs de test dans Google Cloud Console
