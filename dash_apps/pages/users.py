@@ -550,8 +550,8 @@ def render_user_panels(selected_uid, page_userdata):
         if pre_user:
             print(f"[PANELS] Données utilisateur récupérées, génération des panneaux")
             profile_panel = render_user_profile(pre_user)
-            stats_panel = render_user_stats(pre_user)
-            trips_panel = render_user_trips(pre_user)
+            #stats_panel = render_user_stats(pre_user)
+            #trips_panel = render_user_trips(pre_user)
         else:
             print(f"[PANELS] Aucune donnée trouvée pour l'utilisateur {uid_value[:8]}...")
 

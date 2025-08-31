@@ -46,8 +46,10 @@ def render_user_trips(user):
     
     try:
         # Récupérer les trajets via notre nouveau module data_schema
+        print(f"[TRIPS] Chargement trajets pour {user_id[:8]}... depuis DB")
         driver_trips_df = get_trips_for_user(str(user_id), as_driver=True)
         passenger_trips_df = get_trips_for_user(str(user_id), as_passenger=True)
+        print(f"[TRIPS] {len(driver_trips_df)} trajets conducteur, {len(passenger_trips_df)} trajets passager")
         
         # Préparation des données pour les trajets en tant que conducteur
         if not driver_trips_df.empty and 'trip_id' in driver_trips_df.columns:

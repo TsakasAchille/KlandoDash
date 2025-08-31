@@ -36,8 +36,10 @@ def render_user_stats(user):
     db_error = False
     try:
         # Récupérer les stats via notre nouveau module data_schema
+        print(f"[STATS] Chargement trajets pour {user_id[:8]}... depuis DB")
         driver_trips_df = get_trips_for_user(user_id, as_driver=True, as_passenger=False)
         passenger_trips_df = get_trips_for_user(user_id, as_driver=False, as_passenger=True)
+        print(f"[STATS] {len(driver_trips_df)} trajets conducteur, {len(passenger_trips_df)} trajets passager")
         
         # Calculer les statistiques
         total_trips_count = len(driver_trips_df) + len(passenger_trips_df)
