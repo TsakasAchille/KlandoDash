@@ -50,7 +50,8 @@ def register_callbacks(app):
         """Affiche ou masque le lien d'administration selon les droits de l'utilisateur"""
         # Vérifier si l'utilisateur est connecté et admin
         user_email = session.get('user_email', None)
-        if user_email and is_admin(user_email):
+        is_user_admin = session.get('is_admin', False)
+        if user_email and is_user_admin:
             return {"display": "block"}  # Afficher le lien
         else:
             return {"display": "none"}  # Masquer le lien
@@ -73,9 +74,9 @@ def register_callbacks(app):
             # L'utilisateur n'est pas authentifié, rediriger vers la page de login
             return login_layout
         
-        # Vérifier si l'utilisateur est un utilisateur Klando valide
+        # L'authentification Google OAuth suffit - pas besoin de double vérification
     
-        # L'utilisateur est authentifié, afficher la page demandée
+        # L'utilisateur est authentifié et autorisé, afficher la page demandée
         if pathname in ["/", "/trips", "/users", "/stats", "/support", "/admin", "/user-profile", "/driver-validation"]:
             # Obtenir le layout de la page demandée
             page_layout = get_page_layout(pathname)

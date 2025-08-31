@@ -153,54 +153,43 @@ def google_callback():
         flash(error_msg, "danger")
         return redirect('/login')
     
-    # Vérifier si l'email est autorisé dans la base de données Supabase
-    authorized_user = None
-    try:
-        with get_session() as db_session:
-            authorized_user = db_session.query(DashAuthorizedUser).filter(
-                DashAuthorizedUser.email == email,
-                DashAuthorizedUser.active == True
-            ).first()
-    except Exception as e:
-        print(f"Erreur lors de la vérification de l'autorisation dans la base de données: {str(e)}")
-        error_msg = f"⚠️ ATTENTION : ERREUR INTERNE - Une erreur s'est produite lors de la vérification de vos droits d'accès. Veuillez contacter l'administrateur."
+    # Vérification simple : emails autorisés dans les variables d'environnement
+    authorized_emails = os.environ.get('AUTHORIZED_EMAILS', '').split(',')
+    authorized_emails = [e.strip().lower() for e in authorized_emails if e.strip()]
+    
+    if email.lower() not in authorized_emails:
+        print(f"Email non autorisé: {email}")
+        error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Vous n'êtes pas autorisé à accéder à cette application."
+        
         session.clear()
         session.modified = True
         flash(error_msg, "danger")
         return redirect('/login')
     
-    # Vérifier si l'utilisateur est autorisé
-    if not authorized_user:
-        print(f"Email non autorisé: {email} - Non présent dans la table dash_authorized_users ou compte inactif")
-        error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Vous n'êtes pas autorisé à accéder à cette application. Veuillez contacter l'administrateur."
-        
-        # Nettoyer la session
-        session.clear()
-        # Ne pas stocker le message d'erreur dans la session pour u00e9viter les doublons
-        session.modified = True
-        
-        # Afficher le message d'erreur uniquement via flash
-        flash(error_msg, "danger")
-        return redirect('/login')
+    # Définir le rôle (admin pour Achille, user pour les autres)
+    user_role = 'admin' if email.lower() == 'achille.tsakas@klando-sn.com' else 'user'
     
-    # Sans base de données, on crée un User en mémoire
+    # Créer un User en mémoire avec le rôle approprié
     user = User(
         id=user_id,
         email=email,
         name=name,
         profile_pic=picture,
-        tags=''
+        tags='',
+        admin=(user_role == 'admin')
     )
     
     # Connecter l'utilisateur avec remember=True pour maintenir la session plus longtemps
     login_user(user, remember=True)
     
-    # Stockage dans la session
+    # Stockage dans la session avec le rôle
     session['logged_in'] = True
     session['user_id'] = user_id
     session['user_email'] = email
     session['user_name'] = name
     session['profile_pic'] = picture
+    session['user_role'] = user_role
+    session['is_admin'] = (user_role == 'admin')
     session.modified = True
     
     print(f"Utilisateur connecté: {email}")
