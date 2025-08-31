@@ -180,6 +180,8 @@ def get_layout():
     dcc.Store(id="selected-user-uid", storage_type="session", data=None, clear_data=False),  # Store pour l'UID de l'utilisateur sélectionné (persistant)
     # Cache session pour éviter les rechargements inutiles (clé = page + filtres)
     dcc.Store(id="users-page-cache", storage_type="session", data={}, clear_data=False),
+    # Store session pour conserver les données basiques des utilisateurs visibles (clé = uid)
+    dcc.Store(id="users-page-userdata", storage_type="session", data={}, clear_data=False),
     dcc.Store(id="url-parameters", storage_type="memory", data=None),  # Store temporaire pour les paramètres d'URL
     dcc.Store(id="selected-user-from-url", storage_type="memory", data=None),  # State pour la sélection depuis l'URL
     dcc.Store(id="users-filter-store", storage_type="session", data={}, clear_data=False),  # Store pour les filtres de recherche
@@ -418,6 +420,7 @@ def display_active_filters(filters):
 @callback(
     Output("main-users-content", "children"),
     Output("users-page-cache", "data"),
+    Output("users-page-userdata", "data"),
     Input("users-current-page", "data"),
     Input("refresh-users-btn", "n_clicks"),
     Input("selected-user-uid", "data"),
@@ -529,34 +532,73 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
         total_users=total_users,
         selected_uid=selected_uid_value
     )
-    
-    # Retourner uniquement le tableau
-    return table, page_cache
+    # Préparer un dictionnaire basique par UID pour pré-charger le profil
+    basic_by_uid = {}
+    try:
+        for u in users or []:
+            uid = (u or {}).get("uid")
+            if not uid:
+                continue
+            # Conserver uniquement les champs utiles au profil (sûrs pour le front)
+            basic_by_uid[uid] = {
+                k: (u.get(k)) for k in [
+                    "uid", "display_name", "first_name", "name", "email", "phone", "phone_number",
+                    "gender", "role", "rating", "rating_count", "photo_url", "birth", "bio",
+                    "created_time", "updated_at"
+                ] if k in u
+            }
+    except Exception:
+        basic_by_uid = {}
+
+    # Retourner le tableau, le cache et les données basiques des utilisateurs visibles
+    return table, page_cache, basic_by_uid
 
 
 @callback(
-    [Output("user-details-panel", "children"),
-     Output("user-stats-panel", "children"),
-     Output("user-trips-panel", "children")],
+    Output("user-details-panel", "children"),
+    Input("selected-user-uid", "data"),
+    State("users-page-userdata", "data"),
+    prevent_initial_call=True
+)
+def render_user_profile_panel(selected_user, page_userdata):
+    """Rendu du panneau profil (utilise les données préchargées si disponibles)"""
+    log_callback("render_user_profile_panel", {"selected_user": selected_user}, {})
+    uid = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
+    if not uid:
+        return html.Div()
+    pre_user = None
+    try:
+        if isinstance(page_userdata, dict):
+            pre_user = page_userdata.get(uid)
+    except Exception:
+        pre_user = None
+    return render_user_profile(uid, user=pre_user)
+
+@callback(
+    Output("user-stats-panel", "children"),
     Input("selected-user-uid", "data"),
     prevent_initial_call=True
 )
-def render_user_details(selected_user):
-    """Callback responsable uniquement de l'affichage des détails d'un utilisateur sélectionné"""
-    log_callback("render_user_details", {"selected_user": selected_user}, {})
-    
-    # Extraire l'UID de l'utilisateur
-    selected_uid_value = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
-    
-    if not selected_uid_value:
-        return html.Div(), html.Div(), html.Div()
-        
-    # Appeler directement les fonctions de layout avec l'UID
-    details = render_user_profile(selected_uid_value)
-    stats = render_user_stats(selected_uid_value)
-    trips = render_user_trips(selected_uid_value)
-    
-    return details, stats, trips
+def render_user_stats_panel(selected_user):
+    """Rendu du panneau statistiques"""
+    log_callback("render_user_stats_panel", {"selected_user": selected_user}, {})
+    uid = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
+    if not uid:
+        return html.Div()
+    return render_user_stats(uid)
+
+@callback(
+    Output("user-trips-panel", "children"),
+    Input("selected-user-uid", "data"),
+    prevent_initial_call=True
+)
+def render_user_trips_panel(selected_user):
+    """Rendu du panneau trajets"""
+    log_callback("render_user_trips_panel", {"selected_user": selected_user}, {})
+    uid = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
+    if not uid:
+        return html.Div()
+    return render_user_trips(uid)
 
 
 

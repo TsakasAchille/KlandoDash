@@ -18,7 +18,7 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_user_profile(uid):
+def render_user_profile(uid, user=None):
     """
     Affiche le profil de l'utilisateur en utilisant un template Jinja2.
     
@@ -28,13 +28,9 @@ def render_user_profile(uid):
     if uid is None:
         return None
     
-    # Importer UserRepository ici pour éviter les imports circulaires
-    from dash_apps.repositories.user_repository import UserRepository
-    
-    # Récupérer l'utilisateur depuis le repository
-    user = UserRepository.get_user_by_id(uid)
+    # Ne pas faire de requête ici: on attend des données préchargées
     if user is None:
-        return dbc.Alert(f"Utilisateur introuvable (UID: {uid})", color="warning")
+        return dbc.Alert("Données utilisateur non préchargées pour ce profil.", color="secondary")
     
     # Convertir l'objet UserSchema en dictionnaire pour le template Jinja2
     if hasattr(user, "model_dump"):
@@ -45,7 +41,14 @@ def render_user_profile(uid):
         user_dict = user.dict()
     else:
         # Fallback pour les objets non-Pydantic
-        user_dict = {k: getattr(user, k) for k in dir(user) if not k.startswith('_') and not callable(getattr(user, k))}
+        try:
+            # Si c'est déjà un dict (préchargé), l'utiliser tel quel
+            if isinstance(user, dict):
+                user_dict = user
+            else:
+                user_dict = {k: getattr(user, k) for k in dir(user) if not k.startswith('_') and not callable(getattr(user, k))}
+        except Exception:
+            user_dict = {}
     
     # S'assurer que toutes les variables utilisées dans le template ont des valeurs par défaut
     # Préparer les valeurs par défaut
