@@ -31,7 +31,8 @@ def setup_authentication(server):
                     email=session.get('user_email'),
                     name=session.get('user_name'),
                     profile_pic=session.get('profile_pic'),
-                    tags=session.get('tags', '')
+                    tags=session.get('tags', ''),
+                    admin=session.get('is_admin', False)
                 )
         except Exception as e:
             print(f"Erreur lors du chargement de l'utilisateur: {e}")
