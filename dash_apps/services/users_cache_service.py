@@ -4,10 +4,14 @@ Service de cache pour les données utilisateurs avec logique de génération cen
 from typing import Dict, List, Tuple, Optional
 from dash_apps.repositories.user_repository import UserRepository
 from dash_apps.services.redis_cache import redis_cache
+from dash import html
 
 
 class UsersCacheService:
     """Service centralisé pour la gestion du cache des données utilisateurs"""
+    
+    # Cache en mémoire pour les panneaux HTML générés
+    _html_cache = {}
     
     @staticmethod
     def get_users_page_result(page_index: int, page_size: int, filter_params: Dict, 
@@ -115,3 +119,52 @@ class UsersCacheService:
             return user_schema.model_dump() if hasattr(user_schema, "model_dump") else user_schema.dict()
         
         return None
+    
+    @staticmethod
+    def get_cached_panel(user_id: str, panel_type: str) -> Optional[html.Div]:
+        """
+        Récupère un panneau HTML en cache
+        
+        Args:
+            user_id: UID de l'utilisateur
+            panel_type: Type de panneau ('profile', 'stats', 'trips')
+            
+        Returns:
+            html.Div: Panneau en cache ou None si non trouvé
+        """
+        cache_key = f"{user_id}_{panel_type}"
+        return UsersCacheService._html_cache.get(cache_key)
+    
+    @staticmethod
+    def set_cached_panel(user_id: str, panel_type: str, panel_html: html.Div):
+        """
+        Met en cache un panneau HTML généré
+        
+        Args:
+            user_id: UID de l'utilisateur
+            panel_type: Type de panneau ('profile', 'stats', 'trips')
+            panel_html: Panneau HTML à mettre en cache
+        """
+        cache_key = f"{user_id}_{panel_type}"
+        UsersCacheService._html_cache[cache_key] = panel_html
+        print(f"[HTML CACHE] Panneau {panel_type} mis en cache pour {user_id[:8]}...")
+    
+    @staticmethod
+    def clear_user_cache(user_id: str):
+        """
+        Efface le cache HTML pour un utilisateur spécifique
+        
+        Args:
+            user_id: UID de l'utilisateur
+        """
+        keys_to_remove = [key for key in UsersCacheService._html_cache.keys() 
+                         if key.startswith(f"{user_id}_")]
+        for key in keys_to_remove:
+            del UsersCacheService._html_cache[key]
+        print(f"[HTML CACHE] Cache effacé pour utilisateur {user_id[:8]}...")
+    
+    @staticmethod
+    def clear_all_html_cache():
+        """Efface tout le cache HTML"""
+        UsersCacheService._html_cache.clear()
+        print("[HTML CACHE] Tout le cache HTML effacé")

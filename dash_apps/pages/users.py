@@ -513,24 +513,116 @@ def render_users_table(current_page, n_clicks, filters):
 
 
 @callback(
-    [Output("user-details-panel", "children"),
-     Output("user-stats-panel", "children"),
-     Output("user-trips-panel", "children")],
+    Output("user-details-panel", "children"),
     [Input("selected-user-uid", "data")],
     [State("users-page-userdata", "data")],
     prevent_initial_call=True
 )
-def render_user_panels(selected_uid, page_userdata):
-    """Callback séparé pour le rendu des panneaux utilisateur"""
+def render_user_profile_panel(selected_uid, page_userdata):
+    """Callback séparé pour le rendu du panneau profil utilisateur avec cache HTML"""
     log_callback(
-        "render_user_panels",
+        "render_user_profile_panel",
         {"selected_uid": selected_uid},
         {"page_userdata_keys": list(page_userdata.keys()) if page_userdata else None}
     )
     
-    # Panneaux vides par défaut
+    # Panneau vide par défaut
     profile_panel = html.Div()
+    
+    # Extraire l'UID si c'est un dict
+    uid_value = None
+    if selected_uid:
+        if isinstance(selected_uid, dict):
+            uid_value = selected_uid.get("uid")
+        else:
+            uid_value = selected_uid
+    
+    if uid_value:
+        # Vérifier d'abord le cache HTML
+        cached_panel = UsersCacheService.get_cached_panel(uid_value, "profile")
+        if cached_panel:
+            print(f"[PROFILE][HTML CACHE HIT] Panneau profil récupéré du cache pour {uid_value[:8]}...")
+            return cached_panel
+        
+        # Si pas en cache, récupérer les données utilisateur et générer le panneau
+        print(f"[PROFILE] Rendu du profil pour utilisateur {uid_value[:8]}...")
+        pre_user = UsersCacheService.get_user_data(uid_value, page_userdata)
+        
+        # Générer le panneau profil avec les données utilisateur
+        if pre_user:
+            print(f"[PROFILE] Données utilisateur récupérées, génération du profil")
+            profile_panel = render_user_profile(pre_user)
+            # Mettre le panneau généré en cache
+            UsersCacheService.set_cached_panel(uid_value, "profile", profile_panel)
+        else:
+            print(f"[PROFILE] Aucune donnée trouvée pour l'utilisateur {uid_value[:8]}...")
+
+    return profile_panel
+
+
+@callback(
+    Output("user-stats-panel", "children"),
+    [Input("selected-user-uid", "data")],
+    [State("users-page-userdata", "data")],
+    prevent_initial_call=True
+)
+def render_user_stats_panel(selected_uid, page_userdata):
+    """Callback séparé pour le rendu du panneau statistiques utilisateur avec cache HTML"""
+    log_callback(
+        "render_user_stats_panel",
+        {"selected_uid": selected_uid},
+        {"page_userdata_keys": list(page_userdata.keys()) if page_userdata else None}
+    )
+    
+    # Panneau vide par défaut
     stats_panel = html.Div()
+    
+    # Extraire l'UID si c'est un dict
+    uid_value = None
+    if selected_uid:
+        if isinstance(selected_uid, dict):
+            uid_value = selected_uid.get("uid")
+        else:
+            uid_value = selected_uid
+    
+    if uid_value:
+        # Vérifier d'abord le cache HTML
+        cached_panel = UsersCacheService.get_cached_panel(uid_value, "stats")
+        if cached_panel:
+            print(f"[STATS][HTML CACHE HIT] Panneau stats récupéré du cache pour {uid_value[:8]}...")
+            return cached_panel
+        
+        # Si pas en cache, récupérer les données utilisateur et générer le panneau
+        print(f"[STATS] Rendu des stats pour utilisateur {uid_value[:8]}...")
+        pre_user = UsersCacheService.get_user_data(uid_value, page_userdata)
+        
+        # Générer le panneau stats avec les données utilisateur
+        if pre_user:
+            print(f"[STATS] Données utilisateur récupérées, génération des stats")
+            stats_panel = render_user_stats(pre_user)
+            # Mettre le panneau généré en cache
+            UsersCacheService.set_cached_panel(uid_value, "stats", stats_panel)
+        else:
+            print(f"[STATS] Aucune donnée trouvée pour l'utilisateur {uid_value[:8]}...")
+
+    return stats_panel
+
+
+@callback(
+    Output("user-trips-panel", "children"),
+    [Input("selected-user-uid", "data")],
+    [State("users-page-userdata", "data")],
+    prevent_initial_call=True
+)
+def render_user_trips_panel(selected_uid, page_userdata):
+    """Callback séparé pour le rendu du panneau trajets utilisateur avec cache HTML"""
+    log_callback(
+        "render_user_trips_panel",
+        {"selected_uid": selected_uid},
+        {"page_userdata_keys": list(page_userdata.keys()) if page_userdata else None}
+    )
+    
+    # Panneau vide par défaut
     trips_panel = html.Div()
     
     # Extraire l'UID si c'est un dict
@@ -542,20 +634,26 @@ def render_user_panels(selected_uid, page_userdata):
             uid_value = selected_uid
     
     if uid_value:
-        # Récupérer les données utilisateur via le service de cache
-        print(f"[PANELS] Rendu des panneaux pour utilisateur {uid_value[:8]}...")
+        # Vérifier d'abord le cache HTML
+        cached_panel = UsersCacheService.get_cached_panel(uid_value, "trips")
+        if cached_panel:
+            print(f"[TRIPS][HTML CACHE HIT] Panneau trajets récupéré du cache pour {uid_value[:8]}...")
+            return cached_panel
+        
+        # Si pas en cache, récupérer les données utilisateur et générer le panneau
+        print(f"[TRIPS] Rendu des trajets pour utilisateur {uid_value[:8]}...")
         pre_user = UsersCacheService.get_user_data(uid_value, page_userdata)
         
-        # Générer les panneaux avec les données utilisateur
+        # Générer le panneau trajets avec les données utilisateur
         if pre_user:
-            print(f"[PANELS] Données utilisateur récupérées, génération des panneaux")
-            profile_panel = render_user_profile(pre_user)
-            #stats_panel = render_user_stats(pre_user)
-            #trips_panel = render_user_trips(pre_user)
+            print(f"[TRIPS] Données utilisateur récupérées, génération des trajets")
+            trips_panel = render_user_trips(pre_user)
+            # Mettre le panneau généré en cache
+            UsersCacheService.set_cached_panel(uid_value, "trips", trips_panel)
         else:
-            print(f"[PANELS] Aucune donnée trouvée pour l'utilisateur {uid_value[:8]}...")
+            print(f"[TRIPS] Aucune donnée trouvée pour l'utilisateur {uid_value[:8]}...")
 
-    return profile_panel, stats_panel, trips_panel
+    return trips_panel
 
 
 def debug_all_inputs(
