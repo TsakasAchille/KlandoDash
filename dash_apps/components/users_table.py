@@ -127,19 +127,12 @@ def render_custom_users_table(table_rows_data, current_page, total_users, select
         #print(f"\n[DEBUG] Comparaison: '{uid_str}' == '{selected_uid_str}' => {is_selected}")
 
             
-        # Style pour la ligne sélectionnée - en rouge très vif avec bordure
+        # Styles de base pour la ligne (laisser la mise en évidence au CSS via className)
         row_style = {
-            "backgroundColor": "#ff3547 !important" if is_selected else "transparent",
             "transition": "all 0.2s",
             "cursor": "pointer",
-            "border": "2px solid #dc3545 !important" if is_selected else "none",
-            "color": "white !important" if is_selected else "inherit",
-            "fontWeight": "bold !important" if is_selected else "normal",
         }
-        
-        # Style pour chaque cellule de la ligne
-        cell_style = {"backgroundColor": "#ff3547 !important" if is_selected else "transparent"}
-        
+
         # Attributs pour la ligne
         row_class = "user-row selected-user-row" if is_selected else "user-row"
         
@@ -176,21 +169,21 @@ def render_custom_users_table(table_rows_data, current_page, total_users, select
                 style={"width": "40px", "cursor": "pointer"}
             ),
             # Autres colonnes
-            html.Td(name, style=cell_style),
-            html.Td(email, style=cell_style),
-            html.Td(phone, style=cell_style),
-            html.Td(role, style=cell_style),
+            html.Td(name),
+            html.Td(email),
+            html.Td(phone),
+            html.Td(role),
             # Afficher le genre avec formatage
             html.Td(
                 {"man": "Homme", "woman": "Femme", "male": "Homme", "female": "Femme", "helicopter": "🚁 Helicopter", "other": "Autre"}.get(gender, "-"),
-                style=cell_style
+                style={}
             ),
             # Afficher le rating avec formatage
             html.Td(
                 f"{rating:.1f} ★" if rating is not None else "-",
-                style={**cell_style, "fontWeight": "bold" if rating and rating >= 4.0 else "normal"}
+                style={"fontWeight": "bold" if rating and rating >= 4.0 else "normal"}
             ),
-            html.Td(created_at, style=cell_style),
+            html.Td(created_at),
         ], **row_attributes)
         
         table_rows.append(row)
@@ -399,7 +392,6 @@ def handle_row_selection(row_clicks):
     Output({"type": "user-row", "index": dash.ALL}, "className"),
     Output({"type": "select-user-btn", "index": dash.ALL}, "color"),
     Output({"type": "select-user-btn", "index": dash.ALL}, "outline"),
-   # Input("selected-user-from-table", "data"),
     Input("selected-user-uid", "data"),
 
     State({"type": "user-row", "index": dash.ALL}, "id"),
@@ -421,7 +413,7 @@ def highlight_selected_row(selected_user, row_ids, button_ids):
     
     # UID sélectionné nettoyé, la suite applique juste les styles
     
-    # Préparer les styles pour chaque ligne
+    # Préparer les styles pour chaque ligne (styles de base uniquement)
     styles = []
     classes = []
     button_colors = []
@@ -432,17 +424,12 @@ def highlight_selected_row(selected_user, row_ids, button_ids):
         if isinstance(row_id, dict) and "index" in row_id:
             uid = row_id["index"]
             is_selected = str(uid) == str(selected_uid)
-            
-            # Exactement les mêmes styles que ceux définis initialement
+            # Appliquer uniquement les styles de base; l'accentuation vient de la classe CSS
             style = {
-                "backgroundColor": "#ff3547 !important" if is_selected else "transparent",
                 "transition": "all 0.2s",
                 "cursor": "pointer",
-                "border": "2px solid #dc3545 !important" if is_selected else "none",
-                "color": "white !important" if is_selected else "inherit",
-                "fontWeight": "bold !important" if is_selected else "normal",
             }
-            
+
             # Classe pour la ligne
             class_name = "user-row selected-user-row" if is_selected else "user-row"
             
@@ -450,7 +437,7 @@ def highlight_selected_row(selected_user, row_ids, button_ids):
             classes.append(class_name)
         else:
             # Valeur par défaut si row_id n'est pas au format attendu
-            styles.append({})
+            styles.append({"transition": "all 0.2s", "cursor": "pointer"})
             classes.append("user-row")
     
     # Styles pour les boutons
