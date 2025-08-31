@@ -166,9 +166,6 @@ class UserRepository:
                         # Filter rating not null AND less or equal to rating_value
                         query = query.filter(User.rating.isnot(None), User.rating <= rating_value)
             
-            # Calculer le nombre total d'utilisateurs après filtrage
-            total = query.count()
-            
             # Appliquer le tri selon les préférences
             date_sort = filters.get("date_sort", "desc")
             if date_sort == "asc":
@@ -176,6 +173,9 @@ class UserRepository:
             elif date_sort == "desc":
                 query = query.order_by(User.created_at.desc())
             # Si date_sort == "none", pas de tri spécifique par date
+            
+            # Calculer le nombre total d'utilisateurs après filtrage
+            total = query.count()
             
             # Récupérer les utilisateurs de la page demandée
             users = query.offset(page * page_size)\

@@ -130,6 +130,76 @@ def get_trips_for_user(user_id, as_driver=False, as_passenger=False):
         """
         return execute_query(query, {"user_id": user_id})
 
+def get_user_stats_optimized(user_id):
+    """
+    Récupère les statistiques d'un utilisateur en une seule requête optimisée
+    Élimine le problème N+1 en combinant les requêtes driver/passenger
+    """
+    query = """
+    WITH driver_stats AS (
+        SELECT 
+            COUNT(*) as driver_trips_count,
+            COALESCE(SUM(distance), 0) as driver_distance
+        FROM trips 
+        WHERE driver_id = :user_id
+    ),
+    passenger_stats AS (
+        SELECT 
+            COUNT(*) as passenger_trips_count,
+            COALESCE(SUM(t.distance), 0) as passenger_distance
+        FROM trips t
+        JOIN bookings b ON t.trip_id = b.trip_id
+        WHERE b.user_id = :user_id
+    )
+    SELECT 
+        d.driver_trips_count,
+        d.driver_distance,
+        p.passenger_trips_count,
+        p.passenger_distance,
+        (d.driver_trips_count + p.passenger_trips_count) as total_trips,
+        (d.driver_distance + p.passenger_distance) as total_distance
+    FROM driver_stats d
+    CROSS JOIN passenger_stats p
+    """
+    
+    result = execute_query(query, {"user_id": user_id})
+    if not result.empty:
+        return result.iloc[0].to_dict()
+    else:
+        return {
+            'driver_trips_count': 0,
+            'driver_distance': 0,
+            'passenger_trips_count': 0,
+            'passenger_distance': 0,
+            'total_trips': 0,
+            'total_distance': 0
+        }
+
+def get_user_trips_with_role(user_id, limit=None):
+    """
+    Récupère tous les trajets d'un utilisateur avec leur rôle en une seule requête
+    Optimise l'affichage des trajets en évitant les requêtes multiples
+    """
+    query = """
+    SELECT t.*, 'driver' as role
+    FROM trips t 
+    WHERE t.driver_id = :user_id
+    
+    UNION ALL
+    
+    SELECT t.*, 'passenger' as role
+    FROM trips t
+    JOIN bookings b ON t.trip_id = b.trip_id
+    WHERE b.user_id = :user_id
+    
+    ORDER BY departure_schedule DESC
+    """
+    
+    if limit:
+        query += f" LIMIT {limit}"
+    
+    return execute_query(query, {"user_id": user_id})
+
 def get_support_tickets(user_id=None):
     """Récupère tous les tickets de support, optionnellement filtrés par utilisateur"""
     if user_id:

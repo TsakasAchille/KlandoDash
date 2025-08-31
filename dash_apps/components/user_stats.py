@@ -35,20 +35,20 @@ def render_user_stats(user):
     
     db_error = False
     try:
-        # Récupérer les stats via notre nouveau module data_schema
-        print(f"[STATS] Chargement trajets pour {user_id[:8]}... depuis DB")
-        driver_trips_df = get_trips_for_user(user_id, as_driver=True, as_passenger=False)
-        passenger_trips_df = get_trips_for_user(user_id, as_driver=False, as_passenger=True)
-        print(f"[STATS] {len(driver_trips_df)} trajets conducteur, {len(passenger_trips_df)} trajets passager")
+        # Utiliser la nouvelle fonction optimisée pour éviter les requêtes multiples
+        print(f"[STATS] Chargement stats optimisées pour {user_id[:8]}... depuis DB")
+        from dash_apps.utils.data_schema import get_user_stats_optimized
         
-        # Calculer les statistiques
-        total_trips_count = len(driver_trips_df) + len(passenger_trips_df)
-        driver_trips_count = len(driver_trips_df)
-        passenger_trips_count = len(passenger_trips_df)
-        # Calcul de la distance totale - vérifie si la colonne 'distance' existe
-        driver_distance = driver_trips_df['distance'].sum() if 'distance' in driver_trips_df.columns and not driver_trips_df.empty else 0
-        passenger_distance = passenger_trips_df['distance'].sum() if 'distance' in passenger_trips_df.columns and not passenger_trips_df.empty else 0
-        total_distance = driver_distance + passenger_distance
+        stats = get_user_stats_optimized(user_id)
+        
+        # Extraire les statistiques de la requête optimisée
+        total_trips_count = stats['total_trips']
+        driver_trips_count = stats['driver_trips_count']
+        passenger_trips_count = stats['passenger_trips_count']
+        total_distance = stats['total_distance']
+        
+        print(f"[STATS] {driver_trips_count} trajets conducteur, {passenger_trips_count} trajets passager (optimisé)")
+        
     except Exception as e:
         import traceback
         print(f"Erreur lors de la récupération des statistiques utilisateur: {str(e)}")

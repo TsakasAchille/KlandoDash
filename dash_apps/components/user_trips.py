@@ -45,15 +45,16 @@ def render_user_trips(user):
     trips_data = []
     
     try:
-        # Récupérer les trajets via notre nouveau module data_schema
-        print(f"[TRIPS] Chargement trajets pour {user_id[:8]}... depuis DB")
-        driver_trips_df = get_trips_for_user(str(user_id), as_driver=True)
-        passenger_trips_df = get_trips_for_user(str(user_id), as_passenger=True)
-        print(f"[TRIPS] {len(driver_trips_df)} trajets conducteur, {len(passenger_trips_df)} trajets passager")
+        # Utiliser la nouvelle fonction optimisée pour récupérer tous les trajets en une seule requête
+        print(f"[TRIPS] Chargement trajets optimisés pour {user_id[:8]}... depuis DB")
+        from dash_apps.utils.data_schema import get_user_trips_with_role
         
-        # Préparation des données pour les trajets en tant que conducteur
-        if not driver_trips_df.empty and 'trip_id' in driver_trips_df.columns:
-            for _, trip in driver_trips_df.iterrows():
+        trips_df = get_user_trips_with_role(str(user_id), limit=50)  # Limiter à 50 trajets récents
+        print(f"[TRIPS] {len(trips_df)} trajets récupérés (optimisé)")
+        
+        # Préparation des données pour l'affichage
+        if not trips_df.empty and 'trip_id' in trips_df.columns:
+            for _, trip in trips_df.iterrows():
                 trip_dict = trip.to_dict()
                 
                 # Formater les dates
@@ -62,24 +63,7 @@ def render_user_trips(user):
                 if 'created_at' in trip_dict:
                     trip_dict['created_at'] = format_date(trip_dict['created_at'])  
                 
-                trip_dict['role'] = 'driver'  # Marquer comme conducteur
-                trips_data.append(trip_dict)
-        
-        # Préparation des données pour les trajets en tant que passager
-        if not passenger_trips_df.empty and 'trip_id' in passenger_trips_df.columns:
-            for _, trip in passenger_trips_df.iterrows():
-                if any(d.get('trip_id') == trip['trip_id'] for d in trips_data):
-                    # Éviter les doublons (si l'utilisateur est à la fois conducteur et passager)
-                    continue
-                trip_dict = trip.to_dict()
-                
-                # Formater les dates
-                if 'departure_schedule' in trip_dict:
-                    trip_dict['departure_schedule'] = format_date(trip_dict['departure_schedule'])
-                if 'created_at' in trip_dict:
-                    trip_dict['created_at'] = format_date(trip_dict['created_at'])  
-                    
-                trip_dict['role'] = 'passenger'  # Marquer comme passager
+                # Le rôle est déjà inclus dans la requête optimisée
                 trips_data.append(trip_dict)
                 
     except Exception as e:
