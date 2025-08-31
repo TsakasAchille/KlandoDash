@@ -40,7 +40,7 @@
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 380px;
+  width: 450px;
   height: 70vh;
   max-height: 720px;
   z-index: 1300;
@@ -73,7 +73,7 @@
 
 .chatbot-header {
   height: 56px;
-  background: #0d6efd;
+  background: #2c3e50;
   color: #fff;
   padding: 8px 12px;
   border-bottom: 1px solid rgba(255,255,255,0.2);
@@ -81,15 +81,17 @@
   user-select: none;
 }
 .chatbot-title { 
-  font-weight: 600; 
-  margin-left: 8px;
+  font-weight: 800; 
+  margin-left: 6px;
+  font-size: 1.2em;
 }
 
 /* Logo Yode dans le header */
 .yode-logo-header {
-  width: 24px;
-  height: 24px;
+  width: 45px;
+  height: 45px;
   object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .chatbot-body { 
@@ -110,7 +112,7 @@
   user-select: none;
 }
 .chatbot-header.chatbot-dragger:hover {
-  background: #0b5ed7;
+  background: #34495e;
 }
 
 /* Resizer handle - inside window at bottom-right */
