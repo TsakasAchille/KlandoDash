@@ -104,6 +104,72 @@ def find_user_page_index(uid, page_size):
         return None
 
 
+# Helper: rendre JSON-serializable (datetime -> isoformat, Pydantic -> dict)
+def _to_jsonable(obj):
+    """Convertit récursivement un objet en structure JSON-serializable.
+    - datetime/date -> isoformat()
+    - Pydantic v2 -> model_dump()
+    - Pydantic v1 -> dict()
+    - Decimal -> float
+    - set -> list
+    - objets inconnus -> str(obj)
+    """
+    try:
+        import datetime as _dt
+        import decimal as _dec
+    except Exception:
+        pass
+
+    # Déballer Pydantic models
+    if hasattr(obj, "model_dump") and callable(getattr(obj, "model_dump")):
+        try:
+            obj = obj.model_dump()
+        except Exception:
+            obj = dict(obj)
+    elif hasattr(obj, "dict") and callable(getattr(obj, "dict")) and not isinstance(obj, dict):
+        try:
+            obj = obj.dict()
+        except Exception:
+            try:
+                obj = dict(obj)
+            except Exception:
+                obj = str(obj)
+
+    # Types simples
+    if obj is None or isinstance(obj, (str, int, float, bool)):
+        return obj
+
+    # datetime/date
+    try:
+        import datetime as _dt2
+        if isinstance(obj, (_dt2.datetime, _dt2.date)):
+            return obj.isoformat()
+    except Exception:
+        pass
+
+    # Decimal
+    try:
+        import decimal as _dec2
+        if isinstance(obj, _dec2.Decimal):
+            return float(obj)
+    except Exception:
+        pass
+
+    # list/tuple
+    if isinstance(obj, (list, tuple, set)):
+        return [_to_jsonable(v) for v in list(obj)]
+
+    # dict
+    if isinstance(obj, dict):
+        return {k: _to_jsonable(v) for k, v in obj.items()}
+
+    # fallback
+    try:
+        return str(obj)
+    except Exception:
+        return None
+
+
 
 def get_layout():
     """Génère le layout de la page utilisateurs avec des IDs uniquement pour cette page"""
@@ -112,6 +178,8 @@ def get_layout():
     #dcc.Store(id="users-pagination-info", data={"page_count": 1, "total_users": 0}),
     dcc.Store(id="users-current-page", storage_type="session", data=1),  # State pour stocker la page courante (persistant)
     dcc.Store(id="selected-user-uid", storage_type="session", data=None, clear_data=False),  # Store pour l'UID de l'utilisateur sélectionné (persistant)
+    # Cache session pour éviter les rechargements inutiles (clé = page + filtres)
+    dcc.Store(id="users-page-cache", storage_type="session", data={}, clear_data=False),
     dcc.Store(id="url-parameters", storage_type="memory", data=None),  # Store temporaire pour les paramètres d'URL
     dcc.Store(id="selected-user-from-url", storage_type="memory", data=None),  # State pour la sélection depuis l'URL
     dcc.Store(id="users-filter-store", storage_type="session", data={}, clear_data=False),  # Store pour les filtres de recherche
@@ -340,20 +408,25 @@ def display_active_filters(filters):
 
 @callback(
     Output("main-users-content", "children"),
+    Output("users-page-cache", "data"),
     Input("users-current-page", "data"),
     Input("refresh-users-btn", "n_clicks"),
     Input("selected-user-uid", "data"),
     Input("users-filter-store", "data"),
+    State("users-page-cache", "data"),
     prevent_initial_call=True
 )
-def render_users_table_pagination(current_page, n_clicks, selected_user, filters):
+def render_users_table_pagination(current_page, n_clicks, selected_user, filters, page_cache):
     """Callback responsable uniquement de la pagination et du rendu du tableau"""
     log_callback(
         "render_users_table_pagination",
         {"current_page": current_page, "n_clicks": n_clicks, "selected_user": selected_user, "filters": filters},
-        {}
+        {"page_cache_present": isinstance(page_cache, dict)}
     )
-    
+    # Initialise le cache si nécessaire
+    if not isinstance(page_cache, dict):
+        page_cache = {}
+
     # Configuration pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
     
@@ -397,12 +470,45 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
     if filters and filters.get("rating_operator") and filters.get("rating_operator") != "all" and filters.get("rating_value") is not None:
         filter_params["rating_operator"] = filters.get("rating_operator")
         filter_params["rating_value"] = filters.get("rating_value")
-    
-    # Récupérer uniquement les utilisateurs de la page courante avec filtres (pagination côté serveur)
-    result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)
-    users = result.get("users", [])
-    total_users = result.get("total_count", 0)
-    
+
+    # Construire une clé de cache basée sur page + filtres
+    try:
+        filters_key = json.dumps(filter_params, sort_keys=True, ensure_ascii=False)
+    except Exception:
+        filters_key = str(filter_params)
+    cache_key = f"p={page_index}|f={filters_key}"
+
+    # Déterminer si on force le rechargement (bouton refresh)
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
+    force_reload = (triggered_id == "refresh-users-btn" and n_clicks is not None)
+
+    users = []
+    total_users = 0
+
+    if (not force_reload) and cache_key in page_cache:
+        cached = page_cache.get(cache_key) or {}
+        # Sanitize cached content in case older entries contain datetimes or Pydantic models
+        users = _to_jsonable(cached.get("users", []))
+        total_users = int(cached.get("total_count", 0))
+        try:
+            print(f"[USERS][CACHE HIT] page_index={page_index} key={cache_key} users={len(users)} total={total_users}")
+        except Exception:
+            pass
+    else:
+        # Appel serveur uniquement si pas en cache ou refresh explicite
+        result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)
+        raw_users = result.get("users", [])
+        total_users = int(result.get("total_count", 0))
+        # Convertir avant usage (UI et cache) pour garantir JSON-serializable
+        users = _to_jsonable(raw_users)
+        # Mettre à jour le cache (écrase l'entrée)
+        page_cache[cache_key] = {"users": users, "total_count": total_users}
+        try:
+            print(f"[USERS][FETCH] page_index={page_index} key={cache_key} users={len(users)} total={total_users} refresh={force_reload}")
+        except Exception:
+            pass
+
     # Récupérer l'utilisateur sélectionné du store (sans déclencher de mise à jour)
     # Pour l'afficher comme sélectionné dans le tableau
     selected_uid_value = selected_user.get("uid") if selected_user else None
@@ -416,7 +522,7 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
     )
     
     # Retourner uniquement le tableau
-    return table
+    return table, page_cache
 
 
 @callback(
