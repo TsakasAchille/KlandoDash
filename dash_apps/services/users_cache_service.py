@@ -4,6 +4,7 @@ Service de cache pour les données utilisateurs avec logique de génération cen
 from typing import Dict, List, Optional, Tuple
 import time
 import threading
+import os
 from dash import html
 from dash_apps.repositories.user_repository import UserRepository
 from dash_apps.services.redis_cache import redis_cache
@@ -14,6 +15,9 @@ class UsersCacheService:
     
     # Cache en mémoire pour les panneaux HTML générés
     _html_cache = {}
+    
+    # Mode debug pour les logs (désactivé en production)
+    _debug_mode = os.getenv('DASH_DEBUG', 'False').lower() == 'true'
     
     # Cache local rapide pour éviter Redis sur les accès fréquents
     _local_cache = {}
@@ -73,12 +77,13 @@ class UsersCacheService:
                 UsersCacheService._local_cache[cache_key] = cached_data
                 UsersCacheService._cache_timestamps[cache_key] = time.time()
                 
-                try:
-                    users_count = len(cached_data.get("users", []))
-                    total_count = cached_data.get("total_count", 0)
-                    print(f"[USERS][REDIS HIT] page_index={page_index} users={users_count} total={total_count}")
-                except Exception:
-                    pass
+                if UsersCacheService._debug_mode:
+                    try:
+                        users_count = len(cached_data.get("users", []))
+                        total_count = cached_data.get("total_count", 0)
+                        print(f"[USERS][REDIS HIT] page_index={page_index} users={users_count} total={total_count}")
+                    except Exception:
+                        pass
                 
                 return cached_data
         
@@ -90,12 +95,13 @@ class UsersCacheService:
         UsersCacheService._cache_timestamps[cache_key] = time.time()
         redis_cache.set_users_page_from_result(result, page_index, page_size, filter_params, ttl_seconds=300)
         
-        try:
-            users_count = len(result.get("users", []))
-            total_count = result.get("total_count", 0)
-            print(f"[USERS][FETCH] page_index={page_index} users={users_count} total={total_count} refresh={force_reload}")
-        except Exception:
-            pass
+        if UsersCacheService._debug_mode:
+            try:
+                users_count = len(result.get("users", []))
+                total_count = result.get("total_count", 0)
+                print(f"[USERS][FETCH] page_index={page_index} users={users_count} total={total_count} refresh={force_reload}")
+            except Exception:
+                pass
         
         return result
     
@@ -158,11 +164,13 @@ class UsersCacheService:
             
         # Chercher d'abord dans le cache fourni
         if basic_by_uid and selected_uid in basic_by_uid:
-            print(f"[CACHE HIT] Utilisateur {selected_uid[:8]}... trouvé dans le cache")
+            if UsersCacheService._debug_mode:
+                print(f"[CACHE HIT] Utilisateur {selected_uid[:8]}... trouvé dans le cache")
             return basic_by_uid[selected_uid]
         
         # Fallback vers le repository
-        print(f"[CACHE MISS] Chargement utilisateur {selected_uid[:8]}... depuis la DB")
+        if UsersCacheService._debug_mode:
+            print(f"[CACHE MISS] Chargement utilisateur {selected_uid[:8]}... depuis la DB")
         user_schema = UserRepository.get_user_by_id(selected_uid)
         if user_schema:
             return user_schema.model_dump() if hasattr(user_schema, "model_dump") else user_schema.dict()
@@ -192,7 +200,8 @@ class UsersCacheService:
             cached_html = redis_cache.redis_client.get(f"html_panel:{cache_key}") if redis_cache.redis_client else None
             if cached_html:
                 # Reconstruire l'objet HTML depuis le cache Redis (simplifié)
-                print(f"[HTML CACHE][REDIS HIT] Panneau {panel_type} pour {user_id[:8]}...")
+                if UsersCacheService._debug_mode:
+                    print(f"[HTML CACHE][REDIS HIT] Panneau {panel_type} pour {user_id[:8]}...")
                 # Note: Pour une vraie implémentation, il faudrait sérialiser/désérialiser les objets Dash
                 return None  # Temporairement désactivé car complexe
         except Exception:
@@ -222,7 +231,8 @@ class UsersCacheService:
             for old_key in oldest_keys:
                 del UsersCacheService._html_cache[old_key]
         
-        print(f"[HTML CACHE] Panneau {panel_type} mis en cache pour {user_id[:8]}...")
+        if UsersCacheService._debug_mode:
+            print(f"[HTML CACHE] Panneau {panel_type} mis en cache pour {user_id[:8]}...")
     
     @staticmethod
     def _preload_single_user(user_id: str, panel_types: List[str]):
@@ -255,7 +265,8 @@ class UsersCacheService:
                             panel = render_user_trips(user_data)
                             UsersCacheService.set_cached_panel(user_id, panel_type, panel)
         except Exception as e:
-            print(f"[PRELOAD] Erreur préchargement {user_id[:8]}: {e}")
+            if UsersCacheService._debug_mode:
+                print(f"[PRELOAD] Erreur préchargement {user_id[:8]}: {e}")
     
     @staticmethod
     def preload_user_panels(user_ids: List[str], panel_types: List[str] = None, async_mode: bool = True):
@@ -283,10 +294,12 @@ class UsersCacheService:
                 users_to_preload.append(user_id)
         
         if not users_to_preload:
-            print("[PRELOAD] Tous les panneaux sont déjà en cache")
+            if UsersCacheService._debug_mode:
+                print("[PRELOAD] Tous les panneaux sont déjà en cache")
             return
         
-        print(f"[PRELOAD] Préchargement de {len(users_to_preload)} utilisateurs x {len(panel_types)} panneaux...")
+        if UsersCacheService._debug_mode:
+            print(f"[PRELOAD] Préchargement de {len(users_to_preload)} utilisateurs x {len(panel_types)} panneaux...")
         
         if async_mode and len(users_to_preload) > 1:
             # Préchargement asynchrone avec threading
@@ -321,13 +334,15 @@ class UsersCacheService:
                          if key.startswith(f"{user_id}_")]
         for key in keys_to_remove:
             del UsersCacheService._html_cache[key]
-        print(f"[HTML CACHE] Cache effacé pour utilisateur {user_id[:8]}...")
+        if UsersCacheService._debug_mode:
+            print(f"[HTML CACHE] Cache effacé pour utilisateur {user_id[:8]}...")
     
     @staticmethod
     def clear_all_html_cache():
         """Efface tout le cache HTML"""
         UsersCacheService._html_cache.clear()
-        print("[HTML CACHE] Tout le cache HTML effacé")
+        if UsersCacheService._debug_mode:
+            print("[HTML CACHE] Tout le cache HTML effacé")
     
     @staticmethod
     def get_cache_stats() -> Dict:

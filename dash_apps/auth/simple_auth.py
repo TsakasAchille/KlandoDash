@@ -1,15 +1,23 @@
 """
 Module d'authentification simple pour KlandoDash
 """
-from dash_apps.config import Config
+from flask import render_template_string, request, redirect, session, url_for, flash
+from dash_apps.auth.admin_auth import handle_admin_login_request
+from dash_apps.auth.oauth import google_callback
 from dash_apps.auth.models import User
-from flask import session, redirect, render_template, request, flash
+from dash_apps.config import Config
+from flask import render_template, redirect, request, flash
 from flask_login import login_user, logout_user, current_user
+import os
+
+# Mode debug pour les logs (désactivé en production)
+_debug_mode = os.getenv('DASH_DEBUG', 'False').lower() == 'true'
 
 def init_auth(server):
     """Configure les routes d'authentification sur le serveur Flask"""
-    print("=== INIT_AUTH APPELÉ ===")
-    print(f"Server: {server}")
+    if _debug_mode:
+        print("=== INIT_AUTH APPELÉ ===")
+        print(f"Server: {server}")
     
     @server.route('/login')
     def login_page():

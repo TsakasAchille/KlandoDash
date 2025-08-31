@@ -12,6 +12,7 @@ engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
 DBSession = sessionmaker(bind=engine)
 
 # Création du Blueprint pour l'authentification
+# Suppression du print inutile - remplacé par Blueprint standard
 auth_bp = Blueprint('auth', __name__, template_folder='../templates')
 
 # Route pour afficher la page de login

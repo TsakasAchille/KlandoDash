@@ -20,7 +20,6 @@ def init_auth(app):
     def load_user(user_id):
         try:
             # Charger l'utilisateur depuis la session
-            from flask import session as flask_session
             if 'user_email' in flask_session and flask_session.get('user_id') == user_id:
                 return User(
                     id=user_id,
@@ -29,7 +28,8 @@ def init_auth(app):
                     profile_pic=flask_session.get('profile_pic')
                 )
         except Exception as e:
-            print(f"Erreur lors du chargement de l'utilisateur depuis la session: {e}")
+            if _debug_mode:
+                print(f"Erreur lors du chargement de l'utilisateur depuis la session: {e}")
         return None
     
     # Initialiser OAuth pour Google

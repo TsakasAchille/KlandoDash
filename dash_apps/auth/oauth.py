@@ -10,15 +10,20 @@ if not os.environ.get('RENDER'):  # Seulement en développement local
 
 # Third-party libraries
 import requests
-from flask import session, redirect, flash, url_for, request
+from flask import session, request, redirect, url_for, flash
+from authlib.integrations.flask_client import OAuth
 from flask_login import login_user, logout_user
 from oauthlib.oauth2 import WebApplicationClient
 
 # Internal imports
 from dash_apps.config import Config
+from dash_apps.utils.admin_db import add_authorized_user
 from dash_apps.auth.models import User
 from dash_apps.core.database import get_session
 from dash_apps.models.authorized_user import DashAuthorizedUser
+
+# Mode debug pour les logs (désactivé en production)
+_debug_mode = os.getenv('DASH_DEBUG', 'False').lower() == 'true'
 
 # Configuration OAuth pour Google
 GOOGLE_CLIENT_ID = Config.GOOGLE_CLIENT_ID
@@ -118,7 +123,8 @@ def google_callback():
         
     except Exception as e:
         error_str = str(e)
-        print(f"Erreur d'authentification: {str(e)}")
+        if _debug_mode:
+            print(f"Erreur d'authentification: {str(e)}")
         
         # Créer un message d'erreur approprié
         if "access_denied" in error_str.lower():
@@ -158,7 +164,8 @@ def google_callback():
     authorized_emails = [e.strip().lower() for e in authorized_emails if e.strip()]
     
     if email.lower() not in authorized_emails:
-        print(f"Email non autorisé: {email}")
+        if _debug_mode:
+            print(f"Email non autorisé: {email}")
         error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Vous n'êtes pas autorisé à accéder à cette application."
         
         session.clear()
@@ -192,7 +199,8 @@ def google_callback():
     session['is_admin'] = (user_role == 'admin')
     session.modified = True
     
-    print(f"Utilisateur connecté: {email}")
+    if _debug_mode:
+        print(f"Utilisateur connecté: {email}")
     return redirect('/')
 
 def logout():

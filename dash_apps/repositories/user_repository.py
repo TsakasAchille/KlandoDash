@@ -1,9 +1,15 @@
 from dash_apps.models.user import User
 from dash_apps.schemas.user import UserSchema
 from dash_apps.core.database import SessionLocal
-from typing import List, Optional
+from sqlalchemy import text, func, or_, and_
+from typing import Dict, List, Optional
+import math
+import os
+
 
 class UserRepository:
+    # Mode debug pour les logs (désactivé en production)
+    _debug_mode = os.getenv('DASH_DEBUG', 'False').lower() == 'true'
     @staticmethod
     def get_pending_drivers():
         with SessionLocal() as db:
@@ -158,7 +164,8 @@ class UserRepository:
                 if filters.get("rating_operator") and filters["rating_operator"] != "all" and filters.get("rating_value") is not None:
                     rating_value = float(filters["rating_value"])
                     operator = filters["rating_operator"]
-                    print("On est ici quoi")
+                    if UserRepository._debug_mode:
+                        print("On est ici quoi")
                     if operator == "gt":
                         # Filter rating not null AND greater or equal to rating_value
                         query = query.filter(User.rating.isnot(None), User.rating >= rating_value)
@@ -274,7 +281,8 @@ class UserRepository:
                 return None
                 
             except Exception as e:
-                print(f"Erreur lors de la récupération de la position de l'utilisateur: {e}")
+                if UserRepository._debug_mode:
+                    print(f"Erreur lors de la récupération de la position de l'utilisateur: {e}")
                 return None
             
     @staticmethod
@@ -321,5 +329,6 @@ class UserRepository:
                 res = db.execute(sql, {"uid": user_id}).first()
                 return int(res[0]) if res else None
             except Exception as e:
-                print(f"Erreur get_user_position_in_validation_group: {e}")
+                if UserRepository._debug_mode:
+                    print(f"Erreur get_user_position_in_validation_group: {e}")
                 return None
