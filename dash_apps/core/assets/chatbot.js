@@ -144,12 +144,12 @@
   function initDrag() {
     console.log('[chatbot] Init drag');
     
-    // Make bubble draggable
-    const bubble = document.getElementById('open-chatbot-bubble');
-    if (bubble) {
-      console.log('[chatbot] Found bubble');
-      makeDraggable(bubble, bubble);
-    }
+    // Make bubble draggable - DISABLED to prevent logo movement
+    // const bubble = document.getElementById('open-chatbot-bubble');
+    // if (bubble) {
+    //   console.log('[chatbot] Found bubble');
+    //   makeDraggable(bubble, bubble);
+    // }
     
     // Make window draggable and resizable
     const window = document.getElementById('chatbot-window');

@@ -77,8 +77,9 @@ def create_main_layout():
                 html.Div([
                     html.Div([
                         html.Div([
+                            html.Img(src="/assets/icons/yode.svg", className="yode-logo-header"),
                             html.Span("Yobe", className="chatbot-title"),
-                        ]),
+                        ], className="d-flex align-items-center"),
                         html.Div([
                             dbc.Button(html.I(className="fas fa-minus"), id="minimize-chatbot-window", size="sm", color="secondary", outline=True, className="me-1", title="Réduire"),
                         ], className="d-flex align-items-center")
