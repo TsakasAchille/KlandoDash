@@ -1,4 +1,5 @@
 from dash import Input, Output, State, callback_context, no_update
+import logging
 from flask_login import current_user
 from flask import session
 from dash_apps.auth.simple_auth import render_user_menu
@@ -23,6 +24,10 @@ def register_callbacks(app):
     def logout_callback(pathname):
         """Gère la redirection après déconnexion"""
         if pathname == '/logout' or pathname == '/auth/logout':
+            try:
+                logging.getLogger(__name__).info("[LOGOUT] Triggered from %s", pathname)
+            except Exception:
+                pass
             return handle_logout()
         # Dans les autres cas, ne pas faire de redirection
         return no_update
@@ -67,11 +72,13 @@ def register_callbacks(app):
         """
         # Si c'est la page de login, afficher directement
         if pathname == "/login":
+            logging.getLogger(__name__).info("[PAGE] Show login page for pathname=%s", pathname)
             return login_layout
             
         # Pour les autres pages, vérifier l'authentification
         if not current_user.is_authenticated:
             # L'utilisateur n'est pas authentifié, rediriger vers la page de login
+            logging.getLogger(__name__).info("[AUTH] Not authenticated, redirecting to login for pathname=%s", pathname)
             return login_layout
         
         # L'authentification Google OAuth suffit - pas besoin de double vérification
@@ -81,9 +88,11 @@ def register_callbacks(app):
             # Obtenir le layout de la page demandée
             page_layout = get_page_layout(pathname)
             if page_layout:
+                logging.getLogger(__name__).info("[PAGE] Rendering page %s (layout found)", pathname)
                 return page_layout() if callable(page_layout) else page_layout
             else:
                 # Page non trouvée dans les layouts chargés
+                logging.getLogger(__name__).warning("[PAGE][404] Layout not found for pathname=%s", pathname)
                 return html.Div([
                     html.H3("404 - Page non trouvée", className="text-danger"),
                     html.P(f"La page '{pathname}' n'existe pas."),
@@ -91,6 +100,7 @@ def register_callbacks(app):
                 ], className="p-5")
         else:
             # Page non reconnue
+            logging.getLogger(__name__).warning("[PAGE][404] Unknown pathname requested: %s", pathname)
             return html.Div([
                 html.H3("404 - Page non trouvée", className="text-danger"),
                 html.P(f"La page '{pathname}' n'existe pas."),
