@@ -6,7 +6,7 @@ services:
     startCommand: gunicorn dash_apps.app:server
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11.9
       - key: PORT
         generateValue: true
       - key: GOOGLE_CLIENT_ID
