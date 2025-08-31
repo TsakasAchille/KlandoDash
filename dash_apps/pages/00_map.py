@@ -290,8 +290,9 @@ def sync_selection(count, checkbox_values, checkbox_ids, prev_selected):
         if prev_selected:
             # Keep only those still visible
             return [sid for sid in prev_selected if sid in visible]
-        # Fallback: nothing selected means show none
-        return []
+        # Fallback: select first 3 trips by default (or all if less than 3)
+        default_trips = [getattr(t, 'trip_id', None) for t in _TRIPS[:min(3, count)] if getattr(t, 'trip_id', None)]
+        return default_trips
 
     # If checkboxes exist, compute selection from their values
     selected = []

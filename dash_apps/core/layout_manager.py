@@ -87,7 +87,7 @@ def create_main_layout():
                 ], className="chatbot-header chatbot-dragger"),
                 html.Div([
                     html.Iframe(
-                        src="https://klandochatbot.onrender.com/",
+                        src="https://klandochatbot.onrender.com/embed.html?api_key=klando-dashboard-key",
                         className="chatbot-iframe",
                         allow="clipboard-write; display-capture; autoplay",
                         title="Yobe",
