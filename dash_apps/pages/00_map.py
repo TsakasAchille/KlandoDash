@@ -79,8 +79,8 @@ def _trips_to_table_rows(trips):
 
 
 layout = dbc.Container([
-    html.H2("Carte", style={"marginTop": "20px", "marginBottom": "16px"}),
-    html.P("Vue d'ensemble géographique (style JSON MapLibre)", className="text-muted"),
+    html.H2("Carte - BETA testing", style={"marginTop": "20px", "marginBottom": "16px"}),
+    html.P("Vue d'ensemble géographique", className="text-muted"),
     # Stores interactivité
     dcc.Store(id="map-selected-trips", storage_type="session", data=[]),
     dcc.Store(id="map-hover-trip-id", data=None),
