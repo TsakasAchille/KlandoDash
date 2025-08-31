@@ -5,7 +5,8 @@ import secrets
 
 # Autoriser HTTP pour le développement local uniquement
 # Ne jamais activer ceci en production !
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+if not os.environ.get('RENDER'):  # Seulement en développement local
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # Third-party libraries
 import requests

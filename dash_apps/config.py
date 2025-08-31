@@ -21,8 +21,20 @@ class Config(object):
     ADMIN_PASSWORD = os.environ.get('APP_PASSWORD', 'KLANDO2K25')
     
     # URL de redirection pour OAuth - doit correspondre exactement à celle configurée dans la Google Cloud Console
-    # Si vous utilisez un port différent ou un nom de domaine différent, modifiez cette valeur
-    OAUTH_REDIRECT_URI = os.environ.get('OAUTH_REDIRECT_URI', 'http://localhost:8050/auth/login/google/callback')
+    # Détection automatique de l'environnement (production vs développement)
+    @classmethod
+    def get_oauth_redirect_uri(cls):
+        # Si OAUTH_REDIRECT_URI est défini explicitement, l'utiliser
+        if os.environ.get('OAUTH_REDIRECT_URI'):
+            return os.environ.get('OAUTH_REDIRECT_URI')
+        
+        # Sinon, détecter l'environnement
+        if os.environ.get('RENDER'):  # Variable d'environnement Render
+            return 'https://klandodash.onrender.com/auth/login/google/callback'
+        else:
+            return 'http://localhost:8050/auth/login/google/callback'
+    
+    OAUTH_REDIRECT_URI = get_oauth_redirect_uri()
     
     # Liste des emails autorisés - ceux configurés comme utilisateurs de test dans Google Cloud Console
     # Cette liste doit correspondre exactement aux utilisateurs de test configurés dans Google OAuth Console
