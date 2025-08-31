@@ -26,17 +26,9 @@ def login_admin(username, password):
         if _debug_mode:
             print("DEBUG: Identifiants admin corrects, création de l'utilisateur...")
         
-        # Créer un utilisateur admin
-        admin_user = User(
-            id='admin',
-            email='admin@klando-sn.com',  # Email fictif mais valide pour la vérification du domaine
-            name='Administrateur',
-            admin=True
-        )
-        
-        # Connecter l'utilisateur admin
-        login_user(admin_user, remember=True)
-        
+        # Authentification admin via la session (évite d'instancier le modèle SQLAlchemy)
+        # NOTE: Le modèle User utilise 'uid' comme PK et ne possède pas 'id' ni 'admin'.
+        # Notre middleware vérifie déjà les flags de session, donc pas besoin de login_user ici.
         # Stocker les informations dans la session
         session['logged_in'] = True
         session['user_id'] = 'admin'
