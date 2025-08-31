@@ -8,6 +8,8 @@ from flask_login import login_user, logout_user, current_user
 
 def init_auth(server):
     """Configure les routes d'authentification sur le serveur Flask"""
+    print("=== INIT_AUTH APPELÉ ===")
+    print(f"Server: {server}")
     
     @server.route('/login')
     def login_page():
@@ -26,64 +28,14 @@ def init_auth(server):
         # Utiliser le template login.html qui inclut déjà la gestion des messages flash
         return render_template('login.html')
     
-    @server.route('/admin-login', methods=['POST'])
-    def admin_login():
-        """Authentification admin"""
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        # Vérifier les identifiants admin
-        if username == Config.ADMIN_USERNAME and password == Config.ADMIN_PASSWORD:
-            # Créer un utilisateur admin
-            admin_user = User(
-                id='admin',
-                email='admin@klando-sn.com',  # Email fictif
-                name='Administrateur',
-                admin=True
-            )
-            
-            # Connecter l'utilisateur admin
-            login_user(admin_user, remember=True)
-            
-            # Stocker les informations dans la session
-            session['logged_in'] = True
-            session['user_id'] = 'admin'
-            session['user_email'] = 'admin@klando-sn.com'
-            session['user_name'] = 'Administrateur'
-            session['is_admin'] = True
-            session.modified = True
-            
-            return redirect('/')
-        else:
-            return redirect('/login')
-    
-    @server.route('/auth/login')
-    def google_login():
-        """Route pour l'authentification Google"""
-        from dash_apps.auth.oauth import google_login as oauth_google_login
-        return oauth_google_login()
-    
-    @server.route('/auth/login/google/callback')
-    def google_callback():
-        """Route de callback pour l'authentification Google"""
-        from dash_apps.auth.oauth import google_callback as oauth_google_callback
-        return oauth_google_callback()
+    # Routes OAuth et admin supprimées - toutes gérées par le Blueprint dans routes.py
     
     @server.route('/logout')
     def logout():
-        """Route de déconnexion - gérée par le callback dans app.py"""
-        # La déconnexion est maintenant gérée par un callback Dash dans app.py
-        # Cette route existe uniquement pour compatibilité
+        """Route de déconnexion locale uniquement"""
         logout_user()
         session.clear()
-        # Retourne un message simple, la redirection sera gérée par Dash
         return 'Déconnexion en cours...'
-        
-    @server.route('/auth/logout')
-    def auth_logout():
-        """Route alternative de déconnexion - gérée par le callback dans app.py"""
-        # La déconnexion est maintenant gérée par un callback Dash dans app.py
-        return logout()
     
     @server.before_request
     def protect_pages():
@@ -92,6 +44,7 @@ def init_auth(server):
         public_paths = [
             '/login',
             '/admin-login',
+            '/auth/admin-login',
             '/auth/login',
             '/auth/login/google/callback',
             '/logout',
@@ -99,14 +52,31 @@ def init_auth(server):
             '/proxy/map',  # Proxy MapLibre doit être accessible sans auth
         ]
         
+        # DEBUG: journaliser la décision du middleware
+        try:
+            import sys
+            sys.stderr.write(f"[AUTH MIDDLEWARE] path={request.path} authenticated={getattr(current_user, 'is_authenticated', False)}\n")
+            sys.stderr.flush()
+        except Exception:
+            pass
+        
         # Vérifier si l'utilisateur est authentifié
         if not current_user.is_authenticated:
+            # Autoriser toutes les routes d'authentification
+            if request.path.startswith('/auth/'):
+                return None
             if (
                 request.path not in public_paths
                 and not request.path.startswith('/assets/')
                 and not request.path.startswith('/_dash')
                 and not request.path.startswith('/proxy/')  # Exempter tous les endpoints de proxy
             ):
+                try:
+                    import sys
+                    sys.stderr.write(f"[AUTH MIDDLEWARE] redirect -> /login (blocked)\n")
+                    sys.stderr.flush()
+                except Exception:
+                    pass
                 return redirect('/login')
 
 

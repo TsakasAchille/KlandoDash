@@ -52,7 +52,10 @@ layout = html.Div([
 def check_admin_auth(_):
     # Récupérer l'email de l'utilisateur depuis la session
     user_email = session.get('user_email', None)
-    admin_status = is_admin(user_email)
+    try:
+        admin_status = bool(is_admin(user_email) or session.get('is_admin', False))
+    except Exception:
+        admin_status = bool(session.get('is_admin', False))
     return {"is_admin": admin_status, "user_email": user_email}
 
 # Charger les utilisateurs autorisés

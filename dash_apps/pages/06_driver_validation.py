@@ -60,7 +60,11 @@ def log_callback(name, inputs, states=None):
 # Layout principal de la page de validation des documents conducteur
 def serve_layout():
     user_email = session.get('user_email', None)
-    if not is_admin(user_email):
+    try:
+        is_admin_flag = bool(is_admin(user_email) or session.get('is_admin', False))
+    except Exception:
+        is_admin_flag = bool(session.get('is_admin', False))
+    if not is_admin_flag:
         return dbc.Container([
             html.H2("Accès refusé", style={"marginTop": "20px"}),
             dbc.Alert("Vous n'êtes pas autorisé à accéder à cette page.", color="danger")

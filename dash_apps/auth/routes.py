@@ -35,14 +35,33 @@ def login():
 @auth_bp.route('/admin-login', methods=['POST'])
 def admin_login():
     """Authentification par identifiants admin"""
-    username = request.form.get('username')
-    password = request.form.get('password')
-    
-    if login_admin(username, password):
-        return redirect('/')
-    else:
-        flash('Identifiants administrateur incorrects', 'error')
-        return redirect('/login-page')
+    import sys
+    try:
+        sys.stderr.write("=== ADMIN LOGIN BLUEPRINT APPELÉ ===\n")
+        sys.stderr.flush()
+        
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        sys.stderr.write(f"DEBUG Admin Login - Username: '{username}', Password: '{password}'\n")
+        sys.stderr.flush()
+        
+        if login_admin(username, password):
+            sys.stderr.write("DEBUG: Connexion admin réussie\n")
+            sys.stderr.flush()
+            return redirect('/')
+        else:
+            sys.stderr.write("DEBUG: Échec connexion admin\n")
+            sys.stderr.flush()
+            flash('Identifiants administrateur incorrects', 'error')
+            return redirect('/login')
+    except Exception as e:
+        sys.stderr.write(f"ERREUR DANS ADMIN LOGIN: {str(e)}\n")
+        sys.stderr.flush()
+        import traceback
+        sys.stderr.write(f"TRACEBACK: {traceback.format_exc()}\n")
+        sys.stderr.flush()
+        return redirect('/login')
 
 @auth_bp.route('/login/google/callback')
 def google_auth():

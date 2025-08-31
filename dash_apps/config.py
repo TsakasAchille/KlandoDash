@@ -28,9 +28,15 @@ class Config(object):
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
     
-    # Configuration Admin
-    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
-    ADMIN_PASSWORD = os.environ.get('APP_PASSWORD', 'KLANDO2K25')
+    # Configuration Admin (obligatoire via .env)
+    try:
+        ADMIN_USERNAME = os.environ['ADMIN_USERNAME']
+    except KeyError:
+        raise RuntimeError("Missing ADMIN_USERNAME in environment (.env)")
+    try:
+        ADMIN_PASSWORD = os.environ['APP_PASSWORD']
+    except KeyError:
+        raise RuntimeError("Missing APP_PASSWORD in environment (.env)")
     
     # URL de redirection pour OAuth - doit correspondre exactement à celle configurée dans la Google Cloud Console
     OAUTH_REDIRECT_URI = _get_oauth_redirect_uri()

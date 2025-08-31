@@ -8,6 +8,8 @@ def setup_authentication(server):
     """
     Configure tout le système d'authentification pour l'application
     """
+    print("=== SETUP_AUTHENTICATION APPELÉ ===")
+    
     # Initialisation de Flask-Login
     login_manager = LoginManager()
     login_manager.init_app(server)
@@ -18,6 +20,8 @@ def setup_authentication(server):
     
     # Initialiser l'authentification simple sur le serveur
     init_auth(server)
+    
+    print(f"=== ROUTES ENREGISTRÉES SUR SERVER: {server.url_map} ===")
     
     # Définir le user loader pour Flask-Login
     @login_manager.user_loader
