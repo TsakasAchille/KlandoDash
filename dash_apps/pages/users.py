@@ -506,6 +506,15 @@ def render_users_table(current_page, n_clicks, filters):
         selected_uid=None  # Le tableau n'a pas besoin de connaître l'utilisateur sélectionné
     )
 
+    # Préchargement intelligent des panneaux pour les utilisateurs visibles
+    if table_rows_data and len(table_rows_data) > 0:
+        visible_user_ids = [row.get('uid') for row in table_rows_data[:10] if row.get('uid')]  # Top 10 utilisateurs visibles
+        if visible_user_ids:
+            try:
+                UsersCacheService.preload_user_panels(visible_user_ids, ['profile', 'stats'])  # Précharger profil et stats seulement
+            except Exception as e:
+                print(f"[PRELOAD] Erreur préchargement: {e}")
+
     return table, basic_by_uid
 
 
