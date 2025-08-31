@@ -18,19 +18,15 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_user_profile(uid, user=None):
+def render_user_profile(user):
     """
     Affiche le profil de l'utilisateur en utilisant un template Jinja2.
     
     Args:
-        uid: Identifiant de l'utilisateur
+        user: Données de l'utilisateur (dict)
     """
-    if uid is None:
-        return None
-    
-    # Ne pas faire de requête ici: on attend des données préchargées
     if user is None:
-        return dbc.Alert("Données utilisateur non préchargées pour ce profil.", color="secondary")
+        return dbc.Alert("Utilisateur non trouvé.", color="danger")
     
     # Convertir l'objet UserSchema en dictionnaire pour le template Jinja2
     if hasattr(user, "model_dump"):

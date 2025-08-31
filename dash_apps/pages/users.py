@@ -3,7 +3,7 @@ import json
 import pandas as pd
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc, html, dash_table, callback, Input, Output, State
+from dash import dcc, html, dash_table, callback, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 from dash_apps.config import Config
 # Import du nouveau composant personnalisé à la place du DataTable
@@ -13,6 +13,9 @@ from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
 from dash_apps.components.user_search_widget import render_search_widget, render_active_filters
 from dash_apps.repositories.user_repository import UserRepository
+from dash_apps.services.redis_cache import redis_cache
+from dash_apps.services.users_cache_service import UsersCacheService
+from dash_apps.services.user_panels_preloader import UserPanelsPreloader
 
 
 # Helper de log standardisé pour tous les callbacks (compatible Python < 3.10)
@@ -182,6 +185,8 @@ def get_layout():
     dcc.Store(id="users-page-cache", storage_type="session", data={}, clear_data=False),
     # Store session pour conserver les données basiques des utilisateurs visibles (clé = uid)
     dcc.Store(id="users-page-userdata", storage_type="session", data={}, clear_data=False),
+    # Store session pour précharger les données nécessaires aux panneaux (profil, stats, aperçus trajets)
+    dcc.Store(id="users-panels-store", storage_type="session", data={}, clear_data=False),
     dcc.Store(id="url-parameters", storage_type="memory", data=None),  # Store temporaire pour les paramètres d'URL
     dcc.Store(id="selected-user-from-url", storage_type="memory", data=None),  # State pour la sélection depuis l'URL
     dcc.Store(id="users-filter-store", storage_type="session", data={}, clear_data=False),  # Store pour les filtres de recherche
@@ -418,26 +423,24 @@ def display_active_filters(filters):
 
 
 @callback(
-    Output("main-users-content", "children"),
-    Output("users-page-cache", "data"),
-    Output("users-page-userdata", "data"),
-    Input("users-current-page", "data"),
-    Input("refresh-users-btn", "n_clicks"),
-    Input("selected-user-uid", "data"),
-    Input("users-filter-store", "data"),
-    State("users-page-cache", "data"),
+    [Output("main-users-content", "children"),
+     Output("users-page-userdata", "data"),
+     Output("user-details-panel", "children"),
+     Output("user-stats-panel", "children"),
+     Output("user-trips-panel", "children")],
+    [Input("users-current-page", "data"),
+     Input("refresh-users-btn", "n_clicks"),
+     Input("selected-user-uid", "data"),
+     Input("users-filter-store", "data")],
     prevent_initial_call=True
 )
-def render_users_table_pagination(current_page, n_clicks, selected_user, filters, page_cache):
-    """Callback responsable uniquement de la pagination et du rendu du tableau"""
+def render_users_unified(current_page, n_clicks, selected_user, filters):
+    """Callback unifié qui gère la table ET tous les panneaux utilisateur de manière synchronisée"""
     log_callback(
-        "render_users_table_pagination",
+        "render_users_unified",
         {"current_page": current_page, "n_clicks": n_clicks, "selected_user": selected_user, "filters": filters},
-        {"page_cache_present": isinstance(page_cache, dict)}
+        {}
     )
-    # Initialise le cache si nécessaire
-    if not isinstance(page_cache, dict):
-        page_cache = {}
 
     # Configuration pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
@@ -448,7 +451,10 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
     
     # Convertir la page en index 0-based pour l'API
     page_index = current_page - 1 if current_page > 0 else 0
-    
+
+    # Récupérer l'utilisateur sélectionné du store
+    selected_uid_value = selected_user.get("uid") if selected_user else None
+
     # Préparer les filtres pour le repository
     filter_params = {}
     
@@ -483,149 +489,48 @@ def render_users_table_pagination(current_page, n_clicks, selected_user, filters
         filter_params["rating_operator"] = filters.get("rating_operator")
         filter_params["rating_value"] = filters.get("rating_value")
 
-    # Construire une clé de cache basée sur page + filtres
-    try:
-        filters_key = json.dumps(filter_params, sort_keys=True, ensure_ascii=False)
-    except Exception:
-        filters_key = str(filter_params)
-    cache_key = f"p={page_index}|f={filters_key}"
-
     # Déterminer si on force le rechargement (bouton refresh)
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
     force_reload = (triggered_id == "refresh-users-btn" and n_clicks is not None)
 
-    users = []
-    total_users = 0
-
-    if (not force_reload) and cache_key in page_cache:
-        cached = page_cache.get(cache_key) or {}
-        # Sanitize cached content in case older entries contain datetimes or Pydantic models
-        users = _to_jsonable(cached.get("users", []))
-        total_users = int(cached.get("total_count", 0))
-        try:
-            print(f"[USERS][CACHE HIT] page_index={page_index} key={cache_key} users={len(users)} total={total_users}")
-        except Exception:
-            pass
-    else:
-        # Appel serveur uniquement si pas en cache ou refresh explicite
-        result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)
-        raw_users = result.get("users", [])
-        total_users = int(result.get("total_count", 0))
-        # Convertir avant usage (UI et cache) pour garantir JSON-serializable
-        users = _to_jsonable(raw_users)
-        # Mettre à jour le cache (écrase l'entrée)
-        page_cache[cache_key] = {"users": users, "total_count": total_users}
-        try:
-            print(f"[USERS][FETCH] page_index={page_index} key={cache_key} users={len(users)} total={total_users} refresh={force_reload}")
-        except Exception:
-            pass
-
-    # Récupérer l'utilisateur sélectionné du store (sans déclencher de mise à jour)
-    # Pour l'afficher comme sélectionné dans le tableau
-    selected_uid_value = selected_user.get("uid") if selected_user else None
+    # Utiliser le service de cache centralisé
+    result = UsersCacheService.get_users_page_result(
+        page_index, page_size, filter_params, force_reload
+    )
     
-    # Rendu de la table avec notre composant personnalisé
+    # Extraire les données nécessaires pour le tableau
+    users, total_users, basic_by_uid, table_rows_data = UsersCacheService.extract_table_data(result)
+
+    # Rendu de la table avec les données pré-calculées
     table = render_custom_users_table(
-        users, 
-        current_page=current_page,  # 1-indexed pour notre composant personnalisé
+        table_rows_data, 
+        current_page=current_page,
         total_users=total_users,
         selected_uid=selected_uid_value
     )
-    # Préparer un dictionnaire basique par UID pour pré-charger le profil
-    basic_by_uid = {}
-    try:
-        for u in users or []:
-            uid = (u or {}).get("uid")
-            if not uid:
-                continue
-            # Conserver uniquement les champs utiles au profil (sûrs pour le front)
-            basic_by_uid[uid] = {
-                k: (u.get(k)) for k in [
-                    "uid", "display_name", "first_name", "name", "email", "phone", "phone_number",
-                    "gender", "role", "rating", "rating_count", "photo_url", "birth", "bio",
-                    "created_time", "updated_at"
-                ] if k in u
-            }
-    except Exception:
-        basic_by_uid = {}
 
-    # Retourner le tableau, le cache et les données basiques des utilisateurs visibles
-    return table, page_cache, basic_by_uid
+    # Rendu des panneaux utilisateur
+    profile_panel = html.Div()
+    stats_panel = html.Div()
+    trips_panel = html.Div()
+    
+    if selected_uid_value:
+        # Récupérer les données utilisateur via le service de cache
+        pre_user = UsersCacheService.get_user_data(selected_uid_value, basic_by_uid)
+        
+        # Générer les panneaux avec les données utilisateur
+        if pre_user:
+            profile_panel = render_user_profile(pre_user)
+            stats_panel = render_user_stats(pre_user)
+            trips_panel = render_user_trips(pre_user)
 
-
-@callback(
-    Output("user-details-panel", "children"),
-    Input("selected-user-uid", "data"),
-    State("users-page-userdata", "data"),
-    prevent_initial_call=True
-)
-def render_user_profile_panel(selected_user, page_userdata):
-    """Rendu du panneau profil (utilise les données préchargées si disponibles)"""
-    log_callback("render_user_profile_panel", {"selected_user": selected_user}, {})
-    uid = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
-    if not uid:
-        return html.Div()
-    pre_user = None
-    try:
-        if isinstance(page_userdata, dict):
-            pre_user = page_userdata.get(uid)
-    except Exception:
-        pre_user = None
-    return render_user_profile(uid, user=pre_user)
-
-@callback(
-    Output("user-stats-panel", "children"),
-    Input("selected-user-uid", "data"),
-    prevent_initial_call=True
-)
-def render_user_stats_panel(selected_user):
-    """Rendu du panneau statistiques"""
-    log_callback("render_user_stats_panel", {"selected_user": selected_user}, {})
-    uid = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
-    if not uid:
-        return html.Div()
-    return render_user_stats(uid)
-
-@callback(
-    Output("user-trips-panel", "children"),
-    Input("selected-user-uid", "data"),
-    prevent_initial_call=True
-)
-def render_user_trips_panel(selected_user):
-    """Rendu du panneau trajets"""
-    log_callback("render_user_trips_panel", {"selected_user": selected_user}, {})
-    uid = selected_user.get("uid") if isinstance(selected_user, dict) else selected_user
-    if not uid:
-        return html.Div()
-    return render_user_trips(uid)
+    return table, basic_by_uid, profile_panel, stats_panel, trips_panel
 
 
 
 
-@callback(
-    Output("users-url", "pathname", allow_duplicate=True),  # Output factice pour permettre le callback
-    [
-        Input("users-current-page", "data"),
-        Input("selected-user-uid", "data"),
-        Input("users-filter-store", "data"),
-        Input("refresh-users-btn", "n_clicks"),
-        Input("users-search-input", "value"),
-        Input("users-registration-date-filter", "start_date"),
-        Input("users-registration-date-filter", "end_date"),
-        Input("users-date-filter-type", "value"),
-        Input("users-single-date-filter", "date"),
-        Input("users-date-sort-filter", "value"),
-        Input("users-role-filter", "value"),
-        Input("users-driver-validation-filter", "value"),
-        Input("users-gender-filter", "value"),
-        Input("users-rating-operator-filter", "value"),
-        Input("users-rating-value-filter", "value"),
-        Input("users-url", "search"),
-        Input("url-init-trigger", "n_intervals")
-    ],
-    prevent_initial_call=True
-)
+
 def debug_all_inputs(
     current_page, selected_user, filter_store, refresh_clicks,
     search_input, date_from, date_to, date_filter_type, single_date, date_sort,

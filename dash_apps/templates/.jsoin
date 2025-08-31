@@ -1,0 +1,65 @@
+{
+  "users": [
+    {
+      "uid": "user_123",
+      "email": "john.doe@klando-sn.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "phone": "+221771234567",
+      "created_at": "2024-01-15T10:30:00",
+      "is_active": true,
+      "total_trips": 12,
+      "total_distance": 450.5
+    },
+    {
+      "uid": "user_456", 
+      "email": "marie.fall@klando-sn.com",
+      "first_name": "Marie",
+      "last_name": "Fall",
+      "phone": "+221772345678",
+      "created_at": "2024-02-20T14:15:00",
+      "is_active": true,
+      "total_trips": 8,
+      "total_distance": 320.2
+    }
+  ],
+  "total_count": 147,
+  "page_index": 0,
+  "page_size": 20,
+  "filters": {
+    "search": "",
+    "is_active": null
+  },
+  "basic_by_uid": {
+    "user_123": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john.doe@klando-sn.com"
+    },
+    "user_456": {
+      "first_name": "Marie", 
+      "last_name": "Fall",
+      "email": "marie.fall@klando-sn.com"
+    }
+  },
+  "table_rows_data": [
+    {
+      "uid": "user_123",
+      "name": "John Doe",
+      "email": "john.doe@klando-sn.com",
+      "phone": "+221771234567",
+      "trips": "12 trajets",
+      "distance": "450.5 km",
+      "status": "Actif"
+    },
+    {
+      "uid": "user_456",
+      "name": "Marie Fall", 
+      "email": "marie.fall@klando-sn.com",
+      "phone": "+221772345678",
+      "trips": "8 trajets",
+      "distance": "320.2 km",
+      "status": "Actif"
+    }
+  ]
+}

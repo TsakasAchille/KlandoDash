@@ -7,7 +7,7 @@ from dash_apps.config import Config
 from dash_apps.repositories.user_repository import UserRepository
 
 
-# Helper de log standardisé (même format que dans 01_users.py)
+# Helper de log standardisé (même format que dans users.py)
 def log_callback(name, inputs, states=None):
     def _short_str(s):
         try:
@@ -74,11 +74,11 @@ def log_callback(name, inputs, states=None):
         print(sep)
 
 # Store pour gérer la pagination de manière locale sans déclencher le callback principal
-def render_custom_users_table(users, current_page, total_users, selected_uid=None):
+def render_custom_users_table(table_rows_data, current_page, total_users, selected_uid=None):
     """Rendu d'un tableau personnalisé avec pagination manuelle
     
     Args:
-        users: Liste des utilisateurs à afficher
+        table_rows_data: Liste de dictionnaires avec les données pré-calculées pour chaque ligne
         current_page: Page courante (1-indexed)
         total_users: Nombre total d'utilisateurs
         selected_uid: UID de l'utilisateur sélectionné
@@ -93,41 +93,18 @@ def render_custom_users_table(users, current_page, total_users, selected_uid=Non
     # Créer les en-têtes du tableau
     headers = ["", "Nom", "Email", "Téléphone", "Rôle", "Genre", "Notation", "Date d'inscription"]
     
-    # Créer les lignes du tableau
+    # Créer les lignes du tableau à partir des données pré-calculées
     table_rows = []
-    for user in users:
-        # Pour les objets Pydantic (UserSchema)
-        if hasattr(user, "model_dump"):
-            # Convertir l'objet Pydantic en dictionnaire
-            user_dict = user.model_dump()
-            uid = user_dict.get("uid", "")
-            name = user_dict.get("display_name", "")
-            email = user_dict.get("email", "")
-            phone = user_dict.get("phone_number", "")
-            role = user_dict.get("role", "")
-            gender = user_dict.get("gender", "")
-            rating = user_dict.get("rating", None)
-            created_at = user_dict.get("created_at", "")
-        # Pour les dictionnaires
-        elif isinstance(user, dict):
-            uid = user.get("uid", "")
-            name = user.get("display_name", "")
-            email = user.get("email", "")
-            phone = user.get("phone_number", "")
-            role = user.get("role", "")
-            gender = user.get("gender", "")
-            rating = user.get("rating", None)
-            created_at = user.get("created_at", "")
-        # Pour les objets avec attributs
-        else:
-            uid = getattr(user, "uid", "")
-            name = getattr(user, "display_name", "")
-            email = getattr(user, "email", "")
-            phone = getattr(user, "phone_number", "")
-            role = getattr(user, "role", "")
-            gender = getattr(user, "gender", "")
-            rating = getattr(user, "rating", None)
-            created_at = getattr(user, "created_at", "")
+    for row_data in table_rows_data:
+        # Extraire les champs directement des données pré-calculées
+        uid = row_data.get("uid", "")
+        name = row_data.get("display_name", "")
+        email = row_data.get("email", "")
+        phone = row_data.get("phone_number", "")
+        role = row_data.get("role", "")
+        gender = row_data.get("gender", "")
+        rating = row_data.get("rating", None)
+        created_at = row_data.get("created_at", "")
             
         # Debug pour comprendre les types et valeurs
         #print(f"\n[DEBUG] Type de selected_uid: {type(selected_uid)}, Valeur: {selected_uid}")

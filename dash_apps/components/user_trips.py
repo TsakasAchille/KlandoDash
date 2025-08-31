@@ -27,17 +27,18 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_user_trips(uid):
+def render_user_trips(user):
     """
     Affiche les trajets effectués par l'utilisateur en utilisant un template Jinja2.
     
     Args:
-        uid: Identifiant de l'utilisateur
+        user: Données de l'utilisateur (dict)
     """
-    if uid is None:
+    if user is None:
         return None
     
-    # Utiliser directement l'UID fourni
+    # Extraire l'UID des données utilisateur
+    uid = user.get('uid')
     user_id = uid
     
     db_error = False

@@ -20,18 +20,18 @@ CARD_STYLE = {
     'marginBottom': '16px'
 }
 
-def render_user_stats(uid):
+def render_user_stats(user):
     """
     Affiche les statistiques de l'utilisateur en utilisant un template Jinja2.
     
     Args:
-        uid: Identifiant de l'utilisateur
+        user: Données de l'utilisateur (dict)
     """
-    if uid is None:
+    if user is None:
         return None
         
-    # Utiliser directement l'UID fourni pour récupérer les trajets
-    user_id = uid
+    # Extraire l'UID des données utilisateur
+    user_id = user.get('uid')
     
     db_error = False
     try:

@@ -51,7 +51,7 @@ def load_all_pages():
     page_layouts['/map'] = page_layouts['/']
 
     # Page d'utilisateurs
-    page_layouts['/users'] = load_page_from_file('01_users.py', 'Utilisateurs')
+    page_layouts['/users'] = load_page_from_file('users.py', 'Utilisateurs')
 
     # Page des trajets
     page_layouts['/trips'] = load_page_from_file('02_trips.py', 'Trajets')

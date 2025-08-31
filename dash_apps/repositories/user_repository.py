@@ -182,12 +182,61 @@ class UserRepository:
                 .limit(page_size)\
                 .all()
                 
-            # Convertir les modèles en schémas Pydantic
+            # Convertir les modèles en schémas Pydantic puis en dictionnaires JSON-serializable
             user_schemas = [UserSchema.model_validate(u) for u in users]
+            users_json = [schema.model_dump() for schema in user_schemas]
+            
+            # Traiter les données pour les panneaux et le tableau
+            basic_by_uid = {}
+            table_rows_data = []
+            
+            try:
+                for u in users_json:
+                    uid = u.get("uid")
+                    if not uid:
+                        continue
+                        
+                    # Conserver tous les champs nécessaires aux panneaux avec valeurs et fallbacks
+                    basic = {}
+                    # Directs si présents
+                    for k in [
+                        "uid", "display_name", "email", "first_name", "name", "phone_number",
+                        "birth", "photo_url", "bio", "driver_license_url", "gender", "id_card_url",
+                        "rating", "rating_count", "role", "is_driver_doc_validated"
+                    ]:
+                        if k in u:
+                            basic[k] = u.get(k)
+                    
+                    # Fallbacks / alias
+                    if "phone_number" not in basic and u.get("phone") is not None:
+                        basic["phone_number"] = u.get("phone")
+                    # created_at peut être présent sous created_time
+                    basic["created_at"] = u.get("created_at") or u.get("created_time")
+                    # updated_at fallback éventuel
+                    basic["updated_at"] = u.get("updated_at") or u.get("updated_time")
+
+                    basic_by_uid[uid] = basic
+                    
+                    # Préparer les données de ligne pour le tableau
+                    table_rows_data.append({
+                        "uid": uid,
+                        "display_name": basic.get("display_name", ""),
+                        "email": basic.get("email", ""),
+                        "phone_number": basic.get("phone_number", ""),
+                        "role": basic.get("role", ""),
+                        "gender": basic.get("gender", ""),
+                        "rating": basic.get("rating", None),
+                        "created_at": basic.get("created_at", "")
+                    })
+            except Exception:
+                basic_by_uid = {}
+                table_rows_data = []
             
             return {
-                "users": user_schemas,
-                "total_count": total
+                "users": users_json,
+                "total_count": total,
+                "basic_by_uid": basic_by_uid,
+                "table_rows_data": table_rows_data
             }
     
     @staticmethod
