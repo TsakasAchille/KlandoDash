@@ -105,9 +105,11 @@ class UsersCacheService:
             
         # Chercher d'abord dans le cache fourni
         if basic_by_uid and selected_uid in basic_by_uid:
+            print(f"[CACHE HIT] Utilisateur {selected_uid[:8]}... trouvé dans le cache")
             return basic_by_uid[selected_uid]
         
         # Fallback vers le repository
+        print(f"[CACHE MISS] Chargement utilisateur {selected_uid[:8]}... depuis la DB")
         user_schema = UserRepository.get_user_by_id(selected_uid)
         if user_schema:
             return user_schema.model_dump() if hasattr(user_schema, "model_dump") else user_schema.dict()

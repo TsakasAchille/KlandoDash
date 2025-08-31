@@ -424,21 +424,17 @@ def display_active_filters(filters):
 
 @callback(
     [Output("main-users-content", "children"),
-     Output("users-page-userdata", "data"),
-     Output("user-details-panel", "children"),
-     Output("user-stats-panel", "children"),
-     Output("user-trips-panel", "children")],
+     Output("users-page-userdata", "data")],
     [Input("users-current-page", "data"),
      Input("refresh-users-btn", "n_clicks"),
-     Input("selected-user-uid", "data"),
      Input("users-filter-store", "data")],
     prevent_initial_call=True
 )
-def render_users_unified(current_page, n_clicks, selected_user, filters):
-    """Callback unifié qui gère la table ET tous les panneaux utilisateur de manière synchronisée"""
+def render_users_table(current_page, n_clicks, filters):
+    """Callback pour le rendu du tableau des utilisateurs uniquement"""
     log_callback(
-        "render_users_unified",
-        {"current_page": current_page, "n_clicks": n_clicks, "selected_user": selected_user, "filters": filters},
+        "render_users_table",
+        {"current_page": current_page, "n_clicks": n_clicks, "filters": filters},
         {}
     )
 
@@ -452,8 +448,6 @@ def render_users_unified(current_page, n_clicks, selected_user, filters):
     # Convertir la page en index 0-based pour l'API
     page_index = current_page - 1 if current_page > 0 else 0
 
-    # Récupérer l'utilisateur sélectionné du store
-    selected_uid_value = selected_user.get("uid") if selected_user else None
 
     # Préparer les filtres pour le repository
     filter_params = {}
@@ -495,40 +489,73 @@ def render_users_unified(current_page, n_clicks, selected_user, filters):
     force_reload = (triggered_id == "refresh-users-btn" and n_clicks is not None)
 
     # Utiliser le service de cache centralisé
+    print(f"[TABLE] Chargement page {current_page} (index {page_index}), force_reload={force_reload}")
     result = UsersCacheService.get_users_page_result(
         page_index, page_size, filter_params, force_reload
     )
     
     # Extraire les données nécessaires pour le tableau
     users, total_users, basic_by_uid, table_rows_data = UsersCacheService.extract_table_data(result)
+    print(f"[TABLE] {len(users)} utilisateurs chargés, cache contient {len(basic_by_uid)} entrées")
 
     # Rendu de la table avec les données pré-calculées
     table = render_custom_users_table(
         table_rows_data, 
         current_page=current_page,
         total_users=total_users,
-        selected_uid=selected_uid_value
+        selected_uid=None  # Le tableau n'a pas besoin de connaître l'utilisateur sélectionné
     )
 
-    # Rendu des panneaux utilisateur
+    return table, basic_by_uid
+
+
+
+
+
+@callback(
+    [Output("user-details-panel", "children"),
+     Output("user-stats-panel", "children"),
+     Output("user-trips-panel", "children")],
+    [Input("selected-user-uid", "data")],
+    [State("users-page-userdata", "data")],
+    prevent_initial_call=True
+)
+def render_user_panels(selected_uid, page_userdata):
+    """Callback séparé pour le rendu des panneaux utilisateur"""
+    log_callback(
+        "render_user_panels",
+        {"selected_uid": selected_uid},
+        {"page_userdata_keys": list(page_userdata.keys()) if page_userdata else None}
+    )
+    
+    # Panneaux vides par défaut
     profile_panel = html.Div()
     stats_panel = html.Div()
     trips_panel = html.Div()
     
-    if selected_uid_value:
+    # Extraire l'UID si c'est un dict
+    uid_value = None
+    if selected_uid:
+        if isinstance(selected_uid, dict):
+            uid_value = selected_uid.get("uid")
+        else:
+            uid_value = selected_uid
+    
+    if uid_value:
         # Récupérer les données utilisateur via le service de cache
-        pre_user = UsersCacheService.get_user_data(selected_uid_value, basic_by_uid)
+        print(f"[PANELS] Rendu des panneaux pour utilisateur {uid_value[:8]}...")
+        pre_user = UsersCacheService.get_user_data(uid_value, page_userdata)
         
         # Générer les panneaux avec les données utilisateur
         if pre_user:
+            print(f"[PANELS] Données utilisateur récupérées, génération des panneaux")
             profile_panel = render_user_profile(pre_user)
             stats_panel = render_user_stats(pre_user)
             trips_panel = render_user_trips(pre_user)
+        else:
+            print(f"[PANELS] Aucune donnée trouvée pour l'utilisateur {uid_value[:8]}...")
 
-    return table, basic_by_uid, profile_panel, stats_panel, trips_panel
-
-
-
+    return profile_panel, stats_panel, trips_panel
 
 
 def debug_all_inputs(
