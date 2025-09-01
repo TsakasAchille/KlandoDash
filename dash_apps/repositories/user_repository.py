@@ -94,143 +94,142 @@ class UserRepository:
             print("[DEBUG] Tentative de connexion à la base de données...")
             with SessionLocal() as db:
                 print("[DEBUG] Connexion à la base de données réussie")
-            # Commencer avec une requête de base
-            query = db.query(User)
-            
-            # Appliquer les filtres si spécifiés
-            if filters:
-                # Filtre texte (nom, prénom, email, UID)
-                if filters.get("text"):
-                    search_term = f'%{filters["text"]}%'
-                    query = query.filter(
-                        or_(
-                            User.name.ilike(search_term),
-                            User.first_name.ilike(search_term),
-                            User.email.ilike(search_term),
-                            User.display_name.ilike(search_term),
-                            User.uid.ilike(search_term)
+                # Commencer avec une requête de base
+                query = db.query(User)
+                
+                # Appliquer les filtres si spécifiés
+                if filters:
+                    # Filtre texte (nom, prénom, email, UID)
+                    if filters.get("text"):
+                        search_term = f'%{filters["text"]}%'
+                        query = query.filter(
+                            or_(
+                                User.name.ilike(search_term),
+                                User.first_name.ilike(search_term),
+                                User.email.ilike(search_term),
+                                User.display_name.ilike(search_term),
+                                User.uid.ilike(search_term)
+                            )
                         )
-                    )
                 
-                # Filtrage par date d'inscription
-                # Gestion des filtres de date selon le type
-                date_filter_type = filters.get("date_filter_type", "range")
-                
-                if date_filter_type == "after" and filters.get("single_date"):
-                    # Filtrer après une date spécifique
-                    single_date = filters["single_date"]
-                    if isinstance(single_date, str):
-                        single_date = datetime.datetime.fromisoformat(single_date.replace('Z', '+00:00'))
-                    query = query.filter(User.created_at >= single_date)
+                    # Filtrage par date d'inscription
+                    # Gestion des filtres de date selon le type
+                    date_filter_type = filters.get("date_filter_type", "range")
                     
-                elif date_filter_type == "before" and filters.get("single_date"):
-                    # Filtrer avant une date spécifique
-                    single_date = filters["single_date"]
-                    if isinstance(single_date, str):
-                        single_date = datetime.datetime.fromisoformat(single_date.replace('Z', '+00:00'))
-                        # Ajuster pour inclure toute la journée
-                        single_date = single_date.replace(hour=23, minute=59, second=59)
-                    query = query.filter(User.created_at <= single_date)
-                    
-                else:
-                    # Filtrage par période (comportement par défaut)
-                    if filters.get("date_from"):
-                        date_from = filters["date_from"]
-                        if isinstance(date_from, str):
-                            date_from = datetime.datetime.fromisoformat(date_from.replace('Z', '+00:00'))
-                        query = query.filter(User.created_at >= date_from)
+                    if date_filter_type == "after" and filters.get("single_date"):
+                        # Filtrer après une date spécifique
+                        single_date = filters["single_date"]
+                        if isinstance(single_date, str):
+                            single_date = datetime.datetime.fromisoformat(single_date.replace('Z', '+00:00'))
+                        query = query.filter(User.created_at >= single_date)
                         
-                    if filters.get("date_to"):
-                        date_to = filters["date_to"]
-                        if isinstance(date_to, str):
-                            date_to = datetime.datetime.fromisoformat(date_to.replace('Z', '+00:00'))
-                            date_to = date_to.replace(hour=23, minute=59, second=59)
-                        query = query.filter(User.created_at <= date_to)
-                
-                # Filtrage par rôle
-                if filters.get("role") and filters["role"] != "all":
-                    role = filters["role"]
-                    query = query.filter(User.role == role)
-                
-                # Filtrage par validation conducteur
-                if filters.get("driver_validation") and filters["driver_validation"] != "all":
-
-                    validation_status = filters["driver_validation"]
-                    if validation_status == "validated":
-                        query = query.filter(User.is_driver_doc_validated == True)
-                    elif validation_status == "not_validated":
-                        query = query.filter(User.is_driver_doc_validated == False)
+                    elif date_filter_type == "before" and filters.get("single_date"):
+                        # Filtrer avant une date spécifique
+                        single_date = filters["single_date"]
+                        if isinstance(single_date, str):
+                            single_date = datetime.datetime.fromisoformat(single_date.replace('Z', '+00:00'))
+                            # Ajuster pour inclure toute la journée
+                            single_date = single_date.replace(hour=23, minute=59, second=59)
+                        query = query.filter(User.created_at <= single_date)
                         
-                # Filtrage par genre
-                if filters.get("gender") and filters["gender"] != "all":
-                    gender = filters["gender"]
-                    query = query.filter(User.gender == gender)
-                
-                # Filtrage par rating
-                if filters.get("rating_operator") and filters["rating_operator"] != "all" and filters.get("rating_value") is not None:
-                    rating_value = float(filters["rating_value"])
-                    operator = filters["rating_operator"]
-                    if UserRepository._debug_mode:
-                        print("On est ici quoi")
-                    if operator == "gt":
-                        # Filter rating not null AND greater or equal to rating_value
-                        query = query.filter(User.rating.isnot(None), User.rating >= rating_value)
-                    elif operator == "lt":
-                        # Filter rating not null AND less or equal to rating_value
-                        query = query.filter(User.rating.isnot(None), User.rating <= rating_value)
-            
-            # Appliquer le tri selon les préférences
-            date_sort = filters.get("date_sort", "desc")
-            if date_sort == "asc":
-                query = query.order_by(User.created_at.asc())
-            elif date_sort == "desc":
-                query = query.order_by(User.created_at.desc())
-            # Si date_sort == "none", pas de tri spécifique par date
-            
-            # Calculer le nombre total d'utilisateurs après filtrage
-            total = query.count()
-            
-            # Récupérer les utilisateurs de la page demandée
-            users = query.offset(page * page_size)\
-                .limit(page_size)\
-                .all()
-                
-            # Convertir les modèles en schémas Pydantic puis en dictionnaires JSON-serializable
-            user_schemas = [UserSchema.model_validate(u) for u in users]
-            users_json = [schema.model_dump() for schema in user_schemas]
-            
-            # Préparer les données de ligne pour le tableau
-            table_rows_data = []
-            
-            try:
-                for u in users_json:
-                    uid = u.get("uid")
-                    if not uid:
-                        continue
+                    else:
+                        # Filtrage par période (comportement par défaut)
+                        if filters.get("date_from"):
+                            date_from = filters["date_from"]
+                            if isinstance(date_from, str):
+                                date_from = datetime.datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+                            query = query.filter(User.created_at >= date_from)
+                            
+                        if filters.get("date_to"):
+                            date_to = filters["date_to"]
+                            if isinstance(date_to, str):
+                                date_to = datetime.datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+                                date_to = date_to.replace(hour=23, minute=59, second=59)
+                            query = query.filter(User.created_at <= date_to)
                     
-                    # Fallback pour phone_number
-                    phone_number = u.get("phone_number") or u.get("phone")
-                    # Fallback pour created_at
-                    created_at = u.get("created_at") or u.get("created_time")
+                    # Filtrage par rôle
+                    if filters.get("role") and filters["role"] != "all":
+                        role = filters["role"]
+                        query = query.filter(User.role == role)
                     
-                    # Préparer les données de ligne pour le tableau
-                    table_rows_data.append({
-                        "uid": uid,
-                        "display_name": u.get("display_name", ""),
-                        "email": u.get("email", ""),
-                        "phone_number": phone_number or "",
-                        "role": u.get("role", ""),
-                        "gender": u.get("gender", ""),
-                        "rating": u.get("rating", None),
-                        "created_at": created_at or ""
-                    })
-            except Exception:
+                    # Filtrage par validation conducteur
+                    if filters.get("driver_validation") and filters["driver_validation"] != "all":
+                        validation_status = filters["driver_validation"]
+                        if validation_status == "validated":
+                            query = query.filter(User.is_driver_doc_validated == True)
+                        elif validation_status == "not_validated":
+                            query = query.filter(User.is_driver_doc_validated == False)
+                            
+                    # Filtrage par genre
+                    if filters.get("gender") and filters["gender"] != "all":
+                        gender = filters["gender"]
+                        query = query.filter(User.gender == gender)
+                    
+                    # Filtrage par rating
+                    if filters.get("rating_operator") and filters["rating_operator"] != "all" and filters.get("rating_value") is not None:
+                        rating_value = float(filters["rating_value"])
+                        operator = filters["rating_operator"]
+                        if UserRepository._debug_mode:
+                            print("On est ici quoi")
+                        if operator == "gt":
+                            # Filter rating not null AND greater or equal to rating_value
+                            query = query.filter(User.rating.isnot(None), User.rating >= rating_value)
+                        elif operator == "lt":
+                            # Filter rating not null AND less or equal to rating_value
+                            query = query.filter(User.rating.isnot(None), User.rating <= rating_value)
+                
+                # Appliquer le tri selon les préférences
+                date_sort = filters.get("date_sort", "desc") if filters else "desc"
+                if date_sort == "asc":
+                    query = query.order_by(User.created_at.asc())
+                elif date_sort == "desc":
+                    query = query.order_by(User.created_at.desc())
+                # Si date_sort == "none", pas de tri spécifique par date
+                
+                # Calculer le nombre total d'utilisateurs après filtrage
+                total = query.count()
+                
+                # Récupérer les utilisateurs de la page demandée
+                users = query.offset(page * page_size)\
+                    .limit(page_size)\
+                    .all()
+                    
+                # Convertir les modèles en schémas Pydantic puis en dictionnaires JSON-serializable
+                user_schemas = [UserSchema.model_validate(u) for u in users]
+                users_json = [schema.model_dump() for schema in user_schemas]
+                
+                # Préparer les données de ligne pour le tableau
                 table_rows_data = []
-            
-            print(f"[DEBUG] Récupéré {len(users_json)} utilisateurs, total={total}")
-            
-            return {
-                "users": users_json,
+                
+                try:
+                    for u in users_json:
+                        uid = u.get("uid")
+                        if not uid:
+                            continue
+                        
+                        # Fallback pour phone_number
+                        phone_number = u.get("phone_number") or u.get("phone")
+                        # Fallback pour created_at
+                        created_at = u.get("created_at") or u.get("created_time")
+                        
+                        # Préparer les données de ligne pour le tableau
+                        table_rows_data.append({
+                            "uid": uid,
+                            "display_name": u.get("display_name", ""),
+                            "email": u.get("email", ""),
+                            "phone_number": phone_number or "",
+                            "role": u.get("role", ""),
+                            "gender": u.get("gender", ""),
+                            "rating": u.get("rating", None),
+                            "created_at": created_at or ""
+                        })
+                except Exception:
+                    table_rows_data = []
+                
+                print(f"[DEBUG] Récupéré {len(users_json)} utilisateurs, total={total}")
+                
+                return {
+                    "users": users_json,
                 "total_count": total,
                 "table_rows_data": table_rows_data
             }

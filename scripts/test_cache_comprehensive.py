@@ -129,25 +129,45 @@ def test_panels_generation(trips, users):
     user = users[0]
     users_cache = UsersCacheService()
     
-    print(f"\nTest avec trajet: {trip.get('trip_id', 'N/A')}")
-    print(f"Test avec utilisateur: {user.get('name', 'N/A')}")
+    # Convert trip to dict if it's a Pydantic model
+    if hasattr(trip, 'model_dump'):
+        trip_dict = trip.model_dump()
+    elif hasattr(trip, 'to_dict'):
+        trip_dict = trip.to_dict()
+    elif isinstance(trip, dict):
+        trip_dict = trip
+    else:
+        trip_dict = {'trip_id': str(trip)}
+    
+    # Convert user to dict if it's a Pydantic model
+    if hasattr(user, 'model_dump'):
+        user_dict = user.model_dump()
+    elif hasattr(user, 'to_dict'):
+        user_dict = user.to_dict()
+    elif isinstance(user, dict):
+        user_dict = user
+    else:
+        user_dict = {'name': str(user)}
+    
+    print(f"\nTest avec trajet: {trip_dict.get('trip_id', 'N/A')}")
+    print(f"Test avec utilisateur: {user_dict.get('name', user_dict.get('display_name', 'N/A'))}")
     
     # Test génération panels trajets
     print("\n--- PANELS TRAJETS ---")
     
     # Trip details
     print("1. Trip Details Panel")
-    _, time_details = measure_time(render_trip_card_html, trip)
+    _, time_details = measure_time(render_trip_card_html, trip_dict)
     print(f"   Temps génération: {time_details:.3f}s")
     
     # Trip stats
     print("2. Trip Stats Panel")
-    _, time_stats = measure_time(render_trip_stats_html, trip)
+    _, time_stats = measure_time(render_trip_stats_html, trip_dict)
     print(f"   Temps génération: {time_stats:.3f}s")
     
     # Test génération panels utilisateurs avec cache HTML
     print("\n--- PANELS UTILISATEURS (avec cache HTML) ---")
-    user_uid = user.get('uid')
+    user_uid = user_dict.get('uid')
     
     if user_uid:
         # Vider le cache HTML pour ce test
@@ -156,11 +176,11 @@ def test_panels_generation(trips, users):
         
         # Test user profile
         print("3. User Profile Panel (première génération)")
-        _, time_profile1 = measure_time(render_user_profile, user)
+        _, time_profile1 = measure_time(render_user_profile, user_dict)
         print(f"   Temps génération: {time_profile1:.3f}s")
         
         # Mettre en cache le panel
-        profile_html = render_user_profile(user)
+        profile_html = render_user_profile(user_dict)
         if hasattr(users_cache, 'set_cached_panel'):
             users_cache.set_cached_panel(user_uid, "profile", profile_html)
         
@@ -173,12 +193,12 @@ def test_panels_generation(trips, users):
         
         # Test user stats
         print("5. User Stats Panel")
-        _, time_user_stats = measure_time(render_user_stats, user)
+        _, time_user_stats = measure_time(render_user_stats, user_dict)
         print(f"   Temps génération: {time_user_stats:.3f}s")
         
         # Test user trips
         print("6. User Trips Panel")
-        _, time_user_trips = measure_time(render_user_trips, user)
+        _, time_user_trips = measure_time(render_user_trips, user_dict)
         print(f"   Temps génération: {time_user_trips:.3f}s")
     
     print("\n=== RÉSUMÉ GÉNÉRATION PANELS ===")

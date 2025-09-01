@@ -190,8 +190,8 @@ def get_trip_stats_optimized(trip_id):
     query = """
     SELECT 
         t.*,
-        COUNT(b.booking_id) as passenger_count,
-        COALESCE(SUM(b.passenger_price), 0) as total_revenue
+        COUNT(b.user_id) as passenger_count,
+        COALESCE(SUM(t.passenger_price * b.seats), 0) as total_revenue
     FROM trips t
     LEFT JOIN bookings b ON t.trip_id = b.trip_id
     WHERE t.trip_id = :trip_id
