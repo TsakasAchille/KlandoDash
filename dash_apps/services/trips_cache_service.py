@@ -102,8 +102,8 @@ class TripsCacheService:
                 
                 return cached_data
         
-        # Niveau 3: Base de données
-        result = TripRepository.get_trips_paginated(page_index, page_size, filters=filter_params)
+        # Niveau 3: Base de données (version optimisée)
+        result = TripRepository.get_trips_paginated_minimal(page_index, page_size, filters=filter_params)
         
         # Mettre à jour tous les niveaux de cache
         TripsCacheService._local_cache[cache_key] = result

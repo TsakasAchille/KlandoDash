@@ -445,14 +445,8 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
         selected_trip_id=new_selected_trip if isinstance(new_selected_trip, str) else (getattr(new_selected_trip, "trip_id", None) if new_selected_trip else None)
     )
 
-    # Préchargement intelligent des panneaux pour les trajets visibles
-    if table_rows_data and len(table_rows_data) > 0:
-        visible_trip_ids = [row.get("trip_id") for row in table_rows_data[:5] if isinstance(row, dict) and row.get("trip_id")]
-        if visible_trip_ids:
-            try:
-                TripsCacheService.preload_trip_panels(visible_trip_ids, ['details'])  # Précharger détails seulement
-            except Exception as e:
-                print(f"[PRELOAD] Erreur préchargement: {e}")
+    # Préchargement supprimé pour améliorer les performances sur Render
+    # Les panneaux se chargeront à la demande lors de la sélection
     
     # Message informatif
     if total_trips == 0:

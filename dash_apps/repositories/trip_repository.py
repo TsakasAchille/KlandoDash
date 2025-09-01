@@ -43,6 +43,132 @@ class TripRepository:
             return position if position is not None else None
 
     @staticmethod
+    def get_trips_paginated_minimal(page: int = 0, page_size: int = 10, filters: dict = None) -> dict:
+        """Version optimisée qui ne charge que les champs essentiels pour le tableau
+        
+        Args:
+            page: Numéro de page (commence à 0)
+            page_size: Nombre d'éléments par page
+            filters: Dictionnaire des filtres à appliquer
+            
+        Returns:
+            Un dictionnaire contenant:
+            - trips: Liste des trajets avec champs minimaux
+            - total_count: Nombre total de trajets après filtrage
+        """
+        with SessionLocal() as db:
+            # Sélectionner seulement les champs nécessaires pour le tableau
+            query = db.query(
+                Trip.trip_id,
+                Trip.departure_name,
+                Trip.destination_name,
+                Trip.departure_date,
+                Trip.departure_schedule,
+                Trip.seats_available,
+                Trip.passenger_price,
+                Trip.status,
+                Trip.created_at
+            )
+            
+            # Appliquer les filtres si spécifiés
+            if filters:
+                # Filtre texte (origine, destination, trip_id)
+                if filters.get("text"):
+                    search_term = f'%{filters["text"]}%'
+                    query = query.filter(
+                        or_(
+                            Trip.departure_name.ilike(search_term),
+                            Trip.destination_name.ilike(search_term),
+                            Trip.trip_id.ilike(search_term)
+                        )
+                    )
+                
+                # Filtrage par date de création
+                date_filter_type = filters.get("date_filter_type", "range")
+                
+                if date_filter_type == "after" and filters.get("single_date"):
+                    single_date = filters["single_date"]
+                    try:
+                        date_obj = datetime.datetime.strptime(single_date, "%Y-%m-%d").date()
+                        query = query.filter(func.date(Trip.created_at) >= date_obj)
+                    except ValueError:
+                        pass
+                
+                elif date_filter_type == "before" and filters.get("single_date"):
+                    single_date = filters["single_date"]
+                    try:
+                        date_obj = datetime.datetime.strptime(single_date, "%Y-%m-%d").date()
+                        query = query.filter(func.date(Trip.created_at) <= date_obj)
+                    except ValueError:
+                        pass
+                
+                else:  # range
+                    if filters.get("date_from"):
+                        try:
+                            date_from = datetime.datetime.strptime(filters["date_from"], "%Y-%m-%d").date()
+                            query = query.filter(func.date(Trip.created_at) >= date_from)
+                        except ValueError:
+                            pass
+                    
+                    if filters.get("date_to"):
+                        try:
+                            date_to = datetime.datetime.strptime(filters["date_to"], "%Y-%m-%d").date()
+                            query = query.filter(func.date(Trip.created_at) <= date_to)
+                        except ValueError:
+                            pass
+                
+                # Filtre statut (insensible à la casse)
+                if filters.get("status") and filters["status"] != "all":
+                    query = query.filter(func.upper(Trip.status) == str(filters["status"]).upper())
+
+                # Filtre: trajets ayant au moins un signalement associé
+                if filters.get("has_signalement"):
+                    subq = db.query(SupportTicket.ticket_id).filter(
+                        func.lower(SupportTicket.subject).like('%[signalement trajet]%'),
+                        SupportTicket.subject.ilike(func.concat('%', Trip.trip_id, '%'))
+                    ).exists()
+                    query = query.filter(subq)
+            
+            # Tri par date de création (plus récent en premier par défaut)
+            date_sort = filters.get("date_sort", "desc") if filters else "desc"
+            if date_sort == "asc":
+                query = query.order_by(Trip.created_at.asc())
+            else:
+                query = query.order_by(Trip.created_at.desc())
+            
+            # Appliquer la pagination AVANT le count pour optimiser
+            trips_raw = query.offset(page * page_size).limit(page_size).all()
+            
+            # ÉLIMINATION COMPLÈTE DU COUNT pour la performance
+            if len(trips_raw) < page_size:
+                # Page incomplète = on a atteint la fin
+                total_count = page * page_size + len(trips_raw)
+            else:
+                # Page complète : estimation optimiste
+                # On suppose qu'il y a au moins une page de plus
+                total_count = (page + 1) * page_size + 1
+            
+            # Convertir en dictionnaires simples (pas de Pydantic pour la performance)
+            trips_data = []
+            for trip in trips_raw:
+                trips_data.append({
+                    "trip_id": trip.trip_id,
+                    "departure_name": trip.departure_name,
+                    "destination_name": trip.destination_name,
+                    "departure_date": trip.departure_date,
+                    "departure_schedule": trip.departure_schedule,
+                    "seats_available": trip.seats_available,
+                    "passenger_price": trip.passenger_price,
+                    "status": trip.status,
+                    "created_at": trip.created_at
+                })
+            
+            return {
+                "trips": trips_data,
+                "total_count": total_count
+            }
+
+    @staticmethod
     def get_trips_paginated(page: int = 0, page_size: int = 10, filters: dict = None) -> dict:
         """Récupère les trajets de façon paginée avec filtrage optionnel
         
