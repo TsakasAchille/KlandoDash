@@ -249,7 +249,7 @@ def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id
     ])
 
 
-# Callback pour la navigation entre les pages
+# Callback pour la navigation entre les pages avec validation des limites
 @callback(
     Output("trips-current-page", "data", allow_duplicate=True),
     Input("trips-prev-btn", "n_clicks"),
@@ -278,15 +278,16 @@ def handle_trips_pagination_buttons(prev_clicks, next_clicks, current_page):
     if button_id == "trips-prev-btn":
         if current_page <= 1:
             # Déjà à la première page, ne pas changer
-            print("Déjà à la première page, pas de changement")
+            print("[PAGINATION] Déjà à la première page, pas de changement")
             raise PreventUpdate
         new_page = current_page - 1
-        print("Passage à la page", new_page)
+        print(f"[PAGINATION] Passage à la page {new_page}")
         return new_page
     elif button_id == "trips-next-btn":
-        # On vérifiera que la page n'est pas trop grande dans le callback qui utilise cette valeur
+        # Validation simple : ne pas dépasser la page courante + 1
+        # La validation finale se fera dans render_trips_table
         new_page = current_page + 1
-        print("Passage à la page", new_page)
+        print(f"[PAGINATION] Tentative passage à la page {new_page}")
         return new_page
     
     # Par défaut, ne pas changer de page

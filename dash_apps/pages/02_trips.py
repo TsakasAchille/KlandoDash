@@ -84,34 +84,50 @@ def log_callback(name, inputs, states=None):
         print(sep)
 
 
-def find_trip_page_index(trip_id, page_size):
-    """Trouve l'index de page sur lequel se trouve le trajet avec l'ID donné
+def find_trip_page_index_from_cache(trip_id, page_size, filter_params=None):
+    """Trouve l'index de page en parcourant le cache existant (évite l'appel DB)
     
     Args:
         trip_id: ID du trajet à trouver
         page_size: Taille de chaque page
+        filter_params: Paramètres de filtrage actuels
         
     Returns:
         Index de la page (0-based) ou None si non trouvé
     """
     try:
-        # Utiliser la méthode optimisée du repository pour trouver la position du trajet
-        position = TripRepository.get_trip_position(trip_id)
+        # Parcourir les pages en cache pour trouver le trajet
+        max_pages_to_check = 10  # Limiter la recherche pour éviter la lenteur
         
-        if position is not None:
-            # Calculer l'index de page (0-based)
-            page_index = position // page_size
-            # Ajouter des logs détaillés
-            print(f"Trajet {trip_id} trouvé à la position {position} (selon le repository)")
-            print(f"Taille de page: {page_size}")
-            print(f"Calcul page: {position} // {page_size} = {page_index}")
-            print(f"Page calculée (0-based): {page_index}, (1-based): {page_index + 1}")
-            return page_index
+        for page_index in range(max_pages_to_check):
+            cache_key = redis_cache.make_trips_page_key(page_index, page_size, filter_params or {})
+            
+            # Vérifier d'abord le cache local
+            if cache_key in TripsCacheService._local_cache:
+                cached_data = TripsCacheService._local_cache[cache_key]
+                trips = cached_data.get("trips", [])
+                
+                # Chercher le trajet dans cette page
+                for trip in trips:
+                    trip_id_in_cache = trip.get("trip_id") if isinstance(trip, dict) else getattr(trip, "trip_id", None)
+                    if str(trip_id_in_cache) == str(trip_id):
+                        print(f"[CACHE_SEARCH] Trajet {trip_id} trouvé en page {page_index} (cache local)")
+                        return page_index
+            
+            # Vérifier le cache Redis si pas trouvé en local
+            cached_data = redis_cache.get_json_by_key(cache_key)
+            if cached_data:
+                trips = cached_data.get("trips", [])
+                for trip in trips:
+                    trip_id_in_cache = trip.get("trip_id") if isinstance(trip, dict) else getattr(trip, "trip_id", None)
+                    if str(trip_id_in_cache) == str(trip_id):
+                        print(f"[CACHE_SEARCH] Trajet {trip_id} trouvé en page {page_index} (cache Redis)")
+                        return page_index
         
-        print(f"Trajet {trip_id} non trouvé dans le repository")
+        print(f"[CACHE_SEARCH] Trajet {trip_id} non trouvé dans les {max_pages_to_check} premières pages en cache")
         return None
     except Exception as e:
-        print(f"Erreur lors de la recherche de page pour le trajet {trip_id}: {str(e)}")
+        print(f"[CACHE_SEARCH] Erreur lors de la recherche: {str(e)}")
         return None
 
 
@@ -201,15 +217,9 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
         
         if trip_id_list:
             trip_from_url = {"trip_id": trip_id_list[0]}
-            # On va chercher sur quelle page se trouve le trajet
-            trip_id = trip_id_list[0]
-            page_index = find_trip_page_index(trip_id, Config.USERS_TABLE_PAGE_SIZE)
-            if page_index is not None:
-                # Convertir en 1-indexed pour l'interface
-                new_page = page_index + 1
-                return new_page, trip_from_url
-            else:
-                return current_page, trip_from_url
+            # Retourner simplement la page courante pour éviter l'appel DB coûteux
+            # Le trajet sera trouvé automatiquement lors du chargement de la table
+            return current_page, trip_from_url
     # Si refresh a été cliqué
     if triggered_id == "refresh-trips-btn" and n_clicks is not None:
         return 1, selected_trip
@@ -433,9 +443,24 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     # Calculer le nombre de pages
     page_count = math.ceil(total_trips / page_size) if total_trips > 0 else 1
     
-    # Vérifier si la page courante est valide
+    # Validation stricte de la page courante
     if current_page > page_count and page_count > 0:
+        print(f"[PAGINATION] Page {current_page} invalide, redirection vers page {page_count}")
         current_page = page_count
+    elif current_page < 1:
+        print(f"[PAGINATION] Page {current_page} invalide, redirection vers page 1")
+        current_page = 1
+    
+    # Si on arrive sur une page vide (pas de trajets), revenir à la page précédente
+    if len(table_rows_data) == 0 and current_page > 1:
+        print(f"[PAGINATION] Page {current_page} vide, retour à la page {current_page - 1}")
+        current_page = current_page - 1
+        # Recharger les données pour la page corrigée
+        page_index = current_page - 1
+        result = TripsCacheService.get_trips_page_result(
+            page_index, page_size, filter_params, force_reload
+        )
+        trips, total_trips, table_rows_data = TripsCacheService.extract_table_data(result)
 
     # Rendu de la table avec les données pré-calculées
     table_component = render_custom_trips_table(
