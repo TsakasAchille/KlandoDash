@@ -352,6 +352,7 @@ def display_active_trip_filters(filters):
 
 @callback(
     Output("main-trips-content", "children"),
+    Output("selected-trip-id", "data", allow_duplicate=True),
     [Input("trips-current-page", "data"),
      Input("trips-filter-store", "data"),
      Input("refresh-trips-btn", "n_clicks")],
@@ -359,7 +360,7 @@ def display_active_trip_filters(filters):
     prevent_initial_call=True
 )
 def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
-    """Callback pour le rendu du tableau des trajets uniquement"""
+    """Callback pour le rendu du tableau des trajets avec auto-sélection du premier trajet"""
     log_callback(
         "render_trips_table",
         {"current_page": current_page, "refresh_clicks": refresh_clicks, "filters": filters},
@@ -417,6 +418,18 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     trips, total_trips, table_rows_data = TripsCacheService.extract_table_data(result)
     print(f"[TABLE] {len(trips)} trajets chargés")
 
+    # Auto-sélection du premier trajet si aucun n'est sélectionné
+    new_selected_trip = selected_trip
+    if not selected_trip and table_rows_data and len(table_rows_data) > 0:
+        # Sélectionner automatiquement le premier trajet de la page
+        first_trip = table_rows_data[0]
+        if isinstance(first_trip, dict) and first_trip.get("trip_id"):
+            new_selected_trip = first_trip["trip_id"]
+            print(f"[AUTO-SELECT] Premier trajet sélectionné automatiquement: {new_selected_trip}")
+        elif hasattr(first_trip, "trip_id"):
+            new_selected_trip = first_trip.trip_id
+            print(f"[AUTO-SELECT] Premier trajet sélectionné automatiquement: {new_selected_trip}")
+
     # Calculer le nombre de pages
     page_count = math.ceil(total_trips / page_size) if total_trips > 0 else 1
     
@@ -429,7 +442,7 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
         table_rows_data, 
         current_page=current_page,
         total_trips=total_trips,
-        selected_trip_id=selected_trip if isinstance(selected_trip, str) else (getattr(selected_trip, "trip_id", None) if selected_trip else None)
+        selected_trip_id=new_selected_trip if isinstance(new_selected_trip, str) else (getattr(new_selected_trip, "trip_id", None) if new_selected_trip else None)
     )
 
     # Préchargement intelligent des panneaux pour les trajets visibles
@@ -444,13 +457,13 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     # Message informatif
     if total_trips == 0:
         message = dbc.Alert("Aucun trajet trouvé avec les critères de recherche actuels.", color="info")
-        return [message, table_component]
+        return [message, table_component], new_selected_trip
     else:
         info_message = html.P(
             f"Affichage de {len(trips)} trajets sur {total_trips} au total (page {current_page}/{page_count})",
             className="text-muted small mb-3"
         )
-        return [info_message, table_component]
+        return [info_message, table_component], new_selected_trip
 
 
 @callback(
