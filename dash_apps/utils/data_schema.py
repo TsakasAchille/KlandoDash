@@ -130,6 +130,14 @@ def get_trips_for_user(user_id, as_driver=False, as_passenger=False):
         """
         return execute_query(query, {"user_id": user_id})
 
+def get_user_profile(user_id):
+    """
+    Récupère les données de profil d'un utilisateur par son ID
+    """
+    query = "SELECT * FROM users WHERE uid = :user_id"
+    result = execute_query(query, {"user_id": user_id})
+    return result.to_dict('records')[0] if not result.empty else None
+
 def get_user_stats_optimized(user_id):
     """
     Récupère les statistiques d'un utilisateur en une seule requête optimisée

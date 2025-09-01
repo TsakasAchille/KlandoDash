@@ -305,10 +305,10 @@ class UsersCacheService:
             try:
                 if UsersCacheService._debug_mode:
                     print(f"[PROFILE][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
-                user_schema = UserRepository.get_user_by_id(selected_uid)
-                if not user_schema:
+                from dash_apps.utils.data_schema import get_user_profile
+                data = get_user_profile(selected_uid)
+                if not data:
                     return html.Div()
-                data = user_schema.model_dump() if hasattr(user_schema, "model_dump") else user_schema.dict()
                 # Cache profile
                 try:
                     redis_cache.set_user_profile(selected_uid, data, ttl_seconds=UsersCacheService._profile_ttl_seconds)
