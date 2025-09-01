@@ -183,8 +183,6 @@ def get_layout():
     dcc.Store(id="selected-user-uid", storage_type="session", data=None, clear_data=False),  # Store pour l'UID de l'utilisateur sélectionné (persistant)
     # Cache session pour éviter les rechargements inutiles (clé = page + filtres)
     dcc.Store(id="users-page-cache", storage_type="session", data={}, clear_data=False),
-    # Store session pour conserver les données basiques des utilisateurs visibles (clé = uid)
-    dcc.Store(id="users-page-userdata", storage_type="session", data={}, clear_data=False),
     # Store session pour précharger les données nécessaires aux panneaux (profil, stats, aperçus trajets)
     dcc.Store(id="users-panels-store", storage_type="session", data={}, clear_data=False),
     dcc.Store(id="url-parameters", storage_type="memory", data=None),  # Store temporaire pour les paramètres d'URL
@@ -423,8 +421,7 @@ def display_active_filters(filters):
 
 
 @callback(
-    [Output("main-users-content", "children"),
-     Output("users-page-userdata", "data")],
+    [Output("main-users-content", "children")],
     [Input("users-current-page", "data"),
      Input("refresh-users-btn", "n_clicks"),
      Input("users-filter-store", "data")],
@@ -504,8 +501,8 @@ def render_users_table(current_page, n_clicks, filters, selected_user_uid):
     )
     
     # Extraire les données nécessaires pour le tableau
-    users, total_users, basic_by_uid, table_rows_data = UsersCacheService.extract_table_data(result)
-    print(f"[TABLE] {len(users)} utilisateurs chargés, cache contient {len(basic_by_uid)} entrées")
+    users, total_users, _, table_rows_data = UsersCacheService.extract_table_data(result)
+    print(f"[TABLE] {len(users)} utilisateurs chargés")
 
     # Rendu de la table avec les données pré-calculées
     table = render_custom_users_table(
@@ -524,7 +521,7 @@ def render_users_table(current_page, n_clicks, filters, selected_user_uid):
             except Exception as e:
                 print(f"[PRELOAD] Erreur préchargement: {e}")
 
-    return table, basic_by_uid
+    return [table]
 
 
 
@@ -533,15 +530,14 @@ def render_users_table(current_page, n_clicks, filters, selected_user_uid):
 @callback(
     Output("user-details-panel", "children"),
     [Input("selected-user-uid", "data")],
-    [State("users-page-userdata", "data")],
     prevent_initial_call=True
 )
-def render_user_profile_panel(selected_uid, page_userdata):
+def render_user_profile_panel(selected_uid):
     """Callback séparé pour le rendu du panneau profil utilisateur avec cache HTML"""
     log_callback(
         "render_user_profile_panel",
         {"selected_uid": selected_uid},
-        {"page_userdata_keys": list(page_userdata.keys()) if page_userdata else None}
+        {}
     )
     
     # Panneau vide par défaut
@@ -555,41 +551,41 @@ def render_user_profile_panel(selected_uid, page_userdata):
         else:
             uid_value = selected_uid
     
-    if uid_value:
-        # Vérifier d'abord le cache HTML
-        cached_panel = UsersCacheService.get_cached_panel(uid_value, "profile")
-        if cached_panel:
-            print(f"[PROFILE][HTML CACHE HIT] Panneau profil récupéré du cache pour {uid_value[:8]}...")
-            return cached_panel
-        
-        # Si pas en cache, récupérer les données utilisateur et générer le panneau
-        print(f"[PROFILE] Rendu du profil pour utilisateur {uid_value[:8]}...")
-        pre_user = UsersCacheService.get_user_data(uid_value, page_userdata)
-        
-        # Générer le panneau profil avec les données utilisateur
-        if pre_user:
-            print(f"[PROFILE] Données utilisateur récupérées, génération du profil")
-            profile_panel = render_user_profile(pre_user)
-            # Mettre le panneau généré en cache
-            UsersCacheService.set_cached_panel(uid_value, "profile", profile_panel)
-        else:
-            print(f"[PROFILE] Aucune donnée trouvée pour l'utilisateur {uid_value[:8]}...")
+    # Si pas d'UID, retourner un panneau vide
+    if not uid_value:
+        return profile_panel
 
+    # Vérifier d'abord le cache HTML
+    cached_panel = UsersCacheService.get_cached_panel(uid_value, "profile")
+    if cached_panel:
+        print(f"[PROFILE][HTML CACHE HIT] Panneau profil récupéré du cache pour {uid_value[:8]}...")
+        return cached_panel
+    
+    # Si pas en cache, récupérer les données utilisateur et générer le panneau
+    print(f"[PROFILE] Rendu du profil pour utilisateur {uid_value[:8]}...")
+    pre_user = UsersCacheService.get_user_data(uid_value)
+    if not pre_user:
+        print(f"[PROFILE] Aucune donnée trouvée pour l'utilisateur {uid_value[:8]}...")
+        return profile_panel
+
+    print(f"[PROFILE] Données utilisateur récupérées, génération du profil")
+    profile_panel = render_user_profile(pre_user)
+    # Mettre le panneau généré en cache
+    UsersCacheService.set_cached_panel(uid_value, "profile", profile_panel)
     return profile_panel
 
 
 @callback(
     Output("user-stats-panel", "children"),
     [Input("selected-user-uid", "data")],
-    [State("users-page-userdata", "data")],
     prevent_initial_call=True
 )
-def render_user_stats_panel(selected_uid, page_userdata):
+def render_user_stats_panel(selected_uid):
     """Callback séparé pour le rendu du panneau statistiques utilisateur avec cache HTML"""
     log_callback(
         "render_user_stats_panel",
         {"selected_uid": selected_uid},
-        {"page_userdata_keys": list(page_userdata.keys()) if page_userdata else None}
+        {}
     )
     
     # Panneau vide par défaut
@@ -612,7 +608,7 @@ def render_user_stats_panel(selected_uid, page_userdata):
         
         # Si pas en cache, récupérer les données utilisateur et générer le panneau
         print(f"[STATS] Rendu des stats pour utilisateur {uid_value[:8]}...")
-        pre_user = UsersCacheService.get_user_data(uid_value, page_userdata)
+        pre_user = UsersCacheService.get_user_data(uid_value)
         
         # Générer le panneau stats avec les données utilisateur
         if pre_user:
@@ -629,15 +625,14 @@ def render_user_stats_panel(selected_uid, page_userdata):
 @callback(
     Output("user-trips-panel", "children"),
     [Input("selected-user-uid", "data")],
-    [State("users-page-userdata", "data")],
     prevent_initial_call=True
 )
-def render_user_trips_panel(selected_uid, page_userdata):
+def render_user_trips_panel(selected_uid):
     """Callback séparé pour le rendu du panneau trajets utilisateur avec cache HTML"""
     log_callback(
         "render_user_trips_panel",
         {"selected_uid": selected_uid},
-        {"page_userdata_keys": list(page_userdata.keys()) if page_userdata else None}
+        {}
     )
     
     # Panneau vide par défaut
@@ -660,7 +655,7 @@ def render_user_trips_panel(selected_uid, page_userdata):
         
         # Si pas en cache, récupérer les données utilisateur et générer le panneau
         print(f"[TRIPS] Rendu des trajets pour utilisateur {uid_value[:8]}...")
-        pre_user = UsersCacheService.get_user_data(uid_value, page_userdata)
+        pre_user = UsersCacheService.get_user_data(uid_value)
         
         # Générer le panneau trajets avec les données utilisateur
         if pre_user:
