@@ -314,6 +314,114 @@ class RedisCache:
             print(f"[REDIS] Erreur invalidate_user_profile: {e}")
             return False
     
+    def get_trip_details(self, trip_id: str) -> Optional[Dict]:
+        """Récupérer les détails d'un trajet depuis le cache"""
+        if not self.redis_client:
+            return None
+            
+        try:
+            cache_key = f"trip_details:{trip_id}"
+            cached_data = self.redis_client.get(cache_key)
+            if cached_data:
+                return json.loads(cached_data)
+            return None
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur get_trip_details: {e}")
+            return None
+    
+    def get_trip_stats(self, trip_id: str) -> Optional[Dict]:
+        """Récupérer les stats d'un trajet depuis le cache"""
+        if not self.redis_client:
+            return None
+            
+        try:
+            cache_key = f"trip_stats:{trip_id}"
+            cached_data = self.redis_client.get(cache_key)
+            if cached_data:
+                return json.loads(cached_data)
+            return None
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur get_trip_stats: {e}")
+            return None
+    
+    def get_trip_passengers(self, trip_id: str) -> Optional[List]:
+        """Récupérer les passagers d'un trajet depuis le cache"""
+        if not self.redis_client:
+            return None
+            
+        try:
+            cache_key = f"trip_passengers:{trip_id}"
+            cached_data = self.redis_client.get(cache_key)
+            if cached_data:
+                return json.loads(cached_data)
+            return None
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur get_trip_passengers: {e}")
+            return None
+    
+    def set_trip_details(self, trip_id: str, trip_data: Dict, ttl_seconds: int = 600) -> bool:
+        """Mettre en cache les détails d'un trajet avec TTL"""
+        if not self.redis_client:
+            return False
+            
+        try:
+            cache_key = f"trip_details:{trip_id}"
+            self.redis_client.setex(
+                cache_key,
+                ttl_seconds,
+                json.dumps(trip_data, default=str)
+            )
+            return True
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur set_trip_details: {e}")
+            return False
+    
+    def set_trip_stats(self, trip_id: str, stats_data: Dict, ttl_seconds: int = 600) -> bool:
+        """Mettre en cache les stats d'un trajet avec TTL"""
+        if not self.redis_client:
+            return False
+            
+        try:
+            cache_key = f"trip_stats:{trip_id}"
+            self.redis_client.setex(
+                cache_key,
+                ttl_seconds,
+                json.dumps(stats_data, default=str)
+            )
+            return True
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur set_trip_stats: {e}")
+            return False
+    
+    def set_trip_passengers(self, trip_id: str, passengers_data: Any, ttl_seconds: int = 600) -> bool:
+        """Mettre en cache les passagers d'un trajet avec TTL"""
+        if not self.redis_client:
+            return False
+            
+        try:
+            cache_key = f"trip_passengers:{trip_id}"
+            # Convertir DataFrame en dict si nécessaire
+            if hasattr(passengers_data, 'to_dict'):
+                passengers_dict = passengers_data.to_dict('records')
+            else:
+                passengers_dict = passengers_data
+            
+            self.redis_client.setex(
+                cache_key,
+                ttl_seconds,
+                json.dumps(passengers_dict, default=str)
+            )
+            return True
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur set_trip_passengers: {e}")
+            return False
+
     def get_cache_stats(self) -> Dict:
         """Obtenir des statistiques sur le cache"""
         if not self.redis_client:
@@ -323,12 +431,14 @@ class RedisCache:
             info = self.redis_client.info()
             users_keys = len(self.redis_client.keys("users_page:*"))
             profile_keys = len(self.redis_client.keys("user_profile:*"))
+            trip_keys = len(self.redis_client.keys("trip_*:*"))
             
             return {
                 "connected_clients": info.get("connected_clients", 0),
                 "used_memory_human": info.get("used_memory_human", "N/A"),
                 "users_page_keys": users_keys,
                 "user_profile_keys": profile_keys,
+                "trip_keys": trip_keys,
                 "total_keys": info.get("db0", {}).get("keys", 0) if "db0" in info else 0
             }
             

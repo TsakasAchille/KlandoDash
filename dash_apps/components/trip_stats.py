@@ -19,18 +19,18 @@ def render_trip_stats_html(trip_data):
     return template.render(trip=trip_data)
 
 
-def render_trip_stats(trip_row):
+def render_trip_stats(data):
     """
     Affiche les stats principales du trajet (financier, occupation, etc.) avec un design moderne.
+    
+    Args:
+        data: dictionnaire contenant trip_id et stats
     """
-    if trip_row is None:
-        return None
+    if not data or not data.get('stats'):
+        return html.Div("Aucune statistique disponible", className="text-muted")
         
-    # Convertir le DataFrame row en dictionnaire si ce n'est pas déjà fait
-    if hasattr(trip_row, 'to_dict'):
-        trip_dict = trip_row.to_dict()
-    else:
-        trip_dict = dict(trip_row)
+    # Récupérer les stats depuis les données
+    trip_dict = data.get('stats', {})
     
     # Génération du HTML pour les statistiques du trajet en utilisant Jinja
     stats_html = render_trip_stats_html(trip_dict)

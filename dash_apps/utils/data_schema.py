@@ -183,6 +183,23 @@ def get_user_stats_optimized(user_id):
             'total_distance': 0
         }
 
+def get_trip_stats_optimized(trip_id):
+    """
+    Récupère les statistiques d'un trajet en une seule requête optimisée
+    """
+    query = """
+    SELECT 
+        t.*,
+        COUNT(b.booking_id) as passenger_count,
+        COALESCE(SUM(b.passenger_price), 0) as total_revenue
+    FROM trips t
+    LEFT JOIN bookings b ON t.trip_id = b.trip_id
+    WHERE t.trip_id = :trip_id
+    GROUP BY t.trip_id
+    """
+    result = execute_query(query, {"trip_id": trip_id})
+    return result.to_dict('records')[0] if not result.empty else {}
+
 def get_user_trips_with_role(user_id, limit=None):
     """
     Récupère tous les trajets d'un utilisateur avec leur rôle en une seule requête

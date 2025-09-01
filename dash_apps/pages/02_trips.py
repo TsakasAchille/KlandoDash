@@ -11,6 +11,77 @@ from dash_apps.components.trips_table_custom import render_custom_trips_table
 from dash_apps.components.trip_details_layout import create_trip_details_layout
 from dash_apps.components.trip_search_widget import render_trip_search_widget, render_active_trip_filters
 from dash_apps.repositories.trip_repository import TripRepository
+from dash_apps.services.redis_cache import redis_cache
+from dash_apps.services.trips_cache_service import TripsCacheService
+
+
+# Helper de log standardisé pour tous les callbacks (compatible Python < 3.10)
+def log_callback(name, inputs, states=None):
+    def _short_str(s):
+        try:
+            s = str(s)
+        except Exception:
+            return s
+        if len(s) > 14:
+            return f"{s[:4]}…{s[-4:]}"
+        return s
+
+    def _clean(value):
+        # Nettoyage récursif: supprime None, "", et valeurs par défaut "all"
+        if isinstance(value, dict):
+            cleaned = {}
+            for k, v in value.items():
+                if v is None or v == "":
+                    continue
+                if isinstance(v, str) and v == "all":
+                    continue
+                # Flatten pour selected_trip
+                if k in ("selected_trip", "selected_trip_id") and isinstance(v, dict) and "trip_id" in v:
+                    cleaned["selected_trip_id"] = _short_str(v.get("trip_id"))
+                    continue
+                cleaned[k] = _clean(v)
+            return cleaned
+        if isinstance(value, list):
+            return [_clean(v) for v in value if v is not None and v != ""]
+        if isinstance(value, str):
+            return _short_str(value)
+        return value
+
+    def _kv_lines(dct):
+        if not dct:
+            return ["  (none)"]
+        lines = []
+        for k, v in dct.items():
+            try:
+                if isinstance(v, (dict, list)):
+                    v_str = json.dumps(v, ensure_ascii=False)
+                else:
+                    v_str = str(v)
+            except Exception:
+                v_str = str(v)
+            lines.append(f"  - {k}: {v_str}")
+        return lines
+
+    try:
+        c_inputs = _clean(inputs)
+        c_states = _clean(states or {})
+        sep = "=" * 74
+        print("\n" + sep)
+        print(f"[CB] {name}")
+        print("Inputs:")
+        for line in _kv_lines(c_inputs):
+            print(line)
+        print("States:")
+        for line in _kv_lines(c_states):
+            print(line)
+        print(sep)
+    except Exception:
+        sep = "=" * 74
+        print("\n" + sep)
+        print(f"[CB] {name}")
+        print(f"Inputs: {inputs}")
+        print(f"States: {states or {}}")
+        print(sep)
 
 
 def find_trip_page_index(trip_id, page_size):
@@ -77,7 +148,24 @@ def get_layout():
     ]),
     dbc.Row([
         dbc.Col([
-            html.Div(id="trip-details-panel")
+            dcc.Loading(
+                children=html.Div(id="trip-details-panel"),
+                type="default"
+            )
+        ], width=6),
+        dbc.Col([
+            dcc.Loading(
+                children=html.Div(id="trip-stats-panel"),
+                type="default"
+            )
+        ], width=6)
+    ]),
+    dbc.Row([
+        dbc.Col([
+            dcc.Loading(
+                children=html.Div(id="trip-passengers-panel"),
+                type="default"
+            )
         ], width=12)
     ])
 ], fluid=True)
@@ -97,12 +185,16 @@ def get_layout():
     prevent_initial_call=True
 )
 def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip):
+    log_callback(
+        "get_page_info_on_page_load",
+        {"n_clicks": n_clicks, "url_search": url_search},
+        {"current_page": current_page, "selected_trip": selected_trip}
+    )
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
-    print(f"\n[DEBUG] Triggered ID: {triggered_id}")
+    
     # Si l'URL a changé, traiter la sélection de trajet
     if triggered_id == "trips-url" and url_search:
-        print(f"\n[DEBUG] URL changée: {url_search}")
         import urllib.parse
         params = urllib.parse.parse_qs(url_search.lstrip('?'))
         trip_id_list = params.get('trip_id')
@@ -115,23 +207,17 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
             if page_index is not None:
                 # Convertir en 1-indexed pour l'interface
                 new_page = page_index + 1
-                print(f"\n[DEBUG] Page trouvée pour le trajet {trip_id}: {new_page}")
                 return new_page, trip_from_url
             else:
                 return current_page, trip_from_url
     # Si refresh a été cliqué
     if triggered_id == "refresh-trips-btn" and n_clicks is not None:
-        print(f"\n[DEBUG] Refresh cliqué")
         return 1, selected_trip
     
-
     # Pour le chargement initial ou autres cas
     if current_page is None or not isinstance(current_page, (int, float)):
-        print(f"\n[DEBUG] Page chargée: {current_page}")
         return 1, selected_trip
         
-    print(f"\n[DEBUG] Page chargée: {current_page}")
-    print(f"\n[DEBUG] selected_trip: {selected_trip}")
     return current_page, selected_trip
 
 @callback(
@@ -140,6 +226,7 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
     prevent_initial_call=True
 )
 def show_refresh_trips_message(n_clicks):
+    log_callback("show_refresh_trips_message", {"n_clicks": n_clicks}, {})
     return dbc.Alert("Données des trajets rafraîchies!", 
                      color="success", 
                      dismissable=True,
@@ -153,6 +240,7 @@ def show_refresh_trips_message(n_clicks):
 )
 def toggle_trip_filters_collapse(n_clicks, is_open):
     """Toggle l'affichage des filtres avancés pour les trajets"""
+    log_callback("toggle_trip_filters_collapse", {"n_clicks": n_clicks}, {"is_open": is_open})
     if n_clicks:
         return not is_open
     return is_open
@@ -174,6 +262,20 @@ def toggle_trip_filters_collapse(n_clicks, is_open):
 def update_trip_filters(search_text, date_from, date_to, single_date, date_filter_type, 
                        date_sort, status, has_signalement, current_filters):
     """Met à jour les filtres de recherche des trajets"""
+    log_callback(
+        "update_trip_filters",
+        {
+            "search_text": search_text,
+            "date_from": date_from,
+            "date_to": date_to,
+            "single_date": single_date,
+            "date_filter_type": date_filter_type,
+            "date_sort": date_sort,
+            "status": status,
+            "has_signalement": has_signalement,
+        },
+        {"current_filters": current_filters}
+    )
     
     # Construction du dictionnaire de filtres
     filters = {
@@ -189,7 +291,6 @@ def update_trip_filters(search_text, date_from, date_to, single_date, date_filte
     
     # Ne déclencher une mise à jour que si les filtres ont vraiment changé
     if filters != current_filters:
-        print(f"Filtres trajets mis à jour: {filters}")
         return filters
     
     raise PreventUpdate
@@ -202,6 +303,7 @@ def update_trip_filters(search_text, date_from, date_to, single_date, date_filte
 )
 def reset_trip_page_on_filter_change(filters):
     """Réinitialise la page à 1 lorsque les filtres changent"""
+    log_callback("reset_trip_page_on_filter_change", {"filters": filters}, {})
     # Toujours revenir à la page 1 quand un filtre change
     return 1
 
@@ -223,6 +325,7 @@ def reset_trip_page_on_filter_change(filters):
 )
 def reset_trip_filters(n_clicks):
     """Réinitialise tous les filtres et vide la barre de recherche"""
+    log_callback("reset_trip_filters", {"n_clicks": n_clicks}, {})
     # Valeurs par défaut
     return (
         {},              # trips-filter-store
@@ -243,6 +346,7 @@ def reset_trip_filters(n_clicks):
 )
 def display_active_trip_filters(filters):
     """Affiche les filtres actifs sous forme de badges"""
+    log_callback("display_active_trip_filters", {"filters": filters}, {})
     return render_active_trip_filters(filters)
 
 
@@ -254,73 +358,88 @@ def display_active_trip_filters(filters):
     [State("selected-trip-id", "data")],
     prevent_initial_call=True
 )
-def render_trips_table_pagination(current_page, filters, refresh_clicks, selected_trip):
-    """Rendu du tableau des trajets avec pagination côté serveur"""
-    print(f"\n[DEBUG] render_trips_table_pagination")
-    print(f"current_page {current_page}")
+def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
+    """Callback pour le rendu du tableau des trajets uniquement"""
+    log_callback(
+        "render_trips_table",
+        {"current_page": current_page, "refresh_clicks": refresh_clicks, "filters": filters},
+        {"selected_trip": selected_trip}
+    )
     
-    # Déterminer le déclencheur
-    ctx = callback_context
-    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else "initial"
-    print(f"Trigger: {trigger_id}")
-    print(f"Filters: {filters}")
-    
-    # Valeurs par défaut
-    current_page = current_page or 1
-    filters = filters or {}
+    # Configuration pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
-    page_index = current_page - 1  # Convertir en 0-based pour le repository
     
-    # Préparer les paramètres de filtrage pour le repository
+    # Si la page n'est pas spécifiée, utiliser la page 1 par défaut
+    if not isinstance(current_page, (int, float)):
+        current_page = 1  # Défaut à 1 (pagination commence à 1)
+    
+    # Convertir la page en index 0-based pour l'API
+    page_index = current_page - 1 if current_page > 0 else 0
+    
+    # Préparer les filtres pour le repository
     filter_params = {}
     
-    if filters.get("text"):
-        filter_params["text"] = filters["text"]
-    
-    # Gestion des filtres de date
-    if filters.get("date_filter_type") == "after" and filters.get("single_date"):
-        filter_params["date_filter_type"] = "after"
-        filter_params["single_date"] = filters["single_date"]
-    elif filters.get("date_filter_type") == "before" and filters.get("single_date"):
-        filter_params["date_filter_type"] = "before"
-        filter_params["single_date"] = filters["single_date"]
-    else:
-        if filters.get("date_from"):
-            filter_params["date_from"] = filters["date_from"]
-        if filters.get("date_to"):
-            filter_params["date_to"] = filters["date_to"]
-    
-    # Tri par date
-    if filters.get("date_sort"):
-        filter_params["date_sort"] = filters["date_sort"]
-    
-    # Filtre statut
-    if filters.get("status") and filters["status"] != "all":
-        filter_params["status"] = filters["status"]
+    # Ajouter le filtre texte s'il existe
+    if filters and filters.get("text"):
+        filter_params["text"] = filters.get("text")
+        
+    # Ajouter les filtres de date s'ils existent
+    if filters and (filters.get("date_from") or filters.get("date_to") or filters.get("single_date")):
+        filter_params["date_from"] = filters.get("date_from")
+        filter_params["date_to"] = filters.get("date_to")
+        filter_params["date_filter_type"] = filters.get("date_filter_type")
+        filter_params["single_date"] = filters.get("single_date")
+        
+    # Ajouter le tri par date s'il est défini
+    if filters and filters.get("date_sort"):
+        filter_params["date_sort"] = filters.get("date_sort")
+        
+    # Ajouter les filtres de statut et signalement s'ils sont différents de "all"
+    if filters and filters.get("status") and filters.get("status") != "all":
+        filter_params["status"] = filters.get("status")
+        
+    if filters and filters.get("has_signalement"):
+        filter_params["has_signalement"] = filters.get("has_signalement")
 
-    # Filtre signalement
-    if filters.get("has_signalement"):
-        filter_params["has_signalement"] = True
+    # Déterminer si on force le rechargement (bouton refresh)
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
+    force_reload = (triggered_id == "refresh-trips-btn" and refresh_clicks is not None)
+
+    # Utiliser le service de cache centralisé
+    print(f"[TABLE] Chargement page {current_page} (index {page_index}), force_reload={force_reload}")
     
-    # Récupérer uniquement les trajets de la page courante avec filtres (pagination côté serveur)
-    result = TripRepository.get_trips_paginated(page_index, page_size, filters=filter_params)
-    trips = result.get("trips", [])
-    total_trips = result.get("total_count", 0)
+    result = TripsCacheService.get_trips_page_result(
+        page_index, page_size, filter_params, force_reload
+    )
     
+    # Extraire les données nécessaires pour le tableau
+    trips, total_trips, table_rows_data = TripsCacheService.extract_table_data(result)
+    print(f"[TABLE] {len(trips)} trajets chargés")
+
     # Calculer le nombre de pages
     page_count = math.ceil(total_trips / page_size) if total_trips > 0 else 1
     
     # Vérifier si la page courante est valide
     if current_page > page_count and page_count > 0:
         current_page = page_count
-    
-    # Créer le tableau personnalisé
+
+    # Rendu de la table avec les données pré-calculées
     table_component = render_custom_trips_table(
-        trips, 
-        current_page, 
-        total_trips, 
-        selected_trip_id=selected_trip if isinstance(selected_trip, str) else (selected_trip.get("trip_id") if selected_trip else None)
+        table_rows_data, 
+        current_page=current_page,
+        total_trips=total_trips,
+        selected_trip_id=selected_trip if isinstance(selected_trip, str) else (getattr(selected_trip, "trip_id", None) if selected_trip else None)
     )
+
+    # Préchargement intelligent des panneaux pour les trajets visibles
+    if table_rows_data and len(table_rows_data) > 0:
+        visible_trip_ids = [row.trip_id for row in table_rows_data[:5] if row.trip_id]  # Top 5 trajets visibles
+        if visible_trip_ids:
+            try:
+                TripsCacheService.preload_trip_panels(visible_trip_ids, ['details'])  # Précharger détails seulement
+            except Exception as e:
+                print(f"[PRELOAD] Erreur préchargement: {e}")
     
     # Message informatif
     if total_trips == 0:
@@ -337,26 +456,83 @@ def render_trips_table_pagination(current_page, filters, refresh_clicks, selecte
 @callback(
     Output("trip-details-panel", "children"),
     Input("selected-trip-id", "data"),
-    prevent_initial_call=False
+    prevent_initial_call=True
 )
-def render_trip_details(selected_trip):
-    """Affiche les détails du trajet sélectionné"""
-    print(f"\n[DEBUG] render_trip_details")
-    print(f"selected_trip {selected_trip}")
+def render_trip_details_panel(selected_trip):
+    """Callback séparé pour le rendu du panneau détails trajet avec cache HTML"""
+    log_callback(
+        "render_trip_details_panel",
+        {"selected_trip": selected_trip},
+        {}
+    )
     
-    if not selected_trip:
-        return html.Div()
+    # Panneau vide par défaut
+    details_panel = html.Div()
     
-    # Gérer le cas où selected_trip est une string (trip_id) ou un dict
-    if isinstance(selected_trip, str):
-        trip_id = selected_trip
-    elif isinstance(selected_trip, dict) and selected_trip.get("trip_id"):
-        trip_id = selected_trip["trip_id"]
-    else:
-        return html.Div()
+    # Extraire l'ID si c'est un dict
+    trip_id_value = None
+    if selected_trip:
+        if isinstance(selected_trip, dict):
+            trip_id_value = getattr(selected_trip, "trip_id", None) if hasattr(selected_trip, "trip_id") else selected_trip.get("trip_id")
+        else:
+            trip_id_value = selected_trip
     
-    # Utiliser la fonction existante pour créer le layout des détails
-    return create_trip_details_layout(trip_id, None)
+    # Si pas d'ID, retourner un panneau vide
+    if not trip_id_value:
+        return details_panel
+
+    # Read-Through pattern: le cache service gère tout
+    return TripsCacheService.get_trip_details_panel(trip_id_value)
+
+
+@callback(
+    Output("trip-stats-panel", "children"),
+    [Input("selected-trip-id", "data")],
+    prevent_initial_call=True
+)
+def render_trip_stats_panel(selected_trip):
+    """Callback séparé pour le rendu du panneau statistiques trajet avec cache HTML"""
+    log_callback(
+        "render_trip_stats_panel",
+        {"selected_trip": selected_trip},
+        {}
+    )
+    
+    # Extraire l'ID si c'est un dict
+    trip_id_value = None
+    if selected_trip:
+        if isinstance(selected_trip, dict):
+            trip_id_value = getattr(selected_trip, "trip_id", None) if hasattr(selected_trip, "trip_id") else selected_trip.get("trip_id")
+        else:
+            trip_id_value = selected_trip
+    
+    # Read-Through pattern: le cache service gère tout
+    return TripsCacheService.get_trip_stats_panel(trip_id_value)
+
+
+@callback(
+    Output("trip-passengers-panel", "children"),
+    [Input("selected-trip-id", "data")],
+    prevent_initial_call=True
+)
+def render_trip_passengers_panel(selected_trip):
+    """Callback séparé pour le rendu du panneau passagers trajet avec cache HTML"""
+    log_callback(
+        "render_trip_passengers_panel",
+        {"selected_trip": selected_trip},
+        {}
+    )
+    
+    # Extraire l'ID si c'est un dict
+    trip_id_value = None
+    if selected_trip:
+        if isinstance(selected_trip, dict):
+            trip_id_value = getattr(selected_trip, "trip_id", None) if hasattr(selected_trip, "trip_id") else selected_trip.get("trip_id")
+        else:
+            trip_id_value = selected_trip
+    
+    # Read-Through pattern: le cache service gère tout
+    return TripsCacheService.get_trip_passengers_panel(trip_id_value)
 
 
 # Exporter le layout pour l'application principale
