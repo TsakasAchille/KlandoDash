@@ -44,15 +44,24 @@ def render_user_trips(user):
     db_error = False
     trips_data = []
     
+    # Vérifier si les trajets sont déjà dans les données utilisateur
+    if 'trips' in user:
+        trips_df = user['trips']
+        print(f"[TRIPS] Trajets récupérés du cache pour {user_id[:8]}...")
+    else:
+        # Fallback: charger depuis DB si pas en cache
+        try:
+            print(f"[TRIPS] Chargement trajets optimisés pour {user_id[:8]}... depuis DB")
+            from dash_apps.utils.data_schema import get_user_trips_with_role
+            
+            trips_df = get_user_trips_with_role(str(user_id), limit=50)  # Limiter à 50 trajets récents
+            print(f"[TRIPS] {len(trips_df)} trajets récupérés (optimisé)")
+        except Exception as e:
+            db_error = True
+            trips_df = pd.DataFrame()  # DataFrame vide en cas d'erreur
+        
+    # Préparation des données pour l'affichage
     try:
-        # Utiliser la nouvelle fonction optimisée pour récupérer tous les trajets en une seule requête
-        print(f"[TRIPS] Chargement trajets optimisés pour {user_id[:8]}... depuis DB")
-        from dash_apps.utils.data_schema import get_user_trips_with_role
-        
-        trips_df = get_user_trips_with_role(str(user_id), limit=50)  # Limiter à 50 trajets récents
-        print(f"[TRIPS] {len(trips_df)} trajets récupérés (optimisé)")
-        
-        # Préparation des données pour l'affichage
         if not trips_df.empty and 'trip_id' in trips_df.columns:
             for _, trip in trips_df.iterrows():
                 trip_dict = trip.to_dict()
@@ -65,7 +74,6 @@ def render_user_trips(user):
                 
                 # Le rôle est déjà inclus dans la requête optimisée
                 trips_data.append(trip_dict)
-                
     except Exception as e:
         import traceback
         print(f"Erreur lors de la récupération des trajets utilisateur: {str(e)}")

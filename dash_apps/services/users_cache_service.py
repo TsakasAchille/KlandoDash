@@ -9,7 +9,6 @@ from dash import html
 from dash_apps.repositories.user_repository import UserRepository
 from dash_apps.services.redis_cache import redis_cache
 
-
 class UsersCacheService:
     """Service centralisé pour la gestion du cache des données utilisateurs"""
     
@@ -41,6 +40,37 @@ class UsersCacheService:
             filter_str = "|".join(filter_parts)
         
         return f"users:{page_index}:{page_size}:{filter_str}"
+    
+    @staticmethod
+    def _get_from_local_cache(cache_key: str) -> Optional[Dict]:
+        """Récupère les données du cache local si valides"""
+        if (cache_key in UsersCacheService._local_cache and 
+            UsersCacheService._is_local_cache_valid(cache_key)):
+            return UsersCacheService._local_cache[cache_key]
+        return None
+    
+    @staticmethod
+    def _get_from_redis_cache(cache_key: str, page_index: int, page_size: int, filters: Dict) -> Optional[Dict]:
+        """Récupère les données du cache Redis"""
+        try:
+            return redis_cache.get_json_by_key(cache_key)
+        except Exception:
+            return None
+    
+    @staticmethod
+    def _store_in_local_cache(cache_key: str, result: Dict):
+        """Stocke les données dans le cache local"""
+        UsersCacheService._local_cache[cache_key] = result
+        UsersCacheService._cache_timestamps[cache_key] = time.time()
+        UsersCacheService._evict_local_cache_if_needed()
+    
+    @staticmethod
+    def _store_in_redis_cache(cache_key: str, result: Dict, page_index: int, page_size: int, filters: Dict):
+        """Stocke les données dans le cache Redis"""
+        try:
+            redis_cache.set_users_page_from_result(result, page_index, page_size, filters, ttl_seconds=300)
+        except Exception:
+            pass
     
     @staticmethod
     def _is_local_cache_valid(cache_key: str) -> bool:
@@ -80,8 +110,7 @@ class UsersCacheService:
                         pass
 
                 cached = UsersCacheService._local_cache[cache_key]
-                # Retourner une copie enrichie avec selected_uid si nécessaire
-                return UsersCacheService._merge_selected_into_result(cached, selected_uid)
+                return cached
             
             # Niveau 2: Cache Redis
             cached_data = redis_cache.get_json_by_key(cache_key)
@@ -100,7 +129,7 @@ class UsersCacheService:
                     except Exception:
                         pass
                 
-                return UsersCacheService._merge_selected_into_result(cached_data, selected_uid)
+                return cached_data
         
         # Niveau 3: Base de données
         result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)
@@ -120,8 +149,7 @@ class UsersCacheService:
             except Exception:
                 pass
         
-        # Enrichir le résultat avec selected_uid si demandé (sans polluer les caches persistés)
-        return UsersCacheService._merge_selected_into_result(result, selected_uid)
+        return result
 
     @staticmethod
     def _evict_local_cache_if_needed():
@@ -174,135 +202,234 @@ class UsersCacheService:
         except Exception:
             pass
 
-    @staticmethod
-    def _merge_selected_into_result(result: Dict, selected_uid: Optional[str]) -> Dict:
-        """
-        Retourne une nouvelle dict result où basic_by_uid inclut selected_uid si absent,
-        sans modifier l'objet d'entrée (évite de polluer le cache partagé).
-        """
-        if not selected_uid:
-            return result
-
-        try:
-            basic_by_uid = result.get("basic_by_uid", {}) or {}
-            if selected_uid in basic_by_uid:
-                return result
-
-            # Charger l'utilisateur et construire le dict basic de la même forme que le repo
-            user_schema = UserRepository.get_user_by_id(selected_uid)
-            if not user_schema:
-                return result
-
-            u = user_schema.model_dump() if hasattr(user_schema, "model_dump") else user_schema.dict()
-            basic = {}
-            for k in [
-                "uid", "display_name", "email", "first_name", "name", "phone_number",
-                "birth", "photo_url", "bio", "driver_license_url", "gender", "id_card_url",
-                "rating", "rating_count", "role", "is_driver_doc_validated"
-            ]:
-                if k in u:
-                    basic[k] = u.get(k)
-            if "phone_number" not in basic and u.get("phone") is not None:
-                basic["phone_number"] = u.get("phone")
-            basic["created_at"] = u.get("created_at") or u.get("created_time")
-            basic["updated_at"] = u.get("updated_at") or u.get("updated_time")
-
-            # Copier result superficiellement et merger basic_by_uid
-            merged = dict(result)
-            merged_basic = dict(basic_by_uid)
-            merged_basic[selected_uid] = basic
-            merged["basic_by_uid"] = merged_basic
-            return merged
-        except Exception:
-            return result
     
     @staticmethod
-    def extract_table_data(result: Dict) -> Tuple[List, int, Dict, List]:
+    def extract_table_data(result: Dict) -> Tuple[List, int, List]:
         """
         Extrait les données nécessaires pour le rendu du tableau
         
         Returns:
-            Tuple[users, total_users, basic_by_uid, table_rows_data]
+            Tuple[users, total_users, table_rows_data]
         """
         users = result.get("users", [])
         total_users = int(result.get("total_count", 0))
-        basic_by_uid = result.get("basic_by_uid", {})
         table_rows_data = result.get("table_rows_data", [])
         
-        return users, total_users, basic_by_uid, table_rows_data
-    
-    @staticmethod
-    def extract_stats_data(result: Dict) -> Dict:
+        return users, total_users, table_rows_data
+
+    def get_users_page_data(self, page_index: int = 0, page_size: int = 10, filters: dict = None, force_reload: bool = False, selected_uid: str = None) -> dict:
         """
-        Extrait les données nécessaires pour les statistiques
-        
-        Returns:
-            Dict: Données pour les stats (total_users, users avec métriques)
-        """
-        return {
-            "total_users": result.get("total_count", 0),
-            "users": result.get("users", []),
-            "page_info": {
-                "page_index": result.get("page_index", 0),
-                "page_size": result.get("page_size", 20)
-            }
-        }
-    
-    @staticmethod
-    def extract_basic_data(result: Dict) -> Dict:
-        """
-        Extrait uniquement les données basiques des utilisateurs
-        
-        Returns:
-            Dict: basic_by_uid pour les composants qui n'ont besoin que des infos de base
-        """
-        return result.get("basic_by_uid", {})
-    
-    @staticmethod
-    def get_user_data(selected_uid: str, basic_by_uid: Dict = None) -> Optional[Dict]:
-        """
-        Récupère les données d'un utilisateur spécifique avec cache intelligent
+        Récupère les données complètes pour une page d'utilisateurs avec cache intelligent
         
         Args:
-            selected_uid: UID de l'utilisateur à récupérer
-            basic_by_uid: Cache des données basiques (optionnel)
+            page_index: Index de la page (0-based)
+            page_size: Nombre d'utilisateurs par page
+            filters: Filtres à appliquer
+            force_reload: Force le rechargement depuis la DB
+            selected_uid: UID de l'utilisateur sélectionné
             
         Returns:
-            Dict: Données de l'utilisateur ou None si non trouvé
+            Dict contenant users, total_count, table_rows_data
         """
-        if not selected_uid:
-            return None
-            
-        # Chercher d'abord dans le cache fourni
-        if basic_by_uid and selected_uid in basic_by_uid:
-            if UsersCacheService._debug_mode:
-                print(f"[CACHE HIT] Utilisateur {selected_uid[:8]}... trouvé dans le cache")
-            return basic_by_uid[selected_uid]
+        print(f"[DEBUG] get_users_page_data called with page_index={page_index}, page_size={page_size}, filters={filters}, force_reload={force_reload}")
         
-        # Read-through: tenter Redis (profil) avant la DB
+        # Générer une clé de cache basée sur les paramètres
+        cache_key = UsersCacheService._get_cache_key(page_index, page_size, filters)
+        
+        # Vérifier le cache local d'abord (si pas de force reload)
+        if not force_reload:
+            cached_result = UsersCacheService._get_from_local_cache(cache_key)
+            if cached_result:
+                print(f"[LOCAL CACHE HIT] Page {page_index} récupérée du cache local")
+                return cached_result
+            else:
+                print(f"[LOCAL CACHE MISS] Pas de cache local pour page {page_index}")
+        
+        # Vérifier le cache Redis
+        if not force_reload:
+            cached_result = UsersCacheService._get_from_redis_cache(cache_key, page_index, page_size, filters)
+            if cached_result:
+                print(f"[REDIS CACHE HIT] Page {page_index} récupérée du cache Redis")
+                # Stocker en cache local pour les prochains accès
+                UsersCacheService._store_in_local_cache(cache_key, cached_result)
+                return cached_result
+            else:
+                print(f"[REDIS CACHE MISS] Pas de cache Redis pour page {page_index}")
+        
+        # Charger depuis la base de données
+        print(f"[DEBUG] Chargement depuis la base de données...")
+        try:
+            result = UserRepository.get_users_paginated(page_index, page_size, filters=filters)
+            print(f"[DEBUG] Résultat DB: {len(result.get('users', []))} utilisateurs, total={result.get('total_count', 0)}")
+            
+            # Stocker le résultat dans les caches
+            UsersCacheService._store_in_local_cache(cache_key, result)
+            UsersCacheService._store_in_redis_cache(cache_key, result, page_index, page_size, filters)
+            
+            return result
+            
+        except Exception as e:
+            print(f"[DB ERROR] Erreur chargement page {page_index}: {e}")
+            return {
+                "users": [],
+                "total_count": 0,
+                "table_rows_data": []
+            }
+    
+    @staticmethod
+    def get_user_profile_panel(selected_uid: str):
+        """Cache HTML → Redis → DB pour panneau profil"""
+        if not selected_uid:
+            return html.Div()
+        
+        # Cache HTML
+        cached_panel = UsersCacheService.get_cached_panel(selected_uid, 'profile')
+        if cached_panel:
+            if UsersCacheService._debug_mode:
+                print(f"[PROFILE][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
+            return cached_panel
+        
+        # Redis
+        data = None
         try:
             cached_profile = redis_cache.get_user_profile(selected_uid)
             if cached_profile:
                 if UsersCacheService._debug_mode:
-                    print(f"[USERS][REDIS PROFILE HIT] {selected_uid[:8]}...")
-                return cached_profile
+                    print(f"[PROFILE][REDIS HIT] Profil récupéré pour {selected_uid[:8]}...")
+                data = cached_profile
         except Exception:
             pass
-
-        # Miss: fallback DB puis mise en cache Redis
-        if UsersCacheService._debug_mode:
-            print(f"[USERS][PROFILE MISS] Chargement {selected_uid[:8]}... depuis la DB")
-        user_schema = UserRepository.get_user_by_id(selected_uid)
-        if not user_schema:
-            return None
-
-        user_dict = user_schema.model_dump() if hasattr(user_schema, "model_dump") else user_schema.dict()
+        
+        # DB
+        if not data:
+            try:
+                if UsersCacheService._debug_mode:
+                    print(f"[PROFILE][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
+                user_schema = UserRepository.get_user_by_id(selected_uid)
+                if not user_schema:
+                    return html.Div()
+                data = user_schema.model_dump() if hasattr(user_schema, "model_dump") else user_schema.dict()
+                # Cache profile
+                try:
+                    redis_cache.set_user_profile(selected_uid, data, ttl_seconds=UsersCacheService._profile_ttl_seconds)
+                except Exception:
+                    pass
+            except Exception:
+                return html.Div()
+        
+        # Render
         try:
-            # Stocker le profil en Redis avec TTL
-            redis_cache.set_user_profile(selected_uid, user_dict, ttl_seconds=UsersCacheService._profile_ttl_seconds)
+            from dash_apps.components.user_profile import render_user_profile
+            panel = render_user_profile(data)
+            UsersCacheService.set_cached_panel(selected_uid, 'profile', panel)
+            return panel
+        except Exception as e:
+            if UsersCacheService._debug_mode:
+                print(f"[PROFILE] Erreur génération panneau: {e}")
+            return html.Div()
+    
+    @staticmethod
+    def get_user_stats_panel(selected_uid: str):
+        """Cache HTML → Redis → DB pour panneau stats"""
+        if not selected_uid:
+            return html.Div()
+        
+        # Cache HTML
+        cached_panel = UsersCacheService.get_cached_panel(selected_uid, 'stats')
+        if cached_panel:
+            if UsersCacheService._debug_mode:
+                print(f"[STATS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
+            return cached_panel
+        
+        # Redis
+        data = None
+        try:
+            cached_stats = redis_cache.get_user_stats(selected_uid)
+            if cached_stats:
+                if UsersCacheService._debug_mode:
+                    print(f"[STATS][REDIS HIT] Stats récupérées pour {selected_uid[:8]}...")
+                data = {'uid': selected_uid, 'stats': cached_stats}
         except Exception:
             pass
-        return user_dict
+        
+        # DB
+        if not data:
+            try:
+                if UsersCacheService._debug_mode:
+                    print(f"[STATS][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
+                from dash_apps.utils.data_schema import get_user_stats_optimized
+                stats = get_user_stats_optimized(selected_uid)
+                data = {'uid': selected_uid, 'stats': stats}
+                # Cache stats
+                try:
+                    redis_cache.set_user_stats(selected_uid, stats, ttl_seconds=UsersCacheService._profile_ttl_seconds)
+                except Exception:
+                    pass
+            except Exception:
+                return html.Div()
+        
+        # Render
+        try:
+            from dash_apps.components.user_stats import render_user_stats
+            panel = render_user_stats(data)
+            UsersCacheService.set_cached_panel(selected_uid, 'stats', panel)
+            return panel
+        except Exception as e:
+            if UsersCacheService._debug_mode:
+                print(f"[STATS] Erreur génération panneau: {e}")
+            return html.Div()
+    
+    @staticmethod
+    def get_user_trips_panel(selected_uid: str):
+        """Cache HTML → Redis → DB pour panneau trips"""
+        if not selected_uid:
+            return html.Div()
+        
+        # Cache HTML
+        cached_panel = UsersCacheService.get_cached_panel(selected_uid, 'trips')
+        if cached_panel:
+            if UsersCacheService._debug_mode:
+                print(f"[TRIPS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
+            return cached_panel
+        
+        # Redis
+        data = None
+        try:
+            cached_trips = redis_cache.get_user_trips(selected_uid)
+            if cached_trips:
+                if UsersCacheService._debug_mode:
+                    print(f"[TRIPS][REDIS HIT] Trips récupérés pour {selected_uid[:8]}...")
+                import pandas as pd
+                data = {'uid': selected_uid, 'trips': pd.DataFrame(cached_trips)}
+        except Exception:
+            pass
+        
+        # DB
+        if not data:
+            try:
+                if UsersCacheService._debug_mode:
+                    print(f"[TRIPS][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
+                from dash_apps.utils.data_schema import get_user_trips_with_role
+                trips_df = get_user_trips_with_role(str(selected_uid), limit=50)
+                data = {'uid': selected_uid, 'trips': trips_df}
+                # Cache trips
+                try:
+                    redis_cache.set_user_trips(selected_uid, trips_df, ttl_seconds=UsersCacheService._profile_ttl_seconds)
+                except Exception:
+                    pass
+            except Exception:
+                return html.Div()
+        
+        # Render
+        try:
+            from dash_apps.components.user_trips import render_user_trips
+            panel = render_user_trips(data)
+            UsersCacheService.set_cached_panel(selected_uid, 'trips', panel)
+            return panel
+        except Exception as e:
+            if UsersCacheService._debug_mode:
+                print(f"[TRIPS] Erreur génération panneau: {e}")
+            return html.Div()
     
     @staticmethod
     def get_cached_panel(user_id: str, panel_type: str) -> Optional[html.Div]:
@@ -372,25 +499,12 @@ class UsersCacheService:
         """
         try:
             # Récupérer les données utilisateur une seule fois
-            user_data = UsersCacheService.get_user_data(user_id)
-            if user_data:
-                # Générer et cacher les panneaux si pas déjà en cache
-                for panel_type in panel_types:
-                    cache_key = f"{user_id}_{panel_type}"
-                    if cache_key not in UsersCacheService._html_cache:
-                        # Générer le panneau selon le type
-                        if panel_type == 'profile':
-                            from dash_apps.components.user_profile import render_user_profile
-                            panel = render_user_profile(user_data)
-                            UsersCacheService.set_cached_panel(user_id, panel_type, panel)
-                        elif panel_type == 'stats':
-                            from dash_apps.components.user_stats import render_user_stats
-                            panel = render_user_stats(user_data)
-                            UsersCacheService.set_cached_panel(user_id, panel_type, panel)
-                        elif panel_type == 'trips':
-                            from dash_apps.components.user_trips import render_user_trips
-                            panel = render_user_trips(user_data)
-                            UsersCacheService.set_cached_panel(user_id, panel_type, panel)
+            # Précharger chaque panneau via get_user_panel (Read-Through cohérent)
+            for panel_type in panel_types:
+                cache_key = f"{user_id}_{panel_type}"
+                if cache_key not in UsersCacheService._html_cache:
+                    # Utiliser la méthode Read-Through pour cohérence
+                    UsersCacheService.get_user_panel(user_id, panel_type)
         except Exception as e:
             if UsersCacheService._debug_mode:
                 print(f"[PRELOAD] Erreur préchargement {user_id[:8]}: {e}")

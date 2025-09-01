@@ -1,0 +1,362 @@
+{
+  "cache_documentation": {
+    "description": "Format JSON précis des différents caches dans UsersCacheService",
+    "last_updated": "2025-09-01",
+    
+    "local_cache_l1": {
+      "description": "Cache mémoire local (_local_cache) - Pages utilisateurs",
+      "key_format": "users:{page_index}:{page_size}:{filters}",
+      "key_example": "users:0:20:text:john|role:driver|gender:male",
+      "ttl_seconds": 45,
+      "max_entries": 200,
+      "value_structure": {
+        "users": [
+          {
+            "uid": "abc123def456",
+            "display_name": "John Doe",
+            "email": "john.doe@example.com",
+            "first_name": "John",
+            "name": "Doe",
+            "phone_number": "+33123456789",
+            "birth": "1990-05-15",
+            "photo_url": "https://example.com/photos/john.jpg",
+            "bio": "Conducteur expérimenté depuis 5 ans",
+            "driver_license_url": "https://example.com/licenses/john_license.pdf",
+            "gender": "male",
+            "id_card_url": "https://example.com/ids/john_id.pdf",
+            "rating": 4.7,
+            "rating_count": 23,
+            "role": "driver",
+            "is_driver_doc_validated": true,
+            "created_at": "2023-01-15T10:30:00Z",
+            "updated_at": "2024-08-30T14:22:00Z",
+            "trip_count": 45,
+            "total_distance": 1250.5,
+            "last_trip_date": "2024-08-28T18:00:00Z"
+          }
+        ],
+        "total_count": 123,
+        "basic_by_uid": {
+          "abc123def456": {
+            "uid": "abc123def456",
+            "display_name": "John Doe",
+            "email": "john.doe@example.com",
+            "first_name": "John",
+            "name": "Doe",
+            "phone_number": "+33123456789",
+            "birth": "1990-05-15",
+            "photo_url": "https://example.com/photos/john.jpg",
+            "bio": "Conducteur expérimenté depuis 5 ans",
+            "driver_license_url": "https://example.com/licenses/john_license.pdf",
+            "gender": "male",
+            "id_card_url": "https://example.com/ids/john_id.pdf",
+            "rating": 4.7,
+            "rating_count": 23,
+            "role": "driver",
+            "is_driver_doc_validated": true,
+            "created_at": "2023-01-15T10:30:00Z",
+            "updated_at": "2024-08-30T14:22:00Z"
+          },
+          "def456ghi789": {
+            "uid": "def456ghi789",
+            "display_name": "Marie Martin",
+            "email": "marie.martin@example.com",
+            "first_name": "Marie",
+            "name": "Martin",
+            "phone_number": "+33987654321",
+            "birth": "1985-12-03",
+            "photo_url": "https://example.com/photos/marie.jpg",
+            "bio": "Passagère régulière, aime voyager",
+            "driver_license_url": null,
+            "gender": "female",
+            "id_card_url": "https://example.com/ids/marie_id.pdf",
+            "rating": 4.9,
+            "rating_count": 67,
+            "role": "passenger",
+            "is_driver_doc_validated": false,
+            "created_at": "2023-03-20T09:15:00Z",
+            "updated_at": "2024-08-29T16:45:00Z"
+          }
+        },
+        "table_rows_data": [
+          {
+            "uid": "abc123def456",
+            "display_name": "John Doe",
+            "email": "john.doe@example.com",
+            "phone_number": "+33123456789",
+            "role": "driver",
+            "gender": "male",
+            "rating": 4.7,
+            "rating_count": 23,
+            "is_driver_doc_validated": true,
+            "created_at": "2023-01-15T10:30:00Z",
+            "trip_count": 45,
+            "total_distance": 1250.5,
+            "last_trip_date": "2024-08-28T18:00:00Z",
+            "status_badge": "Validé",
+            "formatted_rating": "4.7 ⭐ (23)",
+            "formatted_distance": "1,250.5 km"
+          },
+          {
+            "uid": "def456ghi789",
+            "display_name": "Marie Martin",
+            "email": "marie.martin@example.com",
+            "phone_number": "+33987654321",
+            "role": "passenger",
+            "gender": "female",
+            "rating": 4.9,
+            "rating_count": 67,
+            "is_driver_doc_validated": false,
+            "created_at": "2023-03-20T09:15:00Z",
+            "trip_count": 12,
+            "total_distance": 340.2,
+            "last_trip_date": "2024-08-25T20:30:00Z",
+            "status_badge": "Actif",
+            "formatted_rating": "4.9 ⭐ (67)",
+            "formatted_distance": "340.2 km"
+          }
+        ],
+        "page_index": 0,
+        "page_size": 20,
+        "filters_applied": {
+          "text": "john",
+          "role": "driver",
+          "gender": "male"
+        }
+      }
+    },
+
+    "redis_cache_l2": {
+      "description": "Cache Redis - Pages utilisateurs via _generate_key() avec hash MD5",
+      "key_format": "users_page:{md5_hash_8_chars}",
+      "key_example": "users_page:a1b2c3d4",
+      "key_generation": "MD5 hash des paramètres: page_index, page_size, filters",
+      "ttl_seconds": 300,
+      "value_structure": {
+        "users": [
+          {
+            "uid": "abc123def456",
+            "display_name": "John Doe",
+            "email": "john.doe@example.com",
+            "first_name": "John",
+            "name": "Doe",
+            "phone_number": "+33123456789",
+            "birth": "1990-05-15",
+            "photo_url": "https://example.com/photos/john.jpg",
+            "bio": "Conducteur expérimenté depuis 5 ans",
+            "driver_license_url": "https://example.com/licenses/john_license.pdf",
+            "gender": "male",
+            "id_card_url": "https://example.com/ids/john_id.pdf",
+            "rating": 4.7,
+            "rating_count": 23,
+            "role": "driver",
+            "is_driver_doc_validated": true,
+            "created_at": "2023-01-15T10:30:00Z",
+            "updated_at": "2024-08-30T14:22:00Z",
+            "trip_count": 45,
+            "total_distance": 1250.5,
+            "last_trip_date": "2024-08-28T18:00:00Z"
+          }
+        ],
+        "total_count": 123,
+        "page_index": 0,
+        "page_size": 20,
+        "filters": { "text": "john", "role": "driver" },
+        "basic_by_uid": {
+          "abc123def456": {
+            "uid": "abc123def456",
+            "display_name": "John Doe",
+            "email": "john.doe@example.com",
+            "first_name": "John",
+            "name": "Doe",
+            "phone_number": "+33123456789",
+            "birth": "1990-05-15",
+            "photo_url": "https://example.com/photos/john.jpg",
+            "bio": "Conducteur expérimenté depuis 5 ans",
+            "driver_license_url": "https://example.com/licenses/john_license.pdf",
+            "gender": "male",
+            "id_card_url": "https://example.com/ids/john_id.pdf",
+            "rating": 4.7,
+            "rating_count": 23,
+            "role": "driver",
+            "is_driver_doc_validated": true,
+            "created_at": "2023-01-15T10:30:00Z",
+            "updated_at": "2024-08-30T14:22:00Z"
+          },
+          "def456ghi789": {
+            "uid": "def456ghi789",
+            "display_name": "Marie Martin",
+            "email": "marie.martin@example.com",
+            "first_name": "Marie",
+            "name": "Martin",
+            "phone_number": "+33987654321",
+            "birth": "1985-12-03",
+            "photo_url": "https://example.com/photos/marie.jpg",
+            "bio": "Passagère régulière, aime voyager",
+            "driver_license_url": null,
+            "gender": "female",
+            "id_card_url": "https://example.com/ids/marie_id.pdf",
+            "rating": 4.9,
+            "rating_count": 67,
+            "role": "passenger",
+            "is_driver_doc_validated": false,
+            "created_at": "2023-03-20T09:15:00Z",
+            "updated_at": "2024-08-29T16:45:00Z"
+          }
+        },
+        "table_rows_data": [
+          {
+            "uid": "abc123def456",
+            "display_name": "John Doe",
+            "email": "john.doe@example.com",
+            "phone_number": "+33123456789",
+            "role": "driver",
+            "gender": "male",
+            "rating": 4.7,
+            "rating_count": 23,
+            "is_driver_doc_validated": true,
+            "created_at": "2023-01-15T10:30:00Z",
+            "trip_count": 45,
+            "total_distance": 1250.5,
+            "last_trip_date": "2024-08-28T18:00:00Z",
+            "status_badge": "Validé",
+            "formatted_rating": "4.7 ⭐ (23)",
+            "formatted_distance": "1,250.5 km"
+          },
+          {
+            "uid": "def456ghi789",
+            "display_name": "Marie Martin",
+            "email": "marie.martin@example.com",
+            "phone_number": "+33987654321",
+            "role": "passenger",
+            "gender": "female",
+            "rating": 4.9,
+            "rating_count": 67,
+            "is_driver_doc_validated": false,
+            "created_at": "2023-03-20T09:15:00Z",
+            "trip_count": 12,
+            "total_distance": 340.2,
+            "last_trip_date": "2024-08-25T20:30:00Z",
+            "status_badge": "Actif",
+            "formatted_rating": "4.9 ⭐ (67)",
+            "formatted_distance": "340.2 km"
+          }
+        ]
+      }
+    },
+
+    "redis_user_profile": {
+      "description": "Cache Redis - Profil utilisateur basé sur UserSchema uniquement",
+      "key_format": "user_profile:{uid}",
+      "key_example": "user_profile:abc123def456",
+      "ttl_seconds": 600,
+      "value_structure": {
+        "uid": "abc123def456",
+        "display_name": "John Doe",
+        "email": "john.doe@example.com",
+        "first_name": "John",
+        "name": "Doe",
+        "phone_number": "+33123456789",
+        "birth": "1990-05-15",
+        "photo_url": "https://example.com/photos/john.jpg",
+        "bio": "Conducteur expérimenté depuis 5 ans",
+        "driver_license_url": "https://example.com/licenses/john_license.pdf",
+        "gender": "male",
+        "id_card_url": "https://example.com/ids/john_id.pdf",
+        "rating": 4.7,
+        "rating_count": 23,
+        "role": "driver",
+        "is_driver_doc_validated": true,
+        "created_at": "2023-01-15T10:30:00Z",
+        "updated_at": "2024-08-30T14:22:00Z"
+      },
+      "note": "Structure limitée aux champs UserSchema - pas de preferences, vehicle_info, statistics, documents"
+    },
+
+    "html_cache_local": {
+      "description": "Cache HTML local (_html_cache) - Panneaux rendus",
+      "key_format": "{user_id}_{panel_type}",
+      "key_examples": [
+        "abc123def456_profile",
+        "abc123def456_stats", 
+        "abc123def456_trips"
+      ],
+      "max_entries": 100,
+      "eviction": "LRU approximatif (supprime les 20 plus anciens)",
+      "value_structure": {
+        "type": "dash.html.Div",
+        "description": "Objet Dash HTML complet avec tous les composants rendus",
+        "example_content": {
+          "profile_panel": "html.Div contenant les cartes de profil, photo, infos personnelles, documents",
+          "stats_panel": "html.Div contenant graphiques, métriques, tableaux de bord",
+          "trips_panel": "html.Div contenant historique des trajets, cartes, détails"
+        }
+      }
+    },
+
+    "html_cache_redis": {
+      "description": "Cache HTML Redis (non implémenté) - Panneaux persistants",
+      "key_format": "html_panel:{user_id}_{panel_type}",
+      "key_examples": [
+        "html_panel:abc123def456_profile",
+        "html_panel:abc123def456_stats",
+        "html_panel:abc123def456_trips"
+      ],
+      "status": "Lecture désactivée - sérialisation Dash non implémentée",
+      "value_structure": "String sérialisé d'objets Dash (à implémenter)"
+    },
+
+    "cache_flow_example": {
+      "description": "Exemple de flux complet pour charger la page utilisateurs",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Utilisateur navigue vers page 1 avec filtre 'text:john'",
+          "cache_key": "users:0:20:text:john"
+        },
+        {
+          "step": 2,
+          "action": "Vérification L1 (_local_cache)",
+          "result": "MISS - clé absente ou TTL expiré"
+        },
+        {
+          "step": 3,
+          "action": "Vérification L2 (Redis)",
+          "result": "HIT - données trouvées",
+          "data_copied_to": "L1 avec nouveau timestamp"
+        },
+        {
+          "step": 4,
+          "action": "Utilisateur clique sur John Doe",
+          "selected_uid": "abc123def456"
+        },
+        {
+          "step": 5,
+          "action": "Vérification HTML cache pour profil",
+          "cache_key": "abc123def456_profile",
+          "result": "MISS - panneau pas encore généré"
+        },
+        {
+          "step": 6,
+          "action": "get_user_data('abc123def456')",
+          "redis_key": "user_profile:abc123def456",
+          "result": "HIT - profil complet récupéré"
+        },
+        {
+          "step": 7,
+          "action": "Génération panneau HTML + mise en cache",
+          "cache_key": "abc123def456_profile",
+          "result": "Panneau stocké en local HTML cache"
+        }
+      ]
+    },
+
+    "performance_notes": {
+      "l1_local_cache": "Ultra-rapide (mémoire), TTL 45s, max 200 entrées",
+      "l2_redis_cache": "Rapide (réseau local), TTL 300s pour pages, 600s pour profils",
+      "html_cache": "Très rapide (mémoire), max 100 panneaux, éviction LRU",
+      "preloading": "Précharge async des 8 premiers utilisateurs visibles (profile + stats)",
+      "fallback_chain": "L1 → L2 → DB avec write-through sur tous les niveaux"
+    }
+  }
+}

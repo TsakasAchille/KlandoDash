@@ -49,13 +49,24 @@ def expose_selected_trip_to_dom(selected_trip_id):
 
 def _get_last_trips(n=10):
     # Fetch last n trips using repository (ordered by created_at desc by default)
-    data = TripRepository.get_trips_paginated(page=0, page_size=n)
-    trips = data.get("trips", []) if isinstance(data, dict) else []
-    return trips
+    try:
+        data = TripRepository.get_trips_paginated(page=0, page_size=n)
+        trips = data.get("trips", []) if isinstance(data, dict) else []
+        return trips
+    except Exception as e:
+        print(f"Warning: Could not load trips data: {e}")
+        return []
 
 
-_TRIPS = _get_last_trips(10)
-_OPTIONS = [_trip_to_option(t) for t in _TRIPS]
+def _get_trips_options():
+    """Lazy load trips options to avoid database connection at import time"""
+    trips = _get_last_trips(10)
+    return [_trip_to_option(t) for t in trips]
+
+
+# Initialize as empty, will be populated when needed
+_TRIPS = []
+_OPTIONS = []
 
 def _shorten(text, n=28):
     try:
@@ -95,10 +106,10 @@ layout = dbc.Container([
                 dcc.Input(
                     id="map-trip-count",
                     type="number",
-                    min=1 if _TRIPS else 0,
-                    max=len(_TRIPS) if _TRIPS else 0,
+                    min=0,
+                    max=100,
                     step=1,
-                    value=min(3, len(_TRIPS)) if _TRIPS else 0,
+                    value=3,
                     persistence=True,
                     persistence_type="session",
                     style={"width": "90px", "textAlign": "center"}

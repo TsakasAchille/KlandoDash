@@ -7,8 +7,8 @@ import importlib.resources as pkg_resources
 from pathlib import Path
 
 # Récupère la DATABASE_URL depuis les variables d'environnement
-DATABASE_URL = os.environ.get("DATABASE_URL")
-engine = create_engine(DATABASE_URL)
+# Utiliser l'engine centralisé au lieu de créer un nouveau
+from dash_apps.core.database import engine
 
 # Chemin vers les fichiers de définition
 DATA_DEF_DIR = Path("/home/tsakas/Desktop/KlandoDash/dash_apps/utils/data_definition")

@@ -1,4 +1,6 @@
 from dash import html
+from jinja2 import Template
+from dash_apps.services.users_cache_service import UsersCacheService
 import dash_bootstrap_components as dbc
 from jinja2 import Environment, FileSystemLoader
 import os
@@ -33,32 +35,34 @@ def render_user_stats(user):
     # Extraire l'UID des données utilisateur
     user_id = user.get('uid')
     
+    # Vérifier si les stats sont déjà dans les données utilisateur
     db_error = False
-    try:
-        # Utiliser la nouvelle fonction optimisée pour éviter les requêtes multiples
-        print(f"[STATS] Chargement stats optimisées pour {user_id[:8]}... depuis DB")
-        from dash_apps.utils.data_schema import get_user_stats_optimized
-        
-        stats = get_user_stats_optimized(user_id)
-        
-        # Extraire les statistiques de la requête optimisée
-        total_trips_count = stats['total_trips']
-        driver_trips_count = stats['driver_trips_count']
-        passenger_trips_count = stats['passenger_trips_count']
-        total_distance = stats['total_distance']
-        
-        print(f"[STATS] {driver_trips_count} trajets conducteur, {passenger_trips_count} trajets passager (optimisé)")
-        
-    except Exception as e:
-        import traceback
-        print(f"Erreur lors de la récupération des statistiques utilisateur: {str(e)}")
-        print(traceback.format_exc())
-        # Valeurs par défaut en cas d'erreur
-        total_trips_count = 0
-        driver_trips_count = 0
-        passenger_trips_count = 0
-        total_distance = 0
-        db_error = True
+    if 'stats' in user:
+        stats = user['stats']
+        if UsersCacheService._debug_mode:
+            print(f"[STATS] Stats récupérées du cache pour {user_id[:8]}...")
+    else:
+        # Fallback: charger depuis DB si pas en cache
+        try:
+            print(f"[STATS] Chargement stats optimisées pour {user_id[:8]}... depuis DB")
+            from dash_apps.utils.data_schema import get_user_stats_optimized
+            
+            stats = get_user_stats_optimized(user_id)
+            print(f"[STATS] {stats.get('driver_trips_count', 0)} trajets conducteur, {stats.get('passenger_trips_count', 0)} trajets passager (optimisé)")
+        except Exception as e:
+            db_error = True
+            stats = {
+                'total_trips': 0,
+                'driver_trips_count': 0,
+                'passenger_trips_count': 0,
+                'total_distance': 0.0
+            }
+    
+    # Extraire les statistiques
+    total_trips_count = stats['total_trips']
+    driver_trips_count = stats['driver_trips_count']
+    passenger_trips_count = stats['passenger_trips_count']
+    total_distance = stats['total_distance']
     
     # Préparer les données pour le template
     stats_data = {

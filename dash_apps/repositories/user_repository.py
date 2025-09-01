@@ -67,6 +67,7 @@ class UserRepository:
             
     @staticmethod
     def get_users_paginated(page: int = 0, page_size: int = 10, filters: dict = None) -> dict:
+        print(f"[DEBUG] UserRepository.get_users_paginated called with page={page}, page_size={page_size}, filters={filters}")
         """Récupère les utilisateurs de façon paginée avec filtrage optionnel
         
         Args:
@@ -77,17 +78,22 @@ class UserRepository:
                 - date_from: Date d'inscription minimale
                 - date_to: Date d'inscription maximale
                 - role: Filtrer par rôle (admin, driver, passenger, user)
-                - status: Filtrer par statut (active, inactive)
-            
+                - status: Filtrer par statut (active, inactive, suspended)
+                - verified: Filtrer par statut de vérification (true/false)
+                - has_trips: Filtrer les utilisateurs ayant des trajets
+                - has_signalement: Filtrer les utilisateurs avec signalements
+        
         Returns:
             Un dictionnaire contenant:
             - users: Liste des utilisateurs de la page
             - total_count: Nombre total d'utilisateurs après filtrage
+            - basic_by_uid: Dictionnaire {uid: données_de_base}
+            - table_rows_data: Données formatées pour le tableau
         """
-        from sqlalchemy import or_, and_, func
-        import datetime
-        
-        with SessionLocal() as db:
+        try:
+            print("[DEBUG] Tentative de connexion à la base de données...")
+            with SessionLocal() as db:
+                print("[DEBUG] Connexion à la base de données réussie")
             # Commencer avec une requête de base
             query = db.query(User)
             
@@ -193,8 +199,7 @@ class UserRepository:
             user_schemas = [UserSchema.model_validate(u) for u in users]
             users_json = [schema.model_dump() for schema in user_schemas]
             
-            # Traiter les données pour les panneaux et le tableau
-            basic_by_uid = {}
+            # Préparer les données de ligne pour le tableau
             table_rows_data = []
             
             try:
@@ -202,48 +207,39 @@ class UserRepository:
                     uid = u.get("uid")
                     if not uid:
                         continue
-                        
-                    # Conserver tous les champs nécessaires aux panneaux avec valeurs et fallbacks
-                    basic = {}
-                    # Directs si présents
-                    for k in [
-                        "uid", "display_name", "email", "first_name", "name", "phone_number",
-                        "birth", "photo_url", "bio", "driver_license_url", "gender", "id_card_url",
-                        "rating", "rating_count", "role", "is_driver_doc_validated"
-                    ]:
-                        if k in u:
-                            basic[k] = u.get(k)
                     
-                    # Fallbacks / alias
-                    if "phone_number" not in basic and u.get("phone") is not None:
-                        basic["phone_number"] = u.get("phone")
-                    # created_at peut être présent sous created_time
-                    basic["created_at"] = u.get("created_at") or u.get("created_time")
-                    # updated_at fallback éventuel
-                    basic["updated_at"] = u.get("updated_at") or u.get("updated_time")
-
-                    basic_by_uid[uid] = basic
+                    # Fallback pour phone_number
+                    phone_number = u.get("phone_number") or u.get("phone")
+                    # Fallback pour created_at
+                    created_at = u.get("created_at") or u.get("created_time")
                     
                     # Préparer les données de ligne pour le tableau
                     table_rows_data.append({
                         "uid": uid,
-                        "display_name": basic.get("display_name", ""),
-                        "email": basic.get("email", ""),
-                        "phone_number": basic.get("phone_number", ""),
-                        "role": basic.get("role", ""),
-                        "gender": basic.get("gender", ""),
-                        "rating": basic.get("rating", None),
-                        "created_at": basic.get("created_at", "")
+                        "display_name": u.get("display_name", ""),
+                        "email": u.get("email", ""),
+                        "phone_number": phone_number or "",
+                        "role": u.get("role", ""),
+                        "gender": u.get("gender", ""),
+                        "rating": u.get("rating", None),
+                        "created_at": created_at or ""
                     })
             except Exception:
-                basic_by_uid = {}
                 table_rows_data = []
+            
+            print(f"[DEBUG] Récupéré {len(users_json)} utilisateurs, total={total}")
             
             return {
                 "users": users_json,
                 "total_count": total,
-                "basic_by_uid": basic_by_uid,
                 "table_rows_data": table_rows_data
+            }
+        except Exception as e:
+            print(f"[ERROR] Erreur lors de la récupération des utilisateurs: {e}")
+            return {
+                "users": [],
+                "total_count": 0,
+                "table_rows_data": []
             }
     
     @staticmethod

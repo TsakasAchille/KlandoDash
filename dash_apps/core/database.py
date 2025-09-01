@@ -2,24 +2,37 @@
 Module de connexion à la base de données PostgreSQL/Supabase (compatible SQLAlchemy, services, Pydantic)
 """
 import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+def get_database_url():
+    """Récupère l'URL de la base de données depuis les variables d'environnement"""
+    db_url = os.getenv('DATABASE_URL')
+    print(f"[DEBUG] DATABASE_URL: {'***' if db_url else 'NOT SET'}")
+    return db_url
+
 # Récupérer l'URL de la base de données depuis les variables d'environnement
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = get_database_url()
 if not DATABASE_URL:
     raise ValueError("La variable d'environnement DATABASE_URL n'est pas définie.")
 
 # Créer l'engine SQLAlchemy avec optimisations de performance
 engine = create_engine(
     DATABASE_URL,
-    # Configuration du pool de connexions pour optimiser les performances
-    pool_size=20,              # Nombre de connexions permanentes dans le pool
-    max_overflow=30,           # Connexions supplémentaires autorisées
+    # Configuration du pool de connexions optimisée pour Supabase
+    pool_size=5,               # 5 connexions de base
+    max_overflow=10,           # 10 connexions supplémentaires max
     pool_pre_ping=True,        # Vérifier la validité des connexions
-    pool_recycle=3600,         # Recycler les connexions après 1h
-    pool_timeout=30,           # Timeout pour obtenir une connexion
+    pool_recycle=300,          # Recycler toutes les 5min
+    pool_timeout=30,           # Timeout plus généreux
+    
+    # Gestion agressive des connexions
+    pool_reset_on_return='commit',  # Reset à chaque retour
     
     # Optimisations des requêtes
     echo=False,                # Désactiver le logging SQL en production

@@ -100,7 +100,7 @@ class RedisCache:
             return None
     
     def set_users_page(self, page_index: int, page_size: int, users: List, total_count: int, 
-                      filters: Dict = None, basic_by_uid: Dict = None, table_rows_data: List = None,
+                      filters: Dict = None, table_rows_data: List = None,
                       ttl_seconds: int = 300) -> bool:
         """Mettre en cache une page d'utilisateurs avec les données traitées"""
         if not self.redis_client:
@@ -120,7 +120,6 @@ class RedisCache:
                 "page_index": page_index,
                 "page_size": page_size,
                 "filters": filters,
-                "basic_by_uid": basic_by_uid or {},
                 "table_rows_data": table_rows_data or []
             }
             
@@ -159,7 +158,6 @@ class RedisCache:
                 "page_index": page_index,
                 "page_size": page_size,
                 "filters": filters,
-                "basic_by_uid": result.get("basic_by_uid", {}),
                 "table_rows_data": result.get("table_rows_data", [])
             }
             
@@ -193,6 +191,38 @@ class RedisCache:
             print(f"[REDIS] Erreur get_user_profile: {e}")
             return None
     
+    def get_user_stats(self, uid: str) -> Optional[Dict]:
+        """Récupérer les stats utilisateur depuis le cache"""
+        if not self.redis_client:
+            return None
+            
+        try:
+            cache_key = f"user_stats:{uid}"
+            cached_data = self.redis_client.get(cache_key)
+            if cached_data:
+                return json.loads(cached_data)
+            return None
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur get_user_stats: {e}")
+            return None
+    
+    def get_user_trips(self, uid: str) -> Optional[Dict]:
+        """Récupérer les trips utilisateur depuis le cache"""
+        if not self.redis_client:
+            return None
+            
+        try:
+            cache_key = f"user_trips:{uid}"
+            cached_data = self.redis_client.get(cache_key)
+            if cached_data:
+                return json.loads(cached_data)
+            return None
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur get_user_trips: {e}")
+            return None
+    
     def set_user_profile(self, uid: str, profile_data: Dict, ttl_seconds: int = 600) -> bool:
         """Mettre en cache un profil utilisateur avec TTL"""
         if not self.redis_client:
@@ -209,6 +239,48 @@ class RedisCache:
             
         except Exception as e:
             print(f"[REDIS] Erreur set_user_profile: {e}")
+            return False
+    
+    def set_user_stats(self, uid: str, stats_data: Dict, ttl_seconds: int = 600) -> bool:
+        """Mettre en cache les stats utilisateur avec TTL"""
+        if not self.redis_client:
+            return False
+            
+        try:
+            cache_key = f"user_stats:{uid}"
+            self.redis_client.setex(
+                cache_key,
+                ttl_seconds,
+                json.dumps(stats_data, default=str)
+            )
+            return True
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur set_user_stats: {e}")
+            return False
+    
+    def set_user_trips(self, uid: str, trips_data: Any, ttl_seconds: int = 600) -> bool:
+        """Mettre en cache les trips utilisateur avec TTL"""
+        if not self.redis_client:
+            return False
+            
+        try:
+            cache_key = f"user_trips:{uid}"
+            # Convertir DataFrame en dict si nécessaire
+            if hasattr(trips_data, 'to_dict'):
+                trips_dict = trips_data.to_dict('records')
+            else:
+                trips_dict = trips_data
+            
+            self.redis_client.setex(
+                cache_key,
+                ttl_seconds,
+                json.dumps(trips_dict, default=str)
+            )
+            return True
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur set_user_trips: {e}")
             return False
     
     def invalidate_users_cache(self) -> bool:
