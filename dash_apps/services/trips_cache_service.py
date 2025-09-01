@@ -16,7 +16,7 @@ class TripsCacheService:
     
     # Configuration du cache
     _profile_ttl_seconds = 300  # 5 minutes
-    _debug_mode = True
+    _debug_mode = False  # Mode debug pour les logs
     
     @staticmethod
     def get_trips_page_result(page_index: int, page_size: int, filter_params: Dict[str, Any], force_reload: bool = False) -> Dict[str, Any]:

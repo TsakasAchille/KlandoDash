@@ -26,7 +26,7 @@ def render_trip_passengers(data):
     Args:
         data: dictionnaire contenant trip_id et passengers (DataFrame ou list)
     """
-    if not data or not data.get('passengers'):
+    if not data or not data.get('passengers') or (hasattr(data.get('passengers'), 'empty') and data.get('passengers').empty):
         return html.Div("Aucun passager pour ce trajet", className="text-muted")
         
     passengers = data.get('passengers')

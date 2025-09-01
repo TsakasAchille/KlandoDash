@@ -18,7 +18,7 @@ def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id
     Returns:
         Un composant HTML avec un tableau et des contrôles de pagination
     """
-    print(f"\n[DEBUG] render_custom_trips_table appelé avec selected_trip_id = {selected_trip_id}, type: {type(selected_trip_id)}")
+    # Rendu du tableau des trajets
     page_size = Config.USERS_TABLE_PAGE_SIZE
     page_count = (total_trips - 1) // page_size + 1 if total_trips > 0 else 1
     
@@ -259,10 +259,7 @@ def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id
 )
 def handle_trips_pagination_buttons(prev_clicks, next_clicks, current_page):
     ctx = callback_context
-    print("\n[DEBUG] handle_trips_pagination_buttons")
-    print("prev_clicks", prev_clicks)
-    print("next_clicks", next_clicks)
-    print("current_page", current_page)
+    # Gestion de la pagination
     # Si aucun bouton n'a été cliqué
     if not ctx.triggered:
         raise PreventUpdate
@@ -303,29 +300,28 @@ def handle_trips_pagination_buttons(prev_clicks, next_clicks, current_page):
     prevent_initial_call=True  # Ceci ne suffit pas toujours avec les pattern-matching callbacks
 )
 def handle_trip_row_selection(row_clicks):
-    print("\n[DEBUG] Début callback handle_trip_row_selection")
-    print(f"\n[DEBUG] row_clicks: {row_clicks}")
+    # Gestion de la sélection de ligne
     
     ctx = callback_context
     if not ctx.triggered:
-        print("\n[DEBUG] Pas de déclencheur, PreventUpdate")
+        # Pas de déclencheur
         raise PreventUpdate
     
     # Vérifier si le callback est déclenché lors du chargement initial
     # Les clicks seront tous à zéro lors du chargement initial
     if not any(clicks > 0 for clicks in row_clicks):
-        print("\n[DEBUG] Tous les clicks sont à zéro, probablement un chargement initial, PreventUpdate")
+        # Chargement initial, ignorer
         raise PreventUpdate
     
     # Déterminer ce qui a été cliqué
     clicked_id = ctx.triggered[0]["prop_id"].split(".")[0]
-    print(f"\n[DEBUG] clicked_id: {clicked_id}")
+    # ID cliqué identifié
     
     try:
         # Extraire l'index (trip_id) de l'ID JSON
         id_dict = json.loads(clicked_id)
         trip_id = id_dict["index"]
-        print(f"\n[DEBUG] Ligne cliquée, trip_id extrait: {trip_id}")
+        # Trip ID extrait avec succès
         
         # Retourner l'ID extrait
         return trip_id
@@ -348,8 +344,7 @@ def handle_trip_row_selection(row_clicks):
     prevent_initial_call=True
 )
 def highlight_selected_trip_row(selected_trip, row_ids, button_ids):
-    print("\n[DEBUG] Début callback highlight_selected_trip_row")
-    print(f"\n[DEBUG] selected_trip: {selected_trip}")
+    # Mise en surbrillance de la ligne sélectionnée
     
     if not selected_trip or not row_ids:
         raise PreventUpdate
@@ -361,7 +356,7 @@ def highlight_selected_trip_row(selected_trip, row_ids, button_ids):
     else:
         selected_trip_id = selected_trip
     
-    print(f"\n[DEBUG] ID trajet sélectionné: {selected_trip_id}")
+    # Trajet sélectionné pour mise en surbrillance
     
     # Préparer les styles pour chaque ligne
     styles = []

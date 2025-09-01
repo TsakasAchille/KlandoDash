@@ -46,9 +46,7 @@ def create_trip_details_layout(selected_trip_id, trips_data):
     Returns:
         Un composant Dash à afficher
     """
-    print(f"\n[DEBUG] create_trip_details_layout")
-    print(f"selected_trip_id {selected_trip_id}")
-    print(f"trips_data {trips_data}")
+    # Création du layout des détails de trajet
     
     # Validation des données d'entrée
     if selected_trip_id is None:
@@ -64,10 +62,10 @@ def create_trip_details_layout(selected_trip_id, trips_data):
         
         # Convertir le schéma Pydantic en dictionnaire
         trip_dict = trip.model_dump()
-        print(f"[DEBUG] Trajet trouvé: {trip_dict}")
+        # Trajet trouvé et converti
         
     except Exception as e:
-        print(f"[ERROR] Erreur lors de la récupération du trajet: {str(e)}")
+        logger.error(f"Erreur lors de la récupération du trajet: {str(e)}")
         return dbc.Alert(f"Erreur lors de la récupération des détails du trajet: {str(e)}", color="danger")
     
     # Récupération des passagers

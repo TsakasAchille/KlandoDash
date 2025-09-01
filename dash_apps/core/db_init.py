@@ -6,6 +6,7 @@ import logging
 from dash_apps.core.database import engine, Base
 from dash_apps.models.user import User
 from dash_apps.models.trip import Trip
+from dash_apps.models.bookings import Booking
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
