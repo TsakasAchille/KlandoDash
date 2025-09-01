@@ -16,49 +16,59 @@ def create_performance_indexes():
     
     indexes = [
         # Index pour les requêtes utilisateurs
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_created_at ON users(created_at DESC);",
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_email ON users(email);", 
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_role ON users(role);",
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_validation ON users(is_driver_doc_validated);",
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_rating ON users(rating) WHERE rating IS NOT NULL;",
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_gender ON users(gender);",
+        "CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at DESC);",
+        "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);", 
+        "CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);",
+        "CREATE INDEX IF NOT EXISTS idx_users_validation ON users(is_driver_doc_validated);",
+        "CREATE INDEX IF NOT EXISTS idx_users_rating ON users(rating) WHERE rating IS NOT NULL;",
+        "CREATE INDEX IF NOT EXISTS idx_users_gender ON users(gender);",
         
         # Index composites pour les filtres fréquents
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_role_created ON users(role, created_at DESC);",
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_validation_created ON users(is_driver_doc_validated, created_at DESC);",
+        "CREATE INDEX IF NOT EXISTS idx_users_role_created ON users(role, created_at DESC);",
+        "CREATE INDEX IF NOT EXISTS idx_users_validation_created ON users(is_driver_doc_validated, created_at DESC);",
         
-        # Index pour les recherches textuelles (si pas de full-text search)
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_name_gin ON users USING gin(to_tsvector('french', COALESCE(name, '') || ' ' || COALESCE(first_name, '') || ' ' || COALESCE(display_name, '')));",
+        # Index pour les recherches textuelles (simplifié)
+        "CREATE INDEX IF NOT EXISTS idx_users_name ON users(name);",
+        "CREATE INDEX IF NOT EXISTS idx_users_first_name ON users(first_name);",
         
-        # Index pour les requêtes de trajets
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_trips_driver_id ON trips(driver_id);",
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_trips_created_at ON trips(created_at DESC);",
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_trips_departure ON trips(departure_schedule);",
+        # Index pour les requêtes de trajets - CRITIQUES pour la performance
+        "CREATE INDEX IF NOT EXISTS idx_trips_driver_id ON trips(driver_id);",
+        "CREATE INDEX IF NOT EXISTS idx_trips_created_at ON trips(created_at DESC);",
+        "CREATE INDEX IF NOT EXISTS idx_trips_departure ON trips(departure_schedule);",
+        "CREATE INDEX IF NOT EXISTS idx_trips_departure_name ON trips(departure_name);",
+        "CREATE INDEX IF NOT EXISTS idx_trips_destination_name ON trips(destination_name);",
+        "CREATE INDEX IF NOT EXISTS idx_trips_trip_id ON trips(trip_id);",
         
         # Index pour les réservations
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);",
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_bookings_trip_id ON bookings(trip_id);",
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_bookings_user_trip ON bookings(user_id, trip_id);",
+        "CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);",
+        "CREATE INDEX IF NOT EXISTS idx_bookings_trip_id ON bookings(trip_id);",
+        "CREATE INDEX IF NOT EXISTS idx_bookings_user_trip ON bookings(user_id, trip_id);",
         
         # Index pour les tickets de support
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_support_tickets_user ON support_tickets(user_id);",
-        "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_support_tickets_created ON support_tickets(created_at DESC);",
+        "CREATE INDEX IF NOT EXISTS idx_support_tickets_user ON support_tickets(user_id);",
+        "CREATE INDEX IF NOT EXISTS idx_support_tickets_created ON support_tickets(created_at DESC);",
     ]
     
     print("🚀 Création des index de performance...")
     
-    with engine.connect() as conn:
+    # Utiliser autocommit pour éviter les problèmes de transaction
+    conn = engine.connect()
+    conn = conn.execution_options(autocommit=True)
+    
+    try:
         for i, index_sql in enumerate(indexes, 1):
             try:
-                print(f"[{i}/{len(indexes)}] Création index: {index_sql.split('idx_')[1].split(' ')[0] if 'idx_' in index_sql else 'unknown'}")
+                index_name = index_sql.split('idx_')[1].split(' ')[0] if 'idx_' in index_sql else 'unknown'
+                print(f"[{i}/{len(indexes)}] Création index: {index_name}")
                 conn.execute(text(index_sql))
-                conn.commit()
                 print(f"✅ Index créé avec succès")
             except Exception as e:
                 if "already exists" in str(e).lower():
                     print(f"ℹ️  Index déjà existant")
                 else:
                     print(f"❌ Erreur: {e}")
+    finally:
+        conn.close()
                     
     print("\n🎉 Création des index terminée!")
     print("\n📊 Pour vérifier les index créés:")

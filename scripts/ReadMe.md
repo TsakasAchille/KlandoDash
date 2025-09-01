@@ -48,3 +48,43 @@
    Cache Hit  - Min: 0.001ms, Max: 0.006ms
 
 ============================================================
+
+=== TEST DE PERFORMANCE DU CACHE TRAJETS ===
+
+1. Premier appel (DB) - Cache vide
+[REDIS] Cache trajets mis à jour depuis result: trips_page:3cbc214d (TTL: 300s)
+[TRIPS][FETCH] page_index=0 trips=10 total=11 refresh=False
+   Temps DB: 0.550s
+   Trajets récupérés: 10
+   Total: 11
+
+2. Deuxième appel (Cache local L1)
+[TRIPS][LOCAL CACHE HIT] page_index=0 trips=10 total=11
+   Temps Cache L1: 0.000s
+   Amélioration: 100.0%
+
+3. Test cache Redis (L2) - Vider cache local
+[TRIPS][REDIS HIT] page_index=0 trips=10 total=11
+   Temps Cache Redis: 0.000s
+   Amélioration vs DB: 99.9%
+
+4. Test avec force_reload (bypass cache)
+[REDIS] Cache trajets mis à jour depuis result: trips_page:3cbc214d (TTL: 300s)
+[TRIPS][FETCH] page_index=0 trips=10 total=11 refresh=True
+   Temps force_reload: 0.023s
+
+5. Test pagination différente
+[REDIS] Cache trajets mis à jour depuis result: trips_page:2c21585b (TTL: 300s)
+[TRIPS][FETCH] page_index=1 trips=0 total=10 refresh=False
+   Temps page 2 (DB): 0.020s
+[TRIPS][LOCAL CACHE HIT] page_index=1 trips=0 total=10
+   Temps page 2 (Cache): 0.000s
+
+=== RÉSUMÉ DES PERFORMANCES ===
+Base de données:     0.550s
+Cache local (L1):    0.000s (100.0% plus rapide)
+Cache Redis (L2):    0.000s (99.9% plus rapide)
+Force reload:        0.023s
+
+=== TEST CONVERSION DONNÉES ===
+

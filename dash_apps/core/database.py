@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def get_database_url():
     """Récupère l'URL de la base de données depuis les variables d'environnement"""
     db_url = os.getenv('DATABASE_URL')
-    print(f"[DEBUG] DATABASE_URL: {'***' if db_url else 'NOT SET'}")
+    # Supprimer le print qui ralentit chaque import
     return db_url
 
 def create_database_engine():
@@ -30,25 +30,21 @@ def create_database_engine():
             # Tenter de créer l'engine PostgreSQL/Supabase
             engine = create_engine(
                 DATABASE_URL,
-                # Configuration du pool de connexions optimisée pour Supabase
-                pool_size=5,               # 5 connexions de base
-                max_overflow=10,           # 10 connexions supplémentaires max
-                pool_pre_ping=True,        # Vérifier la validité des connexions
-                pool_recycle=300,          # Recycler toutes les 5min
-                pool_timeout=30,           # Timeout plus généreux
-                
-                # Gestion agressive des connexions
-                pool_reset_on_return='commit',  # Reset à chaque retour
+                # Configuration optimisée pour la performance
+                pool_size=10,              # Plus de connexions de base
+                max_overflow=20,           # Plus de connexions supplémentaires
+                pool_pre_ping=False,       # Désactiver pour éviter les délais
+                pool_recycle=3600,         # Recycler moins souvent (1h)
+                pool_timeout=10,           # Timeout plus court
                 
                 # Optimisations des requêtes
-                echo=False,                # Désactiver le logging SQL en production
-                future=True,               # Utiliser la nouvelle API SQLAlchemy 2.0
+                echo=False,                # Désactiver le logging SQL
+                future=True,               # Utiliser SQLAlchemy 2.0
                 
-                # Paramètres de connexion PostgreSQL optimisés
+                # Paramètres de connexion PostgreSQL optimisés pour la vitesse
                 connect_args={
-                    "options": "-c default_transaction_isolation=read_committed",
                     "application_name": "KlandoDash",
-                    "connect_timeout": 10,
+                    "connect_timeout": 5,   # Timeout plus court
                 }
             )
             

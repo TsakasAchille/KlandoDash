@@ -434,7 +434,7 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
 
     # Préchargement intelligent des panneaux pour les trajets visibles
     if table_rows_data and len(table_rows_data) > 0:
-        visible_trip_ids = [row.trip_id for row in table_rows_data[:5] if row.trip_id]  # Top 5 trajets visibles
+        visible_trip_ids = [row.get("trip_id") for row in table_rows_data[:5] if isinstance(row, dict) and row.get("trip_id")]
         if visible_trip_ids:
             try:
                 TripsCacheService.preload_trip_panels(visible_trip_ids, ['details'])  # Précharger détails seulement

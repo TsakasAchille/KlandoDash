@@ -14,14 +14,43 @@ class TripsCacheService:
     # Cache HTML en mémoire pour les panneaux générés
     _html_cache: Dict[str, html.Div] = {}
     
+    # Cache local en mémoire pour les pages de trajets
+    _local_cache: Dict[str, Dict] = {}
+    _cache_timestamps: Dict[str, float] = {}
+    _max_local_cache_size = 50  # Limite du cache local
+    _local_cache_ttl_seconds = 180  # 3 minutes
+    
     # Configuration du cache
     _profile_ttl_seconds = 300  # 5 minutes
-    _debug_mode = False  # Mode debug pour les logs
+    _debug_mode = True  # Mode debug pour les logs
+    
+    @staticmethod
+    def _is_local_cache_valid(cache_key: str) -> bool:
+        """Vérifie si l'entrée du cache local est encore valide"""
+        import time
+        if cache_key not in TripsCacheService._cache_timestamps:
+            return False
+        age = time.time() - TripsCacheService._cache_timestamps[cache_key]
+        return age < TripsCacheService._local_cache_ttl_seconds
+    
+    @staticmethod
+    def _evict_local_cache_if_needed():
+        """Éviction LRU simple du cache local si nécessaire"""
+        if len(TripsCacheService._local_cache) <= TripsCacheService._max_local_cache_size:
+            return
+        
+        # Trier par timestamp (plus ancien en premier)
+        sorted_keys = sorted(TripsCacheService._cache_timestamps.items(), key=lambda x: x[1])
+        keys_to_remove = [key for key, _ in sorted_keys[:10]]  # Supprimer les 10 plus anciens
+        
+        for key in keys_to_remove:
+            TripsCacheService._local_cache.pop(key, None)
+            TripsCacheService._cache_timestamps.pop(key, None)
     
     @staticmethod
     def get_trips_page_result(page_index: int, page_size: int, filter_params: Dict[str, Any], force_reload: bool = False) -> Dict[str, Any]:
         """
-        Récupère les données d'une page de trajets avec cache intelligent
+        Récupère les données d'une page de trajets avec cache multi-niveaux optimisé
         
         Args:
             page_index: Index de la page (0-based)
@@ -32,19 +61,64 @@ class TripsCacheService:
         Returns:
             Dict contenant trips, total_count, et données pré-calculées
         """
+        import time
         from dash_apps.repositories.trip_repository import TripRepository
         
-        if TripsCacheService._debug_mode:
-            print(f"[TRIPS][PAGE] Chargement page {page_index}, taille {page_size}, force_reload={force_reload}")
+        # Unifier la clé L1/L2 en utilisant la clé publique de Redis
+        cache_key = redis_cache.make_trips_page_key(page_index, page_size, filter_params)
         
-        # Pour l'instant, pas de cache Redis pour les pages de trajets (peut être ajouté plus tard)
-        # Utilisation directe du repository
+        if not force_reload:
+            # Niveau 1: Cache local ultra-rapide (en mémoire)
+            if (cache_key in TripsCacheService._local_cache and 
+                TripsCacheService._is_local_cache_valid(cache_key)):
+                
+                if TripsCacheService._debug_mode:
+                    try:
+                        trips_count = len(TripsCacheService._local_cache[cache_key].get("trips", []))
+                        total_count = TripsCacheService._local_cache[cache_key].get("total_count", 0)
+                        print(f"[TRIPS][LOCAL CACHE HIT] page_index={page_index} trips={trips_count} total={total_count}")
+                    except Exception:
+                        pass
+
+                cached = TripsCacheService._local_cache[cache_key]
+                return cached
+            
+            # Niveau 2: Cache Redis
+            cached_data = redis_cache.get_json_by_key(cache_key)
+            if cached_data:
+                # Stocker dans le cache local pour les prochains accès
+                TripsCacheService._local_cache[cache_key] = cached_data
+                TripsCacheService._cache_timestamps[cache_key] = time.time()
+                # Éviction LRU simple si nécessaire
+                TripsCacheService._evict_local_cache_if_needed()
+                
+                if TripsCacheService._debug_mode:
+                    try:
+                        trips_count = len(cached_data.get("trips", []))
+                        total_count = cached_data.get("total_count", 0)
+                        print(f"[TRIPS][REDIS HIT] page_index={page_index} trips={trips_count} total={total_count}")
+                    except Exception:
+                        pass
+                
+                return cached_data
+        
+        # Niveau 3: Base de données
         result = TripRepository.get_trips_paginated(page_index, page_size, filters=filter_params)
         
+        # Mettre à jour tous les niveaux de cache
+        TripsCacheService._local_cache[cache_key] = result
+        TripsCacheService._cache_timestamps[cache_key] = time.time()
+        redis_cache.set_trips_page_from_result(result, page_index, page_size, filter_params, ttl_seconds=300)
+        # Éviction LRU simple si nécessaire
+        TripsCacheService._evict_local_cache_if_needed()
+        
         if TripsCacheService._debug_mode:
-            trips_count = len(result.get("trips", []))
-            total_count = result.get("total_count", 0)
-            print(f"[TRIPS][PAGE] {trips_count} trajets chargés sur {total_count} total")
+            try:
+                trips_count = len(result.get("trips", []))
+                total_count = result.get("total_count", 0)
+                print(f"[TRIPS][FETCH] page_index={page_index} trips={trips_count} total={total_count} refresh={force_reload}")
+            except Exception:
+                pass
         
         return result
     
@@ -62,8 +136,26 @@ class TripsCacheService:
         trips = result.get("trips", [])
         total_count = result.get("total_count", 0)
         
-        # Convertir en format table si nécessaire
-        table_rows_data = trips if isinstance(trips, list) else trips.to_dict('records') if hasattr(trips, 'to_dict') else []
+        # Convertir les objets TripSchema en dictionnaires pour le tableau
+        table_rows_data = []
+        if trips:
+            for trip in trips:
+                if hasattr(trip, 'model_dump'):
+                    # Pydantic model - convertir en dict
+                    table_rows_data.append(trip.model_dump())
+                elif hasattr(trip, 'to_dict'):
+                    # DataFrame ou autre objet avec to_dict
+                    table_rows_data.append(trip.to_dict())
+                elif isinstance(trip, dict):
+                    # Déjà un dictionnaire
+                    table_rows_data.append(trip)
+                else:
+                    # Fallback: essayer de convertir en dict via __dict__
+                    try:
+                        table_rows_data.append(trip.__dict__)
+                    except:
+                        # Si tout échoue, ignorer cet élément
+                        continue
         
         return trips, total_count, table_rows_data
     

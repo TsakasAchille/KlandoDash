@@ -62,6 +62,17 @@ class RedisCache:
             filters=filters or {}
         )
     
+    def make_trips_page_key(self, page_index: int, page_size: int, filters: Dict = None) -> str:
+        """Clé publique et déterministe pour les pages de trajets.
+        Utilisée par Redis ET le cache local (L1) afin de partager exactement la même clé.
+        """
+        return self._generate_key(
+            "trips_page",
+            page_index=page_index,
+            page_size=page_size,
+            filters=filters or {}
+        )
+    
     def get_users_page(self, page_index: int, page_size: int, filters: Dict = None) -> Optional[Dict]:
         """Récupérer une page d'utilisateurs depuis le cache"""
         if not self.redis_client:
@@ -173,6 +184,44 @@ class RedisCache:
             
         except Exception as e:
             print(f"[REDIS] Erreur set_users_page_from_result: {e}")
+            return False
+    
+    def set_trips_page_from_result(self, result: Dict, page_index: int, page_size: int, 
+                                  filters: Dict = None, ttl_seconds: int = 300) -> bool:
+        """Mettre en cache une page de trajets à partir du résultat complet du repository"""
+        if not self.redis_client:
+            return False
+            
+        try:
+            cache_key = self._generate_key(
+                "trips_page",
+                page_index=page_index,
+                page_size=page_size,
+                filters=filters or {}
+            )
+            
+            # Préparer les données de cache directement depuis le résultat
+            cache_data = {
+                "trips": result.get("trips", []),
+                "total_count": result.get("total_count", 0),
+                "page_index": page_index,
+                "page_size": page_size,
+                "filters": filters,
+                "table_rows_data": result.get("table_rows_data", [])
+            }
+            
+            # Stocker avec TTL
+            self.redis_client.setex(
+                cache_key,
+                ttl_seconds,
+                json.dumps(cache_data, default=str)
+            )
+            
+            print(f"[REDIS] Cache trajets mis à jour depuis result: {cache_key} (TTL: {ttl_seconds}s)")
+            return True
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur set_trips_page_from_result: {e}")
             return False
     
     def get_user_profile(self, uid: str) -> Optional[Dict]:
@@ -298,6 +347,23 @@ class RedisCache:
             
         except Exception as e:
             print(f"[REDIS] Erreur invalidate_users_cache: {e}")
+            return False
+    
+    def invalidate_trips_cache(self) -> bool:
+        """Invalider tout le cache des trajets"""
+        if not self.redis_client:
+            return False
+            
+        try:
+            # Supprimer toutes les clés commençant par "trips_page:"
+            keys = self.redis_client.keys("trips_page:*")
+            if keys:
+                self.redis_client.delete(*keys)
+                print(f"[REDIS] {len(keys)} clés trips_page supprimées")
+            return True
+            
+        except Exception as e:
+            print(f"[REDIS] Erreur invalidate_trips_cache: {e}")
             return False
     
     def invalidate_user_profile(self, uid: str) -> bool:

@@ -130,11 +130,17 @@ class TripRepository:
             else:
                 query = query.order_by(Trip.created_at.desc())
             
-            # Compter le total après filtrage
-            total_count = query.count()
-            
-            # Appliquer la pagination
+            # Appliquer la pagination AVANT le count pour optimiser
             trips = query.offset(page * page_size).limit(page_size).all()
+            
+            # ÉLIMINATION COMPLÈTE DU COUNT pour la performance
+            if len(trips) < page_size:
+                # Page incomplète = on a atteint la fin
+                total_count = page * page_size + len(trips)
+            else:
+                # Page complète : estimation optimiste
+                # On suppose qu'il y a au moins une page de plus
+                total_count = (page + 1) * page_size + 1
             
             # Convertir en schémas Pydantic
             trips_schemas = [TripSchema.model_validate(trip) for trip in trips]
