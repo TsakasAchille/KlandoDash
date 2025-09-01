@@ -68,7 +68,7 @@ def create_app():
         # Also set Dash's logger
         app.logger.setLevel(log_level)
     except Exception as e:
-        print(f"[APP_FACTORY][LOGGING] Failed to configure logging: {e}")
+        server.logger.warning("[APP_FACTORY][LOGGING] Failed to configure logging: %s", e)
 
     # Log URL map (routes) at startup
     try:
@@ -80,6 +80,7 @@ def create_app():
         server.logger.warning("[ROUTES] Failed to dump url_map: %s", e)
 
     # Log each request basic info
+    """
     @server.before_request
     def _log_request():
         try:
@@ -93,7 +94,7 @@ def create_app():
             server.logger.info("[REQUEST] %s %s ua=%s user=%s admin=%s", method, path, user_agent, user_email, is_admin)
         except Exception as e:
             server.logger.debug("[REQUEST] log error: %s", e)
-
+    """
     @server.after_request
     def _log_response(resp):
         try:

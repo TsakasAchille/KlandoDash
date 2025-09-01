@@ -22,7 +22,9 @@ class UsersCacheService:
     # Cache local rapide pour éviter Redis sur les accès fréquents
     _local_cache = {}
     _cache_timestamps = {}
-    _local_cache_ttl = 60  # 1 minute en local
+    _local_cache_ttl = int(os.getenv('LOCAL_CACHE_TTL', '45'))  # TTL local configurable (par défaut 45s)
+    _local_max_entries = int(os.getenv('LOCAL_CACHE_MAX_ENTRIES', '200'))  # Limite max d'entrées en L1
+    _profile_ttl_seconds = 600  # 10 minutes pour le profil utilisateur en Redis
     
     @staticmethod
     def _get_cache_key(page_index: int, page_size: int, filter_params: Dict) -> str:
@@ -61,23 +63,34 @@ class UsersCacheService:
         """
         import time
         
-        cache_key = UsersCacheService._get_cache_key(page_index, page_size, filter_params)
+        # Unifier la clé L1/L2 en utilisant la clé publique de Redis
+        cache_key = redis_cache.make_users_page_key(page_index, page_size, filter_params)
         
         if not force_reload:
             # Niveau 1: Cache local ultra-rapide (en mémoire)
             if (cache_key in UsersCacheService._local_cache and 
                 UsersCacheService._is_local_cache_valid(cache_key)):
-                print(f"[USERS][LOCAL CACHE HIT] {cache_key}")
+                
+                if UsersCacheService._debug_mode:
+                    try:
+                        users_count = len(UsersCacheService._local_cache[cache_key].get("users", []))
+                        total_count = UsersCacheService._local_cache[cache_key].get("total_count", 0)
+                        print(f"[USERS][LOCAL CACHE HIT] page_index={page_index} users={users_count} total={total_count}")
+                    except Exception:
+                        pass
+
                 cached = UsersCacheService._local_cache[cache_key]
                 # Retourner une copie enrichie avec selected_uid si nécessaire
                 return UsersCacheService._merge_selected_into_result(cached, selected_uid)
             
             # Niveau 2: Cache Redis
-            cached_data = redis_cache.get_users_page(page_index, page_size, filter_params)
+            cached_data = redis_cache.get_json_by_key(cache_key)
             if cached_data:
                 # Stocker dans le cache local pour les prochains accès
                 UsersCacheService._local_cache[cache_key] = cached_data
                 UsersCacheService._cache_timestamps[cache_key] = time.time()
+                # Éviction LRU simple si nécessaire
+                UsersCacheService._evict_local_cache_if_needed()
                 
                 if UsersCacheService._debug_mode:
                     try:
@@ -96,6 +109,8 @@ class UsersCacheService:
         UsersCacheService._local_cache[cache_key] = result
         UsersCacheService._cache_timestamps[cache_key] = time.time()
         redis_cache.set_users_page_from_result(result, page_index, page_size, filter_params, ttl_seconds=300)
+        # Éviction LRU simple si nécessaire
+        UsersCacheService._evict_local_cache_if_needed()
         
         if UsersCacheService._debug_mode:
             try:
@@ -107,6 +122,57 @@ class UsersCacheService:
         
         # Enrichir le résultat avec selected_uid si demandé (sans polluer les caches persistés)
         return UsersCacheService._merge_selected_into_result(result, selected_uid)
+
+    @staticmethod
+    def _evict_local_cache_if_needed():
+        """
+        Évite la dérive mémoire du cache local par une éviction LRU approximative
+        basée sur les timestamps. Supprime les plus anciens jusqu'à rentrer
+        sous la limite _local_max_entries.
+        """
+        try:
+            size = len(UsersCacheService._local_cache)
+            if size <= UsersCacheService._local_max_entries:
+                return
+            # Trier les clés par ancienneté (timestamp croissant)
+            items = sorted(
+                UsersCacheService._cache_timestamps.items(), key=lambda kv: kv[1]
+            )
+            to_remove = size - UsersCacheService._local_max_entries
+            removed = 0
+            for key, _ in items:
+                if key in UsersCacheService._local_cache:
+                    del UsersCacheService._local_cache[key]
+                if key in UsersCacheService._cache_timestamps:
+                    del UsersCacheService._cache_timestamps[key]
+                removed += 1
+                if removed >= to_remove:
+                    break
+            if UsersCacheService._debug_mode:
+                print(f"[USERS][LOCAL CACHE EVICT] removed={removed} size={len(UsersCacheService._local_cache)}")
+        except Exception:
+            # Éviter tout crash dû à l'éviction
+            pass
+
+    @staticmethod
+    def invalidate_local_users_pages(predicate=None):
+        """
+        Invalide (supprime) des entrées du cache local L1.
+        predicate: callable optionnel de signature (key: str, value: Dict) -> bool
+                   si None, invalide toutes les entrées.
+        """
+        try:
+            keys = list(UsersCacheService._local_cache.keys())
+            for key in keys:
+                value = UsersCacheService._local_cache.get(key)
+                if predicate is None or (callable(predicate) and predicate(key, value)):
+                    del UsersCacheService._local_cache[key]
+                    if key in UsersCacheService._cache_timestamps:
+                        del UsersCacheService._cache_timestamps[key]
+            if UsersCacheService._debug_mode:
+                print(f"[USERS][LOCAL CACHE INVALIDATE] size={len(UsersCacheService._local_cache)}")
+        except Exception:
+            pass
 
     @staticmethod
     def _merge_selected_into_result(result: Dict, selected_uid: Optional[str]) -> Dict:
@@ -213,14 +279,30 @@ class UsersCacheService:
                 print(f"[CACHE HIT] Utilisateur {selected_uid[:8]}... trouvé dans le cache")
             return basic_by_uid[selected_uid]
         
-        # Fallback vers le repository
+        # Read-through: tenter Redis (profil) avant la DB
+        try:
+            cached_profile = redis_cache.get_user_profile(selected_uid)
+            if cached_profile:
+                if UsersCacheService._debug_mode:
+                    print(f"[USERS][REDIS PROFILE HIT] {selected_uid[:8]}...")
+                return cached_profile
+        except Exception:
+            pass
+
+        # Miss: fallback DB puis mise en cache Redis
         if UsersCacheService._debug_mode:
-            print(f"[CACHE MISS] Chargement utilisateur {selected_uid[:8]}... depuis la DB")
+            print(f"[USERS][PROFILE MISS] Chargement {selected_uid[:8]}... depuis la DB")
         user_schema = UserRepository.get_user_by_id(selected_uid)
-        if user_schema:
-            return user_schema.model_dump() if hasattr(user_schema, "model_dump") else user_schema.dict()
-        
-        return None
+        if not user_schema:
+            return None
+
+        user_dict = user_schema.model_dump() if hasattr(user_schema, "model_dump") else user_schema.dict()
+        try:
+            # Stocker le profil en Redis avec TTL
+            redis_cache.set_user_profile(selected_uid, user_dict, ttl_seconds=UsersCacheService._profile_ttl_seconds)
+        except Exception:
+            pass
+        return user_dict
     
     @staticmethod
     def get_cached_panel(user_id: str, panel_type: str) -> Optional[html.Div]:

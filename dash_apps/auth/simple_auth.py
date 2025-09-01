@@ -60,13 +60,7 @@ def init_auth(server):
             '/proxy/map',  # Proxy MapLibre doit être accessible sans auth
         ]
         
-        # DEBUG: journaliser la décision du middleware
-        try:
-            import sys
-            sys.stderr.write(f"[AUTH MIDDLEWARE] path={request.path} authenticated={getattr(current_user, 'is_authenticated', False)}\n")
-            sys.stderr.flush()
-        except Exception:
-            pass
+       
         
         # Vérifier si l'utilisateur est authentifié
         if not current_user.is_authenticated:
@@ -79,12 +73,7 @@ def init_auth(server):
                 and not request.path.startswith('/_dash')
                 and not request.path.startswith('/proxy/')  # Exempter tous les endpoints de proxy
             ):
-                try:
-                    import sys
-                    sys.stderr.write(f"[AUTH MIDDLEWARE] redirect -> /login (blocked)\n")
-                    sys.stderr.flush()
-                except Exception:
-                    pass
+              
                 return redirect('/login')
 
 

@@ -51,6 +51,17 @@ class RedisCache:
         params_hash = hashlib.md5(params_str.encode()).hexdigest()[:8]
         return f"{prefix}:{params_hash}"
     
+    def make_users_page_key(self, page_index: int, page_size: int, filters: Dict = None) -> str:
+        """Clé publique et déterministe pour les pages d'utilisateurs.
+        Utilisée par Redis ET le cache local (L1) afin de partager exactement la même clé.
+        """
+        return self._generate_key(
+            "users_page",
+            page_index=page_index,
+            page_size=page_size,
+            filters=filters or {}
+        )
+    
     def get_users_page(self, page_index: int, page_size: int, filters: Dict = None) -> Optional[Dict]:
         """Récupérer une page d'utilisateurs depuis le cache"""
         if not self.redis_client:
@@ -71,6 +82,21 @@ class RedisCache:
             
         except Exception as e:
             print(f"[REDIS] Erreur get_users_page: {e}")
+            return None
+
+    def get_json_by_key(self, cache_key: str) -> Optional[Dict]:
+        """Récupère et désérialise un objet JSON stocké à une clé donnée.
+        Utile quand la clé a déjà été calculée en amont (p.ex. côté L1).
+        """
+        if not self.redis_client:
+            return None
+        try:
+            cached_data = self.redis_client.get(cache_key)
+            if cached_data:
+                return json.loads(cached_data)
+            return None
+        except Exception as e:
+            print(f"[REDIS] Erreur get_json_by_key: {e}")
             return None
     
     def set_users_page(self, page_index: int, page_size: int, users: List, total_count: int, 
