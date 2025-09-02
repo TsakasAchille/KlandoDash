@@ -25,6 +25,47 @@ class TripsCacheService:
     _debug_mode = True  # Mode debug pour les logs
     
     @staticmethod
+    def _get_cache_key(page_index: int, page_size: int, filter_params: Dict[str, Any]) -> str:
+        """Génère une clé de cache cohérente pour les pages de trajets"""
+        import hashlib
+        import json
+        
+        # Normaliser les filtres pour une clé déterministe
+        normalized_filters = filter_params or {}
+        filter_str = json.dumps(normalized_filters, sort_keys=True)
+        filter_hash = hashlib.md5(filter_str.encode()).hexdigest()[:8]
+        
+        return f"trips_page:{page_index}:{page_size}:{filter_hash}"
+    
+    @staticmethod
+    def _get_from_redis_cache(cache_key: str) -> Optional[Dict]:
+        """Récupère les données depuis Redis avec la clé donnée"""
+        return redis_cache.get_json_by_key(cache_key)
+    
+    @staticmethod
+    def _store_in_local_cache(cache_key: str, data: Dict):
+        """Stocke les données dans le cache local avec timestamp"""
+        import time
+        TripsCacheService._local_cache[cache_key] = data
+        TripsCacheService._cache_timestamps[cache_key] = time.time()
+        TripsCacheService._evict_local_cache_if_needed()
+    
+    @staticmethod
+    def _store_in_redis_cache(cache_key: str, data: Dict, ttl_seconds: int = 300):
+        """Stocke les données dans Redis avec TTL"""
+        import json
+        try:
+            redis_cache.redis_client.setex(
+                cache_key,
+                ttl_seconds,
+                json.dumps(data, default=str)
+            )
+            if TripsCacheService._debug_mode:
+                print(f"[REDIS] Cache trajets mis à jour: {cache_key} (TTL: {ttl_seconds}s)")
+        except Exception as e:
+            print(f"[REDIS] Erreur stockage cache: {e}")
+    
+    @staticmethod
     def _is_local_cache_valid(cache_key: str) -> bool:
         """Vérifie si l'entrée du cache local est encore valide"""
         import time
@@ -64,8 +105,8 @@ class TripsCacheService:
         import time
         from dash_apps.repositories.trip_repository import TripRepository
         
-        # Unifier la clé L1/L2 en utilisant la clé publique de Redis
-        cache_key = redis_cache.make_trips_page_key(page_index, page_size, filter_params)
+        # Unifier la clé L1/L2 en utilisant la méthode interne cohérente
+        cache_key = TripsCacheService._get_cache_key(page_index, page_size, filter_params)
         
         if not force_reload:
             # Niveau 1: Cache local ultra-rapide (en mémoire)
@@ -84,13 +125,10 @@ class TripsCacheService:
                 return cached
             
             # Niveau 2: Cache Redis
-            cached_data = redis_cache.get_json_by_key(cache_key)
+            cached_data = TripsCacheService._get_from_redis_cache(cache_key)
             if cached_data:
                 # Stocker dans le cache local pour les prochains accès
-                TripsCacheService._local_cache[cache_key] = cached_data
-                TripsCacheService._cache_timestamps[cache_key] = time.time()
-                # Éviction LRU simple si nécessaire
-                TripsCacheService._evict_local_cache_if_needed()
+                TripsCacheService._store_in_local_cache(cache_key, cached_data)
                 
                 if TripsCacheService._debug_mode:
                     try:
@@ -106,11 +144,8 @@ class TripsCacheService:
         result = TripRepository.get_trips_paginated_minimal(page_index, page_size, filters=filter_params)
         
         # Mettre à jour tous les niveaux de cache
-        TripsCacheService._local_cache[cache_key] = result
-        TripsCacheService._cache_timestamps[cache_key] = time.time()
-        redis_cache.set_trips_page_from_result(result, page_index, page_size, filter_params, ttl_seconds=300)
-        # Éviction LRU simple si nécessaire
-        TripsCacheService._evict_local_cache_if_needed()
+        TripsCacheService._store_in_local_cache(cache_key, result)
+        TripsCacheService._store_in_redis_cache(cache_key, result, ttl_seconds=300)
         
         if TripsCacheService._debug_mode:
             try:
