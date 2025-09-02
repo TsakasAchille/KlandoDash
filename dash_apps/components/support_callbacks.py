@@ -2,7 +2,7 @@
 Callbacks pour la page de support technique - Version optimisée avec pagination et cache
 """
 
-from dash import callback, Input, Output, State, ctx, ALL, html, no_update, dcc
+from dash import callback, Input, Output, State, ctx, ALL, html, no_update, dcc, callback_context
 from urllib.parse import parse_qs
 from dash.exceptions import PreventUpdate
 from dash_apps.components.support_tickets import render_tickets_list, render_ticket_details
@@ -14,6 +14,7 @@ from dash_apps.core.database import get_session
 from dash_apps.services.support_cache_service import SupportCacheService
 import dash_bootstrap_components as dbc
 import logging
+import os
 from flask import session
 from datetime import datetime, timedelta
 
@@ -145,7 +146,9 @@ def update_pending_tickets_data(page, refresh_clicks, update_signal, category_fi
         print(f"Signal de mise à jour reçu: {update_signal}")
     
     # Déterminer si on force le reload (bouton refresh ou signal de mise à jour)
-    force_reload = bool(refresh_clicks) or bool(update_signal and update_signal.get("count", 0) > 0)
+    ctx = callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
+    force_reload = (triggered_id == "support-refresh-btn" and refresh_clicks is not None) or bool(update_signal and update_signal.get("count", 0) > 0)
     
     # Charger les tickets pour la page demandée (10 tickets par page) avec filtres serveur
     data = load_tickets_by_page(
@@ -189,7 +192,9 @@ def update_closed_tickets_data(page, refresh_clicks, update_signal, category_fil
         print(f"Signal de mise à jour reçu: {update_signal}")
     
     # Déterminer si on force le reload (bouton refresh ou signal de mise à jour)
-    force_reload = bool(refresh_clicks) or bool(update_signal and update_signal.get("count", 0) > 0)
+    ctx = callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
+    force_reload = (triggered_id == "support-refresh-btn" and refresh_clicks is not None) or bool(update_signal and update_signal.get("count", 0) > 0)
         
     # Charger les tickets pour la page demandée (10 tickets par page) avec filtres serveur
     data = load_tickets_by_page(
@@ -453,15 +458,21 @@ def display_ticket_details(selected_ticket, comment_signal, pending_tickets_data
     Affiche les détails du ticket sélectionné avec cache optimisé
     Rafraîchit également les commentaires quand le signal de commentaires est modifié
     """
-    # Si pas de ticket sélectionné, afficher un message
-    if not selected_ticket:
+    # Validation robuste du ticket sélectionné
+    if not selected_ticket or not isinstance(selected_ticket, dict):
         return html.Div(
             "Aucun ticket sélectionné", 
             className="text-muted text-center p-5",
             style={"fontStyle": "italic"}
         )
     
-    ticket_id = selected_ticket["ticket_id"]
+    ticket_id = selected_ticket.get("ticket_id")
+    if not ticket_id or not isinstance(ticket_id, str) or len(ticket_id.strip()) == 0:
+        return html.Div(
+            "ID de ticket invalide", 
+            className="text-muted text-center p-5",
+            style={"fontStyle": "italic"}
+        )
     
     # Si le signal de commentaire a été déclenché, effacer le cache pour ce ticket
     if comment_signal and comment_signal.get("ticket_id") == ticket_id:
@@ -570,38 +581,96 @@ def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, cu
         logger.warning("Tentative d'envoi d'email avec message vide")
         return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
     
-    # Vérifier si le client peut recevoir des emails
-    from dash_apps.services.email_service import EmailService
-    
-    if not EmailService.can_send_email(selected_ticket):
-        logger.warning(f"Impossible d'envoyer email pour ticket {ticket_id}: client ne souhaite pas être contacté par email")
-        return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
-    
-    # Envoyer l'email via le webhook
+    # Envoyer directement via le webhook N8N (pas d'EmailService pour l'instant)
     try:
-        success = EmailService.send_email_to_client(selected_ticket, message_content.strip())
+        import requests
+        
+        # Préparer les données pour le webhook N8N
+        webhook_data = {
+            "ticket_id": ticket_id,
+            "user_id": selected_ticket.get("user_id"),
+            "user_email": selected_ticket.get("mail"),
+            "user_phone": selected_ticket.get("phone"),
+            "contact_preference": selected_ticket.get("contact_preference"),
+            "subject": selected_ticket.get("subject"),
+            "message_content": message_content.strip(),
+            "comment_source": "mail"  # Par défaut mail, N8N peut ajuster selon contact_preference
+        }
+        
+        # URL du webhook N8N depuis les variables d'environnement
+        webhook_url = os.getenv("N8N_WEBHOOK_URL", "https://your-n8n-instance.com/webhook/support-email")
+        
+        # Pour le développement, vous pouvez utiliser une URL de test ou logger les données
+        logger.info(f"Webhook data prepared: {webhook_data}")
+        
+        # Envoyer au webhook N8N
+        try:
+            logger.info(f"Envoi vers N8N: {webhook_url}")
+            # Utiliser GET avec paramètres dans l'URL pour compatibilité N8N
+            response = requests.get(webhook_url, params=webhook_data, timeout=10)
+            logger.info(f"Réponse N8N: Status {response.status_code}, Content: {response.text[:200]}")
+            success = response.status_code == 200
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Erreur connexion N8N: {e}")
+            success = False
+            response = None
         
         if success:
-            # N8N va maintenant gérer l'ajout du commentaire en DB
-            # Plus besoin d'ajouter manuellement ici
+            # Ajouter le commentaire en base de données pour l'affichage immédiat
+            try:
+                from flask import session
+                user_id = session.get('user_id', 'system')
+                user_name = session.get('user_name', 'Système')
+                
+                with get_session() as db_session:
+                    # Ajouter le commentaire comme "external_sent" pour l'affichage
+                    comment = SupportCommentRepository.add_comment_with_type(
+                        db_session,
+                        str(ticket_id),
+                        str(user_id),
+                        message_content.strip(),
+                        user_name,
+                        "external_sent",
+                        comment_source="mail"
+                    )
+                    
+                    if comment:
+                        logger.info(f"Commentaire d'envoi ajouté en base: ticket={ticket_id}")
+                    
+            except Exception as e:
+                logger.error(f"Erreur ajout commentaire d'envoi: {e}")
             
             # Effacer le cache pour ce ticket (N8N le fera aussi via /api/support/refresh)
             SupportCacheService.clear_ticket_cache(ticket_id)
             
             logger.info(f"Email envoyé avec succès pour ticket {ticket_id}")
             
-            # Émettre un signal de succès
+            # Émettre un signal de succès avec détails
             success_signal = {
                 "count": current_signal.get("count", 0) + 1,
                 "ticket_id": ticket_id,
                 "status": "success",
+                "message": f"✅ Email envoyé avec succès via N8N (Status: {response.status_code})",
                 "timestamp": datetime.now().isoformat()
             }
             
             return success_signal, ["" for _ in comment_texts]
         else:
+            # Émettre un signal d'échec avec détails
+            error_message = f"❌ Échec envoi email - Status: {response.status_code if response else 'Erreur connexion'}"
+            if response:
+                error_message += f" - {response.text[:100]}"
+            
+            error_signal = {
+                "count": current_signal.get("count", 0) + 1,
+                "ticket_id": ticket_id,
+                "status": "error",
+                "message": error_message,
+                "timestamp": datetime.now().isoformat()
+            }
+            
             logger.error(f"Échec envoi email pour ticket {ticket_id}")
-            return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
+            return error_signal, [no_update] * len(comment_texts) if comment_texts else [no_update]
             
     except Exception as e:
         logger.error(f"Erreur lors de l'envoi email: {e}")

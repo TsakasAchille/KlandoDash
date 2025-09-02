@@ -11,6 +11,7 @@ class SupportCommentSchema(BaseModel):
     comment_text: str
     comment_sent: Optional[str] = None  # Message envoyé au client
     comment_received: Optional[str] = None  # Message reçu du client
+    comment_source: Optional[str] = None  # Source: mail, phone
     comment_type: str = "internal"  # internal, external_sent, external_received
     created_at: datetime
 

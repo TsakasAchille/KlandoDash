@@ -72,6 +72,7 @@ def init_auth(server):
                 and not request.path.startswith('/assets/')
                 and not request.path.startswith('/_dash')
                 and not request.path.startswith('/proxy/')  # Exempter tous les endpoints de proxy
+                and not request.path.startswith('/api/support/')  # Exempter les API de support pour N8N
             ):
               
                 return redirect('/login')

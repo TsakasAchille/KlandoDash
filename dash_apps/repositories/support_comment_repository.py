@@ -10,7 +10,7 @@ class SupportCommentRepository:
     @staticmethod
     def list_comments_for_ticket(session: Session, ticket_id: str) -> List[SupportCommentSchema]:
         # Récupérer les commentaires depuis la base de données
-        comments = session.query(SupportComment).filter(SupportComment.ticket_id == ticket_id).order_by(SupportComment.created_at.asc()).all()
+        comments = session.query(SupportComment).filter(SupportComment.ticket_id == ticket_id).order_by(SupportComment.created_at.desc()).all()
         
         # Importer FlaskLogin pour accéder à la session
         from flask import session as flask_session

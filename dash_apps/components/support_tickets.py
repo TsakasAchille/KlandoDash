@@ -241,12 +241,14 @@ def render_ticket_details(ticket, comments):
         comment_sent = comment_dict.get("comment_sent")
         comment_received = comment_dict.get("comment_received")
         comment_text = comment_dict.get("comment_text")
+        comment_source = comment_dict.get("comment_source")  # Nouvelle colonne: mail ou phone
         
         print(f"DEBUG: Comment ID: {comment_dict.get('comment_id')}")
         print(f"DEBUG: comment_type: '{comment_type}'")
         print(f"DEBUG: comment_sent: '{comment_sent}'")
         print(f"DEBUG: comment_received: '{comment_received}'")
         print(f"DEBUG: comment_text: '{comment_text}'")
+        print(f"DEBUG: comment_source: '{comment_source}'")
         
         # Logique pour déterminer le type d'affichage
         if comment_sent and comment_sent.strip():
@@ -271,11 +273,12 @@ def render_ticket_details(ticket, comments):
             "content": content,
             "formatted_date": comment_date.strftime("%d/%m/%Y %H:%M"),
             "interaction_type": interaction_type,
-            "comment_type": comment_type
+            "comment_type": comment_type,
+            "comment_source": comment_source
         })
     
-    # Inverser pour afficher les plus récents en premier
-    formatted_comments.reverse()
+    # Les commentaires sont déjà triés par date décroissante depuis le repository
+    # formatted_comments.reverse() - supprimé car maintenant inutile
     
     # Détecter un éventuel identifiant de trajet dans le sujet
     subject_text = ticket.get('subject', '') or ''
@@ -493,6 +496,19 @@ def render_ticket_details(ticket, comments):
         for comment in formatted_comments:
             interaction_type = comment.get("interaction_type", "internal")
             
+            # Déterminer l'icône et le label selon la source pour les commentaires externes
+            comment_source = comment.get("comment_source")
+            source_icon = ""
+            source_label_suffix = ""
+            
+            if interaction_type in ["comment_sent", "comment_received", "external"] and comment_source:
+                if comment_source == "mail":
+                    source_icon = "📧 "
+                    source_label_suffix = " (Email)"
+                elif comment_source == "phone":
+                    source_icon = "📞 "
+                    source_label_suffix = " (Téléphone)"
+            
             # Configuration visuelle selon le type de commentaire
             type_config = {
                 "internal": {
@@ -503,43 +519,43 @@ def render_ticket_details(ticket, comments):
                     "text_color": "#495057"
                 },
                 "external_sent": {
-                    "icon": "📤",
-                    "label": "Envoyé au client",
+                    "icon": f"{source_icon}📤",
+                    "label": f"Envoyé au client{source_label_suffix}",
                     "border_color": "#28a745",
                     "bg_color": "#d4edda",
                     "text_color": "#155724"
                 },
                 "external_received": {
-                    "icon": "📥",
-                    "label": "Reçu du client",
+                    "icon": f"{source_icon}📥",
+                    "label": f"Reçu du client{source_label_suffix}",
                     "border_color": "#007bff",
                     "bg_color": "#d1ecf1",
                     "text_color": "#0c5460"
                 },
                 "comment_sent": {
-                    "icon": "📤",
-                    "label": "Message envoyé",
+                    "icon": f"{source_icon}📤",
+                    "label": f"Message envoyé{source_label_suffix}",
                     "border_color": "#28a745",
                     "bg_color": "#d4edda",
                     "text_color": "#155724"
                 },
                 "comment_received": {
-                    "icon": "📥",
-                    "label": "Message reçu",
+                    "icon": f"{source_icon}📥",
+                    "label": f"Message reçu{source_label_suffix}",
                     "border_color": "#007bff",
                     "bg_color": "#d1ecf1",
                     "text_color": "#0c5460"
                 },
                 "comment_type": {
-                    "icon": "📝",
-                    "label": "Commentaire",
+                    "icon": f"{source_icon}📝",
+                    "label": f"Commentaire{source_label_suffix}",
                     "border_color": "#17a2b8",
                     "bg_color": "#d1ecf1",
                     "text_color": "#0c5460"
                 },
                 "external": {
-                    "icon": "🌐",
-                    "label": "Message externe",
+                    "icon": f"{source_icon}🌐",
+                    "label": f"Message externe{source_label_suffix}",
                     "border_color": "#ffc107",
                     "bg_color": "#fff3cd",
                     "text_color": "#856404"
@@ -595,7 +611,7 @@ def render_ticket_details(ticket, comments):
     interactions_history = dbc.Card([
         dbc.CardHeader(f"📋 Historique des Interactions ({len(formatted_comments)})"),
         dbc.CardBody([
-            html.Div(comments_container, style={"maxHeight": "400px", "overflowY": "auto"})
+            html.Div(comments_container, style={"maxHeight": "600px", "overflowY": "auto"})
         ])
     ], className="mb-3")
     

@@ -13,61 +13,37 @@ logger = logging.getLogger("klando.support.api")
 # Créer le Blueprint pour les API de support
 support_api_bp = Blueprint('support_api', __name__, url_prefix='/api/support')
 
-@support_api_bp.route('/comment', methods=['POST'])
-def add_comment_from_n8n():
+@support_api_bp.route('/notify-comment', methods=['POST'])
+def notify_comment_added():
     """
-    Endpoint pour que N8N ajoute des commentaires en base de données
+    Endpoint pour que N8N notifie qu'un commentaire a été ajouté
+    N8N remplit directement la base de données, cet endpoint invalide juste le cache
     
     Payload attendu:
     {
-        "ticket_id": "uuid-du-ticket",
-        "user_id": "id-utilisateur",
-        "user_name": "nom-utilisateur", 
-        "comment_text": "contenu-du-commentaire",
-        "comment_type": "external_sent" ou "external_received"
+        "ticket_id": "uuid-du-ticket"
     }
     """
     try:
         data = request.get_json()
         
-        # Validation des données requises
-        required_fields = ['ticket_id', 'user_id', 'comment_text', 'comment_type']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({"error": f"Champ requis manquant: {field}"}), 400
+        # Validation du ticket_id requis
+        if not data.get('ticket_id'):
+            return jsonify({"error": "Champ requis manquant: ticket_id"}), 400
         
-        # Validation du type de commentaire
-        valid_types = ['internal', 'external_sent', 'external_received']
-        if data['comment_type'] not in valid_types:
-            return jsonify({"error": f"Type de commentaire invalide. Valeurs autorisées: {valid_types}"}), 400
+        # Invalider le cache pour ce ticket
+        SupportCacheService.clear_ticket_cache(data['ticket_id'])
         
-        # Ajouter le commentaire en base
-        with get_session() as session:
-            comment = SupportCommentRepository.add_comment_with_type(
-                session,
-                str(data['ticket_id']),
-                str(data['user_id']),
-                data['comment_text'],
-                data.get('user_name', data['user_id']),
-                data['comment_type']
-            )
-            
-            if comment:
-                # Invalider le cache pour ce ticket
-                SupportCacheService.clear_ticket_cache(data['ticket_id'])
-                
-                logger.info(f"Commentaire ajouté par N8N: ticket={data['ticket_id']}, type={data['comment_type']}")
-                
-                return jsonify({
-                    "success": True,
-                    "comment_id": comment.comment_id,
-                    "message": "Commentaire ajouté avec succès"
-                }), 200
-            else:
-                return jsonify({"error": "Erreur lors de l'ajout du commentaire"}), 500
+        logger.info(f"Notification N8N reçue: cache invalidé pour ticket={data['ticket_id']}")
+        
+        return jsonify({
+            "success": True,
+            "ticket_id": data['ticket_id'],
+            "message": "Cache invalidé, commentaire pris en compte"
+        }), 200
                 
     except Exception as e:
-        logger.error(f"Erreur API add_comment_from_n8n: {e}")
+        logger.error(f"Erreur API notify_comment_added: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -124,4 +100,63 @@ def get_latest_comments(ticket_id):
                 
     except Exception as e:
         logger.error(f"Erreur API get_latest_comments: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@support_api_bp.route('/comments/<ticket_id>', methods=['GET'])
+def get_ticket_comments(ticket_id):
+    """
+    Endpoint pour récupérer tous les commentaires d'un ticket
+    Utilisé par N8N pour vérifier que les données ont bien été insérées
+    
+    Retourne un JSON avec tous les commentaires du ticket au format:
+    [
+      {
+        "comment_id": "uuid",
+        "ticket_id": "uuid", 
+        "user_id": "string",
+        "comment_text": "string",
+        "comment_sent": "string|null",
+        "comment_received": "string|null", 
+        "comment_source": "mail|phone|null",
+        "comment_type": "internal|external",
+        "created_at": "ISO datetime"
+      }
+    ]
+    """
+    try:
+        # Validation de l'UUID
+        import uuid
+        try:
+            uuid.UUID(ticket_id)
+        except ValueError:
+            return jsonify({
+                "error": f"Format d'UUID invalide: '{ticket_id}'. Utilisez un UUID valide (ex: 1522456d-2eef-41b1-8a13-e8991b592281)"
+            }), 400
+        
+        with get_session() as session:
+            comments = SupportCommentRepository.list_comments_for_ticket(session, ticket_id)
+            
+            # Convertir les commentaires en format JSON
+            comments_data = []
+            for comment in comments:
+                comment_dict = {
+                    "comment_id": str(comment.comment_id),
+                    "ticket_id": str(comment.ticket_id),
+                    "user_id": comment.user_id,
+                    "comment_text": comment.comment_text or "",
+                    "comment_sent": comment.comment_sent,
+                    "comment_received": comment.comment_received,
+                    "comment_source": comment.comment_source,
+                    "comment_type": comment.comment_type,
+                    "created_at": comment.created_at.isoformat()
+                }
+                comments_data.append(comment_dict)
+            
+            logger.info(f"API: Récupération de {len(comments_data)} commentaires pour ticket {ticket_id}")
+            
+            return jsonify(comments_data), 200
+                
+    except Exception as e:
+        logger.error(f"Erreur API get_ticket_comments: {e}")
         return jsonify({"error": str(e)}), 500
