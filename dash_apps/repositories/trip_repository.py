@@ -141,17 +141,11 @@ class TripRepository:
             else:
                 query = query.order_by(Trip.created_at.desc())
             
-            # Appliquer la pagination AVANT le count pour optimiser
-            trips_raw = query.offset(page * page_size).limit(page_size).all()
+            # Calculer le total AVANT la pagination pour avoir un count cohérent
+            total_count = query.count()
             
-            # ÉLIMINATION COMPLÈTE DU COUNT pour la performance
-            if len(trips_raw) < page_size:
-                # Page incomplète = on a atteint la fin
-                total_count = page * page_size + len(trips_raw)
-            else:
-                # Page complète : estimation optimiste
-                # On suppose qu'il y a au moins une page de plus
-                total_count = (page + 1) * page_size + 1
+            # Appliquer la pagination après le count
+            trips_raw = query.offset(page * page_size).limit(page_size).all()
             
             # Convertir en dictionnaires simples (pas de Pydantic pour la performance)
             trips_data = []
