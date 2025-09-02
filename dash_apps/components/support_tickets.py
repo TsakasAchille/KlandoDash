@@ -9,6 +9,41 @@ import uuid
 
 
 # Fonction de conversion de format de date robuste
+def classify_ticket(ticket):
+    """
+    Classifie un ticket selon son type et sous-type
+    
+    Args:
+        ticket: Le ticket à classifier
+    
+    Returns:
+        dict: Classification du ticket avec type, sous-type et statut
+    """
+    subject = ticket.get('subject', '').lower()
+    message = ticket.get('message', '').lower()
+    status = ticket.get('status', 'OPEN')
+    
+    # Classification du type principal
+    is_trip_report = '[signalement trajet]' in subject
+    
+    # Classification du sous-type basée sur le message
+    subtype = None
+    if '[conducteur absent]' in message or 'conducteur absent' in message:
+        subtype = 'conducteur_absent'
+    elif '[conducteur en retard]' in message or 'conducteur en retard' in message:
+        subtype = 'conducteur_en_retard'
+    elif '[autre]' in message:
+        subtype = 'autre'
+    
+    return {
+        'is_trip_report': is_trip_report,
+        'type': 'signalement_trajet' if is_trip_report else 'autre',
+        'subtype': subtype,
+        'status': status,
+        'is_open': status in ['OPEN', 'PENDING']
+    }
+
+
 def parse_date(date_str):
     """
     Fonction utilitaire pour parser des dates dans différents formats.
@@ -23,9 +58,10 @@ def parse_date(date_str):
         return date_str
         
     formats = [
+        "%Y-%m-%d %H:%M:%S.%f",  # Format avec microsecondes (le plus courant dans les logs)
         "%Y-%m-%d %H:%M:%S",     # Format standard
-        "%Y-%m-%dT%H:%M:%S",     # Format ISO
         "%Y-%m-%dT%H:%M:%S.%f",  # Format ISO avec microsecondes
+        "%Y-%m-%dT%H:%M:%S",     # Format ISO
         "%Y-%m-%d"              # Date simple
     ]
     
@@ -34,6 +70,18 @@ def parse_date(date_str):
             return datetime.strptime(date_str, fmt)
         except ValueError:
             continue
+            
+    # Essayer de traiter manuellement les microsecondes trop longues
+    if '.' in date_str:
+        try:
+            # Tronquer les microsecondes à 6 chiffres maximum
+            parts = date_str.split('.')
+            if len(parts) == 2:
+                microseconds = parts[1][:6].ljust(6, '0')  # Tronquer ou compléter à 6 chiffres
+                normalized_date = f"{parts[0]}.{microseconds}"
+                return datetime.strptime(normalized_date, "%Y-%m-%d %H:%M:%S.%f")
+        except ValueError:
+            pass
             
     print(f"[WARNING] Format de date non reconnu: {date_str}")
     return datetime.now()
@@ -145,7 +193,7 @@ def render_tickets_list(tickets, selected_ticket_id=None):
 
 def render_ticket_details(ticket, comments):
     """
-    Affiche les détails d'un ticket et ses commentaires en utilisant des composants Dash natifs
+    Affiche les détails d'un ticket avec un layout amélioré selon les spécifications
     
     Args:
         ticket: Le ticket à afficher
@@ -155,15 +203,19 @@ def render_ticket_details(ticket, comments):
         Un composant Dash pour afficher les détails du ticket
     """
     
+    # Classifier le ticket
+    classification = classify_ticket(ticket)
+    
     # Définir les classes et textes selon le statut
     status = ticket.get("status", "PENDING")
     status_mapping = {
-        "PENDING": {"color": "warning", "text": "En attente"},
-        "CLOSED": {"color": "success", "text": "Fermé"}
+        "PENDING": {"color": "warning", "text": "En attente", "icon": "⏳"},
+        "OPEN": {"color": "warning", "text": "Ouvert", "icon": "🔓"},
+        "CLOSED": {"color": "success", "text": "Fermé", "icon": "✅"}
     }
     
     # Valeurs par défaut si le statut n'est pas reconnu
-    status_info = status_mapping.get(status, {"color": "secondary", "text": status})
+    status_info = status_mapping.get(status, {"color": "secondary", "text": status, "icon": "❓"})
     
     # Formatter les dates
     created_at = parse_date(ticket["created_at"])
@@ -184,7 +236,6 @@ def render_ticket_details(ticket, comments):
     # Inverser pour afficher les plus récents en premier
     formatted_comments.reverse()
     
-    # Section fixe - Informations du ticket
     # Détecter un éventuel identifiant de trajet dans le sujet
     subject_text = ticket.get('subject', '') or ''
     subject_lower = subject_text.lower()
@@ -196,46 +247,89 @@ def render_ticket_details(ticket, comments):
             trip_id = m.group(0)
             trip_url = f"/trips?trip_id={trip_id}"
 
-    fixed_section = dbc.Card([
+    # 1. BOX DE CLASSIFICATION DU TICKET
+    classification_box = dbc.Card([
+        dbc.CardHeader([
+            html.H5("📋 Classification du Ticket", className="mb-0")
+        ]),
         dbc.CardBody([
-            # Titre du ticket
-            html.H4(ticket.get('subject', 'Sans objet'), className="mb-3"),
-            # Bouton voir trajet si applicable
-            (dbc.Button("Voir trajet", color="primary", size="sm", href=trip_url, className="mb-3") if trip_url else html.Span()),
-            
-            # Formulaire de mise à jour du statut
-            dbc.Card([
-                dbc.CardHeader("Mettre à jour le statut"),
-                dbc.CardBody([
-                    dbc.Row([
-                        dbc.Col([
-                            dcc.Dropdown(
-                                id={"type": "status-dropdown", "index": ticket["ticket_id"]},
-                                options=[
-                                    {"label": "En attente", "value": "OPEN"},
-                                    {"label": "Fermé", "value": "CLOSED"}
-                                ],
-                                value=ticket["status"],
-                                className="mb-2"
-                            ),
-                            dbc.Button(
-                                "Mettre à jour",
-                                id={"type": "update-status-btn", "index": ticket["ticket_id"]},
-                                color="primary",
-                                className="mt-2"
-                            )
-                        ])
-                    ])
-                ])
-            ], className="mb-3"),
-
-
-            
-            # Informations du ticket en grille
             dbc.Row([
                 dbc.Col([
-                    html.P([html.Strong("N° Ticket: "), html.Span(ticket.get("ticket_id", "N/A"))], className="mb-1"),
-                    html.P([html.Strong("Statut: "), dbc.Badge(status_info["text"], color=status_info["color"])], className="mb-1"),
+                    html.P([
+                        html.Strong("Type: "),
+                        dbc.Badge(
+                            "🚗 Signalement trajet" if classification['is_trip_report'] else "📝 Autre",
+                            color="info" if classification['is_trip_report'] else "secondary",
+                            className="me-2"
+                        )
+                    ], className="mb-2"),
+                    html.P([
+                        html.Strong("Sous-type: "),
+                        dbc.Badge(
+                            {
+                                'conducteur_absent': "❌ Conducteur absent",
+                                'conducteur_en_retard': "⏰ Conducteur en retard", 
+                                'autre': "❓ Autre"
+                            }.get(classification['subtype'], "➖ Non spécifié"),
+                            color={
+                                'conducteur_absent': "danger",
+                                'conducteur_en_retard': "warning",
+                                'autre': "secondary"
+                            }.get(classification['subtype'], "light"),
+                            className="me-2"
+                        )
+                    ], className="mb-2"),
+                ], width=6),
+                dbc.Col([
+                    html.P([
+                        html.Strong("Statut: "),
+                        dbc.Badge(
+                            f"{status_info['icon']} {status_info['text']}",
+                            color=status_info["color"],
+                            className="me-2"
+                        )
+                    ], className="mb-2"),
+                    # Bouton voir trajet si applicable
+                    (dbc.Button("🔍 Voir trajet", color="primary", size="sm", href=trip_url, className="mb-2") if trip_url else html.Span()),
+                ], width=6)
+            ])
+        ])
+    ], className="mb-3")
+    
+    # 2. FORMULAIRE DE MISE À JOUR DU STATUT
+    status_update_box = dbc.Card([
+        dbc.CardHeader("⚙️ Mettre à jour le statut"),
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    dcc.Dropdown(
+                        id={"type": "status-dropdown", "index": ticket["ticket_id"]},
+                        options=[
+                            {"label": "🔓 Ouvert", "value": "OPEN"},
+                            {"label": "✅ Fermé", "value": "CLOSED"}
+                        ],
+                        value=ticket["status"],
+                        className="mb-2"
+                    ),
+                    dbc.Button(
+                        "Mettre à jour",
+                        id={"type": "update-status-btn", "index": ticket["ticket_id"]},
+                        color="primary",
+                        size="sm"
+                    )
+                ], width=12)
+            ])
+        ])
+    ], className="mb-3")
+    
+    # 3. INFORMATIONS DU TICKET
+    info_box = dbc.Card([
+        dbc.CardHeader("ℹ️ Informations du Ticket"),
+        dbc.CardBody([
+            html.H5(ticket.get('subject', 'Sans objet'), className="mb-3", style={"color": "#2c3e50"}),
+            dbc.Row([
+                dbc.Col([
+                    html.P([html.Strong("N° Ticket: "), html.Span(ticket.get("ticket_id", "N/A"))], className="mb-2"),
                     html.P([
                         html.Strong("Utilisateur: "),
                         html.Span(ticket.get("user_id", "-")),
@@ -247,12 +341,12 @@ def render_ticket_details(ticket, comments):
                             content=ticket.get("user_id", "-"),
                             className="copy-btn"
                         )
-                    ], className="mb-1"),
-                    html.P([html.Strong("Créé le: "), html.Span(created_at.strftime("%d/%m/%Y %H:%M"))], className="mb-1"),
+                    ], className="mb-2"),
+                    html.P([html.Strong("Créé le: "), html.Span(created_at.strftime("%d/%m/%Y %H:%M"))], className="mb-2"),
                 ], width=6),
                 dbc.Col([
-                    html.P([html.Strong("Mis à jour le: "), html.Span(updated_at.strftime("%d/%m/%Y %H:%M"))], className="mb-1"),
-                    html.P([html.Strong("Préférence de contact: "), html.Span(ticket.get("contact_preference", "-"))], className="mb-1"),
+                    html.P([html.Strong("Mis à jour le: "), html.Span(updated_at.strftime("%d/%m/%Y %H:%M"))], className="mb-2"),
+                    html.P([html.Strong("Contact: "), html.Span(ticket.get("contact_preference", "-"))], className="mb-2"),
                     html.P([
                         html.Strong("Téléphone: "),
                         html.Span(ticket.get("phone", "-")),
@@ -264,7 +358,7 @@ def render_ticket_details(ticket, comments):
                             content=ticket.get("phone", "-"),
                             className="copy-btn"
                         )
-                    ], className="mb-1"),
+                    ], className="mb-2"),
                     html.P([
                         html.Strong("E-mail: "),
                         html.Span(ticket.get("mail", "-")),
@@ -276,34 +370,78 @@ def render_ticket_details(ticket, comments):
                             content=ticket.get("mail", "-"),
                             className="copy-btn"
                         )
-                    ], className="mb-1"),
+                    ], className="mb-2"),
                 ], width=6),
-            ], className="mb-3"),
-            
-            # Message du ticket
-            dbc.Card(
-                dbc.CardBody(ticket.get('message', 'Pas de message')),
-                className="mb-3"
-            ),
+            ])
         ])
     ], className="mb-3")
     
-    # Section défilante - Commentaires
-    comment_form = dbc.Card([
-        dbc.CardHeader("Ajouter un commentaire"),
+    # 4. BOX MESSAGE
+    message_box = dbc.Card([
+        dbc.CardHeader("💬 Message du Client"),
         dbc.CardBody([
+            html.Div(
+                ticket.get('message', 'Pas de message'),
+                style={
+                    "backgroundColor": "#f8f9fa",
+                    "padding": "15px",
+                    "borderRadius": "8px",
+                    "border": "1px solid #e9ecef",
+                    "fontStyle": "italic",
+                    "lineHeight": "1.6"
+                }
+            )
+        ])
+    ], className="mb-3")
+    
+    # 5. SECTION INTERACTIONS (anciennement Commentaires)
+    interaction_form = dbc.Card([
+        dbc.CardHeader("🔄 Nouvelles Interactions"),
+        dbc.CardBody([
+            # Sélecteur de type d'interaction
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Type d'interaction:"),
+                    dbc.RadioItems(
+                        id={"type": "interaction-type", "index": ticket["ticket_id"]},
+                        options=[
+                            {"label": "💭 Commentaire interne", "value": "internal"},
+                            {"label": "📧 Réponse au client", "value": "client_response"}
+                        ],
+                        value="internal",
+                        inline=True,
+                        className="mb-3"
+                    )
+                ], width=12)
+            ]),
+            # Zone de texte pour l'interaction
             dbc.InputGroup([
                 dbc.Textarea(
                     id={"type": "comment-textarea", "index": ticket["ticket_id"]},
-                    placeholder="Votre commentaire...",
-                    style={"height": "80px", "resize": "none"}
+                    placeholder="Votre commentaire ou réponse...",
+                    style={"height": "100px", "resize": "none"}
                 )
-            ], className="mb-2"),
-            dbc.Button(
-                "Ajouter",
-                id={"type": "comment-btn", "index": ticket["ticket_id"]},
-                color="primary"
-            )
+            ], className="mb-3"),
+            # Boutons d'action
+            dbc.Row([
+                dbc.Col([
+                    dbc.Button(
+                        "💾 Ajouter commentaire interne",
+                        id={"type": "comment-btn", "index": ticket["ticket_id"]},
+                        color="secondary",
+                        size="sm",
+                        className="me-2"
+                    ),
+                    dbc.Button(
+                        "📤 Envoyer réponse client",
+                        id={"type": "client-response-btn", "index": ticket["ticket_id"]},
+                        color="primary",
+                        size="sm",
+                        disabled=True,  # Sera activé plus tard
+                        title="Fonctionnalité à venir"
+                    )
+                ], width=12)
+            ])
         ])
     ], className="mb-3")
     
@@ -340,23 +478,30 @@ def render_ticket_details(ticket, comments):
     else:
         comments_container = [html.P("Aucun commentaire pour l'instant", className="text-muted")]
     
-    # Scrollable section with comments
-    scrollable_section = html.Div([
-        html.H5(f"Commentaires ({len(formatted_comments)})", className="mb-3"),
-        comment_form,
-        html.Hr(),
-        html.Div(comments_container, style={"maxHeight": "800px", "overflowY": "auto"}),
-    ], className="mt-3", id="comment-form")
+    # 6. HISTORIQUE DES INTERACTIONS
+    interactions_history = dbc.Card([
+        dbc.CardHeader(f"📋 Historique des Interactions ({len(formatted_comments)})"),
+        dbc.CardBody([
+            html.Div(comments_container, style={"maxHeight": "400px", "overflowY": "auto"})
+        ])
+    ], className="mb-3")
     
-    # Section détails avec une structure fixe et défilante
+    # LAYOUT FINAL AVEC TOUTES LES SECTIONS
     details_section = html.Div([
-        # Section fixe (infos ticket et statut)
-        fixed_section,
-        # Section défilante (commentaires avec formulaire au début)
-        scrollable_section
+        # 1. Classification du ticket
+        classification_box,
+        # 2. Mise à jour du statut
+        status_update_box,
+        # 3. Informations du ticket
+        info_box,
+        # 4. Message du client
+        message_box,
+        # 5. Formulaire d'interactions
+        interaction_form,
+        # 6. Historique des interactions
+        interactions_history
     ])
     
-    # Retourner directement la section de détails qui contient déjà tout ce dont nous avons besoin
     return details_section
 
 

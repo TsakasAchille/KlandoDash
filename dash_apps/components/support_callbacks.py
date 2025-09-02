@@ -11,6 +11,7 @@ from dash_apps.repositories.support_comment_repository import SupportCommentRepo
 from dash_apps.repositories.user_repository import UserRepository
 from dash_apps.models.support_ticket import SupportTicket
 from dash_apps.core.database import get_session
+from dash_apps.services.support_cache_service import SupportCacheService
 import dash_bootstrap_components as dbc
 import logging
 from flask import session
@@ -44,24 +45,30 @@ def need_refresh(last_update, force_refresh=False, max_age_seconds=300):
         return True
 
 
-def load_tickets_by_page(page=1, page_size=10, status=None, category=None, subtype=None):
+def load_tickets_by_page(page=1, page_size=10, status=None, category=None, subtype=None, force_reload=False):
     """
-    Charge les tickets par page, version simplifiée
+    Charge les tickets par page avec cache optimisé
     """
     print(f"[load_tickets_by_page] Page {page}, {page_size} tickets/page, status={status}")
     
+    # Utiliser le service de cache centralisé
+    filter_params = {
+        'category': category,
+        'subtype': subtype
+    }
+    
     try:
-        with get_session() as session:
-            result = SupportTicketRepository.get_tickets_by_page(
-                session, page=page, page_size=page_size, status=status,
-                category=category, subtype=subtype
-            )
-            tickets = [t.model_dump() for t in result["tickets"]]
-            pagination = result["pagination"]
-            
+        result = SupportCacheService.get_tickets_page_result(
+            page_index=page,
+            page_size=page_size,
+            status=status,
+            filter_params=filter_params,
+            force_reload=force_reload
+        )
+        
         return {
-            "tickets": tickets,
-            "pagination": pagination,
+            "tickets": result["tickets"],
+            "pagination": result["pagination"],
             "timestamp": datetime.now().isoformat(),
             "status_filter": status
         }
@@ -125,7 +132,7 @@ def update_ticket_status(ticket_id, new_status):
 )
 def update_pending_tickets_data(page, refresh_clicks, update_signal, category_filter, subtype_filter, last_update):
     """
-    Charge les tickets en attente pour la page demandée
+    Charge les tickets en attente pour la page demandée avec cache optimisé
     """
     print("")
     print("update_pending_tickets_data")
@@ -137,11 +144,15 @@ def update_pending_tickets_data(page, refresh_clicks, update_signal, category_fi
     if update_signal:
         print(f"Signal de mise à jour reçu: {update_signal}")
     
+    # Déterminer si on force le reload (bouton refresh ou signal de mise à jour)
+    force_reload = bool(refresh_clicks) or bool(update_signal and update_signal.get("count", 0) > 0)
+    
     # Charger les tickets pour la page demandée (10 tickets par page) avec filtres serveur
     data = load_tickets_by_page(
         page=page or 1, page_size=10, status="OPEN",
         category=(category_filter if category_filter != "all" else None),
-        subtype=(subtype_filter if subtype_filter != "all" else None)
+        subtype=(subtype_filter if subtype_filter != "all" else None),
+        force_reload=force_reload
     )
     
     # Retourner le nombre total de pages pour le paginateur
@@ -165,7 +176,7 @@ def update_pending_tickets_data(page, refresh_clicks, update_signal, category_fi
 )
 def update_closed_tickets_data(page, refresh_clicks, update_signal, category_filter, subtype_filter, last_update):
     """
-    Charge les tickets fermés pour la page demandée
+    Charge les tickets fermés pour la page demandée avec cache optimisé
     """
     print("")
     print("update_closed_tickets_data")
@@ -176,12 +187,16 @@ def update_closed_tickets_data(page, refresh_clicks, update_signal, category_fil
     # Les logs pour le debugging du signal de mise à jour
     if update_signal:
         print(f"Signal de mise à jour reçu: {update_signal}")
+    
+    # Déterminer si on force le reload (bouton refresh ou signal de mise à jour)
+    force_reload = bool(refresh_clicks) or bool(update_signal and update_signal.get("count", 0) > 0)
         
     # Charger les tickets pour la page demandée (10 tickets par page) avec filtres serveur
     data = load_tickets_by_page(
         page=page or 1, page_size=10, status="CLOSED",
         category=(category_filter if category_filter != "all" else None),
-        subtype=(subtype_filter if subtype_filter != "all" else None)
+        subtype=(subtype_filter if subtype_filter != "all" else None),
+        force_reload=force_reload
     )
     
     # Retourner le nombre total de pages pour le paginateur
@@ -241,7 +256,11 @@ def process_ticket_status_update(status_clicks, status_values, selected_ticket, 
 def update_ticket_stores(cache_pending, cache_closed, update_signal, current_pending, current_closed):
     """
     Met à jour les stores de tickets en fonction des caches et du signal de mise à jour
+    Utilise le cache centralisé pour optimiser les performances
     """
+    # Effacer le cache HTML si un ticket a été mis à jour
+    if update_signal and update_signal.get("updated_id"):
+        SupportCacheService.clear_ticket_cache(update_signal["updated_id"])
    
     # Utiliser simplement les données des caches quand ils sont disponibles
     # Cette approche est plus simple et maintient quand même les données à jour
@@ -431,7 +450,7 @@ def update_selected_ticket(ticket_item_n_clicks, pathname, search, pending_ticke
 )
 def display_ticket_details(selected_ticket, comment_signal, pending_tickets_data, closed_tickets_data):
     """
-    Affiche les détails du ticket sélectionné
+    Affiche les détails du ticket sélectionné avec cache optimisé
     Rafraîchit également les commentaires quand le signal de commentaires est modifié
     """
     # Si pas de ticket sélectionné, afficher un message
@@ -442,17 +461,20 @@ def display_ticket_details(selected_ticket, comment_signal, pending_tickets_data
             style={"fontStyle": "italic"}
         )
     
-    # Pour l'affichage, on n'a pas besoin des données complètes de tous les tickets
-    # On utilise directement le ticket sélectionné
     ticket_id = selected_ticket["ticket_id"]
     
-    # Charger les commentaires à la demande
-    # Si le signal de commentaire concerne ce ticket, ou dans tous les cas (nouveau ticket sélectionné)
-    # on recharge toujours les commentaires pour avoir les plus récents
-    comments = load_comments_for_ticket(ticket_id)
-        
-    # Rendre les détails avec les commentaires
-    return render_ticket_details(selected_ticket, comments)
+    # Si le signal de commentaire a été déclenché, effacer le cache pour ce ticket
+    if comment_signal and comment_signal.get("ticket_id") == ticket_id:
+        SupportCacheService.clear_ticket_cache(ticket_id)
+    
+    # Utiliser le service de cache pour récupérer les détails
+    try:
+        return SupportCacheService.get_ticket_details_panel(ticket_id)
+    except Exception as e:
+        logger.error(f"Erreur affichage détails ticket {ticket_id}: {e}")
+        # Fallback: charger directement sans cache
+        comments = load_comments_for_ticket(ticket_id)
+        return render_ticket_details(selected_ticket, comments)
 
 
 @callback(
@@ -466,11 +488,11 @@ def display_ticket_details(selected_ticket, comment_signal, pending_tickets_data
 )
 def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_signal):
     """
-    Gère l'ajout d'un nouveau commentaire
+    Gère l'ajout d'un nouveau commentaire avec invalidation de cache
     """
     # Vérification des prérequis
     if not btn_clicks or not btn_clicks[0] or not selected_ticket or not selected_ticket.get("ticket_id"):
-        return no_update, [""] * len(comment_texts)
+        return no_update, [""]*len(comment_texts)
     
     # Récupérer les informations nécessaires
     ticket_id = selected_ticket["ticket_id"]
@@ -478,7 +500,7 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_sig
     
     # Vérifier si le commentaire est vide
     if not comment_text or not comment_text.strip():
-        return no_update, [""] * len(comment_texts)
+        return no_update, [""]*len(comment_texts)
     
     from flask import session
     
@@ -500,12 +522,16 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_sig
             
             display_name = user_name or user_id
             logger.info(f"Commentaire ajouté: ticket={ticket_id}, user={display_name}")
+            
+            # Effacer le cache pour ce ticket après ajout du commentaire
+            SupportCacheService.clear_ticket_cache(ticket_id)
+            
     except Exception as e:
         logger.error(f"Erreur lors de l'ajout du commentaire: {e}")
-        return no_update, [""] * len(comment_texts)
+        return no_update, [""]*len(comment_texts)
         
     if comment is None:
-        return no_update, [""] * len(comment_texts)
+        return no_update, [""]*len(comment_texts)
     
     # Émettre un signal spécifique pour les commentaires uniquement
     updated_signal = {
