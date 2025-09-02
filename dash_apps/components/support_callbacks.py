@@ -542,3 +542,78 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_sig
     
     # Renvoyer le signal et vider le champ de commentaire
     return updated_signal, ["" for _ in comment_texts]
+
+
+@callback(
+    [Output("email-send-signal", "data"),
+     Output({"type": "comment-textarea", "index": ALL}, "value", allow_duplicate=True)],
+    [Input({"type": "client-response-btn", "index": ALL}, "n_clicks")],
+    [State({"type": "comment-textarea", "index": ALL}, "value"),
+     State("selected-ticket-store", "data"),
+     State("email-send-signal", "data")],
+    prevent_initial_call=True
+)
+def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, current_signal):
+    """
+    Gère l'envoi d'email au client via webhook N8N
+    """
+    # Vérification des prérequis
+    if not btn_clicks or not btn_clicks[0] or not selected_ticket or not selected_ticket.get("ticket_id"):
+        return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
+    
+    # Récupérer les informations nécessaires
+    ticket_id = selected_ticket["ticket_id"]
+    message_content = comment_texts[0] if comment_texts else ""
+    
+    # Vérifier si le message est vide
+    if not message_content or not message_content.strip():
+        logger.warning("Tentative d'envoi d'email avec message vide")
+        return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
+    
+    # Vérifier si le client peut recevoir des emails
+    from dash_apps.services.email_service import EmailService
+    
+    if not EmailService.can_send_email(selected_ticket):
+        logger.warning(f"Impossible d'envoyer email pour ticket {ticket_id}: client ne souhaite pas être contacté par email")
+        return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
+    
+    # Envoyer l'email via le webhook
+    try:
+        success = EmailService.send_email_to_client(selected_ticket, message_content.strip())
+        
+        if success:
+            # Ajouter également le message comme commentaire interne
+            from flask import session
+            user_id = session.get('user_id', 'system')
+            user_name = session.get('user_name', 'Support')
+            
+            with get_session() as db_session:
+                SupportCommentRepository.add_comment(
+                    db_session,
+                    str(ticket_id),
+                    str(user_id),
+                    f"[EMAIL ENVOYÉ] {message_content.strip()}",
+                    user_name
+                )
+            
+            # Effacer le cache pour ce ticket
+            SupportCacheService.clear_ticket_cache(ticket_id)
+            
+            logger.info(f"Email envoyé avec succès pour ticket {ticket_id}")
+            
+            # Émettre un signal de succès
+            success_signal = {
+                "count": current_signal.get("count", 0) + 1,
+                "ticket_id": ticket_id,
+                "status": "success",
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            return success_signal, ["" for _ in comment_texts]
+        else:
+            logger.error(f"Échec envoi email pour ticket {ticket_id}")
+            return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
+            
+    except Exception as e:
+        logger.error(f"Erreur lors de l'envoi email: {e}")
+        return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]

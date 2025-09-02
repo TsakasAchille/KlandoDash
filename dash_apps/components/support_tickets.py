@@ -435,10 +435,10 @@ def render_ticket_details(ticket, comments):
                     dbc.Button(
                         "📤 Envoyer réponse client",
                         id={"type": "client-response-btn", "index": ticket["ticket_id"]},
-                        color="primary",
+                        color="primary" if ticket.get("contact_preference") == "mail" and ticket.get("mail") else "secondary",
                         size="sm",
-                        disabled=True,  # Sera activé plus tard
-                        title="Fonctionnalité à venir"
+                        disabled=not (ticket.get("contact_preference") == "mail" and ticket.get("mail")),
+                        title="Envoie un email au client" if ticket.get("contact_preference") == "mail" and ticket.get("mail") else "Client ne souhaite pas être contacté par email"
                     )
                 ], width=12)
             ])
