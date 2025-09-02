@@ -567,7 +567,7 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_sig
 )
 def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, current_signal):
     """
-    Gère l'envoi d'email au client via webhook N8N
+    Gère l'envoi d'email au client via Gmail API OAuth2
     """
     # Vérification des prérequis
     if not btn_clicks or not btn_clicks[0] or not selected_ticket or not selected_ticket.get("ticket_id"):
@@ -582,91 +582,35 @@ def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, cu
         logger.warning("Tentative d'envoi d'email avec message vide")
         return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
     
-    # Envoyer directement via le webhook N8N (pas d'EmailService pour l'instant)
+    # Utiliser EmailService au lieu de N8N
     try:
-        import requests
+        from dash_apps.services.email_service import EmailService
         
-        # Préparer les données pour le webhook N8N
-        webhook_data = {
-            "ticket_id": ticket_id,
-            "user_id": selected_ticket.get("user_id"),
-            "user_email": selected_ticket.get("mail"),
-            "user_phone": selected_ticket.get("phone"),
-            "contact_preference": selected_ticket.get("contact_preference"),
-            "subject": selected_ticket.get("subject"),
-            "message_content": message_content.strip(),
-            "comment_source": "mail"  # Par défaut mail, N8N peut ajuster selon contact_preference
-        }
+        logger.info(f"Tentative d'envoi email pour ticket {ticket_id}")
         
-        # URL du webhook N8N depuis les variables d'environnement
-        webhook_url = os.getenv("N8N_WEBHOOK_URL", "https://your-n8n-instance.com/webhook/support-email")
-        
-        # Pour le développement, vous pouvez utiliser une URL de test ou logger les données
-        logger.info(f"Webhook data prepared: {webhook_data}")
-        
-        # Envoyer au webhook N8N
-        try:
-            logger.info(f"Envoi vers N8N: {webhook_url}")
-            # Utiliser GET avec paramètres dans l'URL pour compatibilité N8N
-            response = requests.get(webhook_url, params=webhook_data, timeout=10)
-            logger.info(f"Réponse N8N: Status {response.status_code}, Content: {response.text[:200]}")
-            success = response.status_code == 200
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Erreur connexion N8N: {e}")
-            success = False
-            response = None
+        # Envoyer l'email via EmailService
+        success = EmailService.send_email_to_client(selected_ticket, message_content.strip())
         
         if success:
-            # Ajouter le commentaire en base de données pour l'affichage immédiat
-            try:
-                from flask import session
-                user_id = session.get('user_id', 'system')
-                user_name = session.get('user_name', 'Système')
-                
-                with get_session() as db_session:
-                    # Ajouter le commentaire comme "external_sent" pour l'affichage
-                    comment = SupportCommentRepository.add_comment_with_type(
-                        db_session,
-                        str(ticket_id),
-                        str(user_id),
-                        message_content.strip(),
-                        user_name,
-                        "external_sent",
-                        comment_source="mail"
-                    )
-                    
-                    if comment:
-                        logger.info(f"Commentaire d'envoi ajouté en base: ticket={ticket_id}")
-                    
-            except Exception as e:
-                logger.error(f"Erreur ajout commentaire d'envoi: {e}")
-            
-            # Effacer le cache pour ce ticket (N8N le fera aussi via /api/support/refresh)
-            SupportCacheService.clear_ticket_cache(ticket_id)
-            
             logger.info(f"Email envoyé avec succès pour ticket {ticket_id}")
             
-            # Émettre un signal de succès avec détails
+            # Émettre un signal de succès
             success_signal = {
                 "count": current_signal.get("count", 0) + 1,
                 "ticket_id": ticket_id,
                 "status": "success",
-                "message": f"✅ Email envoyé avec succès via N8N (Status: {response.status_code})",
+                "message": f"✅ Email envoyé avec succès via Gmail API",
                 "timestamp": datetime.now().isoformat()
             }
             
             return success_signal, ["" for _ in comment_texts]
         else:
-            # Émettre un signal d'échec avec détails
-            error_message = f"❌ Échec envoi email - Status: {response.status_code if response else 'Erreur connexion'}"
-            if response:
-                error_message += f" - {response.text[:100]}"
-            
+            # Émettre un signal d'échec
             error_signal = {
                 "count": current_signal.get("count", 0) + 1,
                 "ticket_id": ticket_id,
                 "status": "error",
-                "message": error_message,
+                "message": "❌ Échec envoi email via Gmail API",
                 "timestamp": datetime.now().isoformat()
             }
             
