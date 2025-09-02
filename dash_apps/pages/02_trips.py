@@ -362,19 +362,17 @@ def display_active_trip_filters(filters):
 
 @callback(
     Output("main-trips-content", "children"),
-    Output("selected-trip-id", "data", allow_duplicate=True),
     [Input("trips-current-page", "data"),
      Input("trips-filter-store", "data"),
-     Input("refresh-trips-btn", "n_clicks")],
-    [State("selected-trip-id", "data")],
-    prevent_initial_call=True
+     Input("refresh-trips-btn", "n_clicks"),
+     Input("selected-trip-id", "data")],  # Ajout pour restaurer la sélection
+    prevent_initial_call=False
 )
 def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
-    """Callback pour le rendu du tableau des trajets avec auto-sélection du premier trajet"""
+    """Callback pour le rendu du tableau des trajets avec persistance de sélection"""
     log_callback(
         "render_trips_table",
-        {"current_page": current_page, "refresh_clicks": refresh_clicks, "filters": filters},
-        {"selected_trip": selected_trip}
+        {"current_page": current_page, "refresh_clicks": refresh_clicks, "filters": filters, "selected_trip": selected_trip}
     )
     
     # Configuration pagination
@@ -456,23 +454,21 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     table_component = render_custom_trips_table(
         table_rows_data, 
         current_page=current_page,
-        total_trips=total_trips
+        total_trips=total_trips,
+        selected_trip_id=selected_trip  # Passer la sélection depuis le store
     )
 
-    # Préchargement supprimé pour améliorer les performances sur Render
-    # Les panneaux se chargeront à la demande lors de la sélection
-    
     # Message informatif
     if total_trips == 0:
         message = dbc.Alert("Aucun trajet trouvé avec les critères de recherche actuels.", color="info")
-        return [message, table_component], selected_trip
+        return [message, table_component]
     else:
+        page_count = math.ceil(total_trips / page_size) if total_trips > 0 else 1
         info_message = html.P(
             f"Affichage de {len(trips)} trajets sur {total_trips} au total (page {current_page}/{page_count})",
             className="text-muted small mb-3"
         )
-        return [info_message, table_component], selected_trip
-
+        return [info_message, table_component]
 
 @callback(
     Output("trip-details-panel", "children"),
