@@ -442,22 +442,6 @@ def render_ticket_details(ticket, comments):
     interaction_form = dbc.Card([
         dbc.CardHeader("🔄 Nouvelles Interactions"),
         dbc.CardBody([
-            # Sélecteur de type d'interaction
-            dbc.Row([
-                dbc.Col([
-                    dbc.Label("Type d'interaction:"),
-                    dbc.RadioItems(
-                        id={"type": "interaction-type", "index": ticket["ticket_id"]},
-                        options=[
-                            {"label": "💭 Commentaire interne", "value": "internal"},
-                            {"label": "📧 Réponse au client", "value": "client_response"}
-                        ],
-                        value="internal",
-                        inline=True,
-                        className="mb-3"
-                    )
-                ], width=12)
-            ]),
             # Zone de texte pour l'interaction
             dbc.InputGroup([
                 dbc.Textarea(
