@@ -44,11 +44,12 @@ class SupportCommentRepository:
 
     @staticmethod
     def add_comment(session: Session, ticket_id: str, user_id: str, comment_text: str, user_name: str = None) -> SupportCommentSchema:
-        # Créer le commentaire en base de données
+        # Créer le commentaire en base de données (type internal par défaut)
         comment = SupportComment(
             ticket_id=ticket_id,
             user_id=user_name,
             comment_text=comment_text,
+            comment_type="internal",
             created_at=datetime.now()
         )
         session.add(comment)
@@ -63,6 +64,42 @@ class SupportCommentRepository:
             d['ticket_id'] = str(d['ticket_id'])
         
         # Ajouter le nom d'utilisateur pour l'affichage (non stocké en base)
+        d['user_name'] = user_name or user_id
+        
+        return SupportCommentSchema.model_validate(d)
+
+    @staticmethod
+    def add_comment_with_type(session: Session, ticket_id: str, user_id: str, comment_text: str, user_name: str = None, comment_type: str = "internal") -> SupportCommentSchema:
+        """
+        Ajoute un commentaire avec un type spécifique (pour N8N)
+        
+        Args:
+            session: Session de base de données
+            ticket_id: ID du ticket
+            user_id: ID de l'utilisateur
+            comment_text: Contenu du commentaire
+            user_name: Nom d'affichage de l'utilisateur
+            comment_type: Type de commentaire (internal, external_sent, external_received)
+        """
+        comment = SupportComment(
+            ticket_id=ticket_id,
+            user_id=user_name or user_id,
+            comment_text=comment_text,
+            comment_type=comment_type,
+            created_at=datetime.now()
+        )
+        session.add(comment)
+        session.commit()
+        session.refresh(comment)
+        
+        # Convertir en dictionnaire pour la validation Pydantic
+        d = comment.to_dict() if hasattr(comment, 'to_dict') else dict(comment)
+        if 'comment_id' in d and not isinstance(d['comment_id'], str):
+            d['comment_id'] = str(d['comment_id'])
+        if 'ticket_id' in d and not isinstance(d['ticket_id'], str):
+            d['ticket_id'] = str(d['ticket_id'])
+        
+        # Ajouter le nom d'utilisateur pour l'affichage
         d['user_name'] = user_name or user_id
         
         return SupportCommentSchema.model_validate(d)

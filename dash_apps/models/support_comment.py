@@ -11,6 +11,9 @@ class SupportComment(Base):
     user_id = Column(String, nullable=False)
     comment_text = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False)
+    comment_sent = Column(String, nullable=True)  # Message envoyé
+    comment_received = Column(String, nullable=True)  # Message reçu
+    comment_type = Column(String, nullable=True)  # Type de commentaire
 
     def to_dict(self):
         return {
@@ -18,5 +21,8 @@ class SupportComment(Base):
             "ticket_id": str(self.ticket_id),
             "user_id": self.user_id,
             "comment_text": self.comment_text,
+            "comment_type": self.comment_type,
+            "comment_sent": self.comment_sent,
+            "comment_received": self.comment_received,
             "created_at": self.created_at,
         }

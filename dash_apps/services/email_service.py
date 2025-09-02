@@ -37,13 +37,21 @@ class EmailService:
                 logger.error("Aucun email trouvé pour ce ticket")
                 return False
             
-            # Préparer les données pour le webhook
+            # Récupérer l'ID de l'utilisateur qui envoie le message
+            from flask import session
+            sender_user_id = session.get('user_id', 'system')
+            sender_user_name = session.get('user_name', 'Support Klando')
+            
+            # Préparer les données pour le webhook N8N (qui gérera email + DB + notification)
             payload = {
                 "to": client_email,
                 "subject": f"Réponse à votre ticket de support - {ticket_data.get('subject', 'Support Klando')}",
                 "message": message_content,
                 "ticket_id": ticket_data.get('ticket_id'),
-                "user_id": ticket_data.get('user_id')
+                "client_user_id": ticket_data.get('user_id'),  # ID du client
+                "sender_user_id": sender_user_id,  # ID de celui qui envoie
+                "sender_user_name": sender_user_name,  # Nom de celui qui envoie
+                "comment_type": "external_sent"
             }
             
             logger.info(f"Envoi email via webhook pour ticket {ticket_data.get('ticket_id')} vers {client_email}")

@@ -582,21 +582,10 @@ def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, cu
         success = EmailService.send_email_to_client(selected_ticket, message_content.strip())
         
         if success:
-            # Ajouter également le message comme commentaire interne
-            from flask import session
-            user_id = session.get('user_id', 'system')
-            user_name = session.get('user_name', 'Support')
+            # N8N va maintenant gérer l'ajout du commentaire en DB
+            # Plus besoin d'ajouter manuellement ici
             
-            with get_session() as db_session:
-                SupportCommentRepository.add_comment(
-                    db_session,
-                    str(ticket_id),
-                    str(user_id),
-                    f"[EMAIL ENVOYÉ] {message_content.strip()}",
-                    user_name
-                )
-            
-            # Effacer le cache pour ce ticket
+            # Effacer le cache pour ce ticket (N8N le fera aussi via /api/support/refresh)
             SupportCacheService.clear_ticket_cache(ticket_id)
             
             logger.info(f"Email envoyé avec succès pour ticket {ticket_id}")

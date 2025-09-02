@@ -221,16 +221,57 @@ def render_ticket_details(ticket, comments):
     created_at = parse_date(ticket["created_at"])
     updated_at = parse_date(ticket["updated_at"])
     
-    # Formater les commentaires
+    # Formater les commentaires avec types d'interaction
     formatted_comments = []
     for comment in comments if comments else []:
-        comment_date = parse_date(comment.get("created_at", ""))
+        # Convertir le schema en dictionnaire si nécessaire
+        if hasattr(comment, 'model_dump'):
+            comment_dict = comment.model_dump()
+        elif hasattr(comment, 'dict'):
+            comment_dict = comment.dict()
+        else:
+            comment_dict = dict(comment) if not isinstance(comment, dict) else comment
+        
+        comment_date = parse_date(comment_dict.get("created_at", ""))
         # Utiliser user_name s'il existe, sinon utiliser user_id
-        author_name = comment.get("user_name", comment.get("user_id", "Système"))
+        author_name = comment_dict.get("user_name", comment_dict.get("user_id", "Système"))
+        
+        # Déterminer le type d'interaction basé sur les colonnes existantes
+        comment_type = comment_dict.get("comment_type")
+        comment_sent = comment_dict.get("comment_sent")
+        comment_received = comment_dict.get("comment_received")
+        comment_text = comment_dict.get("comment_text")
+        
+        print(f"DEBUG: Comment ID: {comment_dict.get('comment_id')}")
+        print(f"DEBUG: comment_type: '{comment_type}'")
+        print(f"DEBUG: comment_sent: '{comment_sent}'")
+        print(f"DEBUG: comment_received: '{comment_received}'")
+        print(f"DEBUG: comment_text: '{comment_text}'")
+        
+        # Logique pour déterminer le type d'affichage
+        if comment_sent and comment_sent.strip():
+            interaction_type = "comment_sent"
+            content = comment_sent
+            print(f"DEBUG: Utilisation comment_sent: '{content}'")
+        elif comment_received and comment_received.strip():
+            interaction_type = "comment_received"
+            content = comment_received
+            print(f"DEBUG: Utilisation comment_received: '{content}'")
+        else:
+            # Pour tous les autres cas (internal, external sans comment_sent/received)
+            interaction_type = "internal" if comment_type != "external" else "external"
+            content = comment_dict.get("comment_text", "")
+            print(f"DEBUG: Utilisation comment_text: '{content}' (type: {interaction_type})")
+        
+        print(f"DEBUG: Contenu final: '{content}'")
+        print("DEBUG: ---")
+        
         formatted_comments.append({
-            "author_id": author_name,  # Utiliser le nom de l'utilisateur
-            "content": comment.get("comment_text", ""),  # Utiliser comment_text au lieu de content
-            "formatted_date": comment_date.strftime("%d/%m/%Y %H:%M")
+            "author_id": author_name,
+            "content": content,
+            "formatted_date": comment_date.strftime("%d/%m/%Y %H:%M"),
+            "interaction_type": interaction_type,
+            "comment_type": comment_type
         })
     
     # Inverser pour afficher les plus récents en premier
@@ -445,38 +486,110 @@ def render_ticket_details(ticket, comments):
         ])
     ], className="mb-3")
     
-    # Liste des commentaires - style fluide et continu
+    # Liste des commentaires avec distinction visuelle par type
     comments_container = []
     if formatted_comments:
         comments_list = []
         for comment in formatted_comments:
+            interaction_type = comment.get("interaction_type", "internal")
+            
+            # Configuration visuelle selon le type de commentaire
+            type_config = {
+                "internal": {
+                    "icon": "💭",
+                    "label": "Commentaire interne",
+                    "border_color": "#6c757d",
+                    "bg_color": "#f8f9fa",
+                    "text_color": "#495057"
+                },
+                "external_sent": {
+                    "icon": "📤",
+                    "label": "Envoyé au client",
+                    "border_color": "#28a745",
+                    "bg_color": "#d4edda",
+                    "text_color": "#155724"
+                },
+                "external_received": {
+                    "icon": "📥",
+                    "label": "Reçu du client",
+                    "border_color": "#007bff",
+                    "bg_color": "#d1ecf1",
+                    "text_color": "#0c5460"
+                },
+                "comment_sent": {
+                    "icon": "📤",
+                    "label": "Message envoyé",
+                    "border_color": "#28a745",
+                    "bg_color": "#d4edda",
+                    "text_color": "#155724"
+                },
+                "comment_received": {
+                    "icon": "📥",
+                    "label": "Message reçu",
+                    "border_color": "#007bff",
+                    "bg_color": "#d1ecf1",
+                    "text_color": "#0c5460"
+                },
+                "comment_type": {
+                    "icon": "📝",
+                    "label": "Commentaire",
+                    "border_color": "#17a2b8",
+                    "bg_color": "#d1ecf1",
+                    "text_color": "#0c5460"
+                },
+                "external": {
+                    "icon": "🌐",
+                    "label": "Message externe",
+                    "border_color": "#ffc107",
+                    "bg_color": "#fff3cd",
+                    "text_color": "#856404"
+                }
+            }
+            
+            config = type_config.get(interaction_type, type_config["internal"])
+            
             comment_item = html.Div([
-                # En-tête avec auteur et date
+                # En-tête avec type, auteur et date
                 html.Div([
-                    html.Span(comment["author_id"], style={
-                        "fontWeight": "bold", 
-                        "color": "#3A506B"  # Couleur pour faire ressortir le nom
-                    }),
+                    html.Div([
+                        html.Span([
+                            config["icon"], " ",
+                            html.Strong(config["label"]),
+                            " - ",
+                            comment["author_id"]
+                        ], style={
+                            "fontWeight": "600",
+                            "color": config["text_color"]
+                        }),
+                    ], style={"flex": "1"}),
                     html.Span(comment["formatted_date"], 
-                             style={"float": "right", "fontSize": "0.85rem", "color": "#777"}),
+                             style={"fontSize": "0.85rem", "color": "#777", "fontStyle": "italic"}),
                 ], style={
-                    "borderBottom": "1px solid #eaeaea",
-                    "paddingBottom": "4px",
-                    "marginBottom": "8px"
+                    "display": "flex",
+                    "justifyContent": "space-between",
+                    "alignItems": "center",
+                    "borderBottom": f"2px solid {config['border_color']}",
+                    "paddingBottom": "6px",
+                    "marginBottom": "10px"
                 }),
                 # Contenu du commentaire
-                html.P(comment["content"], style={"marginBottom": "5px"})
+                html.Div(comment["content"], style={
+                    "lineHeight": "1.5",
+                    "color": config["text_color"],
+                    "fontWeight": "400"
+                })
             ], className="comment-item", style={
-                "padding": "12px 15px",
-                "marginBottom": "12px",
-                "borderLeft": "3px solid #dee2e6",
-                "backgroundColor": "#f8f9fa",
-                "borderRadius": "4px"
+                "padding": "15px",
+                "marginBottom": "15px",
+                "borderLeft": f"4px solid {config['border_color']}",
+                "backgroundColor": config["bg_color"],
+                "borderRadius": "6px",
+                "boxShadow": "0 1px 3px rgba(0,0,0,0.1)"
             })
             comments_list.append(comment_item)
         comments_container = comments_list
     else:
-        comments_container = [html.P("Aucun commentaire pour l'instant", className="text-muted")]
+        comments_container = [html.P("Aucune interaction pour l'instant", className="text-muted")]
     
     # 6. HISTORIQUE DES INTERACTIONS
     interactions_history = dbc.Card([

@@ -9,6 +9,7 @@ from flask_login import LoginManager
 from dash_apps.config import Config
 from dash_apps.auth.routes import auth_bp
 from dash_apps.core.proxy import proxy_bp
+from dash_apps.api.support_api import support_api_bp
 from flask import render_template, request
 
 def create_app():
@@ -51,6 +52,8 @@ def create_app():
     server.register_blueprint(auth_bp, url_prefix='/auth')
     # Enregistrer le blueprint proxy (CORS bypass pour MapLibre)
     server.register_blueprint(proxy_bp, url_prefix='/proxy')
+    # Enregistrer le blueprint API support (pour N8N)
+    server.register_blueprint(support_api_bp)
 
     # --- Logging configuration ---
     try:
