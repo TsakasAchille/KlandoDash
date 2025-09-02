@@ -449,11 +449,12 @@ def update_selected_ticket(ticket_item_n_clicks, pathname, search, pending_ticke
 @callback(
     Output("ticket-details-container", "children"),
     [Input("selected-ticket-store", "data"),
-     Input("comment-update-signal", "data")],
+     Input("comment-update-signal", "data"),
+     Input("comments-polling-interval", "n_intervals")],
     [State("support-tickets-store", "data"),
      State("closed-tickets-store", "data")]
 )
-def display_ticket_details(selected_ticket, comment_signal, pending_tickets_data, closed_tickets_data):
+def display_ticket_details(selected_ticket, comment_signal, n_intervals, pending_tickets_data, closed_tickets_data):
     """
     Affiche les détails du ticket sélectionné avec cache optimisé
     Rafraîchit également les commentaires quand le signal de commentaires est modifié
@@ -474,8 +475,8 @@ def display_ticket_details(selected_ticket, comment_signal, pending_tickets_data
             style={"fontStyle": "italic"}
         )
     
-    # Si le signal de commentaire a été déclenché, effacer le cache pour ce ticket
-    if comment_signal and comment_signal.get("ticket_id") == ticket_id:
+    # Si le signal de commentaire a été déclenché ou polling interval, effacer le cache pour ce ticket
+    if (comment_signal and comment_signal.get("ticket_id") == ticket_id) or n_intervals > 0:
         SupportCacheService.clear_ticket_cache(ticket_id)
     
     # Utiliser le service de cache pour récupérer les détails

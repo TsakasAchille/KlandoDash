@@ -34,6 +34,18 @@ def notify_comment_added():
         # Invalider le cache pour ce ticket
         SupportCacheService.clear_ticket_cache(data['ticket_id'])
         
+        # Déclencher la mise à jour du signal de commentaire pour rafraîchir l'interface
+        try:
+            from flask import current_app
+            with current_app.app_context():
+                # Créer un fichier temporaire pour signaler la mise à jour
+                import tempfile
+                signal_file = f"/tmp/comment_update_{data['ticket_id']}.signal"
+                with open(signal_file, 'w') as f:
+                    f.write(str(datetime.now().timestamp()))
+        except Exception as signal_error:
+            logger.warning(f"Impossible de créer le signal de mise à jour: {signal_error}")
+        
         logger.info(f"Notification N8N reçue: cache invalidé pour ticket={data['ticket_id']}")
         
         return jsonify({

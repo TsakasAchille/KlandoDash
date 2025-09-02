@@ -113,6 +113,14 @@ layout = html.Div([
     
     # Signal pour l'envoi d'emails
     dcc.Store(id="email-send-signal", data={"count": 0, "ticket_id": None, "status": None}, storage_type="session"),
+    
+    # Interval pour polling automatique des nouveaux commentaires
+    dcc.Interval(
+        id="comments-polling-interval",
+        interval=10*1000,  # 10 secondes
+        n_intervals=0,
+        disabled=False
+    ),
 
     
     # Layout avec deux colonnes: tickets à gauche, détails à droite
