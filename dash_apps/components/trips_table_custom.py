@@ -1,8 +1,9 @@
-from dash import html, dcc, Input, Output, State, callback, callback_context
+from dash import html, dcc, Input, Output, callback, callback_context, State
+from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
 import dash
 import json
-import dash_bootstrap_components as dbc
-from dash.exceptions import PreventUpdate
+import math
 from dash_apps.config import Config
 from dash_apps.repositories.trip_repository import TripRepository
 
@@ -20,7 +21,7 @@ def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id
     """
     # Rendu du tableau des trajets
     page_size = Config.USERS_TABLE_PAGE_SIZE
-    page_count = (total_trips - 1) // page_size + 1 if total_trips > 0 else 1
+    page_count = math.ceil(total_trips / page_size) if total_trips > 0 else 1
     
     # Créer les en-têtes du tableau (Checkbox en première colonne, puis ID Trajet)
     headers = ["", "ID Trajet", "Origine", "Destination", "Date", "Heure", "Places", "Prix", "Statut"]
