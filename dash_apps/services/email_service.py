@@ -196,20 +196,38 @@ Ticket ID: {ticket_data.get('ticket_id')}
                 sender_user_id = session.get('user_id', 'system')
                 sender_user_name = session.get('user_name', 'Support Klando')
                 
-                SupportCommentRepository.add_comment_with_type(
+                # Ajouter le commentaire avec les bonnes colonnes
+                comment = SupportCommentRepository.add_comment_with_type(
                     db_session,
                     str(ticket_data.get('ticket_id')),
                     sender_user_id,
-                    message_content,
+                    "",  # comment_text vide car on utilise comment_sent
                     sender_user_name,
-                    comment_type
+                    comment_type,
+                    comment_sent=message_content  # Le message envoyé va dans comment_sent
                 )
                 
-                # Invalider le cache
-                from dash_apps.services.support_cache_service import SupportCacheService
-                SupportCacheService.clear_ticket_cache(ticket_data.get('ticket_id'))
+                logger.info(f"DEBUG: Commentaire ajouté - ID: {comment.comment_id if comment else 'None'}")
+                logger.info(f"DEBUG: comment_sent: '{message_content[:50]}...'")
+                logger.info(f"DEBUG: comment_type: '{comment_type}'")
                 
-                logger.info(f"Commentaire ajouté en base pour ticket {ticket_data.get('ticket_id')}")
+                # Invalider le cache pour rafraîchir l'affichage
+                from dash_apps.services.support_cache_service import SupportCacheService
+                ticket_id = ticket_data.get('ticket_id')
+                SupportCacheService.clear_ticket_cache(ticket_id)
+                
+                logger.info(f"DEBUG: Cache invalidé pour ticket {ticket_id}")
+                logger.info(f"DEBUG: Commentaire ajouté en base pour ticket {ticket_id}")
+                
+                # Forcer le rafraîchissement du cache HTML pour affichage immédiat
+                try:
+                    from dash_apps.services.support_cache_service import SupportCacheService
+                    # Effacer aussi le cache HTML des détails du ticket
+                    cache_key = f"ticket_details_{ticket_id}"
+                    SupportCacheService.cache_manager.delete(cache_key)
+                    logger.info(f"DEBUG: Cache HTML effacé pour {cache_key}")
+                except Exception as cache_error:
+                    logger.warning(f"DEBUG: Erreur effacement cache HTML: {cache_error}")
                 
         except Exception as e:
             logger.error(f"Erreur lors de l'ajout du commentaire en base: {e}")

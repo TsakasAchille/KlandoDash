@@ -69,9 +69,9 @@ class SupportCommentRepository:
         return SupportCommentSchema.model_validate(d)
 
     @staticmethod
-    def add_comment_with_type(session: Session, ticket_id: str, user_id: str, comment_text: str, user_name: str = None, comment_type: str = "internal") -> SupportCommentSchema:
+    def add_comment_with_type(session: Session, ticket_id: str, user_id: str, comment_text: str, user_name: str = None, comment_type: str = "internal", comment_sent: str = None) -> SupportCommentSchema:
         """
-        Ajoute un commentaire avec un type spécifique (pour N8N)
+        Ajoute un commentaire avec un type spécifique (pour emails)
         
         Args:
             session: Session de base de données
@@ -80,12 +80,15 @@ class SupportCommentRepository:
             comment_text: Contenu du commentaire
             user_name: Nom d'affichage de l'utilisateur
             comment_type: Type de commentaire (internal, external_sent, external_received)
+            comment_sent: Contenu du message envoyé (pour emails)
         """
         comment = SupportComment(
             ticket_id=ticket_id,
             user_id=user_name or user_id,
             comment_text=comment_text,
             comment_type=comment_type,
+            comment_sent=comment_sent,
+            comment_source="mail" if comment_sent else None,
             created_at=datetime.now()
         )
         session.add(comment)

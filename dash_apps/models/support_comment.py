@@ -14,6 +14,7 @@ class SupportComment(Base):
     comment_sent = Column(String, nullable=True)  # Message envoyé
     comment_received = Column(String, nullable=True)  # Message reçu
     comment_type = Column(String, nullable=True)  # Type de commentaire
+    comment_source = Column(String, nullable=True)  # Source du commentaire (mail, phone, etc.)
 
     def to_dict(self):
         return {
@@ -24,5 +25,6 @@ class SupportComment(Base):
             "comment_type": self.comment_type,
             "comment_sent": self.comment_sent,
             "comment_received": self.comment_received,
+            "comment_source": self.comment_source,
             "created_at": self.created_at,
         }
