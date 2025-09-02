@@ -429,17 +429,7 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     print(f"[TABLE] {len(trips)} trajets chargés")
 
     # Auto-sélection du premier trajet si aucun n'est sélectionné
-    new_selected_trip = selected_trip
-    if not selected_trip and table_rows_data and len(table_rows_data) > 0:
-        # Sélectionner automatiquement le premier trajet de la page
-        first_trip = table_rows_data[0]
-        if isinstance(first_trip, dict) and first_trip.get("trip_id"):
-            new_selected_trip = first_trip["trip_id"]
-            print(f"[AUTO-SELECT] Premier trajet sélectionné automatiquement: {new_selected_trip}")
-        elif hasattr(first_trip, "trip_id"):
-            new_selected_trip = first_trip.trip_id
-            print(f"[AUTO-SELECT] Premier trajet sélectionné automatiquement: {new_selected_trip}")
-
+   
     # Calculer le nombre de pages
     page_count = math.ceil(total_trips / page_size) if total_trips > 0 else 1
     
@@ -466,8 +456,7 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     table_component = render_custom_trips_table(
         table_rows_data, 
         current_page=current_page,
-        total_trips=total_trips,
-        selected_trip_id=new_selected_trip if isinstance(new_selected_trip, str) else (getattr(new_selected_trip, "trip_id", None) if new_selected_trip else None)
+        total_trips=total_trips
     )
 
     # Préchargement supprimé pour améliorer les performances sur Render
@@ -476,13 +465,13 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     # Message informatif
     if total_trips == 0:
         message = dbc.Alert("Aucun trajet trouvé avec les critères de recherche actuels.", color="info")
-        return [message, table_component], new_selected_trip
+        return [message, table_component], selected_trip
     else:
         info_message = html.P(
             f"Affichage de {len(trips)} trajets sur {total_trips} au total (page {current_page}/{page_count})",
             className="text-muted small mb-3"
         )
-        return [info_message, table_component], new_selected_trip
+        return [info_message, table_component], selected_trip
 
 
 @callback(

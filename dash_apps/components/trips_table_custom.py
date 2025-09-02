@@ -6,14 +6,13 @@ from dash.exceptions import PreventUpdate
 from dash_apps.config import Config
 from dash_apps.repositories.trip_repository import TripRepository
 
-def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id=None):
+def render_custom_trips_table(trips, current_page, total_trips):
     """Rendu d'un tableau personnalisé avec pagination manuelle pour les trajets
     
     Args:
         trips: Liste des trajets à afficher
         current_page: Page courante (1-indexed)
         total_trips: Nombre total de trajets
-        selected_trip_id: ID du trajet sélectionné
     
     Returns:
         Un composant HTML avec un tableau et des contrôles de pagination
@@ -61,17 +60,12 @@ def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id
             price = getattr(trip, 'passenger_price', 0)
             status = getattr(trip, 'status', "")
 
-        # Extraire l'ID du trajet de selected_trip_id s'il s'agit d'un dictionnaire
-        selected_trip_id_value = selected_trip_id
-        if isinstance(selected_trip_id, dict) and 'trip_id' in selected_trip_id:
-            selected_trip_id_value = selected_trip_id['trip_id']
+        # La sélection sera gérée par le callback via le store selected-trip-id
+        # Pas besoin de calculer is_selected ici
+        is_selected = False
         
-        # Conversion en string pour la comparaison
+        # Conversion en string pour l'affichage
         trip_id_str = str(trip_id)
-        selected_trip_id_str = str(selected_trip_id_value)
-        
-        # Comparaison stricte des strings
-        is_selected = trip_id_str == selected_trip_id_str
         
         # Formatage des données
         formatted_date = str(departure_date) if departure_date else "-"
