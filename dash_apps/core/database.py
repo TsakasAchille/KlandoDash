@@ -31,11 +31,11 @@ def create_database_engine():
             engine = create_engine(
                 DATABASE_URL,
                 # Configuration optimisée pour la performance
-                pool_size=10,              # Plus de connexions de base
-                max_overflow=20,           # Plus de connexions supplémentaires
+                pool_size=5,               # Réduire le pool pour éviter les timeouts
+                max_overflow=10,           # Moins de connexions supplémentaires
                 pool_pre_ping=False,       # Désactiver pour éviter les délais
                 pool_recycle=3600,         # Recycler moins souvent (1h)
-                pool_timeout=10,           # Timeout plus court
+                pool_timeout=2,            # Timeout très court (2s au lieu de 10s)
                 
                 # Optimisations des requêtes
                 echo=False,                # Désactiver le logging SQL
@@ -44,7 +44,7 @@ def create_database_engine():
                 # Paramètres de connexion PostgreSQL optimisés pour la vitesse
                 connect_args={
                     "application_name": "KlandoDash",
-                    "connect_timeout": 5,   # Timeout plus court
+                    "connect_timeout": 2,   # Timeout très court (2s au lieu de 5s)
                 }
             )
             
@@ -76,20 +76,55 @@ def create_database_engine():
     
     return engine
 
-# Créer l'engine avec fallback
-engine = create_database_engine()
+# Lazy initialization - engine créé seulement quand nécessaire
+_engine = None
+
+def get_engine():
+    """Récupère l'engine de base de données (lazy loading)"""
+    global _engine
+    if _engine is None:
+        _engine = create_database_engine()
+    return _engine
 
 # Base ORM commune à tous les modèles
 Base = declarative_base()
 
-# Session locale (pattern standard SQLAlchemy)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Session locale avec lazy loading
+def get_session_local():
+    """Récupère SessionLocal avec lazy loading"""
+    return sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
+
+# Compatibilité - propriété qui charge l'engine seulement si nécessaire
+class LazySessionLocal:
+    def __call__(self):
+        return get_session_local()()
+    
+    def __enter__(self):
+        self._session = get_session_local()()
+        return self._session
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._session.close()
+
+SessionLocal = LazySessionLocal()
 
 # Utilisation :
-# from dash_apps.core.database import SessionLocal, Base, engine
-# with SessionLocal() as db:
+# from dash_apps.core.database import SessionLocal, Base, get_engine
+# with SessionLocal as db:
 #     ...
 
 def get_session():
     """Compatibilité descendante : retourne une session SQLAlchemy (à fermer manuellement ou à utiliser avec 'with')."""
     return SessionLocal()
+
+# Compatibilité pour l'accès direct à engine
+def engine():
+    """Propriété pour accès direct à l'engine (lazy loading)"""
+    return get_engine()
+
+# Rendre engine accessible comme attribut module
+class _EngineProxy:
+    def __getattr__(self, name):
+        return getattr(get_engine(), name)
+
+engine = _EngineProxy()

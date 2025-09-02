@@ -47,8 +47,8 @@ def load_all_pages():
     Charge toutes les pages de l'application
     """
     # Page d'accueil (Carte)
-    page_layouts['/'] = load_page_from_file('00_map.py', 'Carte')
-    page_layouts['/map'] = page_layouts['/']
+   # page_layouts['/'] = load_page_from_file('00_map.py', 'Carte')
+    #page_layouts['/map'] = page_layouts['/']
 
     # Page d'utilisateurs
     page_layouts['/users'] = load_page_from_file('users.py', 'Utilisateurs')

@@ -93,8 +93,8 @@ class UsersCacheService:
         """
         import time
         
-        # Unifier la clé L1/L2 en utilisant la clé publique de Redis
-        cache_key = redis_cache.make_users_page_key(page_index, page_size, filter_params)
+        # Utiliser la même méthode de génération de clé que get_users_page_data pour la cohérence
+        cache_key = UsersCacheService._get_cache_key(page_index, page_size, filter_params)
         
         if not force_reload:
             # Niveau 1: Cache local ultra-rapide (en mémoire)
@@ -112,8 +112,8 @@ class UsersCacheService:
                 cached = UsersCacheService._local_cache[cache_key]
                 return cached
             
-            # Niveau 2: Cache Redis
-            cached_data = redis_cache.get_json_by_key(cache_key)
+            # Niveau 2: Cache Redis - utiliser la méthode cohérente
+            cached_data = UsersCacheService._get_from_redis_cache(cache_key, page_index, page_size, filter_params)
             if cached_data:
                 # Stocker dans le cache local pour les prochains accès
                 UsersCacheService._local_cache[cache_key] = cached_data
@@ -135,11 +135,8 @@ class UsersCacheService:
         result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)
         
         # Mettre à jour tous les niveaux de cache
-        UsersCacheService._local_cache[cache_key] = result
-        UsersCacheService._cache_timestamps[cache_key] = time.time()
-        redis_cache.set_users_page_from_result(result, page_index, page_size, filter_params, ttl_seconds=300)
-        # Éviction LRU simple si nécessaire
-        UsersCacheService._evict_local_cache_if_needed()
+        UsersCacheService._store_in_local_cache(cache_key, result)
+        UsersCacheService._store_in_redis_cache(cache_key, result, page_index, page_size, filter_params)
         
         if UsersCacheService._debug_mode:
             try:

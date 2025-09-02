@@ -1,6 +1,6 @@
 from dash_apps.models.trip import Trip
 from dash_apps.schemas.trip import TripSchema
-from dash_apps.core.database import SessionLocal
+from dash_apps.core.database import SessionLocal, get_engine
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func, exists
 from typing import List, Optional
@@ -56,9 +56,14 @@ class TripRepository:
             - trips: Liste des trajets avec champs minimaux
             - total_count: Nombre total de trajets après filtrage
         """
-        with SessionLocal() as db:
-            # Sélectionner seulement les champs nécessaires pour le tableau
-            query = db.query(
+        # Utiliser l'engine directement pour éviter les timeouts de session
+        try:
+            from sqlalchemy.orm import sessionmaker
+            engine = get_engine()
+            SessionMaker = sessionmaker(bind=engine)
+            with SessionMaker() as db:
+                # Sélectionner seulement les champs nécessaires pour le tableau
+                query = db.query(
                 Trip.trip_id,
                 Trip.departure_name,
                 Trip.destination_name,
@@ -166,6 +171,13 @@ class TripRepository:
             return {
                 "trips": trips_data,
                 "total_count": total_count
+            }
+        except Exception as e:
+            # Fallback en cas d'erreur
+            print(f"[TRIP_REPO] Erreur get_trips_paginated_minimal: {e}")
+            return {
+                "trips": [],
+                "total_count": 0
             }
 
     @staticmethod

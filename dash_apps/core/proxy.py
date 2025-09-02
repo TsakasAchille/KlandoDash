@@ -68,10 +68,11 @@ def proxy_map():
         if 'If-Modified-Since' in request.headers:
             fwd_headers['If-Modified-Since'] = request.headers['If-Modified-Since']
 
-        resp = requests.get(upstream_url, stream=True, timeout=20, headers=fwd_headers)
+        resp = requests.get(upstream_url, stream=True, timeout=5, headers=fwd_headers)
     except requests.RequestException as e:
-        logger.exception("Proxy fetch error: %s", e)
-        abort(502, 'Upstream fetch failed')
+        logger.warning("Proxy fetch error: %s", e)
+        # Return empty response instead of aborting to avoid blocking the UI
+        return Response('', status=204, headers={'Access-Control-Allow-Origin': '*'})
 
     # Build Flask response
     excluded_headers = {'content-encoding', 'transfer-encoding', 'connection'}
