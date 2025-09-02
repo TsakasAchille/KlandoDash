@@ -18,6 +18,8 @@ import os
 from flask import session
 from datetime import datetime, timedelta
 
+logger = logging.getLogger(__name__)
+
 # Configuration du logging
 def _init_logging():
     if not logging.getLogger().hasHandlers():
@@ -619,4 +621,66 @@ def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, cu
             
     except Exception as e:
         logger.error(f"Erreur lors de l'envoi email: {e}")
-        return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
+        
+        # Signal d'erreur
+        error_signal = {
+            "count": current_signal.get("count", 0) + 1,
+            "ticket_id": ticket_id,
+            "status": "error",
+            "message": f"❌ Erreur: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        return error_signal, [no_update] * len(comment_texts) if comment_texts else [no_update]
+
+
+# Callback pour afficher les notifications d'envoi d'email près du bouton
+@callback(
+    Output({"type": "email-notification", "index": ALL}, "children"),
+    [Input("email-send-signal", "data")],
+    [State("selected-ticket-store", "data")],
+    prevent_initial_call=True
+)
+def display_email_notification(signal_data, selected_ticket):
+    """
+    Affiche les notifications d'envoi d'email près du bouton d'envoi
+    """
+    if not signal_data or not signal_data.get("status") or not selected_ticket:
+        return [no_update]
+    
+    # Vérifier si le signal correspond au ticket sélectionné
+    signal_ticket_id = signal_data.get("ticket_id")
+    selected_ticket_id = selected_ticket.get("ticket_id")
+    
+    if signal_ticket_id != selected_ticket_id:
+        return [no_update]
+    
+    status = signal_data.get("status")
+    message = signal_data.get("message", "")
+    
+    notification = ""
+    if status == "success":
+        notification = dbc.Alert(
+            message,
+            color="success",
+            dismissable=True,
+            duration=4000,
+            style={"marginBottom": "10px", "fontSize": "0.9em"}
+        )
+    elif status == "error":
+        notification = dbc.Alert(
+            message,
+            color="danger",
+            dismissable=True,
+            duration=6000,
+            style={"marginBottom": "10px", "fontSize": "0.9em"}
+        )
+    elif status == "sending":
+        notification = dbc.Alert(
+            message,
+            color="info",
+            dismissable=False,
+            style={"marginBottom": "10px", "fontSize": "0.9em"}
+        )
+    
+    return [notification]

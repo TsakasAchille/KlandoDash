@@ -466,6 +466,9 @@ def render_ticket_details(ticket, comments):
                     style={"height": "100px", "resize": "none"}
                 )
             ], className="mb-3"),
+            # Zone de notification pour l'envoi d'emails (près du bouton)
+            html.Div(id={"type": "email-notification", "index": ticket["ticket_id"]}, style={"marginBottom": "10px"}),
+            
             # Boutons d'action
             dbc.Row([
                 dbc.Col([

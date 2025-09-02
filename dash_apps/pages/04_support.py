@@ -187,19 +187,21 @@ layout = html.Div([
                     
                     # Colonne de droite avec les détails du ticket
                     dbc.Col(
-                        dbc.Card(
-                            [
-                                dbc.CardHeader("Détails du Ticket"),
-                                dbc.CardBody([
-                                    html.Div(id="ticket-details-container")
-                                ])
-                            ],
-                            style={
-                                "minHeight": "500px", 
-                                "boxShadow": "0 2px 5px rgba(0, 0, 0, 0.1)",
-                                "borderRadius": "8px"
-                            }
-                        ),
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader("Détails du Ticket"),
+                                    dbc.CardBody([
+                                        html.Div(id="ticket-details-container")
+                                    ])
+                                ],
+                                style={
+                                    "minHeight": "500px", 
+                                    "boxShadow": "0 2px 5px rgba(0, 0, 0, 0.1)",
+                                    "borderRadius": "8px"
+                                }
+                            )
+                        ],
                         width=8,
                     ),
                 ],
