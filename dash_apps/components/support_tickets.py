@@ -453,6 +453,30 @@ def render_ticket_details(ticket, comments):
             # Zone de notification pour l'envoi d'emails (près du bouton)
             html.Div(id={"type": "email-notification", "index": ticket["ticket_id"]}, style={"marginBottom": "10px"}),
             
+            # Modal de confirmation pour l'envoi d'email
+            dbc.Modal([
+                dbc.ModalHeader(dbc.ModalTitle("⚠️ Confirmation d'envoi"), close_button=False),
+                dbc.ModalBody([
+                    html.P("Vous êtes sur le point d'envoyer un email directement au client :"),
+                    html.Ul([
+                        html.Li([html.Strong("Destinataire : "), ticket.get("mail", "N/A")]),
+                        html.Li([html.Strong("Sujet : "), f"Re: {ticket.get('subject', 'Support Klando')}"]),
+                    ]),
+                    html.Hr(),
+                    html.P("Êtes-vous sûr de vouloir envoyer ce message ?", className="text-warning fw-bold"),
+                ]),
+                dbc.ModalFooter([
+                    dbc.Button("❌ Annuler", id={"type": "cancel-email-btn", "index": ticket["ticket_id"]}, color="secondary", size="sm"),
+                    dbc.Button("✅ Confirmer l'envoi", id={"type": "confirm-email-btn", "index": ticket["ticket_id"]}, color="primary", size="sm")
+                ])
+            ],
+            id={"type": "email-confirm-modal", "index": ticket["ticket_id"]},
+            is_open=False,
+            centered=True,
+            backdrop="static",
+            keyboard=False
+            ),
+            
             # Boutons d'action
             dbc.Row([
                 dbc.Col([

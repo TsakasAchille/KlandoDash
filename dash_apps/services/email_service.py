@@ -24,12 +24,43 @@ class EmailService:
     @staticmethod
     def _get_gmail_credentials() -> Optional[Credentials]:
         """
-        Récupère les credentials Gmail depuis le fichier token généré par le serveur OAuth2
+        Récupère les credentials Gmail depuis les variables d'environnement ou le fichier token
         """
         try:
+            # Essayer d'abord les variables d'environnement (pour la production)
+            gmail_token = os.getenv('GMAIL_TOKEN')
+            gmail_refresh_token = os.getenv('GMAIL_REFRESH_TOKEN')
+            gmail_client_id = os.getenv('GMAIL_CLIENT_ID')
+            gmail_client_secret = os.getenv('GMAIL_CLIENT_SECRET')
+            
+            if all([gmail_token, gmail_refresh_token, gmail_client_id, gmail_client_secret]):
+                logger.info("DEBUG: Utilisation des credentials depuis les variables d'environnement")
+                
+                credentials = Credentials(
+                    token=gmail_token,
+                    refresh_token=gmail_refresh_token,
+                    token_uri="https://oauth2.googleapis.com/token",
+                    client_id=gmail_client_id,
+                    client_secret=gmail_client_secret,
+                    scopes=['https://www.googleapis.com/auth/gmail.send']
+                )
+                
+                # Vérifier et rafraîchir si nécessaire
+                if not credentials.valid and credentials.refresh_token:
+                    try:
+                        from google.auth.transport.requests import Request
+                        credentials.refresh(Request())
+                        logger.info("DEBUG: Token rafraîchi avec succès depuis les variables d'environnement")
+                    except Exception as refresh_error:
+                        logger.error(f"DEBUG: Erreur lors du rafraîchissement: {refresh_error}")
+                        return None
+                
+                return credentials
+            
+            # Fallback sur le fichier pickle (pour le développement local)
             if not os.path.exists(EmailService.TOKEN_FILE):
                 logger.error(f"DEBUG: Fichier token non trouvé: {EmailService.TOKEN_FILE}")
-                logger.error("DEBUG: Exécutez d'abord: python3 scripts/gmail_oauth_server.py")
+                logger.error("DEBUG: Configurez les variables d'environnement GMAIL_* ou exécutez: python3 scripts/gmail_oauth_server.py")
                 return None
             
             logger.info(f"DEBUG: Lecture du fichier token: {EmailService.TOKEN_FILE}")
@@ -38,8 +69,6 @@ class EmailService:
                 credentials = pickle.load(token)
             
             logger.info(f"DEBUG: Credentials chargés - valid: {credentials.valid if credentials else 'None'}")
-            logger.info(f"DEBUG: Token: {credentials.token[:50] if credentials and credentials.token else 'None'}...")
-            logger.info(f"DEBUG: Refresh token: {'Présent' if credentials and credentials.refresh_token else 'Absent'}")
             
             if not credentials:
                 logger.error("DEBUG: Credentials sont None")

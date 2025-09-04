@@ -558,22 +558,57 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_sig
     return updated_signal, ["" for _ in comment_texts]
 
 
+# Callback pour ouvrir le modal de confirmation
 @callback(
-    [Output("email-send-signal", "data"),
-     Output({"type": "comment-textarea", "index": ALL}, "value", allow_duplicate=True)],
-    [Input({"type": "client-response-btn", "index": ALL}, "n_clicks")],
-    [State({"type": "comment-textarea", "index": ALL}, "value"),
-     State("selected-ticket-store", "data"),
-     State("email-send-signal", "data")],
+    Output({"type": "email-confirm-modal", "index": ALL}, "is_open"),
+    [Input({"type": "client-response-btn", "index": ALL}, "n_clicks"),
+     Input({"type": "cancel-email-btn", "index": ALL}, "n_clicks")],
+    [State({"type": "email-confirm-modal", "index": ALL}, "is_open"),
+     State({"type": "comment-textarea", "index": ALL}, "value")],
     prevent_initial_call=True
 )
-def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, current_signal):
+def toggle_email_confirmation_modal(response_clicks, cancel_clicks, modal_states, comment_texts):
     """
-    Gère l'envoi d'email au client via Gmail API OAuth2
+    Ouvre/ferme le modal de confirmation d'envoi d'email
+    """
+    if not ctx.triggered:
+        return [no_update] * len(modal_states) if modal_states else [no_update]
+    
+    triggered_id = ctx.triggered[0]["prop_id"]
+    
+    # Si c'est le bouton "Envoyer réponse client"
+    if "client-response-btn" in triggered_id:
+        # Vérifier qu'il y a du contenu
+        if comment_texts and comment_texts[0] and comment_texts[0].strip():
+            return [True] + [False] * (len(modal_states) - 1) if len(modal_states) > 1 else [True]
+        else:
+            return [no_update] * len(modal_states) if modal_states else [no_update]
+    
+    # Si c'est le bouton "Annuler"
+    elif "cancel-email-btn" in triggered_id:
+        return [False] * len(modal_states) if modal_states else [no_update]
+    
+    return [no_update] * len(modal_states) if modal_states else [no_update]
+
+
+@callback(
+    [Output("email-send-signal", "data"),
+     Output({"type": "comment-textarea", "index": ALL}, "value", allow_duplicate=True),
+     Output({"type": "email-confirm-modal", "index": ALL}, "is_open", allow_duplicate=True)],
+    [Input({"type": "confirm-email-btn", "index": ALL}, "n_clicks")],
+    [State({"type": "comment-textarea", "index": ALL}, "value"),
+     State("selected-ticket-store", "data"),
+     State("email-send-signal", "data"),
+     State({"type": "email-confirm-modal", "index": ALL}, "is_open")],
+    prevent_initial_call=True
+)
+def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, current_signal, modal_states):
+    """
+    Gère l'envoi d'email au client via Gmail API OAuth2 après confirmation
     """
     # Vérification des prérequis
     if not btn_clicks or not btn_clicks[0] or not selected_ticket or not selected_ticket.get("ticket_id"):
-        return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
+        return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update], [no_update] * len(modal_states) if modal_states else [no_update]
     
     # Récupérer les informations nécessaires
     ticket_id = selected_ticket["ticket_id"]
@@ -582,7 +617,7 @@ def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, cu
     # Vérifier si le message est vide
     if not message_content or not message_content.strip():
         logger.warning("Tentative d'envoi d'email avec message vide")
-        return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update]
+        return no_update, [no_update] * len(comment_texts) if comment_texts else [no_update], [no_update] * len(modal_states) if modal_states else [no_update]
     
     # Utiliser EmailService au lieu de N8N
     try:
@@ -605,7 +640,8 @@ def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, cu
                 "timestamp": datetime.now().isoformat()
             }
             
-            return success_signal, ["" for _ in comment_texts]
+            # Fermer le modal et vider le champ
+            return success_signal, ["" for _ in comment_texts], [False] * len(modal_states) if modal_states else [no_update]
         else:
             # Émettre un signal d'échec
             error_signal = {
@@ -617,7 +653,7 @@ def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, cu
             }
             
             logger.error(f"Échec envoi email pour ticket {ticket_id}")
-            return error_signal, [no_update] * len(comment_texts) if comment_texts else [no_update]
+            return error_signal, [no_update] * len(comment_texts) if comment_texts else [no_update], [False] * len(modal_states) if modal_states else [no_update]
             
     except Exception as e:
         logger.error(f"Erreur lors de l'envoi email: {e}")
@@ -631,7 +667,7 @@ def send_email_to_client_callback(btn_clicks, comment_texts, selected_ticket, cu
             "timestamp": datetime.now().isoformat()
         }
         
-        return error_signal, [no_update] * len(comment_texts) if comment_texts else [no_update]
+        return error_signal, [no_update] * len(comment_texts) if comment_texts else [no_update], [False] * len(modal_states) if modal_states else [no_update]
 
 
 # Callback pour afficher les notifications d'envoi d'email près du bouton
