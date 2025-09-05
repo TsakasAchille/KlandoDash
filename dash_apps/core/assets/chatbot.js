@@ -142,37 +142,15 @@
   }
 
   function initDrag() {
-    console.log('[chatbot] Init drag');
+    console.log('[chatbot] Init drag - DISABLED');
     
-    // Make bubble draggable - DISABLED to prevent logo movement
-    // const bubble = document.getElementById('open-chatbot-bubble');
-    // if (bubble) {
-    //   console.log('[chatbot] Found bubble');
-    //   makeDraggable(bubble, bubble);
-    // }
+    // All dragging functionality disabled
+    // const window = document.getElementById('chatbot-window');
+    // const windowInner = window ? window.querySelector('.chatbot-window-inner') : null;
+    // const dragger = windowInner ? windowInner.querySelector('.chatbot-header.chatbot-dragger') : null;
+    // const resizer = windowInner ? windowInner.querySelector('.chatbot-resizer') : null;
     
-    // Make window draggable and resizable
-    const window = document.getElementById('chatbot-window');
-    const windowInner = window ? window.querySelector('.chatbot-window-inner') : null;
-    const dragger = windowInner ? windowInner.querySelector('.chatbot-header.chatbot-dragger') : null;
-    const resizer = windowInner ? windowInner.querySelector('.chatbot-resizer') : null;
-    
-    console.log('[chatbot] Elements found:', { 
-      window: !!window, 
-      windowInner: !!windowInner,
-      dragger: !!dragger, 
-      resizer: !!resizer 
-    });
-    
-    if (window && dragger) {
-      console.log('[chatbot] Making window draggable');
-      makeDraggable(window, dragger);
-    }
-    
-    if (windowInner && resizer) {
-      console.log('[chatbot] Making window resizable');
-      makeResizable(windowInner);
-    }
+    // Dragging and resizing disabled per user request
   }
   
   // Initialize multiple times to catch Dash updates

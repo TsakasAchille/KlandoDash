@@ -106,27 +106,18 @@
   border-radius: 0 0 24px 24px;
 }
 
-/* Header as drag handle */
+/* Header as drag handle - DISABLED */
 .chatbot-header.chatbot-dragger {
-  cursor: move;
+  cursor: default;
   user-select: none;
 }
 .chatbot-header.chatbot-dragger:hover {
-  background: #34495e;
+  background: #2c3e50;
 }
 
-/* Resizer handle - inside window at bottom-right */
+/* Resizer handle - HIDDEN */
 .chatbot-resizer {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  right: 2px;
-  bottom: 2px;
-  cursor: se-resize;
-  background: #2196F3;
-  border: 1px solid #fff;
-  border-radius: 3px;
-  opacity: 0.7;
+  display: none;
   z-index: 1002;
   pointer-events: auto;
   transition: opacity 0.2s ease;
