@@ -69,7 +69,7 @@ class SupportCommentRepository:
         return SupportCommentSchema.model_validate(d)
 
     @staticmethod
-    def add_comment_with_type(session: Session, ticket_id: str, user_id: str, comment_text: str, user_name: str = None, comment_type: str = "internal", comment_sent: str = None) -> SupportCommentSchema:
+    def add_comment_with_type(session: Session, ticket_id: str, user_id: str, comment_text: str, user_name: str = None, comment_type: str = "internal", comment_sent: str = None, comment_received: str = None, comment_source: str = None) -> SupportCommentSchema:
         """
         Ajoute un commentaire avec un type spécifique (pour emails)
         
@@ -81,6 +81,8 @@ class SupportCommentRepository:
             user_name: Nom d'affichage de l'utilisateur
             comment_type: Type de commentaire (internal, external_sent, external_received)
             comment_sent: Contenu du message envoyé (pour emails)
+            comment_received: Contenu du message reçu (pour réponses clients)
+            comment_source: Source du commentaire (mail, phone, etc.)
         """
         comment = SupportComment(
             ticket_id=ticket_id,
@@ -88,7 +90,8 @@ class SupportCommentRepository:
             comment_text=comment_text,
             comment_type=comment_type,
             comment_sent=comment_sent,
-            comment_source="mail" if comment_sent else None,
+            comment_received=comment_received,
+            comment_source=comment_source or ("mail" if (comment_sent or comment_received) else None),
             created_at=datetime.now()
         )
         session.add(comment)

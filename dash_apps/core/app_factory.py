@@ -10,6 +10,7 @@ from dash_apps.config import Config
 from dash_apps.auth.routes import auth_bp
 from dash_apps.core.proxy import proxy_bp
 from dash_apps.api.support_api import support_api_bp
+from dash_apps.api.email_webhook import email_webhook_bp
 from flask import render_template, request
 
 def create_app():
@@ -54,6 +55,8 @@ def create_app():
     server.register_blueprint(proxy_bp, url_prefix='/proxy')
     # Enregistrer le blueprint API support (pour N8N)
     server.register_blueprint(support_api_bp)
+    # Enregistrer le blueprint webhook email
+    server.register_blueprint(email_webhook_bp)
 
     # --- Logging configuration ---
     try:

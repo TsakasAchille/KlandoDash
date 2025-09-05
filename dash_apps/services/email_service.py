@@ -157,14 +157,24 @@ class EmailService:
             message = MIMEMultipart()
             message['to'] = client_email
             message['from'] = gmail_email
-            message['subject'] = f"Réponse à votre ticket de support - {ticket_data.get('subject', 'Support Klando')}"
+            # Utiliser un token de référence sécurisé au lieu de l'ID interne
+            from dash_apps.services.ticket_reference_service import TicketReferenceService
+            
+            ticket_id = ticket_data.get('ticket_id', '')
+            reference_token = TicketReferenceService.get_reference_for_ticket(ticket_id)
+            
+            if reference_token:
+                message['subject'] = f"Réponse à votre ticket #{reference_token} - {ticket_data.get('subject', 'Support Klando')}"
+            else:
+                # Fallback si le token ne peut pas être généré
+                message['subject'] = f"Réponse à votre ticket de support - {ticket_data.get('subject', 'Support Klando')}"
             
             logger.info(f"DEBUG: Email sera envoyé:")
             logger.info(f"DEBUG:   FROM: {gmail_email}")
             logger.info(f"DEBUG:   TO: {client_email}")
             logger.info(f"DEBUG:   SUBJECT: Réponse à votre ticket de support - {ticket_data.get('subject', 'Support Klando')}")
             
-            # Corps du message
+            # Corps du message avec token de référence sécurisé
             body = f"""
 Bonjour,
 
@@ -177,7 +187,7 @@ Cordialement,
 Équipe Support Klando
 
 ---
-Ticket ID: {ticket_data.get('ticket_id')}
+Référence: {reference_token or 'N/A'}
 """
             
             logger.info(f"DEBUG: Corps du message:")
@@ -202,13 +212,40 @@ Ticket ID: {ticket_data.get('ticket_id')}
             logger.info(f"DEBUG: Destinataire: {client_email}")
             logger.info("=== FIN DEBUG EMAIL SERVICE ===")
             
-            # Ajouter le commentaire en base de données
+            # Ajouter le commentaire en base de données ET mettre à jour le ticket
             EmailService._add_comment_to_database(ticket_data, message_content, 'external_sent')
+            EmailService._update_ticket_timestamp(ticket_data.get('ticket_id'))
             
             return True
                 
         except Exception as e:
-            logger.error(f"Erreur lors de l'envoi email: {e}")
+            # Analyser le type d'erreur pour donner un message plus précis
+            error_message = str(e).lower()
+            
+            if "invalid_grant" in error_message:
+                logger.error("❌ Token OAuth2 invalide ou expiré")
+                logger.error("Solution: Régénérez le token avec python3 scripts/gmail_oauth_server.py")
+            elif "recipient address rejected" in error_message or "invalid recipient" in error_message:
+                logger.error(f"❌ Adresse email invalide ou inexistante: {client_email}")
+                logger.error("L'adresse email du destinataire n'existe pas ou est mal formatée")
+            elif "quota exceeded" in error_message or "rate limit" in error_message:
+                logger.error("❌ Limite de quota Gmail dépassée")
+                logger.error("Attendez quelques minutes avant de réessayer")
+            elif "insufficient authentication scopes" in error_message:
+                logger.error("❌ Permissions insuffisantes pour envoyer des emails")
+                logger.error("Vérifiez que le scope 'gmail.send' est autorisé")
+            elif "user not found" in error_message:
+                logger.error("❌ Compte Gmail non trouvé ou inaccessible")
+            elif "message too large" in error_message:
+                logger.error("❌ Message trop volumineux pour Gmail")
+            elif "daily sending quota exceeded" in error_message:
+                logger.error("❌ Quota quotidien d'envoi Gmail dépassé")
+            elif "blocked" in error_message or "spam" in error_message:
+                logger.error(f"❌ Email bloqué par Gmail (possible spam): {client_email}")
+            else:
+                logger.error(f"❌ Erreur lors de l'envoi email: {e}")
+                logger.error(f"Type d'erreur: {type(e).__name__}")
+            
             return False
     
     @staticmethod
@@ -260,6 +297,30 @@ Ticket ID: {ticket_data.get('ticket_id')}
                 
         except Exception as e:
             logger.error(f"Erreur lors de l'ajout du commentaire en base: {e}")
+    
+    @staticmethod
+    def _update_ticket_timestamp(ticket_id: str):
+        """Met à jour le timestamp updated_at du ticket principal"""
+        try:
+            from dash_apps.core.database import get_session
+            from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
+            from datetime import datetime
+            
+            with get_session() as db_session:
+                # Import du modèle nécessaire
+                from dash_apps.models.support_ticket import SupportTicket
+                
+                # Utiliser la méthode existante pour mettre à jour le ticket
+                ticket = db_session.query(SupportTicket).filter(SupportTicket.ticket_id == ticket_id).first()
+                if ticket:
+                    ticket.updated_at = datetime.now()
+                    db_session.commit()
+                    logger.info(f"DEBUG: Ticket {ticket_id[:8]}... updated_at mis à jour")
+                else:
+                    logger.warning(f"DEBUG: Ticket {ticket_id} non trouvé pour mise à jour timestamp")
+                    
+        except Exception as e:
+            logger.error(f"Erreur mise à jour timestamp ticket {ticket_id}: {e}")
     
     @staticmethod
     def can_send_email(ticket_data: Dict[str, Any]) -> bool:

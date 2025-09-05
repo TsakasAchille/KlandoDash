@@ -227,22 +227,35 @@ class SupportCacheService:
                 from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
                 from dash_apps.core.database import get_session
                 
-                with get_session() as session:
-                    # Validation finale avant requête DB
-                    if not selected_ticket_id or len(selected_ticket_id.strip()) == 0:
+                try:
+                    with get_session() as session:
+                        # Validation finale avant requête DB
+                        if not selected_ticket_id or len(selected_ticket_id.strip()) == 0:
+                            if SupportCacheService._debug_mode:
+                                print(f"[TICKET_DETAILS][DB ERROR] ID de ticket vide ou invalide")
+                            return html.Div("ID de ticket invalide", className="alert alert-warning")
+                        
+                        ticket_schema = SupportTicketRepository.get_ticket(session, selected_ticket_id)
+                        if not ticket_schema:
+                            if SupportCacheService._debug_mode:
+                                print(f"[TICKET_DETAILS][DB ERROR] Ticket {selected_ticket_id[:8]}... non trouvé en DB")
+                            return html.Div("Ticket non trouvé", className="alert alert-warning")
+                        data = ticket_schema.model_dump()
+                        
                         if SupportCacheService._debug_mode:
-                            print(f"[TICKET_DETAILS][DB ERROR] ID de ticket vide ou invalide")
-                        return html.Div("ID de ticket invalide", className="alert alert-warning")
-                    
-                    ticket_schema = SupportTicketRepository.get_ticket(session, selected_ticket_id)
-                    if not ticket_schema:
-                        if SupportCacheService._debug_mode:
-                            print(f"[TICKET_DETAILS][DB ERROR] Ticket {selected_ticket_id[:8]}... non trouvé en DB")
-                        return html.Div("Ticket non trouvé", className="alert alert-warning")
-                    data = ticket_schema.model_dump()
-                    
+                            print(f"[TICKET_DETAILS][DB SUCCESS] Ticket chargé: {data.get('subject', 'N/A')[:50]}...")
+                
+                except Exception as db_error:
                     if SupportCacheService._debug_mode:
-                        print(f"[TICKET_DETAILS][DB SUCCESS] Ticket chargé: {data.get('subject', 'N/A')[:50]}...")
+                        print(f"[TICKET_DETAILS][DB ERROR] Erreur de connexion: {db_error}")
+                    
+                    # Message d'erreur utilisateur friendly
+                    return html.Div([
+                        html.H5("⚠️ Problème de connexion", className="text-warning"),
+                        html.P("Impossible de se connecter à la base de données."),
+                        html.P("Veuillez réessayer dans quelques instants."),
+                        html.Button("🔄 Réessayer", id="retry-connection-btn", className="btn btn-primary btn-sm")
+                    ], className="alert alert-warning text-center p-4")
                     
                 # Cache ticket details
                 try:

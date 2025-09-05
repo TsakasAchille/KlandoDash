@@ -19,7 +19,9 @@ def auth_middleware():
         '/auth/admin-login', # Auth admin
         '/favicon.ico',    # Favicon
         '/_dash-',         # Assets Dash (requis pour que le CSS fonctionne sur la page de login)
-        '/assets/'         # Autres assets
+        '/assets/',        # Autres assets
+        '/api/email/',     # Endpoints webhook email (pas d'auth requise)
+        '/api/support/'    # Endpoints API support (pas d'auth requise)
     ]
     
     # Vérifier si l'utilisateur est authentifié ou si la route est publique
