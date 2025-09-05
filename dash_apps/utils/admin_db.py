@@ -142,6 +142,48 @@ def update_user_role(email, new_role, updated_by):
         print(f"[ERROR] Erreur lors de la mise à jour du rôle de l'utilisateur: {str(e)}")
         return False, f"Erreur: {str(e)}"
 
+def is_user_authorized(email):
+    """
+    Vérifie si un utilisateur est autorisé (présent dans dash_authorized_users avec active = TRUE).
+    """
+    if not email:
+        return False
+        
+    query = text("""
+        SELECT email FROM dash_authorized_users 
+        WHERE email = :email AND active = TRUE
+    """)
+    
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(query, {"email": email.lower().strip()}).fetchone()
+            return result is not None
+    except Exception as e:
+        print(f"[ERROR] Erreur lors de la vérification de l'autorisation: {str(e)}")
+        return False
+
+def get_user_role(email):
+    """
+    Récupère le rôle d'un utilisateur depuis la table dash_authorized_users.
+    """
+    if not email:
+        return None
+        
+    query = text("""
+        SELECT role FROM dash_authorized_users 
+        WHERE email = :email AND active = TRUE
+    """)
+    
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(query, {"email": email.lower().strip()}).fetchone()
+            if result:
+                return result[0]
+            return None
+    except Exception as e:
+        print(f"[ERROR] Erreur lors de la récupération du rôle: {str(e)}")
+        return None
+
 def is_admin(email):
     """
     Vérifie si un utilisateur a le rôle d'administrateur.

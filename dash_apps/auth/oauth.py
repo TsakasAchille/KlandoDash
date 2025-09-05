@@ -159,13 +159,12 @@ def google_callback():
         flash(error_msg, "danger")
         return redirect('/login')
     
-    # Vérification simple : emails autorisés dans les variables d'environnement
-    authorized_emails = os.environ.get('AUTHORIZED_EMAILS', '').split(',')
-    authorized_emails = [e.strip().lower() for e in authorized_emails if e.strip()]
+    # Vérification avec la table SQL dash_authorized_users
+    from dash_apps.utils.admin_db import is_user_authorized
     
-    if email.lower() not in authorized_emails:
+    if not is_user_authorized(email):
         if _debug_mode:
-            print(f"Email non autorisé: {email}")
+            print(f"Email non autorisé dans dash_authorized_users: {email}")
         error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Vous n'êtes pas autorisé à accéder à cette application."
         
         session.clear()
@@ -173,8 +172,13 @@ def google_callback():
         flash(error_msg, "danger")
         return redirect('/login')
     
-    # Définir le rôle (admin pour Achille, user pour les autres)
-    user_role = 'admin' if email.lower() == 'achille.tsakas@klando-sn.com' else 'user'
+    # Récupérer le rôle depuis la table dash_authorized_users
+    from dash_apps.utils.admin_db import get_user_role
+    user_role = get_user_role(email)
+    
+    # Si pas de rôle défini, utiliser 'user' par défaut
+    if not user_role:
+        user_role = 'user'
     
     # Créer un User en mémoire avec le rôle approprié
     user = User(
