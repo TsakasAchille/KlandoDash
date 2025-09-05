@@ -258,23 +258,25 @@ def toggle_trip_filters_collapse(n_clicks, is_open):
 
 @callback(
     Output("trips-filter-store", "data", allow_duplicate=True),
-    [Input("trips-search-input", "value"),
-     Input("trips-creation-date-filter", "start_date"),
-     Input("trips-creation-date-filter", "end_date"),
-     Input("trips-single-date-filter", "date"),
-     Input("trips-date-filter-type", "value"),
-     Input("trips-date-sort-filter", "value"),
-     Input("trips-status-filter", "value"),
-     Input("trips-has-signalement-filter", "value")],
-    [State("trips-filter-store", "data")],
+    Input("trips-apply-filters-btn", "n_clicks"),
+    [State("trips-search-input", "value"),
+     State("trips-creation-date-filter", "start_date"),
+     State("trips-creation-date-filter", "end_date"),
+     State("trips-single-date-filter", "date"),
+     State("trips-date-filter-type", "value"),
+     State("trips-date-sort-filter", "value"),
+     State("trips-status-filter", "value"),
+     State("trips-has-signalement-filter", "value"),
+     State("trips-filter-store", "data")],
     prevent_initial_call=True
 )
-def update_trip_filters(search_text, date_from, date_to, single_date, date_filter_type, 
+def update_trip_filters(n_clicks, search_text, date_from, date_to, single_date, date_filter_type, 
                        date_sort, status, has_signalement, current_filters):
     """Met à jour les filtres de recherche des trajets"""
     log_callback(
         "update_trip_filters",
         {
+            "n_clicks": n_clicks,
             "search_text": search_text,
             "date_from": date_from,
             "date_to": date_to,
@@ -282,7 +284,7 @@ def update_trip_filters(search_text, date_from, date_to, single_date, date_filte
             "date_filter_type": date_filter_type,
             "date_sort": date_sort,
             "status": status,
-            "has_signalement": has_signalement,
+            "has_signalement": has_signalement
         },
         {"current_filters": current_filters}
     )

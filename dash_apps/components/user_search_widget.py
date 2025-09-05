@@ -14,7 +14,7 @@ def render_search_widget():
                         dbc.Input(id="users-search-input", placeholder="Rechercher par nom, prénom, email ou UID...", type="text"),
                         dbc.InputGroupText(html.I(className="fas fa-search")),
                     ])
-                ], width=6),
+                ], width=5),
                 
                 # Bouton pour filtres avancés
                 dbc.Col([
@@ -27,6 +27,16 @@ def render_search_widget():
                     ),
                 ], width=3),
                 
+                # Bouton appliquer les filtres
+                dbc.Col([
+                    dbc.Button(
+                        [html.I(className="fas fa-check me-2"), "Appliquer"], 
+                        id="users-apply-filters-btn", 
+                        color="success", 
+                        className="w-100"
+                    ),
+                ], width=2),
+                
                 # Bouton de réinitialisation des filtres
                 dbc.Col([
                     dbc.Button(
@@ -36,7 +46,7 @@ def render_search_widget():
                         outline=True,
                         className="w-100"
                     ),
-                ], width=3),
+                ], width=1),
             ]),
             
             # Collapse pour les filtres avancés

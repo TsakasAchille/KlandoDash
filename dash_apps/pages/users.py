@@ -309,27 +309,29 @@ def toggle_advanced_filters(n_clicks, is_open):
 
 @callback(
     Output("users-filter-store", "data"),
-    Input("users-search-input", "value"),
-    Input("users-registration-date-filter", "start_date"),
-    Input("users-registration-date-filter", "end_date"),
-    Input("users-date-filter-type", "value"),
-    Input("users-single-date-filter", "date"),
-    Input("users-date-sort-filter", "value"),
-    Input("users-role-filter", "value"),
-    Input("users-driver-validation-filter", "value"),
-    Input("users-gender-filter", "value"),
-    Input("users-rating-operator-filter", "value"),
-    Input("users-rating-value-filter", "value"),
+    Input("users-apply-filters-btn", "n_clicks"),
+    State("users-search-input", "value"),
+    State("users-registration-date-filter", "start_date"),
+    State("users-registration-date-filter", "end_date"),
+    State("users-date-filter-type", "value"),
+    State("users-single-date-filter", "date"),
+    State("users-date-sort-filter", "value"),
+    State("users-role-filter", "value"),
+    State("users-driver-validation-filter", "value"),
+    State("users-gender-filter", "value"),
+    State("users-rating-operator-filter", "value"),
+    State("users-rating-value-filter", "value"),
     State("users-filter-store", "data"),
     prevent_initial_call=True
 )
 def update_filters(
-    search_text, date_from, date_to, date_filter_type, single_date, date_sort, role, driver_validation, gender, rating_operator, rating_value, current_filters
+    n_clicks, search_text, date_from, date_to, date_filter_type, single_date, date_sort, role, driver_validation, gender, rating_operator, rating_value, current_filters
 ):
-    """Met à jour les filtres de recherche lorsque l'utilisateur modifie les champs"""
+    """Met à jour les filtres de recherche lorsque l'utilisateur clique sur 'Appliquer'"""
     log_callback(
         "update_filters",
         {
+            "n_clicks": n_clicks,
             "search_text": search_text,
             "date_from": date_from,
             "date_to": date_to,
@@ -344,48 +346,53 @@ def update_filters(
         },
         {"current_filters": current_filters}
     )
-    ctx = dash.callback_context
-    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
     
-    # Initialiser les filtres s'ils n'existent pas
-    if not current_filters:
-        current_filters = {}
+    # Ne rien faire si le bouton n'a pas été cliqué
+    if not n_clicks:
+        return current_filters or {}
     
-    # Mettre à jour le filtre approprié en fonction du champ modifié
-    if triggered_id == "users-search-input":
-        current_filters["text"] = search_text
-    elif triggered_id == "users-registration-date-filter":
-        current_filters["date_from"] = date_from
-        current_filters["date_to"] = date_to
-    elif triggered_id == "users-date-filter-type":
-        current_filters["date_filter_type"] = date_filter_type
-    elif triggered_id == "users-single-date-filter":
-        current_filters["single_date"] = single_date
-    elif triggered_id == "users-date-sort-filter":
-        current_filters["date_sort"] = date_sort
-    elif triggered_id == "users-role-filter":
-        current_filters["role"] = role
-    elif triggered_id == "users-driver-validation-filter":
-        current_filters["driver_validation"] = driver_validation
-    elif triggered_id == "users-gender-filter":
-        current_filters["gender"] = gender
-    elif triggered_id == "users-rating-operator-filter" or triggered_id == "users-rating-value-filter":
-        if rating_operator != "all":
-            current_filters["rating_operator"] = rating_operator
-            current_filters["rating_value"] = rating_value
-        else:
-            # Si l'opérateur est réinitialisé à "all", supprimer les filtres de rating
-            if "rating_operator" in current_filters:
-                del current_filters["rating_operator"]
-            if "rating_value" in current_filters:
-                del current_filters["rating_value"]
+    # Construire les nouveaux filtres avec toutes les valeurs actuelles
+    new_filters = {}
     
-    # Réinitialiser la page à 1 lorsqu'un filtre change
-    # (Nous gèrerons cela dans un callback séparé)
+    # Filtre texte
+    if search_text:
+        new_filters["text"] = search_text
+        
+    # Filtres de date
+    if date_from or date_to or single_date:
+        if date_from:
+            new_filters["date_from"] = date_from
+        if date_to:
+            new_filters["date_to"] = date_to
+        if date_filter_type:
+            new_filters["date_filter_type"] = date_filter_type
+        if single_date:
+            new_filters["single_date"] = single_date
+            
+    # Tri par date
+    if date_sort and date_sort != "none":
+        new_filters["date_sort"] = date_sort
+        
+    # Rôle
+    if role and role != "all":
+        new_filters["role"] = role
+        
+    # Validation conducteur
+    if driver_validation and driver_validation != "all":
+        new_filters["driver_validation"] = driver_validation
+        
+    # Genre
+    if gender and gender != "all":
+        new_filters["gender"] = gender
+        
+    # Rating
+    if rating_operator and rating_operator != "all" and rating_value is not None:
+        new_filters["rating_operator"] = rating_operator
+        new_filters["rating_value"] = rating_value
     
-    return current_filters
+    return new_filters
 
-"""
+
 @callback(
     Output("users-current-page", "data", allow_duplicate=True),
     Input("users-filter-store", "data"),
@@ -396,17 +403,26 @@ def reset_page_on_filter_change(filters):
     # Toujours revenir à la page 1 quand un filtre change
     return 1
 
-"""
+
 @callback(
     [Output("users-filter-store", "data", allow_duplicate=True),
-     Output("users-search-input", "value")],
+     Output("users-search-input", "value"),
+     Output("users-registration-date-filter", "start_date"),
+     Output("users-registration-date-filter", "end_date"),
+     Output("users-single-date-filter", "date"),
+     Output("users-date-sort-filter", "value"),
+     Output("users-role-filter", "value"),
+     Output("users-driver-validation-filter", "value"),
+     Output("users-gender-filter", "value"),
+     Output("users-rating-operator-filter", "value"),
+     Output("users-rating-value-filter", "value")],
     Input("users-reset-filters-btn", "n_clicks"),
     prevent_initial_call=True
 )
 def reset_filters(n_clicks):
-    """Réinitialise tous les filtres et vide la barre de recherche"""
+    """Réinitialise tous les filtres et vide tous les champs"""
     log_callback("reset_filters", {"n_clicks": n_clicks}, {})
-    return {}, ""
+    return ({}, "", None, None, None, "desc", "all", "all", "all", "all", 3)
 
 
 @callback(
