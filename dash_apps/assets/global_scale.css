@@ -1,43 +1,54 @@
-/* Global scaling to make the UI appear less zoomed on desktop */
+/* Global scaling to make the UI appear normal sized on desktop */
 /* This file is automatically loaded by Dash from dash_apps/assets/ */
 
-/* Reduce the base font size on medium+ screens (default ~16px -> 14px) */
-@media (min-width: 768px) {
-  html {
-    font-size: 18px;
-  }
+/* Force smaller base font size and zoom reset */
+html {
+  font-size: 12px !important;
+  zoom: 0.85 !important;
+  transform: scale(0.85) !important;
+  transform-origin: 0 0 !important;
 }
 
-/* Slightly reduce typical UI element sizes */
-body, p, li, label, input, select, textarea, button {
-  font-size: 1rem;
+body {
+  font-size: 12px !important;
+  zoom: 0.85 !important;
 }
 
-/* Sidebar nav links */
-.sidebar-nav .nav-link {
-  font-size: 1rem;
+/* Reset all UI elements to smaller sizes */
+* {
+  font-size: inherit !important;
+}
+
+/* Specific element overrides */
+.container, .container-fluid {
+  max-width: 100% !important;
+  zoom: 0.85 !important;
+}
+
+/* Dash app container */
+#react-entry-point {
+  zoom: 0.85 !important;
+  transform: scale(0.85) !important;
+  transform-origin: 0 0 !important;
+}
+
+/* Tables */
+table, .table, .dash-table-container {
+  font-size: 11px !important;
 }
 
 /* Buttons */
 .btn {
-  font-size: 0.95rem;
-}
-.btn-sm {
-  font-size: 0.9rem;
+  font-size: 11px !important;
+  padding: 4px 8px !important;
 }
 
-/* Tables (including Dash DataTable wrappers) */
-table, .dash-table-container, .dash-spreadsheet {
-  font-size: 0.95rem;
+/* Form elements */
+input, select, textarea {
+  font-size: 11px !important;
 }
 
-/* Headings slightly reduced to keep hierarchy while saving space */
-h1 { font-size: 1.85rem; }
-h2 { font-size: 1.6rem; }
-h3 { font-size: 1.4rem; }
-h4 { font-size: 1.2rem; }
-
-/* Ensure containers use full width appropriately */
-.container, .container-fluid {
-  max-width: 100%;
+/* Cards and panels */
+.card, .card-body {
+  font-size: 11px !important;
 }

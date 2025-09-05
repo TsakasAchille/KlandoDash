@@ -346,7 +346,7 @@ def handle_trip_row_selection(row_clicks):
     Input("selected-trip-id", "data"),
     State({"type": "trip-row", "index": dash.ALL}, "id"),
     State({"type": "select-trip-btn", "index": dash.ALL}, "id"),
-    prevent_initial_call=True
+    prevent_initial_call=False
 )
 def highlight_selected_trip_row(selected_trip, row_ids, button_ids):
     # Mise en surbrillance de la ligne sélectionnée

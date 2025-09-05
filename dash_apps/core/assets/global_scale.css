@@ -1,24 +1,22 @@
-/* Global scaling to make the UI appear less zoomed on desktop (loaded from core/assets) */
+/* Global scaling to make the UI appear normal sized on desktop (loaded from core/assets) */
 
-/* Reduce the base font size on medium+ screens (default ~16px -> 14px) */
-@media (min-width: 768px) {
-  html {
-    font-size: 18px;
-  }
+/* Reduce base font size slightly and add light zoom */
+html {
+  font-size: 13px !important;
+  zoom: 0.95 !important;
 }
 
-/* Slightly reduce typical UI element sizes */
-body, p, li, label, input, select, textarea, button {
-  font-size: 1rem;
+body {
+  font-size: 13px !important;
+  zoom: 0.95 !important;
 }
 
-/* Sidebar nav links */
-.sidebar-nav .nav-link {
-  font-size: 1rem;
+/* Containers */
+.container, .container-fluid { 
+  max-width: 100% !important;
 }
 
 /* Buttons */
-.btn { font-size: 0.95rem; }
 .btn-sm { font-size: 0.9rem; }
 
 /* Tables (including Dash DataTable wrappers) */
