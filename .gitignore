@@ -51,8 +51,16 @@ src/resources/keys/*.json
 flask_session/
 
 # Fichiers contenant des secrets OAuth
+{{ ... }}
 *.pickle
 klando_gmail_token.pickle
 scripts/create_token_pickle.py
 scripts/get_gmail_token.py
 scripts/gmail_oauth_server.py
+regenerate_gmail_token.py
+
+# Tests archivés
+archive_tests/
+
+# Fichiers de cache
+cache_formats_documentation.json
