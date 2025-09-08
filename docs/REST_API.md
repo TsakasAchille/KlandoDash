@@ -91,10 +91,13 @@ Afin d'améliorer la portabilité et la fiabilité de l'application, nous avons 
    - `UsersCacheService` utilise directement `data_schema_rest`
    - Les panneaux de profil, statistiques et trajets utilisent l'API REST
 
-2. **Module Tickets Support** : Utilise l'API REST via le repository factory
+2. **Module Trajets** : Entièrement migré pour utiliser l'API REST Supabase
+   - `TripsCacheService` utilise directement `data_schema_rest`
+   - Les panneaux de détails, statistiques et passagers utilisent l'API REST
 
-3. **Modules en cours de migration** :
-   - Module Trajets
+3. **Module Tickets Support** : Utilise l'API REST via le repository factory
+
+4. **Modules en cours de migration** :
    - Module Validations conducteurs
 
 ## Limitations de l'API REST

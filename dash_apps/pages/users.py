@@ -185,6 +185,7 @@ def get_layout():
     #dcc.Store(id="users-pagination-info", data={"page_count": 1, "total_users": 0}),
     dcc.Store(id="users-current-page", storage_type="session", data=1),  # State pour stocker la page courante (persistant)
     dcc.Store(id="selected-user-uid", storage_type="session", data=None, clear_data=False),  # Store pour l'UID de l'utilisateur sélectionné (persistant)
+    dcc.Store(id="selected-users-store", storage_type="session", data=[]),  # UIDs des utilisateurs sélectionnés avec cases à cocher
     # Cache session pour éviter les rechargements inutiles (clé = page + filtres)
     dcc.Store(id="users-page-cache", storage_type="session", data={}, clear_data=False),
     # Store session pour précharger les données nécessaires aux panneaux (profil, stats, aperçus trajets)
@@ -527,8 +528,12 @@ def render_users_table(current_page, n_clicks, filters, selected_user_uid):
     print(f"[TABLE] {len(users)} utilisateurs chargés")
 
     # Rendu de la table avec les données pré-calculées
+    # Calcul du nombre de pages pour la pagination
+    page_count = math.ceil(total_users / page_size) if total_users > 0 else 1
+    
     table = render_custom_users_table(
         table_rows_data, 
+        page_count=page_count,
         current_page=current_page,
         total_users=total_users,
         selected_uid=selected_user_uid  # Le tableau n'a pas besoin de connaître l'utilisateur sélectionné

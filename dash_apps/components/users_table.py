@@ -74,28 +74,27 @@ def log_callback(name, inputs, states=None):
         print(sep)
 
 # Store pour gérer la pagination de manière locale sans déclencher le callback principal
-def render_custom_users_table(table_rows_data, current_page, total_users, selected_uid=None):
-    """Rendu d'un tableau personnalisé avec pagination manuelle
+def render_custom_users_table(users_data, page_count=1, current_page=1, total_users=0, selected_uid=None):
+    """Fonction principale pour générer le tableau d'utilisateurs
     
     Args:
-        table_rows_data: Liste de dictionnaires avec les données pré-calculées pour chaque ligne
-        current_page: Page courante (1-indexed)
-        total_users: Nombre total d'utilisateurs
-        selected_uid: UID de l'utilisateur sélectionné
-    
-    Returns:
-        Un composant HTML avec un tableau et des contrôles de pagination
+        users_data: Liste des données utilisateurs
+        page_count: Nombre total de pages
+        current_page: Numéro de la page courante (1-based)
+        total_users: Nombre total d'utilisateurs (pour info pagination)
+        selected_uid: UID de l'utilisateur sélectionné (dict avec clé 'uid' ou string)
     """
-    print(f"\n[DEBUG] render_custom_users_table appelé avec selected_uid = {selected_uid}, type: {type(selected_uid)}")
+    
+    # Debug pour détecter les erreurs de types
+    print(f"[DEBUG] render_custom_users_table appelé avec selected_uid = {selected_uid}, type: {type(selected_uid)}")
     page_size = Config.USERS_TABLE_PAGE_SIZE
-    page_count = (total_users - 1) // page_size + 1 if total_users > 0 else 1
     
     # Créer les en-têtes du tableau
     headers = ["", "Nom", "Email", "Téléphone", "Rôle", "Genre", "Notation", "Date d'inscription"]
     
     # Créer les lignes du tableau à partir des données pré-calculées
     table_rows = []
-    for row_data in table_rows_data:
+    for row_data in users_data:
         # Extraire les champs directement des données pré-calculées
         uid = row_data.get("uid", "")
         name = row_data.get("display_name", "")

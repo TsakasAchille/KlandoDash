@@ -104,10 +104,14 @@ def get_trips():
 def get_trip_by_id(trip_id):
     """Récupère un trajet par son ID"""
     try:
+        logger.info(f"[TRIP_DEBUG] Recherche du trajet {trip_id} dans Supabase")
         response = supabase.table("trips").select("*").eq("trip_id", trip_id).execute()
         
         if response.data:
+            logger.info(f"[TRIP_DEBUG] Trajet {trip_id} trouvé avec {len(response.data)} résultats")
             return response.data[0]
+        
+        logger.warning(f"[TRIP_DEBUG] Trajet {trip_id} non trouvé dans la base de données")
         return None
     
     except Exception as e:

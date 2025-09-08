@@ -226,28 +226,87 @@ class TripsCacheService:
             try:
                 if TripsCacheService._debug_mode:
                     print(f"[TRIP_DETAILS][DB FETCH] Chargement {selected_trip_id[:8]}... depuis la DB")
-                from dash_apps.utils.data_schema import get_trip_by_id
+                from dash_apps.utils.data_schema_rest import get_trip_by_id
+                print(f"[TRIP_DETAILS] Utilisation de l'API REST pour {selected_trip_id[:8]}")
                 data = get_trip_by_id(selected_trip_id)
                 if not data:
-                    return html.Div()
+                    print(f"[TRIP_DETAILS][ERROR] Trajet avec ID {selected_trip_id} non trouvé")
+                    import dash_bootstrap_components as dbc
+                    return html.Div(dbc.Alert(f"Trajet avec l'ID {selected_trip_id} non trouvé.", color="warning", className="mb-3"))
                 # Cache trip details
                 try:
                     redis_cache.set_trip_details(selected_trip_id, data, ttl_seconds=TripsCacheService._profile_ttl_seconds)
-                except Exception:
-                    pass
-            except Exception:
-                return html.Div()
+                except Exception as e:
+                    print(f"[REDIS] Erreur stockage cache: {e}")
+            except Exception as e:
+                print(f"[TRIP_DETAILS][ERROR] Erreur lors de la récupération du trajet {selected_trip_id}: {e}")
+                import dash_bootstrap_components as dbc
+                return html.Div(dbc.Alert(f"Erreur lors de la récupération du trajet {selected_trip_id}: {e}", color="danger", className="mb-3"))
         
         # Render
         try:
-            from dash_apps.components.trip_details_layout import create_trip_details_layout
-            panel = create_trip_details_layout(selected_trip_id, data)
+            # Import des composants nécessaires ici pour éviter les imports circulaires
+            from dash_apps.components.trip_map import render_trip_map
+            from dash_apps.components.trip_details_layout import render_trip_card_html
+            from dash_apps.components.trip_stats import render_trip_stats
+            import dash_bootstrap_components as dbc
+            
+            # Récupérer les détails du conducteur si nécessaire
+            driver_id = data.get("driver_id")
+            driver_info = None
+            if driver_id:
+                from dash_apps.utils.data_schema_rest import get_user_profile
+                driver_info = get_user_profile(driver_id)
+            
+            # Récupérer les passagers si nécessaire
+            passengers_list = []
+            try:
+                if 'trip_id' in data:
+                    from dash_apps.utils.data_schema_rest import get_passengers_for_trip
+                    passengers_df = get_passengers_for_trip(data['trip_id'])
+                    if not passengers_df.empty:
+                        passengers_list = passengers_df.to_dict('records')
+            except Exception as e:
+                print(f"[ERROR] Impossible de récupérer les passagers: {e}")
+            
+            # Créer les composants de base
+            trip_card = html.Div(
+                html.Iframe(
+                    srcDoc=render_trip_card_html(data),
+                    style={
+                        'width': '100%',
+                        'height': '400px',
+                        'border': 'none',
+                        'overflow': 'hidden',
+                        'backgroundColor': 'transparent',
+                    },
+                    sandbox='allow-scripts',
+                ),
+                style={'marginBottom': '16px', 'borderRadius': '28px'}
+            )
+            
+            # Créer la carte
+            trip_map = render_trip_map(data)
+            
+            # Créer les statistiques
+            trip_stats = render_trip_stats(data)
+            
+            # Assembler le panneau complet
+            panel = html.Div([
+                dbc.Row([
+                    dbc.Col(trip_card, width=12),
+                    dbc.Col(trip_map, width=12),
+                    dbc.Col(trip_stats, width=12)
+                ])
+            ])
+            
             TripsCacheService.set_cached_panel(selected_trip_id, 'details', panel)
             return panel
         except Exception as e:
             if TripsCacheService._debug_mode:
                 print(f"[TRIP_DETAILS] Erreur génération panneau: {e}")
-            return html.Div()
+            import dash_bootstrap_components as dbc
+            return html.Div(dbc.Alert(f"Erreur lors de la génération du panneau de détails: {e}", color="danger", className="mb-3"))
     
     @staticmethod
     def get_trip_stats_panel(selected_trip_id: str):
@@ -278,16 +337,23 @@ class TripsCacheService:
             try:
                 if TripsCacheService._debug_mode:
                     print(f"[TRIP_STATS][DB FETCH] Chargement {selected_trip_id[:8]}... depuis la DB")
-                from dash_apps.utils.data_schema import get_trip_stats_optimized
+                from dash_apps.utils.data_schema_rest import get_trip_stats_optimized
+                print(f"[TRIP_STATS] Utilisation de l'API REST pour {selected_trip_id[:8]}")
                 stats = get_trip_stats_optimized(selected_trip_id)
+                if not stats:
+                    print(f"[TRIP_STATS][ERROR] Aucune statistique trouvée pour le trajet {selected_trip_id}")
+                    import dash_bootstrap_components as dbc
+                    return html.Div(dbc.Alert(f"Aucune statistique disponible pour ce trajet.", color="warning", className="mb-3"))
                 data = {'trip_id': selected_trip_id, 'stats': stats}
                 # Cache stats
                 try:
                     redis_cache.set_trip_stats(selected_trip_id, stats, ttl_seconds=TripsCacheService._profile_ttl_seconds)
-                except Exception:
-                    pass
-            except Exception:
-                return html.Div()
+                except Exception as e:
+                    print(f"[REDIS] Erreur stockage cache stats: {e}")
+            except Exception as e:
+                print(f"[TRIP_STATS][ERROR] Erreur lors de la récupération des stats du trajet {selected_trip_id}: {e}")
+                import dash_bootstrap_components as dbc
+                return html.Div(dbc.Alert(f"Erreur lors du chargement des statistiques: {e}", color="danger", className="mb-3"))
         
         # Render
         try:
@@ -320,7 +386,7 @@ class TripsCacheService:
             if cached_passengers:
                 if TripsCacheService._debug_mode:
                     print(f"[TRIP_PASSENGERS][REDIS HIT] Passagers récupérés pour {selected_trip_id[:8]}...")
-                import pandas as pd
+                # Utiliser le pandas importé en haut du fichier
                 data = {'trip_id': selected_trip_id, 'passengers': pd.DataFrame(cached_passengers)}
         except Exception:
             pass
@@ -330,16 +396,25 @@ class TripsCacheService:
             try:
                 if TripsCacheService._debug_mode:
                     print(f"[TRIP_PASSENGERS][DB FETCH] Chargement {selected_trip_id[:8]}... depuis la DB")
-                from dash_apps.utils.data_schema import get_passengers_for_trip
+                from dash_apps.utils.data_schema_rest import get_passengers_for_trip
+                print(f"[TRIP_PASSENGERS] Utilisation de l'API REST pour {selected_trip_id[:8]}")
+                # Import pandas ici pour s'assurer qu'il est disponible dans ce scope
+                import pandas as pd
                 passengers_df = get_passengers_for_trip(selected_trip_id)
+                if passengers_df is None or (isinstance(passengers_df, pd.DataFrame) and passengers_df.empty):
+                    print(f"[TRIP_PASSENGERS][EMPTY] Aucun passager trouvé pour le trajet {selected_trip_id}")
+                    import dash_bootstrap_components as dbc
+                    return html.Div(dbc.Alert(f"Aucun passager pour ce trajet.", color="warning", className="mb-3"))
                 data = {'trip_id': selected_trip_id, 'passengers': passengers_df}
                 # Cache passengers
                 try:
                     redis_cache.set_trip_passengers(selected_trip_id, passengers_df, ttl_seconds=TripsCacheService._profile_ttl_seconds)
-                except Exception:
-                    pass
-            except Exception:
-                return html.Div()
+                except Exception as e:
+                    print(f"[REDIS] Erreur stockage cache passagers: {e}")
+            except Exception as e:
+                print(f"[TRIP_PASSENGERS][ERROR] Erreur lors de la récupération des passagers du trajet {selected_trip_id}: {e}")
+                import dash_bootstrap_components as dbc
+                return html.Div(dbc.Alert(f"Erreur lors du chargement des passagers: {e}", color="danger", className="mb-3"))
         
         # Render
         try:
