@@ -79,6 +79,18 @@ def render_user_profile(user):
         if key not in user_dict or user_dict[key] is None:
             user_dict[key] = default_value
     
+    # Vérifier spécifiquement la photo de profil
+    if 'photo_url' in user_dict:
+        print(f"[DEBUG] Photo URL trouvée dans les données: {user_dict['photo_url']}")
+    else:
+        print(f"[DEBUG] Aucune photo_url trouvée dans les données utilisateur")
+        # Chercher des champs alternatifs
+        for field in ['avatar', 'profile_picture', 'picture', 'image', 'avatar_url']:
+            if field in user_dict and user_dict[field]:
+                print(f"[DEBUG] Champ alternatif trouvé pour la photo: {field}")
+                user_dict['photo_url'] = user_dict[field]
+                break
+    
     # Extraire les variables spécifiques pour le template
     rating = user_dict.get("rating", 0)
     rating_count = user_dict.get("rating_count", 0)

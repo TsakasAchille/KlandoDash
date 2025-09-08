@@ -83,6 +83,20 @@ Le mode `CONNECTION_MODE=auto` (par défaut) permet à l'application de basculer
 2. Si celle-ci échoue et que les identifiants Supabase sont disponibles, elle bascule vers l'API REST
 3. En dernier recours, elle utilise SQLite (pour les environnements de développement)
 
+## Standardisation vers l'API REST
+
+Afin d'améliorer la portabilité et la fiabilité de l'application, nous avons standardisé certains modules pour utiliser exclusivement l'API REST :
+
+1. **Module Utilisateurs** : Entièrement migré pour utiliser l'API REST Supabase
+   - `UsersCacheService` utilise directement `data_schema_rest`
+   - Les panneaux de profil, statistiques et trajets utilisent l'API REST
+
+2. **Module Tickets Support** : Utilise l'API REST via le repository factory
+
+3. **Modules en cours de migration** :
+   - Module Trajets
+   - Module Validations conducteurs
+
 ## Limitations de l'API REST
 
 - Certaines requêtes complexes avec jointures multiples sont plus difficiles à exprimer avec l'API REST

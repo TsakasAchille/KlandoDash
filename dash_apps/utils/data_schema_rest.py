@@ -210,10 +210,28 @@ def get_user_profile(user_id):
     Récupère les données de profil d'un utilisateur par son ID
     """
     try:
+        logger.info(f"[PROFILE_DEBUG] Récupération du profil pour l'utilisateur {user_id}")
         response = supabase.table("users").select("*").eq("uid", user_id).execute()
         
         if response.data:
-            return response.data[0]
+            user_data = response.data[0]
+            # Vérifier et traiter le champ photo_url
+            if 'photo_url' in user_data:
+                logger.info(f"[PROFILE_DEBUG] Photo URL trouvée: {user_data['photo_url']}")
+            else:
+                logger.warning(f"[PROFILE_DEBUG] Aucune photo_url trouvée pour l'utilisateur {user_id}")
+                # Si l'API renvoie un champ avec un autre nom contenant l'URL de la photo
+                for field in ['avatar', 'profile_picture', 'picture', 'image', 'avatar_url']:
+                    if field in user_data and user_data[field]:
+                        logger.info(f"[PROFILE_DEBUG] Champ alternatif trouvé pour la photo: {field}")
+                        user_data['photo_url'] = user_data[field]
+                        break
+            
+            # Afficher tous les champs disponibles pour le débogage
+            logger.info(f"[PROFILE_DEBUG] Champs disponibles: {list(user_data.keys())}")
+            return user_data
+        
+        logger.warning(f"[PROFILE_DEBUG] Aucune donnée trouvée pour l'utilisateur {user_id}")
         return None
     
     except Exception as e:

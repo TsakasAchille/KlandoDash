@@ -305,18 +305,9 @@ class UsersCacheService:
         if not data:
             try:
                 print(f"[PROFILE][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
-                # Import dynamique en fonction du mode de connexion
-                import os
-                connection_mode = os.environ.get('CONNECTION_MODE', 'auto')
-                force_rest_api = os.environ.get('FORCE_REST_API', 'false').lower() == 'true'
-                
-                if connection_mode == 'rest' or force_rest_api:
-                    from dash_apps.utils.data_schema_rest import get_user_profile
-                    print(f"[PROFILE] Utilisation de l'API REST pour {selected_uid[:8]}")
-                else:
-                    from dash_apps.utils.data_schema import get_user_profile
-                    print(f"[PROFILE] Utilisation de SQL direct pour {selected_uid[:8]}")
-                
+                # Import direct depuis data_schema_rest
+                from dash_apps.utils.data_schema_rest import get_user_profile
+                print(f"[PROFILE] Utilisation de l'API REST pour {selected_uid[:8]}")
                 data = get_user_profile(selected_uid)
                 
                 if not data:
@@ -377,18 +368,9 @@ class UsersCacheService:
         if not data:
             try:
                 print(f"[STATS][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
-                # Import dynamique en fonction du mode de connexion
-                import os
-                connection_mode = os.environ.get('CONNECTION_MODE', 'auto')
-                force_rest_api = os.environ.get('FORCE_REST_API', 'false').lower() == 'true'
-                
-                if connection_mode == 'rest' or force_rest_api:
-                    from dash_apps.utils.data_schema_rest import get_user_stats_optimized
-                    print(f"[STATS] Utilisation de l'API REST pour {selected_uid[:8]}")
-                else:
-                    from dash_apps.utils.data_schema import get_user_stats_optimized
-                    print(f"[STATS] Utilisation de SQL direct pour {selected_uid[:8]}")
-                
+                # Import direct depuis data_schema_rest
+                from dash_apps.utils.data_schema_rest import get_user_stats_optimized
+                print(f"[STATS] Utilisation de l'API REST pour {selected_uid[:8]}")
                 stats = get_user_stats_optimized(selected_uid)
                 
                 if stats is None:
@@ -448,18 +430,9 @@ class UsersCacheService:
         if not data:
             try:
                 print(f"[TRIPS][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
-                # Import dynamique en fonction du mode de connexion
-                import os
-                connection_mode = os.environ.get('CONNECTION_MODE', 'auto')
-                force_rest_api = os.environ.get('FORCE_REST_API', 'false').lower() == 'true'
-                
-                if connection_mode == 'rest' or force_rest_api:
-                    from dash_apps.utils.data_schema_rest import get_user_trips_with_role
-                    print(f"[TRIPS] Utilisation de l'API REST pour {selected_uid[:8]}")
-                else:
-                    from dash_apps.utils.data_schema import get_user_trips_with_role
-                    print(f"[TRIPS] Utilisation de SQL direct pour {selected_uid[:8]}")
-                    
+                # Import direct depuis data_schema_rest
+                from dash_apps.utils.data_schema_rest import get_user_trips_with_role
+                print(f"[TRIPS] Utilisation de l'API REST pour {selected_uid[:8]}")
                 trips_df = get_user_trips_with_role(str(selected_uid), limit=50)
                 
                 if trips_df is None or (isinstance(trips_df, pd.DataFrame) and trips_df.empty):
