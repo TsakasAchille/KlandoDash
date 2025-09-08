@@ -91,7 +91,8 @@ def render_trip_map(trip_row):
     style_url = Config.MAPLIBRE_STYLE_URL or "https://demotiles.maplibre.org/globe.json"
     api_key = Config.MAPLIBRE_API_KEY or ""
 
-    map_container = html.Div(
+    # Container pour la carte
+    map_inner = html.Div(
         id="trip-maplibre-container",
         className="maplibre-container",
         **{
@@ -104,6 +105,19 @@ def render_trip_map(trip_row):
             'width': '100%',
             'borderRadius': '18px',
             'overflow': 'hidden'
+        }
+    )
+    
+    # Container externe avec style unifié
+    map_container = html.Div(
+        map_inner,
+        style={
+            'backgroundColor': 'white',
+            'borderRadius': '28px',
+            'boxShadow': 'rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px',
+            'padding': '15px',
+            'overflow': 'hidden',
+            'marginBottom': '20px'
         }
     )
 

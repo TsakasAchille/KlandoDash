@@ -63,14 +63,13 @@ class Config(object):
     SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')  # Pour les opérations admin
     
     # Mode de connexion à la base de données
-    # 'auto': Utilise PostgreSQL si disponible, sinon l'API REST si disponible, sinon SQLite
+    # 'auto': Utilise l'API REST si disponible, sinon PostgreSQL
     # 'postgres': Force l'utilisation de PostgreSQL directe
     # 'rest': Force l'utilisation de l'API REST Supabase
-    # 'sqlite': Force l'utilisation de SQLite
-    CONNECTION_MODE = os.environ.get('CONNECTION_MODE', 'auto').lower()
+    CONNECTION_MODE = os.environ.get('CONNECTION_MODE', 'rest').lower()  # REST par défaut
     
     # Forcer l'utilisation de l'API REST (pour compatibilité)
-    FORCE_REST_API = os.environ.get('FORCE_REST_API', 'false').lower() == 'true'
+    FORCE_REST_API = True  # Toujours utiliser REST
     
     # Configuration des tables et pagination
     USERS_TABLE_PAGE_SIZE = 5
@@ -86,17 +85,4 @@ class Config(object):
     @classmethod
     def use_rest_api(cls):
         """Détermine si l'application doit utiliser l'API REST au lieu de la connexion directe"""
-        # Forcer l'API REST si spécifié
-        if cls.FORCE_REST_API or cls.CONNECTION_MODE == 'rest':
-            return True
-            
-        # Si mode auto, vérifier disponibilité
-        if cls.CONNECTION_MODE == 'auto':
-            # Si pas de DATABASE_URL ou problème de connexion, utiliser REST
-            if not cls.DATABASE_URL or 'timeout' in str(cls.DATABASE_URL).lower():
-                # Si Supabase est configuré
-                if cls.SUPABASE_URL and cls.SUPABASE_KEY:
-                    return True
-        
-        # Par défaut, utiliser la connexion directe
-        return False
+        return True

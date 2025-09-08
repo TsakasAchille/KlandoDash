@@ -398,3 +398,25 @@ def get_support_tickets(user_id=None):
     except Exception as e:
         logger.error(f"Erreur lors de la récupération des tickets de support: {e}")
         return pd.DataFrame()
+
+
+def get_signalements_for_trip(trip_id):
+    """Récupère les signalements associés à un trajet"""
+    try:
+        # Récupérer les tickets de support associés à ce trajet
+        query = supabase.table("support_tickets").select("*").eq("trip_id", trip_id)
+        response = query.execute()
+        
+        if response.data:
+            # Convertir en liste d'objets pour être compatible avec le code existant
+            class TicketObject:
+                def __init__(self, data):
+                    self.__dict__.update(data)
+            
+            return [TicketObject(ticket) for ticket in response.data]
+        else:
+            return []
+    
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des signalements pour le trajet {trip_id}: {e}")
+        return []

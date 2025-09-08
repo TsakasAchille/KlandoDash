@@ -245,60 +245,9 @@ class TripsCacheService:
         
         # Render
         try:
-            # Import des composants nécessaires ici pour éviter les imports circulaires
-            from dash_apps.components.trip_map import render_trip_map
-            from dash_apps.components.trip_details_layout import render_trip_card_html
-            from dash_apps.components.trip_stats import render_trip_stats
-            import dash_bootstrap_components as dbc
-            
-            # Récupérer les détails du conducteur si nécessaire
-            driver_id = data.get("driver_id")
-            driver_info = None
-            if driver_id:
-                from dash_apps.utils.data_schema_rest import get_user_profile
-                driver_info = get_user_profile(driver_id)
-            
-            # Récupérer les passagers si nécessaire
-            passengers_list = []
-            try:
-                if 'trip_id' in data:
-                    from dash_apps.utils.data_schema_rest import get_passengers_for_trip
-                    passengers_df = get_passengers_for_trip(data['trip_id'])
-                    if not passengers_df.empty:
-                        passengers_list = passengers_df.to_dict('records')
-            except Exception as e:
-                print(f"[ERROR] Impossible de récupérer les passagers: {e}")
-            
-            # Créer les composants de base
-            trip_card = html.Div(
-                html.Iframe(
-                    srcDoc=render_trip_card_html(data),
-                    style={
-                        'width': '100%',
-                        'height': '400px',
-                        'border': 'none',
-                        'overflow': 'hidden',
-                        'backgroundColor': 'transparent',
-                    },
-                    sandbox='allow-scripts',
-                ),
-                style={'marginBottom': '16px', 'borderRadius': '28px'}
-            )
-            
-            # Créer la carte
-            trip_map = render_trip_map(data)
-            
-            # Créer les statistiques
-            trip_stats = render_trip_stats(data)
-            
-            # Assembler le panneau complet
-            panel = html.Div([
-                dbc.Row([
-                    dbc.Col(trip_card, width=12),
-                    dbc.Col(trip_map, width=12),
-                    dbc.Col(trip_stats, width=12)
-                ])
-            ])
+            # Utiliser le composant original de layout pour le rendu des détails du trajet
+            from dash_apps.components.trip_details_layout import create_trip_details_layout
+            panel = create_trip_details_layout(selected_trip_id, data)
             
             TripsCacheService.set_cached_panel(selected_trip_id, 'details', panel)
             return panel
@@ -357,14 +306,15 @@ class TripsCacheService:
         
         # Render
         try:
-            from dash_apps.components.trip_stats import render_trip_stats
-            panel = render_trip_stats(data)
+            from dash_apps.components.trip_stats_panel import render_trip_stats_panel
+            panel = render_trip_stats_panel(data)
             TripsCacheService.set_cached_panel(selected_trip_id, 'stats', panel)
             return panel
         except Exception as e:
             if TripsCacheService._debug_mode:
                 print(f"[TRIP_STATS] Erreur génération panneau: {e}")
-            return html.Div()
+            import dash_bootstrap_components as dbc
+            return html.Div(dbc.Alert(f"Erreur lors de la génération des statistiques: {e}", color="danger", className="mb-3"))
     
     @staticmethod
     def get_trip_passengers_panel(selected_trip_id: str):
@@ -418,14 +368,15 @@ class TripsCacheService:
         
         # Render
         try:
-            from dash_apps.components.trip_passengers import render_trip_passengers
-            panel = render_trip_passengers(data)
+            from dash_apps.components.trip_passengers_panel import render_trip_passengers_panel
+            panel = render_trip_passengers_panel(data)
             TripsCacheService.set_cached_panel(selected_trip_id, 'passengers', panel)
             return panel
         except Exception as e:
             if TripsCacheService._debug_mode:
                 print(f"[TRIP_PASSENGERS] Erreur génération panneau: {e}")
-            return html.Div()
+            import dash_bootstrap_components as dbc
+            return html.Div(dbc.Alert(f"Erreur lors de la génération du panneau des passagers: {e}", color="danger", className="mb-3"))
     
     @staticmethod
     def get_cached_panel(trip_id: str, panel_type: str) -> Optional[html.Div]:

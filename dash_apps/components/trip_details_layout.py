@@ -41,7 +41,7 @@ def create_trip_details_layout(selected_trip_id, trips_data):
     
     Args:
         selected_trip_id: ID du trajet sélectionné
-        trips_data: Données des trajets (peut être None)
+        trips_data: Données des trajets (fournies par l'API REST)
         
     Returns:
         Un composant Dash à afficher
@@ -52,50 +52,48 @@ def create_trip_details_layout(selected_trip_id, trips_data):
     if selected_trip_id is None:
         return dbc.Alert(f"Veuillez sélectionner un trajet dans le tableau.", color="info")
     
-    # Récupérer les données du trajet depuis le repository
-    from dash_apps.repositories.trip_repository import TripRepository
+    # Utiliser directement les données fournies (déjà récupérées par l'API REST)
+    if not trips_data:
+        return dbc.Alert(f"Trajet avec l'ID {selected_trip_id} non trouvé dans les données.", color="warning")
     
     try:
-        trip = TripRepository.get_trip_by_id(selected_trip_id)
-        if not trip:
-            return dbc.Alert(f"Trajet avec l'ID {selected_trip_id} non trouvé.", color="warning")
-        
-        # Convertir le schéma Pydantic en dictionnaire
-        trip_dict = trip.model_dump()
-        # Trajet trouvé et converti
+        # Utiliser directement les données du trajet fournies par l'API REST
+        trip_dict = trips_data
+        # Trajet trouvé et disponible
         
     except Exception as e:
         logger.error(f"Erreur lors de la récupération du trajet: {str(e)}")
         return dbc.Alert(f"Erreur lors de la récupération des détails du trajet: {str(e)}", color="danger")
     
-    # Récupération des passagers
+    # Récupération des passagers via l'API REST
     trip_id = trip_dict.get("trip_id")
     try:
-        from dash_apps.repositories.booking_repository import BookingRepository
-        bookings_list = BookingRepository.get_trip_bookings(trip_id)
-        if not bookings_list:
+        # Utiliser l'API REST pour les passagers plutôt que le repository SQL
+        from dash_apps.utils.data_schema_rest import get_passengers_for_trip
+        passengers_df = get_passengers_for_trip(trip_id)
+        if passengers_df is None or (hasattr(passengers_df, 'empty') and passengers_df.empty):
             print("Aucun passager trouvé pour ce trajet")
             passengers_list = []
         else:
             print("Passagers trouvés pour ce trajet")
-            passenger_ids = [b['user_id'] for b in bookings_list]
-            from dash_apps.repositories.user_repository import UserRepository
-            passengers_list = UserRepository.get_users_by_ids(passenger_ids)
+            passengers_list = passengers_df.to_dict('records') if hasattr(passengers_df, 'to_dict') else passengers_df
     except Exception as e:
         print(f"[WARNING] Erreur lors de la récupération des passagers: {str(e)}")
         passengers_list = []
     
-    # Vérifier s'il existe des signalements associés à ce trajet
+    # Vérifier s'il existe des signalements associés à ce trajet via l'API REST
     signalements_count = 0
     signalements_list = []
     try:
-        from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
-        signalements_count = SupportTicketRepository.get_trip_signalements_count(trip_id)
-        # Charger la liste détaillée pour les boutons de navigation
-        if signalements_count > 0:
-            signalements_list = SupportTicketRepository.list_signalements_for_trip(trip_id)
+        # Utiliser l'API REST pour les signalements plutôt que le repository SQL
+        from dash_apps.utils.data_schema_rest import get_signalements_for_trip
+        signalements_data = get_signalements_for_trip(trip_id)
+        if signalements_data and isinstance(signalements_data, list):
+            signalements_count = len(signalements_data)
+            signalements_list = signalements_data
     except Exception as e:
         # En cas d'erreur, on n'empêche pas l'affichage des détails
+        print(f"[WARNING] Erreur lors de la récupération des signalements: {str(e)}")
         signalements_count = 0
         signalements_list = []
 
@@ -124,6 +122,7 @@ def create_trip_details_layout(selected_trip_id, trips_data):
         ]) if signalements_count > 0 else html.Div()
     )
 
+    # Ajouter une barre de défilement aux détails du trajet
     trip_details_card = html.Div(
         html.Iframe(
             srcDoc=render_trip_card_html(trip_dict),
@@ -131,9 +130,11 @@ def create_trip_details_layout(selected_trip_id, trips_data):
                 'width': '100%',
                 'height': '600px',
                 'border': 'none',
-                'overflow': 'hidden',
+                'overflow': 'auto',  # Ajout de la barre de défilement
                 'backgroundColor': 'transparent',
-                'borderRadius': '18px'
+                'borderRadius': '18px',
+                'scrollbarWidth': 'thin',  # Barre de défilement fine (Firefox)
+                'scrollbarColor': '#4281ec #f4f6f8'  # Couleurs de la barre de défilement (Firefox)
             },
             sandbox='allow-scripts',
         ),
@@ -169,31 +170,98 @@ def create_trip_details_layout(selected_trip_id, trips_data):
         style=CARD_STYLE
     )
     
-    # Construction du layout en réutilisant les composants directement
-    return dbc.Row([
-        dbc.Col([
-            # Détails du trajet avec espacement
-            html.Div(signalement_notice, style={"marginBottom": "8px"}),
-            html.Div(trip_details_card, style=SPACING_STYLE),
-            # Conducteur du trajet
-            html.Div(trip_driver_component, style=SPACING_STYLE),
-            # Statistiques du trajet
-            trip_stats_component,
-        ], md=4, xs=12, style=COLUMN_STYLE),
-        dbc.Col([
-            # Carte du trajet avec espacement
-            html.Div(
-                trip_map_component if trip_map_component else 
-                html.Div(
-                    "Carte non disponible pour ce trajet.", 
-                    style={"padding": "30px", "textAlign": "center", "color": "#666", 
-                          "backgroundColor": "white", "borderRadius": "28px", 
-                          "boxShadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px",
-                          "padding": "15px"}
-                ),
-                style=SPACING_STYLE
-            ),
-            # Liste des passagers (nouveau template)
-            html.Div(trip_passengers_card, style=SPACING_STYLE)
-        ], md=8, xs=12, style=COLUMN_STYLE)
-    ], className="align-items-stretch", style={"margin": "8px 0"})
+    # Styles de carte pour uniformisation visuelle
+    MAP_CARD_STYLE = {
+        'backgroundColor': 'white',
+        'borderRadius': '28px',
+        'boxShadow': 'rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px',
+        'padding': '15px',
+        'overflow': 'hidden',
+        'marginBottom': '16px'
+    }
+    
+    # Style des titres de section uniformisé
+    TITLE_STYLE = {
+        "fontWeight": "600",
+        "fontSize": "18px",
+        "color": "#3a4654",
+        "margin": "0 0 15px 0",
+        "display": "flex",
+        "alignItems": "center"
+    }
+    
+    # Composant titre avec icône pour uniformité
+    def section_title(title, icon):
+        return html.H5([
+            html.I(className=f"fas {icon} mr-2", style={"marginRight": "10px", "color": "#4281ec"}),
+            title
+        ], style=TITLE_STYLE)
+    
+    # Construction du layout réorganisé pour une meilleure cohérence visuelle
+    return dbc.Container([
+        # Signalements en haut si présents (commun à tout le conteneur)
+        html.Div(signalement_notice, style={"marginBottom": "16px"}) if signalements_count > 0 else None,
+        
+        # Détails du trajet et informations principales
+        dbc.Row([
+            # Colonne gauche: Détails du trajet + Conducteur
+            dbc.Col([
+                # Section Détails du trajet avec titre
+                html.Div([
+                    section_title("Détails du trajet", "fa-info-circle"),
+                    # Juste l'iframe sans div supplémentaire, car trip_details_card est déjà un html.Div
+                    html.Iframe(
+                        srcDoc=render_trip_card_html(trip_dict),
+                        style={
+                            'width': '100%',
+                            'height': '600px',
+                            'border': 'none',
+                            'overflow': 'auto',
+                            'backgroundColor': 'transparent',
+                            'borderRadius': '18px',
+                            'scrollbarWidth': 'thin',
+                            'scrollbarColor': '#4281ec #f4f6f8'
+                        },
+                        sandbox='allow-scripts'
+                    )
+                ], style=MAP_CARD_STYLE),
+                
+                # Informations du conducteur
+                html.Div([
+                    section_title("Conducteur du trajet", "fa-user"),
+                    trip_driver_component  # Déjà un html.Div, pas besoin d'un conteneur supplémentaire
+                ], style=MAP_CARD_STYLE),
+            ], md=5, xs=12),
+            
+            # Colonne droite: Carte + Statistiques
+            dbc.Col([
+                # Carte du trajet avec titre
+                html.Div([
+                    section_title("Trajet sur la carte", "fa-map-marker-alt"),
+                    # Rendu de la carte
+                    trip_map_component if trip_map_component else 
+                    html.Div(
+                        "Carte non disponible pour ce trajet.", 
+                        style={"padding": "30px", "textAlign": "center", "color": "#666"}
+                    )
+                ], style=MAP_CARD_STYLE),
+                
+                # Statistiques du trajet avec titre
+                html.Div([
+                    section_title("Statistiques du trajet", "fa-chart-bar"),
+                    # Utiliser directement le composant
+                    trip_stats_component
+                ], style=MAP_CARD_STYLE),
+            ], md=7, xs=12),
+        ], className="mb-4"),
+        
+        # Passagers (sur toute la largeur, en bas)
+        dbc.Row([
+            dbc.Col([
+                html.Div([
+                    section_title("Passagers et Réservations", "fa-users"),
+                    trip_passengers_card  # Déjà un html.Div, pas besoin d'un conteneur supplémentaire
+                ], style=MAP_CARD_STYLE),
+            ], md=12)
+        ])
+    ], fluid=True, className="p-3")
