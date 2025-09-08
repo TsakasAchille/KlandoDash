@@ -6,7 +6,8 @@ import sys
 import os
 from flask import request, session, redirect, url_for, render_template_string, flash
 from dash_apps.core.database import SessionLocal
-from dash_apps.utils.admin_db import add_authorized_user
+# Utiliser l'API REST Supabase au lieu de la connexion PostgreSQL directe
+from dash_apps.utils.admin_db_rest import add_authorized_user
 from dash_apps.models.user import User
 from werkzeug.security import check_password_hash
 

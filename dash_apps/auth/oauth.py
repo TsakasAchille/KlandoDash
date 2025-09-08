@@ -17,7 +17,7 @@ from oauthlib.oauth2 import WebApplicationClient
 
 # Internal imports
 from dash_apps.config import Config
-from dash_apps.utils.admin_db import add_authorized_user
+from dash_apps.utils.admin_db_rest import add_authorized_user
 from dash_apps.auth.models import User
 from dash_apps.core.database import get_session
 from dash_apps.models.authorized_user import DashAuthorizedUser
@@ -160,7 +160,7 @@ def google_callback():
         return redirect('/login')
     
     # Vérification avec la table SQL dash_authorized_users
-    from dash_apps.utils.admin_db import is_user_authorized
+    from dash_apps.utils.admin_db_rest import is_user_authorized
     
     if not is_user_authorized(email):
         if _debug_mode:
@@ -173,7 +173,7 @@ def google_callback():
         return redirect('/login')
     
     # Récupérer le rôle depuis la table dash_authorized_users
-    from dash_apps.utils.admin_db import get_user_role
+    from dash_apps.utils.admin_db_rest import get_user_role
     user_role = get_user_role(email)
     
     # Si pas de rôle défini, utiliser 'user' par défaut

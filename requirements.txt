@@ -54,3 +54,6 @@ redis>=4.0.0
 
 # Pydantic v2 is required by dash_apps/schemas/* (uses ConfigDict)
 pydantic>=2.7.0,<3
+
+# API REST Supabase pour contourner les problèmes de connexion PostgreSQL directe
+supabase>=2.18.1

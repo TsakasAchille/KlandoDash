@@ -2,7 +2,7 @@ import dash_bootstrap_components as dbc
 from dash import html, dcc, callback, Input, Output, State, callback_context
 import dash
 from dash_apps.repositories.user_repository import UserRepository
-from dash_apps.utils.admin_db import is_admin
+from dash_apps.utils.admin_db_rest import is_admin
 from flask import session
 from dash.exceptions import PreventUpdate
 from dash_apps.components.driver_validation_table import render_driver_validation_table

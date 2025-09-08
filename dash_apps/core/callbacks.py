@@ -5,7 +5,7 @@ from flask import session
 from dash_apps.auth.simple_auth import render_user_menu
 from dash_apps.core.page_manager import get_page_layout
 from dash_apps.core.auth_manager import handle_logout
-from dash_apps.utils.admin_db import is_admin
+from dash_apps.utils.admin_db_rest import is_admin
 import dash_bootstrap_components as dbc
 from dash import html
 

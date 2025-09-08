@@ -4,7 +4,7 @@ from dash import callback, Input, Output, State, ctx, ALL, no_update, html, dcc
 from dash_apps.pages.admin.admin_templates import ADMIN_LAYOUT, USER_FORM_TEMPLATE, ADMIN_JS
 import dash_bootstrap_components as dbc
 from flask import session, render_template_string
-from dash_apps.utils.admin_db import (
+from dash_apps.utils.admin_db_rest import (
     get_all_authorized_users, add_authorized_user, update_user_status,
     update_user_role, is_admin, delete_user
 )

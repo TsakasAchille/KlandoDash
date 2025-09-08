@@ -5,6 +5,15 @@ from sqlalchemy import create_engine
 
 # Récupère la DATABASE_URL depuis les variables d'environnement
 DATABASE_URL = os.environ.get("DATABASE_URL")
+
+# Si DATABASE_URL n'est pas défini, utiliser SQLite comme fallback
+if not DATABASE_URL:
+    # Chemin vers la base de données locale
+    sqlite_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'dash_apps', 'users.db')
+    DATABASE_URL = f"sqlite:///{sqlite_path}"
+    print(f"[INFO] Utilisation de la base de données SQLite locale: {sqlite_path}")
+
+# Créer l'engine avec l'URL appropriée
 engine = create_engine(DATABASE_URL)
 
 from datetime import datetime

@@ -1,7 +1,7 @@
 """APIs pour la gestion des utilisateurs admin"""
 
 from flask import jsonify, request, session
-from dash_apps.utils.admin_db import (
+from dash_apps.utils.admin_db_rest import (
     add_authorized_user, update_user_status, update_user_role,
     is_admin, delete_user
 )

@@ -1,7 +1,7 @@
 from dash import html, dcc, callback, Input, Output, State, ctx, ALL, no_update
 import dash_bootstrap_components as dbc
 from flask import session, render_template_string
-from dash_apps.utils.admin_db import get_all_authorized_users, add_authorized_user, update_user_status, update_user_role, is_admin, delete_user
+from dash_apps.utils.admin_db_rest import get_all_authorized_users, add_authorized_user, update_user_status, update_user_role, is_admin, delete_user
 import pandas as pd
 from datetime import datetime
 import os
