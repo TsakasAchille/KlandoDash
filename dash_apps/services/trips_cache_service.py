@@ -306,8 +306,8 @@ class TripsCacheService:
         
         # Render
         try:
-            from dash_apps.components.trip_stats_panel import render_trip_stats_panel
-            panel = render_trip_stats_panel(data)
+            from dash_apps.components.trip_stats import render_trip_stats
+            panel = render_trip_stats(data)
             TripsCacheService.set_cached_panel(selected_trip_id, 'stats', panel)
             return panel
         except Exception as e:

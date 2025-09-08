@@ -8,24 +8,16 @@
     body {
       font-family: 'Inter', sans-serif;
       background: transparent;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       margin: 0;
       padding: 0;
-      overflow: hidden;
     }
     
-    .card-container {
-      max-width: 500px;
-      width: 100%;
-    }
-    
-    .travel-card {
+    .stats-card {
       background: white;
       border-radius: 28px;
-      padding: 30px;
+      padding: 25px;
       overflow: hidden;
+      margin-bottom: 20px;
     }
     
     .card-header {
@@ -52,21 +44,21 @@
       margin: 0;
     }
     
-    .details-container {
-      background: #f8fafc;
+    .stats-container {
+      background: #fafcfe;
       border-radius: 18px;
-      padding: 25px;
+      padding: 20px;
     }
     
-    .detail-row {
+    .stat-row {
       display: flex;
       align-items: center;
-      margin-bottom: 22px;
-      padding-bottom: 22px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
       border-bottom: 1px solid #eaeef3;
     }
     
-    .detail-row:last-child {
+    .stat-row:last-child {
       margin-bottom: 0;
       padding-bottom: 0;
       border-bottom: none;
@@ -92,17 +84,24 @@
       flex-grow: 1;
     }
     
-    .detail-label {
+    .stat-label {
       font-weight: 500;
       color: #666;
-      margin-bottom: 4px;
       font-size: 15px;
     }
     
-    .detail-value {
+    .stat-value {
       font-weight: 600;
       color: #1c2b46;
       font-size: 16px;
+      padding: 6px 12px;
+      background: #f0f4f9;
+      border-radius: 12px;
+    }
+    
+    .highlight-value {
+      color: #2563eb;
+      background: #e0ecff;
     }
     
     /* Removed confirm button styles */
@@ -136,7 +135,7 @@
 
     /* Responsive */
     @media (max-width: 600px) {
-      .travel-card {
+      .stats-card {
         padding: 20px;
       }
       
@@ -146,99 +145,54 @@
       }
       
       .card-title {
-        font-size: 22px;
+        font-size: 20px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="card-container">
-    <div class="travel-card">  <div class="card-header">
-    <div class="header-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4281ec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22.62 12.24c-1.73-1.47-3.77-2.1-5.8-2.1h-8.3a8.52 8.52 0 0 0-4.69 1.4c-.9.56-1.4 1.47-1.4 2.45"></path>
-            <path d="M25 6.69c0-2.37-.5-4.2-2-5.2a1.05 1.05 0 0 0-1 0C20.5 2.5 20 4.33 20 6.69V8H15.24A8.6 8.6 0 0 0 8 11.07l-4.7 4.7a1 1 0 0 0-.3.7V18a1 1 0 0 0 1 1h6"></path>
-            <path d="M17.8 20H21a3 3 0 0 0 3-3v-2a3 3 0 0 0-3-3h-2.8"></path>
-            <path d="M11 18v-6.5"></path>
-            <rect x="8" y="16" width="6" height="4" rx="1"></rect>
-          </svg>
-        </div>
-        <h1 class="card-title">Détails du trajet sélectionné</h1>
-      </div>
-      
-      <div class="details-container">
+  <div class="stats-card">
+      <div class="stats-container">
         <!-- Départ -->
-        <div class="detail-row">
-          <div class="icon-circle icon-departure">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4281ec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 2L11 13"></path>
-              <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
-            </svg>
-          </div>
-          <div class="detail-text">
-            <div class="detail-label">Départ</div>
-            <div class="detail-value">{{ trip.get("departure_name", "-") }}</div>
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Départ</span>
+            <span class="stat-value highlight-value">{{ trip.get("departure_name", "-") }}</span>
           </div>
         </div>
         
         <!-- Destination -->
-        <div class="detail-row">
-          <div class="icon-circle icon-destination">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e8b317" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-          </div>
-          <div class="detail-text">
-            <div class="detail-label">Destination</div>
-            <div class="detail-value">{{ trip.get("destination_name", "-") }}</div>
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Destination</span>
+            <span class="stat-value">{{ trip.get("destination_name", "-") }}</span>
           </div>
         </div>
         
         <!-- Date -->
-        <div class="detail-row">
-          <div class="icon-circle icon-date">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-          </div>
-          <div class="detail-text">
-            <div class="detail-value">{{ trip.get("departure_date", "-") }}</div>
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Date</span>
+            <span class="stat-value">{{ trip.get("departure_date", "-") }}</span>
           </div>
         </div>
         
         <!-- Heure -->
-        <div class="detail-row">
-          <div class="icon-circle icon-time">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-          </div>
-          <div class="detail-text">
-            <div class="detail-label">Heure de départ</div>
-            <div class="detail-value">{{ trip.get("departure_schedule", "-") }}</div>
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Heure de départ</span>
+            <span class="stat-value">{{ trip.get("departure_schedule", "-") }}</span>
           </div>
         </div>
         
         <!-- Conducteur -->
-        <div class="detail-row">
-          <div class="icon-circle icon-driver">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </div>
-          <div class="detail-text">
-            <div class="detail-label">Identifiant du conducteur</div>
-            <div class="detail-value">{{ trip.get("driver_id", "-") }}</div>
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Identifiant du conducteur</span>
+            <span class="stat-value">{{ trip.get("driver_id", "-") }}</span>
           </div>
         </div>
       </div>
-    </div>
   </div>
 </body>
 </html>

@@ -172,12 +172,6 @@ def get_layout():
                 type="default"
             )
         ], width=6),
-        dbc.Col([
-            dcc.Loading(
-                children=html.Div(id="trip-stats-panel"),
-                type="default"
-            )
-        ], width=6)
     ]),
     dbc.Row([
         dbc.Col([
@@ -506,30 +500,6 @@ def render_trip_details_panel(selected_trip):
     # Read-Through pattern: le cache service gère tout
     return TripsCacheService.get_trip_details_panel(trip_id_value)
 
-
-@callback(
-    Output("trip-stats-panel", "children"),
-    [Input("selected-trip-id", "data")],
-    prevent_initial_call=True
-)
-def render_trip_stats_panel(selected_trip):
-    """Callback séparé pour le rendu du panneau statistiques trajet avec cache HTML"""
-    log_callback(
-        "render_trip_stats_panel",
-        {"selected_trip": selected_trip},
-        {}
-    )
-    
-    # Extraire l'ID si c'est un dict
-    trip_id_value = None
-    if selected_trip:
-        if isinstance(selected_trip, dict):
-            trip_id_value = getattr(selected_trip, "trip_id", None) if hasattr(selected_trip, "trip_id") else selected_trip.get("trip_id")
-        else:
-            trip_id_value = selected_trip
-    
-    # Read-Through pattern: le cache service gère tout
-    return TripsCacheService.get_trip_stats_panel(trip_id_value)
 
 
 @callback(

@@ -494,7 +494,19 @@ def display_ticket_details(selected_ticket, comment_signal, n_intervals, pending
         )
     
     # Si le signal de commentaire a été déclenché ou polling interval, effacer le cache pour ce ticket
-    if (comment_signal and comment_signal.get("ticket_id") == ticket_id) or n_intervals > 0:
+    if comment_signal and comment_signal.get("ticket_id") == ticket_id:
+        logger.info(f"Signal de mise à jour reçu: {comment_signal}")
+        # Effacer le cache systématiquement
+        SupportCacheService.clear_ticket_cache(ticket_id)
+        
+        # Si force_refresh est activé, on attend un court délai pour laisser le temps à l'API de se mettre à jour
+        if comment_signal.get("force_refresh"):
+            import time
+            logger.info(f"Force refresh actif pour le ticket {ticket_id}, attente de 0.5s...")
+            time.sleep(0.5)  # Petit délai pour laisser le temps à l'API de se mettre à jour
+    
+    # Rafraîchissement périodique via polling interval
+    elif n_intervals > 0:
         SupportCacheService.clear_ticket_cache(ticket_id)
     
     # Utiliser le service de cache pour récupérer les détails
@@ -538,23 +550,40 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_sig
     user_id = session.get('user_id', 'anonymous')
     user_name = session.get('user_name', 'Utilisateur')
     
-    # Ajouter le commentaire directement via le repository
+    # Ajouter le commentaire directement via le repository REST
     try:
-        with get_session() as session:
-            # Utiliser le nom d'utilisateur pour l'affichage
-            comment = SupportCommentRepository.add_comment(
-                session, 
-                str(ticket_id),
-                str(user_id),
-                comment_text.strip(),
-                user_name
-            )
-            
+        # Utiliser le repository REST au lieu du repository SQL
+        from dash_apps.repositories.support_comment_repository_rest import SupportCommentRepositoryRest
+        
+        # Créer une instance du repository REST
+        repo = SupportCommentRepositoryRest()
+        
+        # Utiliser le nom d'utilisateur pour l'affichage
+        logger.info(f"[ADD_COMMENT] Tentative d'ajout de commentaire pour ticket {ticket_id} via API REST")
+        
+        comment = repo.add_comment(
+            str(ticket_id),
+            str(user_id),
+            comment_text.strip(),
+            user_name
+        )
+        
+        # Vérifier le résultat de l'ajout
+        if comment:
             display_name = user_name or user_id
-            logger.info(f"Commentaire ajouté: ticket={ticket_id}, user={display_name}")
+            logger.info(f"[ADD_COMMENT] SUCCÈS: Commentaire interne ajouté via API REST: ticket={ticket_id}, user={display_name}, comment_id={comment.get('comment_id', 'unknown')}")
+            logger.info(f"[ADD_COMMENT] Données du commentaire: {comment}")
             
-            # Effacer le cache pour ce ticket après ajout du commentaire
+            # Effacer tous les caches associés à ce ticket
             SupportCacheService.clear_ticket_cache(ticket_id)
+            logger.info(f"[ADD_COMMENT] Cache nettoyé pour le ticket {ticket_id}")
+            
+            # Force le rafraîchissement immédiat des commentaires
+            comments = load_comments_for_ticket(ticket_id)
+            logger.info(f"[ADD_COMMENT] Commentaires rechargés: {len(comments)} commentaires trouvés")
+        else:
+            logger.error(f"[ADD_COMMENT] ÉCHEC: Le commentaire n'a pas été créé dans Supabase pour le ticket {ticket_id}")
+            return no_update, [""]*len(comment_texts)
             
     except Exception as e:
         logger.error(f"Erreur lors de l'ajout du commentaire: {e}")
@@ -564,10 +593,13 @@ def add_comment_callback(btn_clicks, comment_texts, selected_ticket, current_sig
         return no_update, [""]*len(comment_texts)
     
     # Émettre un signal spécifique pour les commentaires uniquement
+    # Ajouter un flag "force_refresh" pour garantir la mise à jour
     updated_signal = {
         "count": current_signal.get("count", 0) + 1,
         "ticket_id": ticket_id,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "force_refresh": True,
+        "comment_id": comment.get('comment_id', 'unknown')
     }
     
     # Renvoyer le signal et vider le champ de commentaire

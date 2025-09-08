@@ -24,13 +24,13 @@ def render_trip_stats(data):
     Affiche les stats principales du trajet (financier, occupation, etc.) avec un design moderne.
     
     Args:
-        data: dictionnaire contenant trip_id et stats
+        data: dictionnaire contenant les données du trajet
     """
-    if not data or not data.get('stats'):
+    if not data:
         return html.Div("Aucune statistique disponible", className="text-muted")
         
-    # Récupérer les stats depuis les données
-    trip_dict = data.get('stats', {})
+    # Utiliser directement les données du trajet
+    trip_dict = data
     
     # Génération du HTML pour les statistiques du trajet en utilisant Jinja
     stats_html = render_trip_stats_html(trip_dict)

@@ -122,24 +122,7 @@ def render_trip_map(trip_row):
     )
 
     return html.Div([
-        html.Div(
-            className="card-header",
-            children=[
-                html.Div(className="header-icon", children="🗺️"),
-                html.H2("Trajet sur la carte", className="card-title", style={
-                    "fontSize": "22px",
-                    "fontWeight": "600",
-                    "color": "#333",
-                    "margin": "0",
-                    "marginLeft": "15px"
-                })
-            ],
-            style={
-                "display": "flex",
-                "alignItems": "center",
-                "marginBottom": "20px",
-            }
-        ),
+     
         html.Div(
             map_container,
             style={
@@ -148,14 +131,10 @@ def render_trip_map(trip_row):
                 "padding": "10px",
             }
         )
-    ], style={
-        "backgroundColor": "white",
-        "borderRadius": "28px",
-        "boxShadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px",
-        "padding": "25px",
-        "overflow": "hidden",
-        "marginBottom": "20px"
-    })
+    ]
+  
+    
+    )
 
 def render_trips_map(trips_df, max_trips=10, show_heat=True, height="600px"):
     """

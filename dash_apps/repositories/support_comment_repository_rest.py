@@ -95,8 +95,13 @@ class SupportCommentRepositoryRest(SupabaseRepository):
             Le commentaire créé ou None en cas d'erreur
         """
         try:
+            # Générer un UUID pour le comment_id
+            import uuid
+            comment_id = str(uuid.uuid4())
+            
             # Créer le commentaire en base de données (type internal par défaut)
             comment_data = {
+                "comment_id": comment_id,  # Ajouter l'ID du commentaire pour satisfaire la contrainte not-null
                 "ticket_id": ticket_id,
                 "user_id": user_name or user_id,  # Stocker le nom d'utilisateur s'il est disponible
                 "comment_text": comment_text,
@@ -139,8 +144,13 @@ class SupportCommentRepositoryRest(SupabaseRepository):
             Le commentaire créé ou None en cas d'erreur
         """
         try:
+            # Générer un UUID pour le comment_id
+            import uuid
+            comment_id = str(uuid.uuid4())
+            
             # Créer le commentaire en base de données avec type spécifique
             comment_data = {
+                "comment_id": comment_id,  # Ajouter l'ID du commentaire pour satisfaire la contrainte not-null
                 "ticket_id": ticket_id,
                 "user_id": user_name or user_id,
                 "comment_text": comment_text,
