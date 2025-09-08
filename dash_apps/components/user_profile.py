@@ -25,26 +25,35 @@ def render_user_profile(user):
     Args:
         user: Données de l'utilisateur (dict)
     """
+    print(f"[DEBUG] render_user_profile appelé avec user type: {type(user)}")
+    
     if user is None:
+        print(f"[ERROR] Utilisateur non trouvé (None)")
         return dbc.Alert("Utilisateur non trouvé.", color="danger")
     
     # Convertir l'objet UserSchema en dictionnaire pour le template Jinja2
-    if hasattr(user, "model_dump"):
-        # Pour Pydantic v2
-        user_dict = user.model_dump()
-    elif hasattr(user, "dict"):
-        # Pour Pydantic v1
-        user_dict = user.dict()
-    else:
-        # Fallback pour les objets non-Pydantic
-        try:
+    try:
+        if hasattr(user, "model_dump"):
+            # Pour Pydantic v2
+            print(f"[DEBUG] Conversion Pydantic v2 (model_dump)")
+            user_dict = user.model_dump()
+        elif hasattr(user, "dict"):
+            # Pour Pydantic v1
+            print(f"[DEBUG] Conversion Pydantic v1 (dict)")
+            user_dict = user.dict()
+        elif isinstance(user, dict):
             # Si c'est déjà un dict (préchargé), l'utiliser tel quel
-            if isinstance(user, dict):
-                user_dict = user
-            else:
-                user_dict = {k: getattr(user, k) for k in dir(user) if not k.startswith('_') and not callable(getattr(user, k))}
-        except Exception:
-            user_dict = {}
+            print(f"[DEBUG] Utilisation du dictionnaire existant")
+            user_dict = user
+        else:
+            # Fallback pour les objets non-Pydantic
+            print(f"[DEBUG] Conversion objet custom en dict")
+            user_dict = {k: getattr(user, k) for k in dir(user) if not k.startswith('_') and not callable(getattr(user, k))}
+        
+        print(f"[DEBUG] user_dict généré avec {len(user_dict)} clés")
+    except Exception as e:
+        print(f"[ERROR] Erreur conversion utilisateur: {e}")
+        user_dict = {}
     
     # S'assurer que toutes les variables utilisées dans le template ont des valeurs par défaut
     # Préparer les valeurs par défaut
@@ -75,18 +84,30 @@ def render_user_profile(user):
     rating_count = user_dict.get("rating_count", 0)
         
     # Rendu du template HTML avec Jinja2
-    html_content = user_profile_template.render(
-        user=user_dict,
-        rating=rating,
-        votes=rating_count
-    )
-    
-    # Afficher le template dans un iframe comme pour les autres composants
-    return html.Div(
-        html.Iframe(
+    try:
+        # Extraction des valeurs pour le template
+        rating = user_dict.get("rating", 0)
+        rating_count = user_dict.get("rating_count", 0)
+        
+        print(f"[DEBUG] Tentative de rendu du template avec {len(user_dict)} clés, rating={rating}, votes={rating_count}")
+        
+        # Si user_dict est vide ou contient trop peu d'informations, ajouter un message
+        if not user_dict or len(user_dict) < 2:
+            print(f"[WARNING] user_dict vide ou incomplet: {user_dict}")
+            return dbc.Alert("Données utilisateur insuffisantes ou corrompues.", color="warning")
+        
+        html_content = user_profile_template.render(
+            user=user_dict,
+            rating=rating,
+            votes=rating_count
+        )
+        print(f"[DEBUG] Template rendu avec succès, taille HTML: {len(html_content)} caractères")
+        
+        # Afficher le template dans un iframe comme pour les autres composants
+        iframe = html.Iframe(
             srcDoc=html_content,
             style={
-                'width': '100%',
+                'width': '100%', 
                 'height': '800px',  # Hauteur augmentée pour éviter la coupure
                 'overflowY': 'scroll',  # Scroll vertical autorisé
                 'border': 'none',
@@ -95,9 +116,15 @@ def render_user_profile(user):
                 'borderRadius': '18px'
             },
             sandbox='allow-scripts allow-top-navigation',
-        ),
-        style=CARD_STYLE
-    )
+        )
+        
+        result = html.Div(iframe, style=CARD_STYLE)
+        print(f"[DEBUG] Panneau utilisateur généré avec succès")
+        return result
+        
+    except Exception as e:
+        print(f"[ERROR] Erreur lors du rendu du template: {e}")
+        return dbc.Alert(f"Erreur lors de l'affichage du profil utilisateur: {e}", color="danger")
 
 
 def render_user_summary(uid):

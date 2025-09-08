@@ -3,9 +3,15 @@ Service de cache centralisé pour les données des tickets de support
 Gère le cache HTML, Redis et les requêtes DB avec pattern Read-Through
 """
 import pandas as pd
+import os
 from typing import Optional, Dict, Any, List
 from dash import html
+import dash_bootstrap_components as dbc
+from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.redis_cache import redis_cache
+
+# Initialiser le repository de tickets via la factory
+support_ticket_repository = RepositoryFactory.get_support_ticket_repository()
 
 
 class SupportCacheService:
@@ -144,7 +150,16 @@ class SupportCacheService:
                 return cached_data
         
         # Niveau 3: Base de données (version optimisée)
-        result = SupportTicketRepository.get_tickets_paginated_minimal(page_index, page_size, filters=filter_params, status=status)
+        try:
+            print(f"[SUPPORT][DB FETCH] Chargement tickets page {page_index}, status={status}")
+            result = support_ticket_repository.get_tickets_paginated_minimal(page_index, page_size, filters=filter_params, status=status)
+            print(f"[SUPPORT][DB SUCCESS] {len(result.get('tickets', []))} tickets chargés")
+        except Exception as e:
+            print(f"[SUPPORT][DB ERROR] Erreur récupération tickets: {e}")
+            result = {
+                "tickets": [],
+                "total_count": 0
+            }
         
         # Convertir les schémas en dictionnaires pour la sérialisation
         tickets_data = []

@@ -103,7 +103,10 @@ class TripsCacheService:
             Dict contenant trips, total_count, et données pré-calculées
         """
         import time
-        from dash_apps.repositories.trip_repository import TripRepository
+        from dash_apps.repositories.repository_factory import RepositoryFactory
+        
+        # Obtenir le repository approprié via la factory
+        trip_repository = RepositoryFactory.get_trip_repository()
         
         # Unifier la clé L1/L2 en utilisant la méthode interne cohérente
         cache_key = TripsCacheService._get_cache_key(page_index, page_size, filter_params)
@@ -141,7 +144,7 @@ class TripsCacheService:
                 return cached_data
         
         # Niveau 3: Base de données (version optimisée)
-        result = TripRepository.get_trips_paginated_minimal(page_index, page_size, filters=filter_params)
+        result = trip_repository.get_trips_paginated_minimal(page_index, page_size, filters=filter_params)
         
         # Mettre à jour tous les niveaux de cache
         TripsCacheService._store_in_local_cache(cache_key, result)

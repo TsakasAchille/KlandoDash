@@ -1,13 +1,18 @@
 """
 Service de cache pour les données utilisateurs avec logique de génération centralisée
 """
-from typing import Dict, List, Optional, Tuple
 import time
 import threading
 import os
+import pandas as pd
+from typing import Dict, List, Optional, Tuple, Any
 from dash import html
-from dash_apps.repositories.user_repository import UserRepository
+import dash_bootstrap_components as dbc
+from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.redis_cache import redis_cache
+
+# Initialiser le repository utilisateur via la factory
+user_repository = RepositoryFactory.get_user_repository()
 
 class UsersCacheService:
     """Service centralisé pour la gestion du cache des données utilisateurs"""
@@ -132,7 +137,7 @@ class UsersCacheService:
                 return cached_data
         
         # Niveau 3: Base de données
-        result = UserRepository.get_users_paginated(page_index, page_size, filters=filter_params)
+        result = user_repository.get_users_paginated(page_index, page_size, filters=filter_params)
         
         # Mettre à jour tous les niveaux de cache
         UsersCacheService._store_in_local_cache(cache_key, result)
@@ -256,7 +261,7 @@ class UsersCacheService:
         # Charger depuis la base de données
         print(f"[DEBUG] Chargement depuis la base de données...")
         try:
-            result = UserRepository.get_users_paginated(page_index, page_size, filters=filters)
+            result = user_repository.get_users_paginated(page_index, page_size, filters=filters)
             print(f"[DEBUG] Résultat DB: {len(result.get('users', []))} utilisateurs, total={result.get('total_count', 0)}")
             
             # Stocker le résultat dans les caches
@@ -277,13 +282,13 @@ class UsersCacheService:
     def get_user_profile_panel(selected_uid: str):
         """Cache HTML → Redis → DB pour panneau profil"""
         if not selected_uid:
+            print("[PROFILE] UID vide, retour panneau vide")
             return html.Div()
         
         # Cache HTML
         cached_panel = UsersCacheService.get_cached_panel(selected_uid, 'profile')
         if cached_panel:
-            if UsersCacheService._debug_mode:
-                print(f"[PROFILE][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
+            print(f"[PROFILE][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
             return cached_panel
         
         # Redis
@@ -291,51 +296,71 @@ class UsersCacheService:
         try:
             cached_profile = redis_cache.get_user_profile(selected_uid)
             if cached_profile:
-                if UsersCacheService._debug_mode:
-                    print(f"[PROFILE][REDIS HIT] Profil récupéré pour {selected_uid[:8]}...")
+                print(f"[PROFILE][REDIS HIT] Profil récupéré pour {selected_uid[:8]}...")
                 data = cached_profile
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[PROFILE][REDIS ERROR] Erreur Redis: {e}")
         
         # DB
         if not data:
             try:
-                if UsersCacheService._debug_mode:
-                    print(f"[PROFILE][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
-                from dash_apps.utils.data_schema import get_user_profile
+                print(f"[PROFILE][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
+                # Import dynamique en fonction du mode de connexion
+                import os
+                connection_mode = os.environ.get('CONNECTION_MODE', 'auto')
+                force_rest_api = os.environ.get('FORCE_REST_API', 'false').lower() == 'true'
+                
+                if connection_mode == 'rest' or force_rest_api:
+                    from dash_apps.utils.data_schema_rest import get_user_profile
+                    print(f"[PROFILE] Utilisation de l'API REST pour {selected_uid[:8]}")
+                else:
+                    from dash_apps.utils.data_schema import get_user_profile
+                    print(f"[PROFILE] Utilisation de SQL direct pour {selected_uid[:8]}")
+                
                 data = get_user_profile(selected_uid)
+                
                 if not data:
-                    return html.Div()
+                    print(f"[PROFILE][ERROR] Aucune donnée trouvée pour {selected_uid}")
+                    return html.Div(dbc.Alert(f"Utilisateur {selected_uid[:8]}... introuvable", color="warning"))
+                
+                print(f"[PROFILE][DB SUCCESS] Données récupérées pour {selected_uid[:8]}, type: {type(data)}")
+                
                 # Cache profile
                 try:
                     redis_cache.set_user_profile(selected_uid, data, ttl_seconds=UsersCacheService._profile_ttl_seconds)
-                except Exception:
-                    pass
-            except Exception:
-                return html.Div()
+                    print(f"[PROFILE][REDIS CACHE] Données mises en cache pour {selected_uid[:8]}")
+                except Exception as e:
+                    print(f"[PROFILE][REDIS ERROR] Erreur mise en cache: {e}")
+            except Exception as e:
+                print(f"[PROFILE][DB ERROR] Erreur récupération: {e}")
+                return html.Div(dbc.Alert(f"Erreur lors du chargement des données: {e}", color="danger"))
         
         # Render
         try:
+            print(f"[PROFILE][RENDER] Rendu panneau pour {selected_uid[:8]}, data type: {type(data)}")
             from dash_apps.components.user_profile import render_user_profile
             panel = render_user_profile(data)
+            print(f"[PROFILE][RENDER SUCCESS] Panneau généré pour {selected_uid[:8]}")
+            
+            # Mise en cache du panneau HTML
             UsersCacheService.set_cached_panel(selected_uid, 'profile', panel)
+            print(f"[HTML CACHE] Panneau profile mis en cache pour {selected_uid[:8]}...")
             return panel
         except Exception as e:
-            if UsersCacheService._debug_mode:
-                print(f"[PROFILE] Erreur génération panneau: {e}")
-            return html.Div()
+            print(f"[PROFILE][RENDER ERROR] Erreur génération panneau: {e}")
+            return html.Div(dbc.Alert(f"Erreur d'affichage du profil: {e}", color="danger"))
     
     @staticmethod
     def get_user_stats_panel(selected_uid: str):
         """Cache HTML → Redis → DB pour panneau stats"""
         if not selected_uid:
+            print("[STATS] UID vide, retour panneau vide")
             return html.Div()
         
         # Cache HTML
         cached_panel = UsersCacheService.get_cached_panel(selected_uid, 'stats')
         if cached_panel:
-            if UsersCacheService._debug_mode:
-                print(f"[STATS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
+            print(f"[STATS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
             return cached_panel
         
         # Redis
@@ -343,50 +368,69 @@ class UsersCacheService:
         try:
             cached_stats = redis_cache.get_user_stats(selected_uid)
             if cached_stats:
-                if UsersCacheService._debug_mode:
-                    print(f"[STATS][REDIS HIT] Stats récupérées pour {selected_uid[:8]}...")
+                print(f"[STATS][REDIS HIT] Stats récupérées pour {selected_uid[:8]}...")
                 data = {'uid': selected_uid, 'stats': cached_stats}
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[STATS][REDIS ERROR] Erreur Redis: {e}")
         
         # DB
         if not data:
             try:
-                if UsersCacheService._debug_mode:
-                    print(f"[STATS][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
-                from dash_apps.utils.data_schema import get_user_stats_optimized
+                print(f"[STATS][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
+                # Import dynamique en fonction du mode de connexion
+                import os
+                connection_mode = os.environ.get('CONNECTION_MODE', 'auto')
+                force_rest_api = os.environ.get('FORCE_REST_API', 'false').lower() == 'true'
+                
+                if connection_mode == 'rest' or force_rest_api:
+                    from dash_apps.utils.data_schema_rest import get_user_stats_optimized
+                    print(f"[STATS] Utilisation de l'API REST pour {selected_uid[:8]}")
+                else:
+                    from dash_apps.utils.data_schema import get_user_stats_optimized
+                    print(f"[STATS] Utilisation de SQL direct pour {selected_uid[:8]}")
+                
                 stats = get_user_stats_optimized(selected_uid)
+                
+                if stats is None:
+                    print(f"[STATS][ERROR] Aucune statistique trouvée pour {selected_uid}")
+                    return html.Div(html.P("Aucune statistique disponible pour cet utilisateur"))
+                
                 data = {'uid': selected_uid, 'stats': stats}
+                print(f"[STATS][DB SUCCESS] Stats récupérées pour {selected_uid[:8]}")
+                
                 # Cache stats
                 try:
                     redis_cache.set_user_stats(selected_uid, stats, ttl_seconds=UsersCacheService._profile_ttl_seconds)
-                except Exception:
-                    pass
-            except Exception:
-                return html.Div()
+                    print(f"[STATS][REDIS CACHE] Données mises en cache pour {selected_uid[:8]}")
+                except Exception as e:
+                    print(f"[STATS][REDIS ERROR] Erreur mise en cache: {e}")
+            except Exception as e:
+                print(f"[STATS][DB ERROR] Erreur récupération stats: {e}")
+                return html.Div(dbc.Alert(f"Erreur lors du chargement des statistiques: {e}", color="warning"))
         
         # Render
         try:
+            print(f"[STATS][RENDER] Rendu panneau stats pour {selected_uid[:8]}")
             from dash_apps.components.user_stats import render_user_stats
             panel = render_user_stats(data)
             UsersCacheService.set_cached_panel(selected_uid, 'stats', panel)
+            print(f"[HTML CACHE] Panneau stats mis en cache pour {selected_uid[:8]}...")
             return panel
         except Exception as e:
-            if UsersCacheService._debug_mode:
-                print(f"[STATS] Erreur génération panneau: {e}")
-            return html.Div()
+            print(f"[STATS][RENDER ERROR] Erreur génération panneau stats: {e}")
+            return html.Div(dbc.Alert(f"Erreur d'affichage des statistiques: {e}", color="warning"))
     
     @staticmethod
     def get_user_trips_panel(selected_uid: str):
         """Cache HTML → Redis → DB pour panneau trips"""
         if not selected_uid:
+            print("[TRIPS] UID vide, retour panneau vide")
             return html.Div()
         
         # Cache HTML
         cached_panel = UsersCacheService.get_cached_panel(selected_uid, 'trips')
         if cached_panel:
-            if UsersCacheService._debug_mode:
-                print(f"[TRIPS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
+            print(f"[TRIPS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
             return cached_panel
         
         # Redis
@@ -394,39 +438,58 @@ class UsersCacheService:
         try:
             cached_trips = redis_cache.get_user_trips(selected_uid)
             if cached_trips:
-                if UsersCacheService._debug_mode:
-                    print(f"[TRIPS][REDIS HIT] Trips récupérés pour {selected_uid[:8]}...")
-                import pandas as pd
+                print(f"[TRIPS][REDIS HIT] Trips récupérés pour {selected_uid[:8]}...")
+                # Utiliser l'import global de pandas, pas d'import local
                 data = {'uid': selected_uid, 'trips': pd.DataFrame(cached_trips)}
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[TRIPS][REDIS ERROR] Erreur Redis: {e}")
         
         # DB
         if not data:
             try:
-                if UsersCacheService._debug_mode:
-                    print(f"[TRIPS][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
-                from dash_apps.utils.data_schema import get_user_trips_with_role
+                print(f"[TRIPS][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
+                # Import dynamique en fonction du mode de connexion
+                import os
+                connection_mode = os.environ.get('CONNECTION_MODE', 'auto')
+                force_rest_api = os.environ.get('FORCE_REST_API', 'false').lower() == 'true'
+                
+                if connection_mode == 'rest' or force_rest_api:
+                    from dash_apps.utils.data_schema_rest import get_user_trips_with_role
+                    print(f"[TRIPS] Utilisation de l'API REST pour {selected_uid[:8]}")
+                else:
+                    from dash_apps.utils.data_schema import get_user_trips_with_role
+                    print(f"[TRIPS] Utilisation de SQL direct pour {selected_uid[:8]}")
+                    
                 trips_df = get_user_trips_with_role(str(selected_uid), limit=50)
+                
+                if trips_df is None or (isinstance(trips_df, pd.DataFrame) and trips_df.empty):
+                    print(f"[TRIPS][EMPTY] Aucun trajet trouvé pour {selected_uid}")
+                    return html.Div(html.P("Aucun trajet disponible pour cet utilisateur"))
+                
                 data = {'uid': selected_uid, 'trips': trips_df}
+                print(f"[TRIPS][DB SUCCESS] {len(trips_df) if isinstance(trips_df, pd.DataFrame) else 'N/A'} trajets récupérés pour {selected_uid[:8]}")
+                
                 # Cache trips
                 try:
                     redis_cache.set_user_trips(selected_uid, trips_df, ttl_seconds=UsersCacheService._profile_ttl_seconds)
-                except Exception:
-                    pass
-            except Exception:
-                return html.Div()
+                    print(f"[TRIPS][REDIS CACHE] Données mises en cache pour {selected_uid[:8]}")
+                except Exception as e:
+                    print(f"[TRIPS][REDIS ERROR] Erreur mise en cache: {e}")
+            except Exception as e:
+                print(f"[TRIPS][DB ERROR] Erreur récupération trajets: {e}")
+                return html.Div(dbc.Alert(f"Erreur lors du chargement des trajets: {e}", color="warning"))
         
         # Render
         try:
+            print(f"[TRIPS][RENDER] Rendu panneau trajets pour {selected_uid[:8]}")
             from dash_apps.components.user_trips import render_user_trips
             panel = render_user_trips(data)
             UsersCacheService.set_cached_panel(selected_uid, 'trips', panel)
+            print(f"[HTML CACHE] Panneau trips mis en cache pour {selected_uid[:8]}...")
             return panel
         except Exception as e:
-            if UsersCacheService._debug_mode:
-                print(f"[TRIPS] Erreur génération panneau: {e}")
-            return html.Div()
+            print(f"[TRIPS][RENDER ERROR] Erreur génération panneau trajets: {e}")
+            return html.Div(dbc.Alert(f"Erreur d'affichage des trajets: {e}", color="warning"))
     
     @staticmethod
     def get_cached_panel(user_id: str, panel_type: str) -> Optional[html.Div]:
@@ -486,6 +549,32 @@ class UsersCacheService:
             print(f"[HTML CACHE] Panneau {panel_type} mis en cache pour {user_id[:8]}...")
     
     @staticmethod
+    def get_user_panel(user_id: str, panel_type: str) -> Optional[html.Div]:
+        """
+        Méthode centralisée pour récupérer un panneau utilisateur (profile, stats, trips)
+        Cette méthode redirige vers la méthode spécifique correspondant au type demandé
+        
+        Args:
+            user_id: ID de l'utilisateur
+            panel_type: Type de panneau ('profile', 'stats', 'trips')
+            
+        Returns:
+            html.Div: Le panneau demandé
+        """
+        if not user_id or not panel_type:
+            return html.Div()
+            
+        if panel_type == 'profile':
+            return UsersCacheService.get_user_profile_panel(user_id)
+        elif panel_type == 'stats':
+            return UsersCacheService.get_user_stats_panel(user_id)
+        elif panel_type == 'trips':
+            return UsersCacheService.get_user_trips_panel(user_id)
+        else:
+            # Type de panneau inconnu
+            return html.Div()
+    
+    @staticmethod
     def _preload_single_user(user_id: str, panel_types: List[str]):
         """
         Précharge les panneaux pour un utilisateur spécifique (fonction interne pour threading)
@@ -502,10 +591,13 @@ class UsersCacheService:
                 if cache_key not in UsersCacheService._html_cache:
                     # Utiliser la méthode Read-Through pour cohérence
                     UsersCacheService.get_user_panel(user_id, panel_type)
+            
+            if UsersCacheService._debug_mode:
+                print(f"[PRELOAD] Panneaux préchargés pour {user_id[:8]}")
         except Exception as e:
             if UsersCacheService._debug_mode:
                 print(f"[PRELOAD] Erreur préchargement {user_id[:8]}: {e}")
-    
+                
     @staticmethod
     def preload_user_panels(user_ids: List[str], panel_types: List[str] = None, async_mode: bool = True):
         """

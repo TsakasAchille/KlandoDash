@@ -12,10 +12,13 @@ from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
 from dash_apps.components.user_search_widget import render_search_widget, render_active_filters
-from dash_apps.repositories.user_repository import UserRepository
+from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.redis_cache import redis_cache
 from dash_apps.services.users_cache_service import UsersCacheService
 from dash_apps.services.user_panels_preloader import UserPanelsPreloader
+
+# Utiliser la factory pour obtenir le repository approprié
+user_repository = RepositoryFactory.get_user_repository()
 
 
 # Helper de log standardisé pour tous les callbacks (compatible Python < 3.10)
@@ -98,12 +101,13 @@ def find_user_page_index(uid, page_size):
         Index de la page (0-based) ou None si non trouvé
     """
     try:
-        position = UserRepository.get_user_position(uid)
+        position = user_repository.get_user_position(uid)
         if position is not None:
             page_index = position // page_size
             return page_index
         return None
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR] Erreur lors de la recherche de l'utilisateur {uid}: {e}")
         return None
 
 

@@ -8,7 +8,7 @@ import dash
 from flask import session
 import json
 
-from dash_apps.utils.admin_db import is_admin
+from dash_apps.utils.admin_db_rest import is_admin
 from dash_apps.utils.user_data_old import update_user_field
 from dash_apps.repositories.user_repository import UserRepository
 from dash_apps.components.driver_validation_components import create_pending_document_card, create_validated_document_card

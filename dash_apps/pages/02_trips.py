@@ -10,9 +10,12 @@ from dash_apps.config import Config
 from dash_apps.components.trips_table_custom import render_custom_trips_table
 from dash_apps.components.trip_details_layout import create_trip_details_layout
 from dash_apps.components.trip_search_widget import render_trip_search_widget, render_active_trip_filters
-from dash_apps.repositories.trip_repository import TripRepository
+from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.redis_cache import redis_cache
 from dash_apps.services.trips_cache_service import TripsCacheService
+
+# Utiliser la factory pour obtenir le repository approprié
+trip_repository = RepositoryFactory.get_trip_repository()
 
 
 # Helper de log standardisé pour tous les callbacks (compatible Python < 3.10)
