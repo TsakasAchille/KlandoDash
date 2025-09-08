@@ -8,12 +8,34 @@ from typing import List, Optional, Dict, Any, Tuple
 class SupportTicketRepository:
     @staticmethod
     def get_ticket(session: Session, ticket_id: str) -> Optional[SupportTicketSchema]:
-        ticket = session.query(SupportTicket).filter(SupportTicket.ticket_id == ticket_id).first()
-        if not ticket:
+        try:
+            # Ne pas utiliser SupportTicket.ticket_id.astext qui cause des erreurs
+            # Utiliser directement une requête SQL brute avec le ticket_id en tant que string
+            from sqlalchemy import text
+            
+            # Convertir explicitement le ticket_id en string
+            ticket_id_str = str(ticket_id).strip()
+            
+            # Utiliser une requête SQL directe qui fonctionne avec SQLite et PostgreSQL
+            stmt = text("SELECT * FROM support_tickets WHERE ticket_id = :ticket_id")
+            result = session.execute(stmt, {"ticket_id": ticket_id_str})
+            row = result.fetchone()
+            
+            if not row:
+                # Aucun ticket trouvé
+                return None
+                
+            # Créer un objet SupportTicket à partir de la ligne
+            ticket_dict = dict(row)
+            ticket = SupportTicket(**ticket_dict)
+            
+            # Le schéma gère maintenant automatiquement la conversion UUID -> string
+            return SupportTicketSchema.model_validate(ticket)
+            
+        except Exception as e:
+            import logging
+            logging.error(f"Erreur dans get_ticket pour l'ID {ticket_id}: {e}")
             return None
-        
-        # Le schéma gère maintenant automatiquement la conversion UUID -> string
-        return SupportTicketSchema.model_validate(ticket)
 
     @staticmethod
     def list_tickets(session: Session, skip: int = 0, limit: int = 100) -> List[SupportTicketSchema]:

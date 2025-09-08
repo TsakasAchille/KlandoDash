@@ -124,7 +124,15 @@ class SupabaseRepository:
             Dictionnaire des données ou None si non trouvé
         """
         try:
-            response = supabase.table(self.table_name).select("*").eq(id_field, id_value).execute()
+            # S'assurer que id_value est une chaîne de caractères
+            str_id_value = str(id_value) if id_value is not None else None
+            
+            if str_id_value is None:
+                logger.warning(f"Tentative de récupérer un enregistrement avec {id_field}=None")
+                return None
+                
+            # Utiliser la valeur sous forme de chaîne
+            response = supabase.table(self.table_name).select("*").eq(id_field, str_id_value).execute()
             
             if response.data:
                 return response.data[0]

@@ -221,11 +221,11 @@ class TripsCacheService:
         except Exception:
             pass
         
-        # DB
+        # API REST
         if not data:
             try:
                 if TripsCacheService._debug_mode:
-                    print(f"[TRIP_DETAILS][DB FETCH] Chargement {selected_trip_id[:8]}... depuis la DB")
+                    print(f"[TRIP_DETAILS][API FETCH] Chargement {selected_trip_id[:8]}... via API REST")
                 from dash_apps.utils.data_schema_rest import get_trip_by_id
                 print(f"[TRIP_DETAILS] Utilisation de l'API REST pour {selected_trip_id[:8]}")
                 data = get_trip_by_id(selected_trip_id)
@@ -281,11 +281,11 @@ class TripsCacheService:
         except Exception:
             pass
         
-        # DB
+        # API REST
         if not data:
             try:
                 if TripsCacheService._debug_mode:
-                    print(f"[TRIP_STATS][DB FETCH] Chargement {selected_trip_id[:8]}... depuis la DB")
+                    print(f"[TRIP_STATS][API FETCH] Chargement {selected_trip_id[:8]}... via API REST")
                 from dash_apps.utils.data_schema_rest import get_trip_stats_optimized
                 print(f"[TRIP_STATS] Utilisation de l'API REST pour {selected_trip_id[:8]}")
                 stats = get_trip_stats_optimized(selected_trip_id)
@@ -341,11 +341,11 @@ class TripsCacheService:
         except Exception:
             pass
         
-        # DB
+        # API REST
         if not data:
             try:
                 if TripsCacheService._debug_mode:
-                    print(f"[TRIP_PASSENGERS][DB FETCH] Chargement {selected_trip_id[:8]}... depuis la DB")
+                    print(f"[TRIP_PASSENGERS][API FETCH] Chargement {selected_trip_id[:8]}... via API REST")
                 from dash_apps.utils.data_schema_rest import get_passengers_for_trip
                 print(f"[TRIP_PASSENGERS] Utilisation de l'API REST pour {selected_trip_id[:8]}")
                 # Import pandas ici pour s'assurer qu'il est disponible dans ce scope

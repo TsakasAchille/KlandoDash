@@ -57,22 +57,19 @@ def create_database_engine():
             return engine
             
         except (OperationalError, Exception) as e:
-            logger.warning(f"Échec de connexion à PostgreSQL/Supabase: {e}")
-            logger.info("Basculement vers la base de données SQLite locale...")
-    
-    # Fallback vers SQLite local
-    sqlite_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'users.db')
-    sqlite_url = f"sqlite:///{sqlite_path}"
-    
-    logger.info(f"Utilisation de la base de données SQLite locale: {sqlite_path}")
-    
-    engine = create_engine(
-        sqlite_url,
-        echo=False,
-        future=True,
-        pool_pre_ping=True,
-        connect_args={"check_same_thread": False}  # Pour SQLite
-    )
+            from dash_apps.config import Config
+            # Si REST API est forcé, on n'utilise pas de fallback vers SQLite
+            if Config.use_rest_api():
+                logger.warning(f"Échec de connexion à PostgreSQL/Supabase: {e}")
+                logger.info("Utilisation exclusive de l'API REST Supabase comme demandé")
+                # Renvoyer un moteur factice pour ne pas casser les imports
+                from sqlalchemy.pool import NullPool
+                return create_engine('sqlite:///:memory:', poolclass=NullPool)
+            else:
+                # Ce code ne devrait plus être exécuté car Config.use_rest_api() retourne toujours True
+                # On le garde pour la compatibilité ascendante
+                logger.warning(f"Échec de connexion à PostgreSQL/Supabase: {e}")
+                raise ConnectionError("La connexion à la base de données a échoué et l'application est configurée pour n'utiliser que l'API REST.")
     
     return engine
 

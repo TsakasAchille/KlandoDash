@@ -87,15 +87,22 @@ def load_tickets_by_page(page=1, page_size=10, status=None, category=None, subty
 
 def load_comments_for_ticket(ticket_id):
     """
-    Charge les commentaires pour un ticket spécifique
+    Charge les commentaires pour un ticket spécifique via l'API REST
     """
     if not ticket_id:
         return []
         
     try:
-        with get_session() as session:
-            comments = SupportCommentRepository.list_comments_for_ticket(session, str(ticket_id))
-        return [c.model_dump() for c in comments] if comments else []
+        # Utiliser le repository REST pour récupérer les commentaires
+        from dash_apps.repositories.support_comment_repository_rest import SupportCommentRepositoryRest
+        logger.info(f"Récupération des commentaires via API REST pour le ticket {ticket_id}")
+        
+        # Créer une instance du repository REST
+        repo = SupportCommentRepositoryRest()
+        comments = repo.list_comments_for_ticket(str(ticket_id))
+        
+        # Commentaires déjà sous forme de dictionnaires avec l'API REST
+        return comments if comments else []
     except Exception as e:
         logger.error(f"[load_comments_for_ticket] Erreur pour ticket {ticket_id}: {e}")
         return []
@@ -397,13 +404,22 @@ def update_selected_ticket(ticket_item_n_clicks, pathname, search, pending_ticke
                         ticket = next((t for t in pending_tickets_data["tickets"] if str(t.get("ticket_id")) == str(url_ticket_id)), None)
                     if not ticket and closed_tickets_data and closed_tickets_data.get("tickets"):
                         ticket = next((t for t in closed_tickets_data["tickets"] if str(t.get("ticket_id")) == str(url_ticket_id)), None)
-                    # Si pas trouvé, charger depuis la base
+                    # Si pas trouvé, charger depuis l'API REST
                     if not ticket:
-                        from dash_apps.core.database import get_session
-                        with get_session() as session:
-                            from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
-                            schema = SupportTicketRepository.get_ticket(session, str(url_ticket_id))
-                            ticket = schema.model_dump() if schema else None
+                        from dash_apps.repositories.support_ticket_repository_rest import SupportTicketRepositoryRest
+                        repo = SupportTicketRepositoryRest()
+                        ticket = repo.get_ticket(str(url_ticket_id))
+                        # Assurer que les timestamps sont correctement formatés pour l'affichage
+                        if ticket and 'created_at' in ticket:
+                            try:
+                                from datetime import datetime
+                                # Formater pour l'affichage si c'est une date
+                                if isinstance(ticket['created_at'], datetime):
+                                    ticket['created_at'] = ticket['created_at'].isoformat()
+                                if isinstance(ticket.get('updated_at'), datetime):
+                                    ticket['updated_at'] = ticket['updated_at'].isoformat()
+                            except Exception as format_error:
+                                logger.error(f"Erreur de formatage de date: {format_error}")
                     if ticket:
                         return ticket
     except Exception as e:

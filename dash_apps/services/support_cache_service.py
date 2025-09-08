@@ -111,8 +111,8 @@ class SupportCacheService:
             Dict contenant tickets, total_count, et données pré-calculées
         """
         import time
-        from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
-        from dash_apps.core.database import get_session
+        # Uniquement utiliser le repository REST de la factory
+        # sans import de la DB SQLite
         
         # Unifier la clé L1/L2 en utilisant la méthode interne cohérente
         cache_key = SupportCacheService._get_cache_key(page_index, page_size, status, filter_params)
@@ -149,13 +149,13 @@ class SupportCacheService:
                 
                 return cached_data
         
-        # Niveau 3: Base de données (version optimisée)
+        # Niveau 3: API REST (via repository)
         try:
-            print(f"[SUPPORT][DB FETCH] Chargement tickets page {page_index}, status={status}")
+            print(f"[SUPPORT][API FETCH] Chargement tickets page {page_index}, status={status}")
             result = support_ticket_repository.get_tickets_paginated_minimal(page_index, page_size, filters=filter_params, status=status)
-            print(f"[SUPPORT][DB SUCCESS] {len(result.get('tickets', []))} tickets chargés")
+            print(f"[SUPPORT][API SUCCESS] {len(result.get('tickets', []))} tickets chargés")
         except Exception as e:
-            print(f"[SUPPORT][DB ERROR] Erreur récupération tickets: {e}")
+            print(f"[SUPPORT][API ERROR] Erreur récupération tickets via API REST: {e}")
             result = {
                 "tickets": [],
                 "total_count": 0
@@ -234,40 +234,45 @@ class SupportCacheService:
         except Exception:
             pass
         
-        # DB
+        # API REST
         if not data:
             try:
                 if SupportCacheService._debug_mode:
-                    print(f"[TICKET_DETAILS][DB FETCH] Chargement {selected_ticket_id[:8]}... depuis la DB")
-                from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
-                from dash_apps.core.database import get_session
+                    print(f"[TICKET_DETAILS][API FETCH] Chargement {selected_ticket_id[:8]}... via API REST")
+                
+                # Utiliser l'API REST via le repository pour récupérer le ticket
+                from dash_apps.repositories.support_ticket_repository_rest import SupportTicketRepositoryRest
                 
                 try:
-                    with get_session() as session:
-                        # Validation finale avant requête DB
-                        if not selected_ticket_id or len(selected_ticket_id.strip()) == 0:
-                            if SupportCacheService._debug_mode:
-                                print(f"[TICKET_DETAILS][DB ERROR] ID de ticket vide ou invalide")
-                            return html.Div("ID de ticket invalide", className="alert alert-warning")
-                        
-                        ticket_schema = SupportTicketRepository.get_ticket(session, selected_ticket_id)
-                        if not ticket_schema:
-                            if SupportCacheService._debug_mode:
-                                print(f"[TICKET_DETAILS][DB ERROR] Ticket {selected_ticket_id[:8]}... non trouvé en DB")
-                            return html.Div("Ticket non trouvé", className="alert alert-warning")
-                        data = ticket_schema.model_dump()
-                        
+                    # Validation finale avant requête API
+                    if not selected_ticket_id or len(selected_ticket_id.strip()) == 0:
                         if SupportCacheService._debug_mode:
-                            print(f"[TICKET_DETAILS][DB SUCCESS] Ticket chargé: {data.get('subject', 'N/A')[:50]}...")
-                
-                except Exception as db_error:
+                            print(f"[TICKET_DETAILS][API ERROR] ID de ticket vide ou invalide")
+                        return html.Div("ID de ticket invalide", className="alert alert-warning")
+                    
+                    # Récupérer le ticket via l'API REST
+                    repo = SupportTicketRepositoryRest()
+                    ticket_data = repo.get_ticket(selected_ticket_id)
+                    
+                    if not ticket_data:
+                        if SupportCacheService._debug_mode:
+                            print(f"[TICKET_DETAILS][API ERROR] Ticket {selected_ticket_id[:8]}... non trouvé via API REST")
+                        return html.Div("Ticket non trouvé", className="alert alert-warning")
+                    
+                    # Utiliser directement les données du ticket
+                    data = ticket_data
+                    
                     if SupportCacheService._debug_mode:
-                        print(f"[TICKET_DETAILS][DB ERROR] Erreur de connexion: {db_error}")
+                        print(f"[TICKET_DETAILS][API SUCCESS] Ticket chargé: {data.get('subject', 'N/A')[:50]}...")
+                
+                except Exception as api_error:
+                    if SupportCacheService._debug_mode:
+                        print(f"[TICKET_DETAILS][API ERROR] Erreur de connexion à l'API: {api_error}")
                     
                     # Message d'erreur utilisateur friendly
                     return html.Div([
                         html.H5("⚠️ Problème de connexion", className="text-warning"),
-                        html.P("Impossible de se connecter à la base de données."),
+                        html.P("Impossible de se connecter à l'API Supabase."),
                         html.P("Veuillez réessayer dans quelques instants."),
                         html.Button("🔄 Réessayer", id="retry-connection-btn", className="btn btn-primary btn-sm")
                     ], className="alert alert-warning text-center p-4")
@@ -288,8 +293,8 @@ class SupportCacheService:
             except Exception as e:
                 if SupportCacheService._debug_mode:
                     import traceback
-                    print(f"[TICKET_DETAILS][DB ERROR] Erreur lors du chargement depuis la DB: {e}")
-                    print(f"[TICKET_DETAILS][DB ERROR] Traceback: {traceback.format_exc()}")
+                    print(f"[TICKET_DETAILS][API ERROR] Erreur lors du chargement depuis l'API: {e}")
+                    print(f"[TICKET_DETAILS][API ERROR] Traceback: {traceback.format_exc()}")
                 return html.Div(f"Erreur lors du chargement du ticket: {str(e)}", className="alert alert-danger")
         
         # Render

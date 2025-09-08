@@ -301,10 +301,10 @@ class UsersCacheService:
         except Exception as e:
             print(f"[PROFILE][REDIS ERROR] Erreur Redis: {e}")
         
-        # DB
+        # API REST
         if not data:
             try:
-                print(f"[PROFILE][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
+                print(f"[PROFILE][API FETCH] Chargement {selected_uid[:8]}... via API REST")
                 # Import direct depuis data_schema_rest
                 from dash_apps.utils.data_schema_rest import get_user_profile
                 print(f"[PROFILE] Utilisation de l'API REST pour {selected_uid[:8]}")
@@ -314,7 +314,7 @@ class UsersCacheService:
                     print(f"[PROFILE][ERROR] Aucune donnée trouvée pour {selected_uid}")
                     return html.Div(dbc.Alert(f"Utilisateur {selected_uid[:8]}... introuvable", color="warning"))
                 
-                print(f"[PROFILE][DB SUCCESS] Données récupérées pour {selected_uid[:8]}, type: {type(data)}")
+                print(f"[PROFILE][API SUCCESS] Données récupérées pour {selected_uid[:8]}, type: {type(data)}")
                 
                 # Cache profile
                 try:
@@ -323,7 +323,7 @@ class UsersCacheService:
                 except Exception as e:
                     print(f"[PROFILE][REDIS ERROR] Erreur mise en cache: {e}")
             except Exception as e:
-                print(f"[PROFILE][DB ERROR] Erreur récupération: {e}")
+                print(f"[PROFILE][API ERROR] Erreur récupération: {e}")
                 return html.Div(dbc.Alert(f"Erreur lors du chargement des données: {e}", color="danger"))
         
         # Render
@@ -364,10 +364,10 @@ class UsersCacheService:
         except Exception as e:
             print(f"[STATS][REDIS ERROR] Erreur Redis: {e}")
         
-        # DB
+        # API
         if not data:
             try:
-                print(f"[STATS][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
+                print(f"[USER_DETAILS][API FETCH] Chargement {selected_uid[:8]}... via API REST")
                 # Import direct depuis data_schema_rest
                 from dash_apps.utils.data_schema_rest import get_user_stats_optimized
                 print(f"[STATS] Utilisation de l'API REST pour {selected_uid[:8]}")
@@ -387,7 +387,7 @@ class UsersCacheService:
                 except Exception as e:
                     print(f"[STATS][REDIS ERROR] Erreur mise en cache: {e}")
             except Exception as e:
-                print(f"[STATS][DB ERROR] Erreur récupération stats: {e}")
+                print(f"[STATS][API ERROR] Erreur récupération stats: {e}")
                 return html.Div(dbc.Alert(f"Erreur lors du chargement des statistiques: {e}", color="warning"))
         
         # Render
@@ -426,10 +426,10 @@ class UsersCacheService:
         except Exception as e:
             print(f"[TRIPS][REDIS ERROR] Erreur Redis: {e}")
         
-        # DB
+        # API REST
         if not data:
             try:
-                print(f"[TRIPS][DB FETCH] Chargement {selected_uid[:8]}... depuis la DB")
+                print(f"[TRIPS][API FETCH] Chargement {selected_uid[:8]}... via API REST")
                 # Import direct depuis data_schema_rest
                 from dash_apps.utils.data_schema_rest import get_user_trips_with_role
                 print(f"[TRIPS] Utilisation de l'API REST pour {selected_uid[:8]}")
@@ -449,7 +449,7 @@ class UsersCacheService:
                 except Exception as e:
                     print(f"[TRIPS][REDIS ERROR] Erreur mise en cache: {e}")
             except Exception as e:
-                print(f"[TRIPS][DB ERROR] Erreur récupération trajets: {e}")
+                print(f"[TRIPS][API ERROR] Erreur récupération trajets: {e}")
                 return html.Div(dbc.Alert(f"Erreur lors du chargement des trajets: {e}", color="warning"))
         
         # Render
