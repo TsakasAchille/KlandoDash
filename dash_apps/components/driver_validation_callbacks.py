@@ -10,7 +10,7 @@ import json
 
 from dash_apps.utils.admin_db_rest import is_admin
 from dash_apps.utils.user_data_old import update_user_field
-from dash_apps.repositories.user_repository import UserRepository
+from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.components.driver_validation_components import create_pending_document_card, create_validated_document_card
 
 refresh_store_id = "driver-validation-refresh"
@@ -22,7 +22,8 @@ refresh_store_id = "driver-validation-refresh"
 )
 def load_all_drivers_to_store(refresh_trigger):
     # On charge tous les conducteurs à valider ET validés
-    users = UserRepository.get_pending_drivers() + UserRepository.get_validated_drivers()
+    user_repository = RepositoryFactory.get_user_repository()
+    users = user_repository.get_pending_drivers() + user_repository.get_validated_drivers()
     # On ne garde que ceux qui ont un driver_license_url non nul
     users = [u for u in users if getattr(u, "driver_license_url", None)]
     return [u.dict() for u in users]
@@ -208,7 +209,8 @@ def validate_driver_documents(n_clicks, button_id):
     
     uid = button_id["index"]
     # On récupère le statut actuel via get_user_by_id
-    user_obj = UserRepository.get_user_by_id(uid)
+    user_repository = RepositoryFactory.get_user_repository()
+    user_obj = user_repository.get_user_by_id(uid)
     is_validated = False
     if user_obj:
         is_validated = getattr(user_obj, "is_driver_doc_validated", False)
@@ -216,7 +218,7 @@ def validate_driver_documents(n_clicks, button_id):
     try:
         if is_validated:
             # Dévalidation
-            success = UserRepository.unvalidate_driver_documents(uid)
+            success = user_repository.unvalidate_driver_documents(uid)
             if success:
                 # Déclenche le second callback pour le rafraîchissement
                 return False, "Valider les documents", ""
@@ -224,7 +226,7 @@ def validate_driver_documents(n_clicks, button_id):
                 return dash.no_update, "Échec de dévalidation", "Erreur lors de la dévalidation"
         else:
             # Validation
-            success = UserRepository.validate_driver_documents(uid)
+            success = user_repository.validate_driver_documents(uid)
             if success:
                 # Déclenche le second callback pour le rafraîchissement
                 return False, "Dévalider les documents", "Documents validés"

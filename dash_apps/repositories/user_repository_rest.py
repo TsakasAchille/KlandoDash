@@ -238,3 +238,90 @@ class UserRepositoryRest(SupabaseRepository):
                 "trips_as_passenger": 0,
                 "total_trips": 0
             }
+    
+    def get_users_paginated(self, page: int = 0, page_size: int = 10, filters: Dict = None) -> Dict[str, Any]:
+        """
+        Récupère une page d'utilisateurs avec pagination (interface compatible avec le cache service)
+        
+        Args:
+            page: Index de page (commence à 0)
+            page_size: Nombre d'éléments par page
+            filters: Filtres à appliquer (optionnel)
+            
+        Returns:
+            Dictionnaire avec users, total_count, et table_rows_data
+        """
+        try:
+            from dash_apps.utils.supabase_client import supabase
+            
+            # Calculer le décalage (offset)
+            skip = page * page_size
+            
+            # Construire la requête de base
+            query = supabase.table(self.table_name).select("*")
+            
+            # Appliquer les filtres si fournis
+            if filters:
+                # Filtre par texte (nom, email, téléphone)
+                if filters.get('text'):
+                    text_filter = filters['text']
+                    query = query.or_(f"display_name.ilike.%{text_filter}%,email.ilike.%{text_filter}%,phone.ilike.%{text_filter}%")
+                
+                # Filtre par rôle
+                if filters.get('role'):
+                    role_filter = filters['role']
+                    if role_filter == 'driver':
+                        query = query.eq("is_driver", True)
+                    elif role_filter == 'passenger':
+                        query = query.eq("is_driver", False)
+                
+                # Filtre par genre
+                if filters.get('gender'):
+                    query = query.eq("gender", filters['gender'])
+                
+                # Filtre par validation conducteur
+                if filters.get('driver_validation'):
+                    if filters['driver_validation'] == 'validated':
+                        query = query.eq("is_driver_doc_validated", True)
+                    elif filters['driver_validation'] == 'not_validated':
+                        query = query.eq("is_driver_doc_validated", False)
+            
+            # Compter le total avant pagination
+            count_response = query.execute()
+            total_count = len(count_response.data) if count_response.data else 0
+            
+            # Appliquer la pagination
+            query = query.range(skip, skip + page_size - 1).order("created_at", desc=True)
+            
+            # Exécuter la requête
+            response = query.execute()
+            users = response.data if response.data else []
+            
+            # Préparer les données pour le tableau (compatible avec l'interface existante)
+            table_rows_data = []
+            for user in users:
+                table_rows_data.append({
+                    'uid': user.get('uid', ''),
+                    'display_name': user.get('display_name', ''),
+                    'email': user.get('email', ''),
+                    'phone': user.get('phone', ''),
+                    'gender': user.get('gender', ''),
+                    'is_driver': user.get('is_driver', False),
+                    'is_driver_doc_validated': user.get('is_driver_doc_validated', False),
+                    'created_at': user.get('created_at', ''),
+                    'updated_at': user.get('updated_at', '')
+                })
+            
+            return {
+                "users": users,
+                "total_count": total_count,
+                "table_rows_data": table_rows_data
+            }
+            
+        except Exception as e:
+            logger.error(f"Erreur get_users_paginated: {str(e)}")
+            return {
+                "users": [],
+                "total_count": 0,
+                "table_rows_data": []
+            }

@@ -4,7 +4,7 @@ import json
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from dash_apps.config import Config
-from dash_apps.repositories.user_repository import UserRepository
+from dash_apps.repositories.repository_factory import RepositoryFactory
 
 
 # Helper de log standardisé (même format que dans users.py)

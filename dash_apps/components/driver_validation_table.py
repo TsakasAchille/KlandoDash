@@ -4,7 +4,7 @@ import json
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from dash_apps.config import Config
-from dash_apps.repositories.user_repository import UserRepository
+from dash_apps.repositories.repository_factory import RepositoryFactory
 
 
 # Helper de log standardisé (aligné avec users/trips)
@@ -308,7 +308,8 @@ def on_validate_pending(clicks, refresh_val):
             except Exception:
                 uid_norm = uid
             if uid_norm:
-                UserRepository.validate_driver_documents(uid_norm)
+                user_repository = RepositoryFactory.get_user_repository()
+                user_repository.validate_driver_documents(uid_norm)
         return (refresh_val or 0) + 1
     except Exception:
         return (refresh_val or 0) + 1
@@ -336,7 +337,8 @@ def on_unvalidate_validated(clicks, refresh_val):
             except Exception:
                 uid_norm = uid
             if uid_norm:
-                UserRepository.unvalidate_driver_documents(uid_norm)
+                user_repository = RepositoryFactory.get_user_repository()
+                user_repository.unvalidate_driver_documents(uid_norm)
         return (refresh_val or 0) + 1
     except Exception:
         return (refresh_val or 0) + 1

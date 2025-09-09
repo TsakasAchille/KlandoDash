@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import html, dcc, callback, Input, Output, State, callback_context
 import dash
-from dash_apps.repositories.user_repository import UserRepository
+from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.utils.admin_db_rest import is_admin
 from flask import session
 from dash.exceptions import PreventUpdate
@@ -139,15 +139,16 @@ def switch_tabs(tab1_clicks, tab2_clicks, tab_pref):
 def render_pending_table(current_page, selected_uid, _refresh):
     log_callback("render_pending_table", {"page": current_page, "selected_uid": selected_uid}, {})
     page = int(current_page) if isinstance(current_page, (int, float)) and current_page >= 1 else 1
-    page_size = UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
+    page_size = 10  # Default page size
     try:
         from dash_apps.config import Config as _Cfg
         page_size = getattr(_Cfg, "USERS_TABLE_PAGE_SIZE", page_size)
     except Exception:
         pass
-    # Use repository adapter with driver_validation filter (not_validated)
+    # Use repository factory with driver_validation filter (not_validated)
     try:
-        data = UserRepository.get_users_paginated(page=page-1, page_size=page_size, filters={"driver_validation": "not_validated"})
+        user_repository = RepositoryFactory.get_user_repository()
+        data = user_repository.get_users_paginated(page=page-1, page_size=page_size, filters={"driver_validation": "not_validated"})
         page_users = data.get("users", [])
         total = data.get("total_count", 0)
     except Exception:
@@ -165,15 +166,16 @@ def render_pending_table(current_page, selected_uid, _refresh):
 def render_validated_table(current_page, selected_uid, _refresh):
     log_callback("render_validated_table", {"page": current_page, "selected_uid": selected_uid}, {})
     page = int(current_page) if isinstance(current_page, (int, float)) and current_page >= 1 else 1
-    page_size = UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
+    page_size = 10  # Default page size
     try:
         from dash_apps.config import Config as _Cfg
         page_size = getattr(_Cfg, "USERS_TABLE_PAGE_SIZE", page_size)
     except Exception:
         pass
-    # Use repository adapter with driver_validation filter (validated)
+    # Use repository factory with driver_validation filter (validated)
     try:
-        data = UserRepository.get_users_paginated(page=page-1, page_size=page_size, filters={"driver_validation": "validated"})
+        user_repository = RepositoryFactory.get_user_repository()
+        data = user_repository.get_users_paginated(page=page-1, page_size=page_size, filters={"driver_validation": "validated"})
         page_users = data.get("users", [])
         total = data.get("total_count", 0)
     except Exception:
@@ -210,13 +212,14 @@ def bootstrap_from_url(search):
         # If we have uid and a valid tab, compute page where user lies (DB-consistent)
         if uid and tab:
             try:
-                page_size = UserRepository.__dict__.get("PAGE_SIZE_OVERRIDE", None) or 10
+                page_size = 10  # Default page size
                 try:
                     from dash_apps.config import Config as _Cfg
                     page_size = getattr(_Cfg, "USERS_TABLE_PAGE_SIZE", page_size)
                 except Exception:
                     pass
-                idx = UserRepository.get_user_position_in_validation_group(uid, "validated" if tab == "validated" else "pending")
+                user_repository = RepositoryFactory.get_user_repository()
+                idx = user_repository.get_user_position_in_validation_group(uid, "validated" if tab == "validated" else "pending")
                 if isinstance(idx, int) and idx >= 0:
                     page = (idx // page_size) + 1
                     goto_out = {"tab": tab, "page": page}

@@ -624,16 +624,31 @@ def render_user_trips_panel(selected_uid):
         {}
     )
     
+    print(f"[TRIPS_CALLBACK_DEBUG] === DÉBUT render_user_trips_panel ===")
+    print(f"[TRIPS_CALLBACK_DEBUG] selected_uid reçu: {selected_uid}")
+    print(f"[TRIPS_CALLBACK_DEBUG] Type: {type(selected_uid)}")
+    
     # Extraire l'UID si c'est un dict
     uid_value = None
     if selected_uid:
         if isinstance(selected_uid, dict):
             uid_value = selected_uid.get("uid")
+            print(f"[TRIPS_CALLBACK_DEBUG] UID extrait du dict: {uid_value}")
         else:
             uid_value = selected_uid
+            print(f"[TRIPS_CALLBACK_DEBUG] UID direct: {uid_value}")
+    else:
+        print(f"[TRIPS_CALLBACK_DEBUG] selected_uid est None ou vide")
+    
+    print(f"[TRIPS_CALLBACK_DEBUG] Appel UsersCacheService.get_user_trips_panel avec uid: {uid_value}")
     
     # Read-Through pattern: le cache service gère tout
-    return UsersCacheService.get_user_trips_panel(uid_value)
+    result = UsersCacheService.get_user_trips_panel(uid_value)
+    
+    print(f"[TRIPS_CALLBACK_DEBUG] Résultat reçu: {type(result)}")
+    print(f"[TRIPS_CALLBACK_DEBUG] === FIN render_user_trips_panel ===")
+    
+    return result
 
 
 def debug_all_inputs(

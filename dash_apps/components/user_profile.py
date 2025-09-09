@@ -147,9 +147,10 @@ def render_user_summary(uid):
         return None
 
     # Import local pour éviter les imports circulaires
-    from dash_apps.repositories.user_repository import UserRepository
+    from dash_apps.repositories.repository_factory import RepositoryFactory
 
-    user = UserRepository.get_user_by_id(uid)
+    user_repository = RepositoryFactory.get_user_repository()
+    user = user_repository.get_user_by_id(uid)
     if user is None:
         return dbc.Alert(f"Utilisateur introuvable (UID: {uid})", color="warning")
 

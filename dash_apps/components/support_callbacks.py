@@ -6,9 +6,9 @@ from dash import callback, Input, Output, State, ctx, ALL, html, no_update, dcc,
 from urllib.parse import parse_qs
 from dash.exceptions import PreventUpdate
 from dash_apps.components.support_tickets import render_tickets_list, render_ticket_details
-from dash_apps.repositories.support_ticket_repository import SupportTicketRepository
-from dash_apps.repositories.support_comment_repository import SupportCommentRepository
-from dash_apps.repositories.user_repository import UserRepository
+from dash_apps.repositories.support_ticket_repository_rest import SupportTicketRepositoryRest
+from dash_apps.repositories.support_comment_repository_rest import SupportCommentRepositoryRest
+from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.models.support_ticket import SupportTicket
 from dash_apps.core.database import get_session
 from dash_apps.services.support_cache_service import SupportCacheService
@@ -114,14 +114,14 @@ def update_ticket_status(ticket_id, new_status):
     Utilise la méthode du repository pour respecter la séparation des responsabilités
     """
     try:
-        with get_session() as session:
-            old_status, updated_status = SupportTicketRepository.update_ticket_status(session, ticket_id, new_status)
-            if updated_status:
-                logger.info(f"Ticket {ticket_id} mis à jour : {old_status} -> {updated_status}")
-                return old_status, updated_status
-            else:
-                logger.warning(f"Ticket {ticket_id} non trouvé pour mise à jour")
-                return None, None
+        repo = SupportTicketRepositoryRest()
+        old_status, updated_status = repo.update_ticket_status(ticket_id, new_status)
+        if updated_status:
+            logger.info(f"Ticket {ticket_id} mis à jour : {old_status} -> {updated_status}")
+            return old_status, updated_status
+        else:
+            logger.warning(f"Ticket {ticket_id} non trouvé pour mise à jour")
+            return None, None
     except Exception as e:
         logger.error(f"Erreur lors de la mise à jour du ticket {ticket_id}: {e}")
         return None, None
@@ -406,7 +406,6 @@ def update_selected_ticket(ticket_item_n_clicks, pathname, search, pending_ticke
                         ticket = next((t for t in closed_tickets_data["tickets"] if str(t.get("ticket_id")) == str(url_ticket_id)), None)
                     # Si pas trouvé, charger depuis l'API REST
                     if not ticket:
-                        from dash_apps.repositories.support_ticket_repository_rest import SupportTicketRepositoryRest
                         repo = SupportTicketRepositoryRest()
                         ticket = repo.get_ticket(str(url_ticket_id))
                         # Assurer que les timestamps sont correctement formatés pour l'affichage

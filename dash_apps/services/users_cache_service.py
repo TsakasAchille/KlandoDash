@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from dash import html
 import dash_bootstrap_components as dbc
 from dash_apps.repositories.repository_factory import RepositoryFactory
-from dash_apps.services.redis_cache import redis_cache
+# Redis cache removed - using local cache + REST API only
 
 # Initialiser le repository utilisateur via la factory
 user_repository = RepositoryFactory.get_user_repository()
@@ -28,7 +28,7 @@ class UsersCacheService:
     _cache_timestamps = {}
     _local_cache_ttl = int(os.getenv('LOCAL_CACHE_TTL', '45'))  # TTL local configurable (par défaut 45s)
     _local_max_entries = int(os.getenv('LOCAL_CACHE_MAX_ENTRIES', '200'))  # Limite max d'entrées en L1
-    _profile_ttl_seconds = 600  # 10 minutes pour le profil utilisateur en Redis
+    _profile_ttl_seconds = 600  # 10 minutes pour le profil utilisateur en cache local
     
     @staticmethod
     def _get_cache_key(page_index: int, page_size: int, filter_params: Dict) -> str:
@@ -56,11 +56,8 @@ class UsersCacheService:
     
     @staticmethod
     def _get_from_redis_cache(cache_key: str, page_index: int, page_size: int, filters: Dict) -> Optional[Dict]:
-        """Récupère les données du cache Redis"""
-        try:
-            return redis_cache.get_json_by_key(cache_key)
-        except Exception:
-            return None
+        """Redis cache removed - always return None to force local cache or API calls"""
+        return None
     
     @staticmethod
     def _store_in_local_cache(cache_key: str, result: Dict):
@@ -71,11 +68,8 @@ class UsersCacheService:
     
     @staticmethod
     def _store_in_redis_cache(cache_key: str, result: Dict, page_index: int, page_size: int, filters: Dict):
-        """Stocke les données dans le cache Redis"""
-        try:
-            redis_cache.set_users_page_from_result(result, page_index, page_size, filters, ttl_seconds=300)
-        except Exception:
-            pass
+        """Redis cache removed - no-op method for compatibility"""
+        pass
     
     @staticmethod
     def _is_local_cache_valid(cache_key: str) -> bool:
@@ -117,26 +111,9 @@ class UsersCacheService:
                 cached = UsersCacheService._local_cache[cache_key]
                 return cached
             
-            # Niveau 2: Cache Redis - utiliser la méthode cohérente
-            cached_data = UsersCacheService._get_from_redis_cache(cache_key, page_index, page_size, filter_params)
-            if cached_data:
-                # Stocker dans le cache local pour les prochains accès
-                UsersCacheService._local_cache[cache_key] = cached_data
-                UsersCacheService._cache_timestamps[cache_key] = time.time()
-                # Éviction LRU simple si nécessaire
-                UsersCacheService._evict_local_cache_if_needed()
-                
-                if UsersCacheService._debug_mode:
-                    try:
-                        users_count = len(cached_data.get("users", []))
-                        total_count = cached_data.get("total_count", 0)
-                        print(f"[USERS][REDIS HIT] page_index={page_index} users={users_count} total={total_count}")
-                    except Exception:
-                        pass
-                
-                return cached_data
+            # Niveau 2: Redis cache removed - skip to API REST calls
         
-        # Niveau 3: Base de données
+        # Niveau 2: API REST calls (Redis removed)
         result = user_repository.get_users_paginated(page_index, page_size, filters=filter_params)
         
         # Mettre à jour tous les niveaux de cache
@@ -247,19 +224,10 @@ class UsersCacheService:
             else:
                 print(f"[LOCAL CACHE MISS] Pas de cache local pour page {page_index}")
         
-        # Vérifier le cache Redis
-        if not force_reload:
-            cached_result = UsersCacheService._get_from_redis_cache(cache_key, page_index, page_size, filters)
-            if cached_result:
-                print(f"[REDIS CACHE HIT] Page {page_index} récupérée du cache Redis")
-                # Stocker en cache local pour les prochains accès
-                UsersCacheService._store_in_local_cache(cache_key, cached_result)
-                return cached_result
-            else:
-                print(f"[REDIS CACHE MISS] Pas de cache Redis pour page {page_index}")
+        # Redis cache removed - skip to API REST calls
         
-        # Charger depuis la base de données
-        print(f"[DEBUG] Chargement depuis la base de données...")
+        # Charger depuis l'API REST
+        print(f"[DEBUG] Chargement depuis l'API REST...")
         try:
             result = user_repository.get_users_paginated(page_index, page_size, filters=filters)
             print(f"[DEBUG] Résultat DB: {len(result.get('users', []))} utilisateurs, total={result.get('total_count', 0)}")
@@ -279,8 +247,305 @@ class UsersCacheService:
             }
     
     @staticmethod
+    def _load_panel_config():
+        """Charge la configuration des panneaux utilisateur depuis le fichier JSON"""
+        import json
+        import os
+        
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'user_panels_config.json')
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[CONFIG] Erreur chargement user_panels_config.json: {e}")
+            return {}
+    
+    @staticmethod
+    def _get_cached_panel_generic(selected_uid: str, panel_config: dict):
+        """Fonction générique optimisée pour récupérer un panneau utilisateur"""
+        if not selected_uid:
+            from dash import html
+            return html.Div()
+        
+        panel_type = panel_config.get('panel_name', 'unknown')
+        methods = panel_config.get('methods', {})
+        
+        # 1. Vérifier cache HTML
+        html_panel = UsersCacheService._check_html_cache(selected_uid, panel_type, methods.get('cache', {}))
+        if html_panel:
+            return html_panel
+        
+        # 2. Récupérer données (Cache local ou API REST)
+        data = UsersCacheService._get_panel_data(selected_uid, panel_type, methods)
+        if isinstance(data, str) and data.startswith('ERROR:'):
+            return UsersCacheService._create_error_panel(data)
+        
+        # 3. Rendre le panneau
+        return UsersCacheService._render_panel(selected_uid, panel_type, data, methods)
+    
+    @staticmethod
+    def _check_html_cache(selected_uid: str, panel_type: str, cache_config: dict):
+        """Vérifie le cache HTML"""
+        if not cache_config.get('html_cache_enabled', False):
+            return None
+        
+        cached_panel = UsersCacheService.get_cached_panel(selected_uid, panel_type)
+        if cached_panel and UsersCacheService._debug_mode:
+            print(f"[{panel_type.upper()}][HTML CACHE HIT] Panneau récupéré pour {selected_uid[:8]}...")
+        return cached_panel
+    
+    @staticmethod
+    def _get_panel_data(selected_uid: str, panel_type: str, methods: dict):
+        """Récupère les données depuis le cache local ou via l'API REST"""
+        cache_config = methods.get('cache', {})
+        data_fetcher_config = methods.get('data_fetcher', {})
+        
+        # Essayer le cache local d'abord
+        if cache_config.get('cache_enabled', True):  # Activé par défaut
+            try:
+                cached_data = UsersCacheService._get_cache_data_generic(selected_uid, panel_type)
+                if cached_data:
+                    if UsersCacheService._debug_mode:
+                        print(f"[{panel_type.upper()}] Données récupérées du cache pour {selected_uid[:8]}...")
+                    return cached_data
+            except Exception as e:
+                print(f"[{panel_type.upper()}] Erreur cache: {e}")
+        
+        # Exécuter le fetcher
+        return UsersCacheService._execute_data_fetcher(selected_uid, panel_type, data_fetcher_config, cache_config)
+    
+    @staticmethod
+    def _execute_data_fetcher(selected_uid: str, panel_type: str, data_fetcher_config: dict, cache_config: dict):
+        """Exécute le data fetcher et met en cache"""
+        try:
+            if UsersCacheService._debug_mode:
+                print(f"[{panel_type.upper()}][DATA FETCH] Chargement {selected_uid[:8]}...")
+            
+            # Validation inputs
+            inputs = {'user_id': selected_uid}
+            error = UsersCacheService._validate_inputs(data_fetcher_config.get('inputs', {}), inputs, panel_type)
+            if error:
+                return error
+            
+            # Utiliser uniquement REST API
+            data = UsersCacheService._execute_rest_data_fetcher(data_fetcher_config, inputs)
+            
+            if data is None:
+                return f"ERROR:Données non trouvées pour {selected_uid}"
+            
+            # Cache des données localement
+            if cache_config.get('cache_enabled', True):
+                try:
+                    cache_ttl = cache_config.get('cache_ttl', 600)
+                    UsersCacheService._set_cache_data_generic(selected_uid, panel_type, data, cache_ttl)
+                except Exception as e:
+                    print(f"[CACHE] Erreur stockage cache: {e}")
+            
+            return data
+            
+        except Exception as e:
+            return f"ERROR:Erreur lors de la récupération: {e}"
+    
+    @staticmethod
+    def _execute_rest_data_fetcher(data_fetcher_config: dict, inputs: dict):
+        """Exécute un data fetcher REST - récupère les données via l'API REST"""
+        try:
+            rest_config = data_fetcher_config.get('rest_config', {})
+            function_name = rest_config.get('function')
+            module_name = rest_config.get('module')
+            params = rest_config.get('params', {})
+            
+            print(f"[DATA_FETCHER_DEBUG] === DÉBUT _execute_rest_data_fetcher ===")
+            print(f"[DATA_FETCHER_DEBUG] Function: {function_name}")
+            print(f"[DATA_FETCHER_DEBUG] Module: {module_name}")
+            print(f"[DATA_FETCHER_DEBUG] Params config: {params}")
+            print(f"[DATA_FETCHER_DEBUG] Inputs: {inputs}")
+            
+            if not function_name or not module_name:
+                print(f"[DATA_FETCHER_DEBUG] Configuration incomplète")
+                return None
+            
+            # Import dynamique du module
+            import importlib
+            module = importlib.import_module(module_name)
+            function = getattr(module, function_name)
+            
+            # Préparer les paramètres
+            call_params = {}
+            for param_key, input_key in params.items():
+                if input_key in inputs:
+                    call_params[param_key] = inputs[input_key]
+                elif isinstance(input_key, (str, int, float)):
+                    call_params[param_key] = input_key
+            
+            print(f"[DATA_FETCHER_DEBUG] Paramètres d'appel: {call_params}")
+            
+            # Appeler la fonction
+            result = function(**call_params)
+            print(f"[DATA_FETCHER_DEBUG] Résultat: {type(result)}")
+            if hasattr(result, 'shape'):
+                print(f"[DATA_FETCHER_DEBUG] DataFrame shape: {result.shape}")
+            print(f"[DATA_FETCHER_DEBUG] === FIN _execute_rest_data_fetcher ===")
+            
+            return result
+            
+        except Exception as e:
+            print(f"[DATA_FETCHER_DEBUG] ERREUR: {e}")
+            print(f"[REST FETCHER] Erreur: {e}")
+            return None
+    
+    @staticmethod
+    def _render_panel(selected_uid: str, panel_type: str, data: dict, methods: dict):
+        """Rend le panneau final"""
+        try:
+            print(f"[RENDER_PANEL_DEBUG] === DÉBUT _render_panel ===")
+            print(f"[RENDER_PANEL_DEBUG] Panel type: {panel_type}")
+            print(f"[RENDER_PANEL_DEBUG] Data type: {type(data)}")
+            print(f"[RENDER_PANEL_DEBUG] User ID: {selected_uid}")
+            
+            cache_config = methods.get('cache', {})
+            renderer_config = methods.get('renderer', {})
+            
+            print(f"[RENDER_PANEL_DEBUG] Renderer config: {renderer_config}")
+            
+            # Validation inputs renderer
+            render_inputs = {'user_id': selected_uid, 'data': data}
+            error = UsersCacheService._validate_inputs(renderer_config.get('inputs', {}), render_inputs, panel_type)
+            if error:
+                print(f"[RENDER_PANEL_DEBUG] Erreur validation: {error}")
+                return UsersCacheService._create_error_panel(error)
+            
+            print(f"[RENDER_PANEL_DEBUG] Validation OK, appel renderer...")
+            
+            # Exécution renderer
+            panel = UsersCacheService._execute_renderer(renderer_config, render_inputs)
+            
+            print(f"[RENDER_PANEL_DEBUG] Renderer terminé, résultat: {type(panel)}")
+            
+            # Cache HTML
+            if cache_config.get('html_cache_enabled', False):
+                UsersCacheService.set_cached_panel(selected_uid, panel_type, panel)
+                print(f"[RENDER_PANEL_DEBUG] Panneau mis en cache")
+            
+            print(f"[RENDER_PANEL_DEBUG] === FIN _render_panel ===")
+            return panel
+            
+        except Exception as e:
+            print(f"[RENDER_PANEL_DEBUG] ERREUR: {e}")
+            return UsersCacheService._create_error_panel(f"Erreur génération panneau: {e}")
+    
+    @staticmethod
+    def _execute_renderer(renderer_config: dict, inputs: dict):
+        """Exécute le renderer pour générer le panneau HTML"""
+        try:
+            module_name = renderer_config.get('module')
+            function_name = renderer_config.get('function')
+            
+            print(f"[RENDERER_DEBUG] === DÉBUT _execute_renderer ===")
+            print(f"[RENDERER_DEBUG] Module: {module_name}")
+            print(f"[RENDERER_DEBUG] Function: {function_name}")
+            print(f"[RENDERER_DEBUG] Inputs: {list(inputs.keys())}")
+            print(f"[RENDERER_DEBUG] Data type: {type(inputs.get('data'))}")
+            
+            if not module_name or not function_name:
+                raise Exception("Configuration renderer incomplète")
+            
+            # Import dynamique
+            import importlib
+            module = importlib.import_module(module_name)
+            function = getattr(module, function_name)
+            
+            # Appeler la fonction de rendu avec les bons paramètres selon la signature
+            import inspect
+            sig = inspect.signature(function)
+            
+            print(f"[RENDERER_DEBUG] Signature détectée: {sig}")
+            
+            if 'user_id' in sig.parameters and 'data' in sig.parameters:
+                # Nouvelle signature (render_user_trips)
+                print(f"[RENDERER_DEBUG] Appel avec user_id et data")
+                print(f"[RENDERER_DEBUG] user_id: {inputs['user_id']}")
+                print(f"[RENDERER_DEBUG] data: {type(inputs['data'])}")
+                result = function(user_id=inputs['user_id'], data=inputs['data'])
+                print(f"[RENDERER_DEBUG] Résultat: {type(result)}")
+                return result
+            elif 'user' in sig.parameters:
+                # Ancienne signature (render_user_profile, render_user_stats)
+                print(f"[RENDERER_DEBUG] Appel avec user seulement")
+                result = function(inputs['data'])
+                print(f"[RENDERER_DEBUG] Résultat: {type(result)}")
+                return result
+            else:
+                # Fallback: essayer avec data seulement
+                print(f"[RENDERER_DEBUG] Appel fallback avec data")
+                result = function(inputs['data'])
+                print(f"[RENDERER_DEBUG] Résultat: {type(result)}")
+                return result
+            
+        except Exception as e:
+            print(f"[RENDERER_DEBUG] ERREUR: {e}")
+            raise Exception(f"Erreur exécution renderer: {e}")
+    
+    @staticmethod
+    def _validate_inputs(required_inputs: dict, provided_inputs: dict, panel_type: str) -> str:
+        """Valide les inputs requis, retourne une erreur ou None"""
+        for input_name, requirement in required_inputs.items():
+            if requirement == "required" and input_name not in provided_inputs:
+                return f"ERROR:Input manquant: {input_name}"
+        return None
+    
+    @staticmethod
+    def _create_error_panel(error_message: str):
+        """Crée un panneau d'erreur standardisé"""
+        import dash_bootstrap_components as dbc
+        from dash import html
+        
+        # Extraire le message après ERROR:
+        message = error_message.replace('ERROR:', '') if error_message.startswith('ERROR:') else error_message
+        color = "warning" if "non trouvées" in message else "danger"
+        
+        return html.Div(dbc.Alert(message, color=color, className="mb-3"))
+    
+    @staticmethod
+    def _get_cache_data_generic(user_id: str, panel_type: str):
+        """Fonction cache générique basée sur la configuration JSON"""
+        config = UsersCacheService._load_panel_config()
+        panel_config = config.get(panel_type, {})
+        
+        cache_key_prefix = panel_config.get('cache_key_prefix', panel_type)
+        cache_key = f"{cache_key_prefix}:{user_id}"
+        
+        # Vérifier cache local seulement (Redis removed)
+        if (cache_key in UsersCacheService._local_cache and 
+            UsersCacheService._is_local_cache_valid(cache_key)):
+            return UsersCacheService._local_cache[cache_key]
+        
+        return None
+    
+    @staticmethod
+    def _set_cache_data_generic(user_id: str, panel_type: str, data: dict, ttl_seconds: int):
+        """Stocke les données dans le cache local"""
+        config = UsersCacheService._load_panel_config()
+        panel_config = config.get(panel_type, {})
+        
+        cache_key_prefix = panel_config.get('cache_key_prefix', panel_type)
+        cache_key = f"{cache_key_prefix}:{user_id}"
+        
+        # Stocker en cache local seulement (Redis removed)
+        UsersCacheService._local_cache[cache_key] = data
+        UsersCacheService._cache_timestamps[cache_key] = time.time()
+        UsersCacheService._evict_local_cache_if_needed()
+    
+    @staticmethod
     def get_user_profile_panel(selected_uid: str):
-        """Cache HTML → Redis → DB pour panneau profil"""
+        """Cache HTML → Cache local → API REST pour panneau profil - utilise la nouvelle config JSON"""
+        config = UsersCacheService._load_panel_config()
+        panel_config = config.get('profile', {})
+        return UsersCacheService._get_cached_panel_generic(selected_uid, panel_config)
+    
+    @staticmethod
+    def get_user_profile_panel_legacy(selected_uid: str):
+        """Version legacy - Cache HTML → API REST pour panneau profil"""
         if not selected_uid:
             print("[PROFILE] UID vide, retour panneau vide")
             return html.Div()
@@ -291,15 +556,8 @@ class UsersCacheService:
             print(f"[PROFILE][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
             return cached_panel
         
-        # Redis
+        # Redis cache removed - skip to API REST calls
         data = None
-        try:
-            cached_profile = redis_cache.get_user_profile(selected_uid)
-            if cached_profile:
-                print(f"[PROFILE][REDIS HIT] Profil récupéré pour {selected_uid[:8]}...")
-                data = cached_profile
-        except Exception as e:
-            print(f"[PROFILE][REDIS ERROR] Erreur Redis: {e}")
         
         # API REST
         if not data:
@@ -316,12 +574,7 @@ class UsersCacheService:
                 
                 print(f"[PROFILE][API SUCCESS] Données récupérées pour {selected_uid[:8]}, type: {type(data)}")
                 
-                # Cache profile
-                try:
-                    redis_cache.set_user_profile(selected_uid, data, ttl_seconds=UsersCacheService._profile_ttl_seconds)
-                    print(f"[PROFILE][REDIS CACHE] Données mises en cache pour {selected_uid[:8]}")
-                except Exception as e:
-                    print(f"[PROFILE][REDIS ERROR] Erreur mise en cache: {e}")
+                # Redis cache removed - data only stored in local cache via HTML panel caching
             except Exception as e:
                 print(f"[PROFILE][API ERROR] Erreur récupération: {e}")
                 return html.Div(dbc.Alert(f"Erreur lors du chargement des données: {e}", color="danger"))
@@ -343,7 +596,14 @@ class UsersCacheService:
     
     @staticmethod
     def get_user_stats_panel(selected_uid: str):
-        """Cache HTML → Redis → DB pour panneau stats"""
+        """Cache HTML → Cache local → API REST pour panneau stats - utilise la nouvelle config JSON"""
+        config = UsersCacheService._load_panel_config()
+        panel_config = config.get('stats', {})
+        return UsersCacheService._get_cached_panel_generic(selected_uid, panel_config)
+    
+    @staticmethod
+    def get_user_stats_panel_legacy(selected_uid: str):
+        """Version legacy - Cache HTML → API REST pour panneau stats"""
         if not selected_uid:
             print("[STATS] UID vide, retour panneau vide")
             return html.Div()
@@ -354,15 +614,8 @@ class UsersCacheService:
             print(f"[STATS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
             return cached_panel
         
-        # Redis
+        # Redis cache removed - skip to API REST calls
         data = None
-        try:
-            cached_stats = redis_cache.get_user_stats(selected_uid)
-            if cached_stats:
-                print(f"[STATS][REDIS HIT] Stats récupérées pour {selected_uid[:8]}...")
-                data = {'uid': selected_uid, 'stats': cached_stats}
-        except Exception as e:
-            print(f"[STATS][REDIS ERROR] Erreur Redis: {e}")
         
         # API
         if not data:
@@ -380,12 +633,7 @@ class UsersCacheService:
                 data = {'uid': selected_uid, 'stats': stats}
                 print(f"[STATS][DB SUCCESS] Stats récupérées pour {selected_uid[:8]}")
                 
-                # Cache stats
-                try:
-                    redis_cache.set_user_stats(selected_uid, stats, ttl_seconds=UsersCacheService._profile_ttl_seconds)
-                    print(f"[STATS][REDIS CACHE] Données mises en cache pour {selected_uid[:8]}")
-                except Exception as e:
-                    print(f"[STATS][REDIS ERROR] Erreur mise en cache: {e}")
+                # Redis cache removed - data only stored in local cache via HTML panel caching
             except Exception as e:
                 print(f"[STATS][API ERROR] Erreur récupération stats: {e}")
                 return html.Div(dbc.Alert(f"Erreur lors du chargement des statistiques: {e}", color="warning"))
@@ -404,7 +652,26 @@ class UsersCacheService:
     
     @staticmethod
     def get_user_trips_panel(selected_uid: str):
-        """Cache HTML → Redis → DB pour panneau trips"""
+        """Cache HTML → Cache local → API REST pour panneau trips - utilise la nouvelle config JSON"""
+        print(f"[TRIPS_SERVICE_DEBUG] === DÉBUT get_user_trips_panel ===")
+        print(f"[TRIPS_SERVICE_DEBUG] selected_uid: {selected_uid}")
+        
+        config = UsersCacheService._load_panel_config()
+        panel_config = config.get('trips', {})
+        
+        print(f"[TRIPS_SERVICE_DEBUG] Config chargée: {len(config)} panneaux")
+        print(f"[TRIPS_SERVICE_DEBUG] Panel config trips: {panel_config}")
+        
+        result = UsersCacheService._get_cached_panel_generic(selected_uid, panel_config)
+        
+        print(f"[TRIPS_SERVICE_DEBUG] Résultat _get_cached_panel_generic: {type(result)}")
+        print(f"[TRIPS_SERVICE_DEBUG] === FIN get_user_trips_panel ===")
+        
+        return result
+    
+    @staticmethod
+    def get_user_trips_panel_legacy(selected_uid: str):
+        """Version legacy - Cache HTML → API REST pour panneau trips"""
         if not selected_uid:
             print("[TRIPS] UID vide, retour panneau vide")
             return html.Div()
@@ -415,16 +682,8 @@ class UsersCacheService:
             print(f"[TRIPS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_uid[:8]}...")
             return cached_panel
         
-        # Redis
+        # Redis cache removed - skip to API REST calls
         data = None
-        try:
-            cached_trips = redis_cache.get_user_trips(selected_uid)
-            if cached_trips:
-                print(f"[TRIPS][REDIS HIT] Trips récupérés pour {selected_uid[:8]}...")
-                # Utiliser l'import global de pandas, pas d'import local
-                data = {'uid': selected_uid, 'trips': pd.DataFrame(cached_trips)}
-        except Exception as e:
-            print(f"[TRIPS][REDIS ERROR] Erreur Redis: {e}")
         
         # API REST
         if not data:
@@ -442,12 +701,7 @@ class UsersCacheService:
                 data = {'uid': selected_uid, 'trips': trips_df}
                 print(f"[TRIPS][DB SUCCESS] {len(trips_df) if isinstance(trips_df, pd.DataFrame) else 'N/A'} trajets récupérés pour {selected_uid[:8]}")
                 
-                # Cache trips
-                try:
-                    redis_cache.set_user_trips(selected_uid, trips_df, ttl_seconds=UsersCacheService._profile_ttl_seconds)
-                    print(f"[TRIPS][REDIS CACHE] Données mises en cache pour {selected_uid[:8]}")
-                except Exception as e:
-                    print(f"[TRIPS][REDIS ERROR] Erreur mise en cache: {e}")
+                # Redis cache removed - data only stored in local cache via HTML panel caching
             except Exception as e:
                 print(f"[TRIPS][API ERROR] Erreur récupération trajets: {e}")
                 return html.Div(dbc.Alert(f"Erreur lors du chargement des trajets: {e}", color="warning"))
@@ -482,17 +736,7 @@ class UsersCacheService:
         if cache_key in UsersCacheService._html_cache:
             return UsersCacheService._html_cache[cache_key]
         
-        # Essayer le cache Redis pour les panneaux HTML persistants
-        try:
-            cached_html = redis_cache.redis_client.get(f"html_panel:{cache_key}") if redis_cache.redis_client else None
-            if cached_html:
-                # Reconstruire l'objet HTML depuis le cache Redis (simplifié)
-                if UsersCacheService._debug_mode:
-                    print(f"[HTML CACHE][REDIS HIT] Panneau {panel_type} pour {user_id[:8]}...")
-                # Note: Pour une vraie implémentation, il faudrait sérialiser/désérialiser les objets Dash
-                return None  # Temporairement désactivé car complexe
-        except Exception:
-            pass
+        # Redis cache removed - only use local HTML cache
         
         return None
     
@@ -520,6 +764,20 @@ class UsersCacheService:
         
         if UsersCacheService._debug_mode:
             print(f"[HTML CACHE] Panneau {panel_type} mis en cache pour {user_id[:8]}...")
+    
+    @staticmethod
+    def get_panel(panel_type: str, user_id: str) -> Optional[html.Div]:
+        """
+        Méthode générique pour récupérer un panneau utilisateur
+        
+        Args:
+            panel_type: Type de panneau ('profile', 'stats', 'trips')
+            user_id: ID de l'utilisateur
+            
+        Returns:
+            html.Div: Le panneau demandé
+        """
+        return UsersCacheService.get_user_panel(user_id, panel_type)
     
     @staticmethod
     def get_user_panel(user_id: str, panel_type: str) -> Optional[html.Div]:
@@ -655,5 +913,5 @@ class UsersCacheService:
             "html_cache_size": len(UsersCacheService._html_cache),
             "cache_timestamps_size": len(UsersCacheService._cache_timestamps),
             "local_cache_ttl": UsersCacheService._local_cache_ttl,
-            "redis_stats": redis_cache.get_cache_stats()
+            "redis_removed": "Redis cache removed - using local cache + REST API only"
         }
