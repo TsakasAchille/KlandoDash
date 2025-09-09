@@ -7,6 +7,7 @@ sys.path.insert(0, project_root)
 
 # Importer les modules centraux de l'application
 from dash_apps.core.app_factory import create_app
+# Import map callbacks to ensure they are registered
 from dash_apps.core.auth_manager import setup_authentication
 from dash_apps.core.layout_manager import create_main_layout
 from dash_apps.core.page_manager import load_all_pages

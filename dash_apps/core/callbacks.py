@@ -84,7 +84,7 @@ def register_callbacks(app):
         # L'authentification Google OAuth suffit - pas besoin de double vérification
     
         # L'utilisateur est authentifié et autorisé, afficher la page demandée
-        if pathname in ["/", "/trips", "/users", "/stats", "/support", "/admin", "/user-profile", "/driver-validation"]:
+        if pathname in ["/", "/trips", "/users", "/stats", "/support", "/admin", "/user-profile", "/driver-validation", "/map", "/simple-map", "/test-map", "/maplibre-simple"]:
             # Obtenir le layout de la page demandée
             page_layout = get_page_layout(pathname)
             if page_layout:

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test MapLibre</title>
+    <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css" rel="stylesheet">
+    <style>
+        #map { height: 400px; width: 100%; }
+        .debug { margin: 20px; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <div class="debug">
+        <h2>Test MapLibre Direct</h2>
+        <p>Style URL: <span id="style-url"></span></p>
+        <p>Status: <span id="status">Initialisation...</span></p>
+    </div>
+    <div id="map"></div>
+    
+    <script>
+        const styleUrl = 'https://demotiles.maplibre.org/globe.json';
+        document.getElementById('style-url').textContent = styleUrl;
+        
+        console.log('Initialisation de la carte de test...');
+        
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: styleUrl,
+            center: [-14.7, 14.7], // Sénégal
+            zoom: 6
+        });
+        
+        map.on('load', () => {
+            console.log('Carte chargée avec succès');
+            document.getElementById('status').textContent = 'Carte chargée avec succès';
+            document.getElementById('status').style.color = 'green';
+        });
+        
+        map.on('error', (e) => {
+            console.error('Erreur de carte:', e);
+            document.getElementById('status').textContent = 'Erreur: ' + e.error.message;
+            document.getElementById('status').style.color = 'red';
+        });
+    </script>
+</body>
+</html>

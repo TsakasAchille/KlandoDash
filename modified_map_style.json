@@ -1,0 +1,289 @@
+{
+  "version": 8,
+  "name": "Carpool",
+  "metadata": {
+    "klando-carpool-map-sn-v1.1:version": "1.1",
+    "maputnik:renderer": "mlgljs"
+  },
+  "center": [
+    -17.467885829519226,
+    14.716333840940583
+  ],
+  "zoom": 11,
+  "sources": {
+    "klando-carpool-map-sn-v1.1": {
+      "type": "raster",
+      "tiles": [
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+      ],
+      "tileSize": 256,
+      "attribution": "\u00a9 OpenStreetMap contributors"
+    },
+    "dynamic": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      }
+    }
+  },
+  "glyphs": "https://geo.klando-carpool.com/fonts/{fontstack}/{range}.pbf?api_key=88d7ac58e4a6cdc97864a73ed82dda2eb173d0229ffa6c41a3fece54f6e0b020",
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "layout": {
+        "visibility": "visible"
+      },
+      "paint": {
+        "background-color": "rgba(37, 70, 95, 1)"
+      }
+    },
+    {
+      "id": "landuse-residential",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "water",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "water_intermittent",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "landcover-ice-shelf",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "landcover-glacier",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "landcover_sand",
+      "type": "raster",
+      "metadata": {},
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "landuse",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "landuse_overlay_national_park",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "waterway-tunnel",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "waterway",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "waterway_intermittent",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "tunnel_railway_transit",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1",
+      "minzoom": 0
+    },
+    {
+      "id": "building",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "housenumber",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1",
+      "minzoom": 17
+    },
+    {
+      "id": "road_area_pier",
+      "type": "raster",
+      "metadata": {},
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "road_pier",
+      "type": "raster",
+      "metadata": {},
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "road_bridge_area",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "road_path",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "road_minor",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1",
+      "minzoom": 13
+    },
+    {
+      "id": "tunnel_minor",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "tunnel_major",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "aeroway-area",
+      "type": "raster",
+      "metadata": {
+        "mapbox:group": "1444849345966.4436"
+      },
+      "source": "klando-carpool-map-sn-v1.1",
+      "minzoom": 4
+    },
+    {
+      "id": "aeroway-taxiway",
+      "type": "raster",
+      "metadata": {
+        "mapbox:group": "1444849345966.4436"
+      },
+      "source": "klando-carpool-map-sn-v1.1",
+      "minzoom": 12
+    },
+    {
+      "id": "aeroway-runway",
+      "type": "raster",
+      "metadata": {
+        "mapbox:group": "1444849345966.4436"
+      },
+      "source": "klando-carpool-map-sn-v1.1",
+      "minzoom": 4
+    },
+    {
+      "id": "road_trunk_primary",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "road_secondary_tertiary",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "road_major_motorway",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "railway-transit",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "railway",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "waterway-bridge-case",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "waterway-bridge",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "bridge_minor case",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "bridge_major case",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "bridge_minor",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "bridge_major",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "admin_sub",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "admin_country",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "poi_label",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1",
+      "minzoom": 14
+    },
+    {
+      "id": "airport-label",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1",
+      "minzoom": 10
+    },
+    {
+      "id": "road_major_label",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1"
+    },
+    {
+      "id": "place_label_other",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1",
+      "minzoom": 8
+    },
+    {
+      "id": "place_label_city",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1",
+      "minzoom": 4,
+      "maxzoom": 16
+    },
+    {
+      "id": "country_label-other",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1",
+      "maxzoom": 12
+    },
+    {
+      "id": "country_label",
+      "type": "raster",
+      "source": "klando-carpool-map-sn-v1.1",
+      "maxzoom": 12
+    }
+  ],
+  "id": "carpool"
+}

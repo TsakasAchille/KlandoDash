@@ -1,0 +1,196 @@
+/* MapLibre GL CSS - Styles pour la carte */
+
+.maplibre-map {
+    font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+}
+
+.maplibre-canvas {
+    display: block;
+}
+
+.maplibre-canvas-container {
+    overflow: hidden;
+}
+
+.maplibre-ctrl-group {
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 0 2px rgba(0,0,0,.1);
+}
+
+.maplibre-ctrl {
+    clear: both;
+    pointer-events: auto;
+    transform: translate(0,0);
+}
+
+.maplibre-ctrl-top-left,
+.maplibre-ctrl-top-right,
+.maplibre-ctrl-bottom-left,
+.maplibre-ctrl-bottom-right {
+    position: absolute;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.maplibre-ctrl-top-left {
+    top: 10px;
+    left: 10px;
+}
+
+.maplibre-ctrl-top-right {
+    top: 10px;
+    right: 10px;
+}
+
+.maplibre-ctrl-bottom-left {
+    bottom: 10px;
+    left: 10px;
+}
+
+.maplibre-ctrl-bottom-right {
+    bottom: 10px;
+    right: 10px;
+}
+
+.maplibre-ctrl-group button {
+    width: 30px;
+    height: 30px;
+    display: block;
+    padding: 0;
+    outline: none;
+    border: 0;
+    box-sizing: border-box;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+.maplibre-ctrl-group button:hover {
+    background-color: rgba(0,0,0,.05);
+}
+
+.maplibre-ctrl-zoom-in,
+.maplibre-ctrl-zoom-out {
+    background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath style="fill:%23333" d="m 10,1 c -5,0 -9,4 -9,9 0,5 4,9 9,9 5,0 9,-4 9,-9 C 19,5 15,1 10,1 Z m 4,10 -3,0 0,3 -2,0 0,-3 -3,0 0,-2 3,0 0,-3 2,0 0,3 3,0 0,2 z"/%3E%3C/svg%3E');
+}
+
+.maplibre-ctrl-zoom-out {
+    background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath style="fill:%23333" d="m 10,1 c -5,0 -9,4 -9,9 0,5 4,9 9,9 5,0 9,-4 9,-9 C 19,5 15,1 10,1 Z m 4,10 -8,0 0,-2 8,0 0,2 z"/%3E%3C/svg%3E');
+}
+
+.maplibre-popup {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: -webkit-flex;
+    display: flex;
+    will-change: transform;
+    pointer-events: none;
+}
+
+.maplibre-popup-anchor-top,
+.maplibre-popup-anchor-top-left,
+.maplibre-popup-anchor-top-right {
+    flex-direction: column;
+}
+
+.maplibre-popup-anchor-bottom,
+.maplibre-popup-anchor-bottom-left,
+.maplibre-popup-anchor-bottom-right {
+    flex-direction: column-reverse;
+}
+
+.maplibre-popup-anchor-left {
+    flex-direction: row;
+}
+
+.maplibre-popup-anchor-right {
+    flex-direction: row-reverse;
+}
+
+.maplibre-popup-tip {
+    width: 0;
+    height: 0;
+    border: 10px solid transparent;
+    z-index: 1;
+}
+
+.maplibre-popup-anchor-top .maplibre-popup-tip {
+    align-self: center;
+    border-top: none;
+    border-bottom-color: #fff;
+}
+
+.maplibre-popup-anchor-bottom .maplibre-popup-tip {
+    align-self: center;
+    border-bottom: none;
+    border-top-color: #fff;
+}
+
+.maplibre-popup-anchor-left .maplibre-popup-tip {
+    align-self: center;
+    border-left: none;
+    border-right-color: #fff;
+}
+
+.maplibre-popup-anchor-right .maplibre-popup-tip {
+    align-self: center;
+    border-right: none;
+    border-left-color: #fff;
+}
+
+.maplibre-popup-content {
+    position: relative;
+    background: #fff;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.1);
+    padding: 10px 10px 15px;
+    pointer-events: auto;
+}
+
+.maplibre-popup-close-button {
+    position: absolute;
+    right: 0;
+    top: 0;
+    border: 0;
+    border-radius: 0 3px 0 0;
+    cursor: pointer;
+    background-color: transparent;
+    color: #a0a0a0;
+    font-size: 16px;
+    padding: 5px;
+    text-decoration: none;
+}
+
+.maplibre-popup-close-button:hover {
+    background-color: rgba(0,0,0,.05);
+    color: #404040;
+}
+
+.maplibre-marker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    will-change: transform;
+}
+
+/* Styles personnalisés pour KlandoDash */
+.maplibre-container {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+.maplibre-error {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #fff3f3;
+    color: #c00;
+    padding: 8px 12px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 2;
+    font-size: 12px;
+}

@@ -1,1 +1,1 @@
-from .trips import layout as trips_page
+# Fichier vide - imports gérés par le page_manager

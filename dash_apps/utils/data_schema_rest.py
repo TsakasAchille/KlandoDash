@@ -403,19 +403,13 @@ def get_support_tickets(user_id=None):
 def get_signalements_for_trip(trip_id):
     """Récupère les signalements associés à un trajet"""
     try:
-        # Récupérer les tickets de support associés à ce trajet
-        query = supabase.table("support_tickets").select("*").eq("trip_id", trip_id)
-        response = query.execute()
+        # Note: support_tickets table doesn't have trip_id column in current schema
+        # Return empty list for now until schema is updated or alternative approach is implemented
+        logger.info(f"Signalements pour trajet {trip_id}: fonctionnalité non disponible (colonne trip_id manquante)")
+        return []
         
-        if response.data:
-            # Convertir en liste d'objets pour être compatible avec le code existant
-            class TicketObject:
-                def __init__(self, data):
-                    self.__dict__.update(data)
-            
-            return [TicketObject(ticket) for ticket in response.data]
-        else:
-            return []
+        # TODO: Implement proper trip-support ticket relationship
+        # Either add trip_id column to support_tickets or use alternative linking method
     
     except Exception as e:
         logger.error(f"Erreur lors de la récupération des signalements pour le trajet {trip_id}: {e}")

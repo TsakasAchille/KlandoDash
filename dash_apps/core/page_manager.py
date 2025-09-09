@@ -25,6 +25,15 @@ def load_page_from_file(file_name, page_name):
         try:
             spec.loader.exec_module(page_module)
             print(f"[PAGE_MANAGER] Module {module_name} exécuté avec succès.")
+            
+            # For map page, also import callbacks separately
+            if file_name == 'map.py':
+                try:
+                    from dash_apps.components import map_callbacks
+                    print(f"[PAGE_MANAGER] Map callbacks imported for {page_name}")
+                except Exception as e:
+                    print(f"[PAGE_MANAGER] Warning: Could not import map callbacks: {e}")
+                    
         except Exception as import_exc:
             print(f"[PAGE_MANAGER][ERREUR IMPORT] Exception lors de l'import de {file_name}: {import_exc}")
             import traceback
@@ -46,10 +55,10 @@ def load_all_pages():
     """
     Charge toutes les pages de l'application
     """
-    # Page d'accueil (Carte)
-   # page_layouts['/'] = load_page_from_file('00_map.py', 'Carte')
-    #page_layouts['/map'] = page_layouts['/']
-
+    # Page d'accueil (Carte MapLibre simple)
+    page_layouts['/'] = load_page_from_file('map.py', 'Carte MapLibre')
+    page_layouts['/map'] = page_layouts['/']
+    
     # Page d'utilisateurs
     page_layouts['/users'] = load_page_from_file('users.py', 'Utilisateurs')
 

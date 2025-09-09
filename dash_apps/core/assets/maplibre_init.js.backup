@@ -73,13 +73,6 @@
         return;
       }
 
-      // DEBUG_MAP_CONFIG - Ajouté par debug_map_page.py
-      console.log('[MAP_DEBUG] Configuration détectée:', {
-        styleUrl: styleUrl,
-        apiKey: apiKey ? '***' : 'Non définie',
-        container: container.id
-      });
-
       const map = new maplibregl.Map({
         container: container,
         // Load the provided style (or demo) with selective proxying
@@ -118,13 +111,6 @@
         }
       });
 
-      // Log des erreurs de style plus détaillé
-      map.on('error', (e) => {
-        console.error('[MAP_DEBUG] Erreur MapLibre détaillée:', e);
-        console.error('[MAP_DEBUG] Style URL utilisée:', styleUrl);
-        console.error('[MAP_DEBUG] API Key présente:', !!apiKey);
-      });
-
       // Explicitly enable scroll zoom (should be on by default, but be explicit)
       try { map.scrollZoom.enable(); } catch (_) {}
 
@@ -146,10 +132,7 @@
         // Apply selected highlight from attribute if present
         try {
           const sel = container.getAttribute('data-selected-trip-id') || '';
-          // Check if the layer exists before trying to filter it
-          if (map.getLayer('route-line-selected')) {
-            map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], sel || '__none__']);
-          }
+          map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], sel || '__none__']);
           // Keep client bridge state in sync
           try { window.__map_events = window.__map_events || {}; window.__map_events.clickTripId = sel || null; } catch (_) {}
         } catch (_) {}
@@ -159,30 +142,6 @@
         console.error('[MapLibre] Map error', err);
         const msgText = (err && err.message) ? String(err.message) : '';
         const isBenign = /sprite|glyph|tile/i.test(msgText) || /404/.test(msgText || '');
-        
-        // Détecter les erreurs de tuiles répétées et basculer vers fallback
-        if (msgText && (msgText.includes('Unable to parse') || msgText.includes('Failed to fetch'))) {
-          container.dataset.tileErrors = (parseInt(container.dataset.tileErrors || '0') + 1).toString();
-          console.debug('[MapLibre] Tile error count:', container.dataset.tileErrors);
-          
-          if (parseInt(container.dataset.tileErrors) >= 5) {
-            console.warn('[MapLibre] Too many tile errors, switching to fallback style...');
-            container.setAttribute('data-style-url', 'https://demotiles.maplibre.org/style.json');
-            container.removeAttribute('data-api-key');
-            container.dataset.mapInited = '0';
-            
-            // Supprimer l'ancienne carte et réinitialiser
-            try {
-              map.remove();
-              delete container.__map;
-            } catch (_) {}
-            
-            // Réinitialiser avec le style de fallback
-            setTimeout(() => initMap(container), 1000);
-            return;
-          }
-        }
-        
         if (isBenign) return; // ignore common non-fatal fetch errors
         if (!container.querySelector('.maplibre-error')) {
           const msg = document.createElement('div');
@@ -201,36 +160,27 @@
   }
 
   function ensureRouteLayer(map, geojson) {
-    if (!map || !geojson) return;
-    
-    // Vérifier si le style est complètement chargé
-    if (!map.isStyleLoaded()) {
-      console.debug('[MapLibre] Style not loaded yet, waiting...');
-      map.once('styledata', () => {
-        ensureRouteLayer(map, geojson);
-      });
-      return;
-    }
-    
-    const sourceId = 'route-geojson';
-    
     try {
+      const sourceId = 'route-geojson';
       if (map.getSource(sourceId)) {
         map.getSource(sourceId).setData(geojson);
-        // Apply selection filter if needed
+        // If empty, also clear selection highlight and center marker
         try {
-          const sel = container.getAttribute('data-selected-trip-id');
-          if (map.getLayer('route-line-selected')) {
-            map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], sel || '__none__']);
+          const isEmpty = !geojson || (geojson.type === 'FeatureCollection' && (!geojson.features || geojson.features.length === 0));
+          if (isEmpty) {
+            try { map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], '__none__']); } catch (_) {}
+            try { map.getSource('route-center') && map.getSource('route-center').setData({ type: 'FeatureCollection', features: [] }); } catch (_) {}
           }
         } catch (_) {}
-        try { 
-          fitToGeojson(map, geojson); 
+        // Re-apply highlight based on current container attribute
+        try {
+          const el = map.getContainer();
+          const sel = el && el.getAttribute ? (el.getAttribute('data-selected-trip-id') || '') : '';
+          map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], sel || '__none__']);
         } catch (_) {}
+        try { fitToGeojson(map, geojson); } catch (_) {}
         return;
       }
-      
-      // Ajouter la source et les layers
       map.addSource(sourceId, { type: 'geojson', data: geojson });
       map.addLayer({
         id: 'route-line',
@@ -408,10 +358,7 @@
           if (m.attributeName === 'data-selected-trip-id' && m.target.__map) {
             try {
               const sel = m.target.getAttribute('data-selected-trip-id') || '';
-              // Check if the layer exists before trying to filter it
-              if (m.target.__map.getLayer('route-line-selected')) {
-                m.target.__map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], sel || '__none__']);
-              }
+              m.target.__map.setFilter('route-line-selected', ['==', ['get', 'trip_id'], sel || '__none__']);
               // Sync client bridge state so polling doesn't re-inject stale IDs
               try { window.__map_events = window.__map_events || {}; window.__map_events.clickTripId = sel || null; } catch (_) {}
             } catch (_) {}
