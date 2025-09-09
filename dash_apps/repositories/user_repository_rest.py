@@ -2,12 +2,8 @@
 Repository pour les utilisateurs utilisant l'API REST Supabase
 """
 from dash_apps.repositories.supabase_repository import SupabaseRepository
-from dash_apps.schemas.user import UserSchema
-from typing import Dict, List, Optional
-import math
-import os
+from typing import List, Optional, Dict, Any
 import logging
-from datetime import datetime
 
 # Logger
 logger = logging.getLogger(__name__)
@@ -16,8 +12,6 @@ class UserRepositoryRest(SupabaseRepository):
     """
     Repository pour les utilisateurs utilisant l'API REST Supabase
     """
-    # Mode debug pour les logs (désactivé en production)
-    _debug_mode = os.getenv('DASH_DEBUG', 'False').lower() == 'true'
     
     def __init__(self):
         """
@@ -25,350 +19,222 @@ class UserRepositoryRest(SupabaseRepository):
         """
         super().__init__("users")
     
-    def get_pending_drivers(self) -> List[dict]:
+    def get_user(self, uid: str) -> Optional[Dict]:
         """
-        Récupère les conducteurs en attente de validation
+        Alias pour get_user_by_uid pour compatibilité
+        
+        Args:
+            uid: Identifiant unique de l'utilisateur
+            
+        Returns:
+            Dictionnaire contenant les informations de l'utilisateur ou None si non trouvé
         """
-        try:
-            # La requête SQL équivalente serait:
-            # SELECT * FROM users WHERE
-            #   ((id_card_url IS NOT NULL) OR (driver_license_url IS NOT NULL)) AND
-            #   (is_driver_doc_validated = FALSE OR is_driver_doc_validated IS NULL)
-            
-            # Comme les requêtes OR/AND sont complexes avec l'API Supabase,
-            # nous allons filtrer en post-traitement
-            response = self.get_all()
-            
-            # Filtrer les utilisateurs qui ont au moins un document et ne sont pas validés
-            pending_drivers = []
-            for user in response:
-                has_document = (user.get("id_card_url") or user.get("driver_license_url"))
-                not_validated = (user.get("is_driver_doc_validated") is False or user.get("is_driver_doc_validated") is None)
-                
-                if has_document and not_validated:
-                    pending_drivers.append(user)
-            
-            return pending_drivers
-            
-        except Exception as e:
-            logger.error(f"Erreur lors de la récupération des conducteurs en attente: {str(e)}")
-            return []
+        return self.get_user_by_uid(uid)
     
-    def get_validated_drivers(self) -> List[dict]:
+    def get_user_by_uid(self, uid: str) -> Optional[Dict]:
         """
-        Récupère les conducteurs validés
-        """
-        try:
-            # Utiliser le filtre 'is_driver_doc_validated' = TRUE
-            return self.get_all(filters={"is_driver_doc_validated": True})
+        Récupère un utilisateur par son UID
+        
+        Args:
+            uid: Identifiant unique de l'utilisateur
             
-        except Exception as e:
-            logger.error(f"Erreur lors de la récupération des conducteurs validés: {str(e)}")
-            return []
-    
-    def get_all_users(self) -> List[dict]:
-        """
-        Récupère tous les utilisateurs
-        """
-        return self.get_all()
-    
-    def get_user_by_id(self, uid: str) -> Optional[dict]:
-        """
-        Récupère un utilisateur par son ID
+        Returns:
+            Dictionnaire contenant les informations de l'utilisateur ou None si non trouvé
         """
         return self.get_by_id("uid", uid)
     
-    def validate_driver_documents(self, uid: str) -> bool:
+    def get_user_by_email(self, email: str) -> Optional[Dict]:
         """
-        Valide les documents d'un conducteur
-        """
-        return self.update("uid", uid, {"is_driver_doc_validated": True})
-    
-    def unvalidate_driver_documents(self, uid: str) -> bool:
-        """
-        Invalide les documents d'un conducteur
-        """
-        return self.update("uid", uid, {"is_driver_doc_validated": False})
-    
-    def get_users_by_ids(self, user_ids: list) -> List[dict]:
-        """
-        Récupère plusieurs utilisateurs par leurs IDs
-        """
-        if not user_ids:
-            return []
-        
-        result = []
-        for uid in user_ids:
-            user = self.get_by_id("uid", uid)
-            if user:
-                result.append(user)
-        
-        return result
-    
-    def get_users_paginated(self, page: int = 0, page_size: int = 10, filters: dict = None) -> dict:
-        """
-        Récupère les utilisateurs de façon paginée avec filtrage optionnel
+        Récupère un utilisateur par son email
         
         Args:
-            page: Numéro de page (commence à 0)
-            page_size: Nombre d'éléments par page
-            filters: Dictionnaire des filtres à appliquer avec les clés suivantes:
-                - text: Recherche par nom, prénom ou email
-                - date_from: Date d'inscription minimale
-                - date_to: Date d'inscription maximale
-                - role: Filtrer par rôle (admin, driver, passenger, user)
-                - status: Filtrer par statut (active, inactive, suspended)
-                - verified: Filtrer par statut de vérification (true/false)
-                - has_trips: Filtrer les utilisateurs ayant des trajets
-                - has_signalement: Filtrer les utilisateurs avec signalements
-        
+            email: Adresse email de l'utilisateur
+            
         Returns:
-            Un dictionnaire contenant:
-            - users: Liste des utilisateurs de la page
-            - total_count: Nombre total d'utilisateurs après filtrage
-            - table_rows_data: Données formatées pour le tableau
+            Dictionnaire contenant les informations de l'utilisateur ou None si non trouvé
         """
-        if self._debug_mode:
-            print(f"[DEBUG] UserRepository.get_users_paginated called with page={page}, page_size={page_size}, filters={filters}")
-        
         try:
-            print("[DEBUG] Tentative de connexion à Supabase...")
+            from dash_apps.utils.supabase_client import supabase
+            response = supabase.table(self.table_name).select("*").eq("email", email).execute()
             
-            # Initialiser nos paramètres de requête
-            supabase_filters = {}
-            order_by = "created_at"
-            order_direction = "desc"
+            if response.data:
+                return response.data[0]
+            return None
             
-            # Appliquer les filtres de base qui correspondent directement à des colonnes
-            if filters:
-                # Filtrage par rôle
-                if filters.get("role") and filters["role"] != "all":
-                    supabase_filters["role"] = filters["role"]
-                
-                # Filtrage par validation conducteur
-                if filters.get("driver_validation") and filters["driver_validation"] != "all":
-                    if filters["driver_validation"] == "validated":
-                        supabase_filters["is_driver_doc_validated"] = True
-                    elif filters["driver_validation"] == "not_validated":
-                        supabase_filters["is_driver_doc_validated"] = False
-                
-                # Filtrage par genre
-                if filters.get("gender") and filters["gender"] != "all":
-                    supabase_filters["gender"] = filters["gender"]
-                
-                # Tri par date
-                date_sort = filters.get("date_sort", "desc")
-                if date_sort in ["asc", "desc"]:
-                    order_direction = date_sort
-            
-            # Récupérer tous les utilisateurs avec les filtres de base
-            # Les autres filtres plus complexes seront appliqués en post-traitement
-            all_users = self.get_all(order_by=order_by, order_direction=order_direction, filters=supabase_filters)
-            
-            # Appliquer les filtres complexes en mémoire
-            filtered_users = all_users
-            
-            # Post-filtrage pour les filtres complexes
-            if filters:
-                # Filtre texte (nom, prénom, email, UID)
-                if filters.get("text"):
-                    search_term = filters["text"].lower()
-                    filtered_users = [
-                        u for u in filtered_users if
-                        search_term in (u.get("name", "") or "").lower() or
-                        search_term in (u.get("first_name", "") or "").lower() or
-                        search_term in (u.get("email", "") or "").lower() or
-                        search_term in (u.get("display_name", "") or "").lower() or
-                        search_term in (u.get("uid", "") or "").lower()
-                    ]
-                
-                # Filtrage par date d'inscription
-                date_filter_type = filters.get("date_filter_type", "range")
-                
-                if date_filter_type == "after" and filters.get("single_date"):
-                    # Filtrer après une date spécifique
-                    single_date_str = filters["single_date"]
-                    if isinstance(single_date_str, str):
-                        single_date = datetime.fromisoformat(single_date_str.replace('Z', '+00:00'))
-                        filtered_users = [
-                            u for u in filtered_users if
-                            u.get("created_at") and datetime.fromisoformat(u["created_at"].replace('Z', '+00:00')) >= single_date
-                        ]
-                        
-                elif date_filter_type == "before" and filters.get("single_date"):
-                    # Filtrer avant une date spécifique
-                    single_date_str = filters["single_date"]
-                    if isinstance(single_date_str, str):
-                        single_date = datetime.fromisoformat(single_date_str.replace('Z', '+00:00'))
-                        single_date = single_date.replace(hour=23, minute=59, second=59)
-                        filtered_users = [
-                            u for u in filtered_users if
-                            u.get("created_at") and datetime.fromisoformat(u["created_at"].replace('Z', '+00:00')) <= single_date
-                        ]
-                        
-                else:
-                    # Filtrage par période (comportement par défaut)
-                    if filters.get("date_from"):
-                        date_from_str = filters["date_from"]
-                        if isinstance(date_from_str, str):
-                            date_from = datetime.fromisoformat(date_from_str.replace('Z', '+00:00'))
-                            filtered_users = [
-                                u for u in filtered_users if
-                                u.get("created_at") and datetime.fromisoformat(u["created_at"].replace('Z', '+00:00')) >= date_from
-                            ]
-                            
-                    if filters.get("date_to"):
-                        date_to_str = filters["date_to"]
-                        if isinstance(date_to_str, str):
-                            date_to = datetime.fromisoformat(date_to_str.replace('Z', '+00:00'))
-                            date_to = date_to.replace(hour=23, minute=59, second=59)
-                            filtered_users = [
-                                u for u in filtered_users if
-                                u.get("created_at") and datetime.fromisoformat(u["created_at"].replace('Z', '+00:00')) <= date_to
-                            ]
-                
-                # Filtrage par rating
-                if filters.get("rating_operator") and filters["rating_operator"] != "all" and filters.get("rating_value") is not None:
-                    rating_value = float(filters["rating_value"])
-                    operator = filters["rating_operator"]
-                    
-                    if operator == "gt":
-                        filtered_users = [
-                            u for u in filtered_users if
-                            u.get("rating") is not None and u.get("rating") >= rating_value
-                        ]
-                    elif operator == "lt":
-                        filtered_users = [
-                            u for u in filtered_users if
-                            u.get("rating") is not None and u.get("rating") <= rating_value
-                        ]
-            
-            # Calculer le nombre total d'utilisateurs après filtrage
-            total = len(filtered_users)
-            
-            # Appliquer la pagination
-            start_idx = page * page_size
-            end_idx = start_idx + page_size
-            paginated_users = filtered_users[start_idx:end_idx]
-            
-            # Préparer les données de ligne pour le tableau
-            table_rows_data = []
-            
-            try:
-                for u in paginated_users:
-                    uid = u.get("uid")
-                    if not uid:
-                        continue
-                    
-                    # Fallback pour phone_number
-                    phone_number = u.get("phone_number") or u.get("phone")
-                    # Fallback pour created_at
-                    created_at = u.get("created_at") or u.get("created_time")
-                    
-                    # Préparer les données de ligne pour le tableau
-                    table_rows_data.append({
-                        "uid": uid,
-                        "display_name": u.get("display_name", ""),
-                        "email": u.get("email", ""),
-                        "phone_number": phone_number or "",
-                        "role": u.get("role", ""),
-                        "gender": u.get("gender", ""),
-                        "rating": u.get("rating", None),
-                        "created_at": created_at or ""
-                    })
-            except Exception as e:
-                logger.error(f"Erreur lors de la préparation des données de tableau: {str(e)}")
-                table_rows_data = []
-            
-            print(f"[DEBUG] Récupéré {len(paginated_users)} utilisateurs, total={total}")
-            
-            return {
-                "users": paginated_users,
-                "total_count": total,
-                "table_rows_data": table_rows_data
-            }
         except Exception as e:
-            logger.error(f"[ERROR] Erreur lors de la récupération des utilisateurs: {str(e)}")
-            return {
-                "users": [],
-                "total_count": 0,
-                "table_rows_data": []
-            }
+            logger.error(f"Erreur lors de la récupération de l'utilisateur par email {email}: {str(e)}")
+            return None
     
-    def get_user_position(self, user_id: str) -> Optional[int]:
+    def list_users(self, skip: int = 0, limit: int = 100) -> List[Dict]:
         """
-        Détermine la position absolue d'un utilisateur dans la base de données
-        
-        Cette fonction est utilisée pour la pagination afin de déterminer sur quelle page
-        se trouve un utilisateur spécifique.
+        Liste les utilisateurs avec pagination
         
         Args:
-            user_id: L'identifiant unique de l'utilisateur
+            skip: Nombre d'éléments à sauter
+            limit: Nombre maximum d'éléments à retourner
             
         Returns:
-            La position de l'utilisateur (index 0-based) ou None si non trouvé
+            Liste d'utilisateurs
         """
-        try:
-            # Récupérer tous les utilisateurs triés par date de création
-            users = self.get_all(order_by="created_at", order_direction="desc")
-            
-            # Chercher la position de l'utilisateur
-            for i, user in enumerate(users):
-                if user.get("uid") == user_id:
-                    return i
-            
-            return None
-                
-        except Exception as e:
-            if self._debug_mode:
-                print(f"Erreur lors de la récupération de la position de l'utilisateur: {e}")
-            return None
-            
-    def get_users_count(self) -> int:
+        return self.get_all(offset=skip, limit=limit, order_by="created_at", order_direction="desc")
+    
+    def create_user(self, user_data: dict) -> Optional[Dict]:
         """
-        Retourne le nombre total d'utilisateurs dans la base de données
+        Crée un nouvel utilisateur
+        
+        Args:
+            user_data: Données de l'utilisateur
+            
+        Returns:
+            L'utilisateur créé ou None
+        """
+        return self.create(user_data)
+    
+    def update_user(self, uid: str, updates: dict) -> Optional[Dict]:
+        """
+        Met à jour un utilisateur existant
+        
+        Args:
+            uid: Identifiant de l'utilisateur
+            updates: Dictionnaire avec les modifications
+            
+        Returns:
+            L'utilisateur mis à jour ou None en cas d'erreur
+        """
+        if self.update("uid", uid, updates):
+            return self.get_by_id("uid", uid)
+        return None
+    
+    def delete_user(self, uid: str) -> bool:
+        """
+        Supprime un utilisateur
+        
+        Args:
+            uid: Identifiant de l'utilisateur
+            
+        Returns:
+            True si supprimé, False sinon
+        """
+        return self.delete("uid", uid)
+    
+    def count_users(self) -> int:
+        """
+        Compte le nombre total d'utilisateurs
         
         Returns:
-            Le nombre total d'utilisateurs
+            Nombre d'utilisateurs
         """
         return self.count()
-
-    def get_user_position_in_validation_group(self, user_id: str, group: str) -> Optional[int]:
+    
+    def get_users_with_pagination(self, page: int = 1, page_size: int = 10) -> Dict[str, Any]:
         """
-        Retourne la position (0-based) d'un utilisateur dans un sous-ensemble
-        filtré par statut de validation, trié par created_at DESC.
-
+        Récupère une page d'utilisateurs avec pagination et métadonnées
+        
         Args:
-            user_id: uid de l'utilisateur
-            group: 'pending' ou 'validated'
-
+            page: Numéro de page (commence à 1)
+            page_size: Nombre d'éléments par page
+            
         Returns:
-            Index 0-based ou None si non trouvé.
+            Un dictionnaire contenant la liste des utilisateurs et les métadonnées de pagination
         """
         try:
-            users = []
-            if group == "validated":
-                # Récupérer tous les utilisateurs validés
-                users = self.get_all(
-                    order_by="created_at",
-                    order_direction="desc", 
-                    filters={"is_driver_doc_validated": True}
-                )
-            elif group == "pending":
-                # Récupérer tous les utilisateurs en attente (pas de filtrage direct possible pour OR)
-                all_users = self.get_all(order_by="created_at", order_direction="desc")
-                users = [u for u in all_users if not u.get("is_driver_doc_validated", False)]
-            else:
-                return None
+            # Calculer le décalage (offset)
+            skip = (page - 1) * page_size
             
-            # Chercher la position de l'utilisateur
-            for i, user in enumerate(users):
-                if user.get("uid") == user_id:
-                    return i
+            # Récupérer les utilisateurs pour cette page
+            users = self.get_all(
+                offset=skip,
+                limit=page_size,
+                order_by="created_at",
+                order_direction="desc"
+            )
             
-            return None
-                
+            # Compter le nombre total d'utilisateurs
+            total_count = self.count()
+            
+            # Calculer le nombre total de pages
+            total_pages = max(1, (total_count + page_size - 1) // page_size)
+            
+            return {
+                "users": users,
+                "pagination": {
+                    "total_count": total_count,
+                    "page": page,
+                    "page_size": page_size,
+                    "total_pages": total_pages
+                }
+            }
+            
         except Exception as e:
-            if self._debug_mode:
-                print(f"Erreur get_user_position_in_validation_group: {e}")
-            return None
+            logger.error(f"Erreur get_users_with_pagination: {str(e)}")
+            return {
+                "users": [],
+                "pagination": {
+                    "total_count": 0,
+                    "page": page,
+                    "page_size": page_size,
+                    "total_pages": 1
+                }
+            }
+    
+    def search_users(self, query: str, limit: int = 50) -> List[Dict]:
+        """
+        Recherche des utilisateurs par nom ou email
+        
+        Args:
+            query: Terme de recherche
+            limit: Nombre maximum de résultats
+            
+        Returns:
+            Liste d'utilisateurs correspondant à la recherche
+        """
+        try:
+            from dash_apps.utils.supabase_client import supabase
+            
+            # Recherche par nom ou email (utilisation de ilike pour recherche insensible à la casse)
+            response = supabase.table(self.table_name)\
+                .select("*")\
+                .or_(f"display_name.ilike.%{query}%,email.ilike.%{query}%")\
+                .limit(limit)\
+                .execute()
+            
+            return response.data if response.data else []
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la recherche d'utilisateurs avec '{query}': {str(e)}")
+            return []
+    
+    def get_user_stats(self, uid: str) -> Dict[str, Any]:
+        """
+        Récupère les statistiques d'un utilisateur
+        
+        Args:
+            uid: Identifiant de l'utilisateur
+            
+        Returns:
+            Dictionnaire contenant les statistiques de l'utilisateur
+        """
+        try:
+            from dash_apps.utils.supabase_client import supabase
+            
+            # Récupérer les trajets en tant que conducteur
+            driver_trips = supabase.table("trips").select("*").eq("driver_id", uid).execute()
+            driver_count = len(driver_trips.data) if driver_trips.data else 0
+            
+            # Récupérer les réservations en tant que passager
+            passenger_bookings = supabase.table("bookings").select("*").eq("user_id", uid).execute()
+            passenger_count = len(passenger_bookings.data) if passenger_bookings.data else 0
+            
+            return {
+                "trips_as_driver": driver_count,
+                "trips_as_passenger": passenger_count,
+                "total_trips": driver_count + passenger_count
+            }
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des statistiques pour l'utilisateur {uid}: {str(e)}")
+            return {
+                "trips_as_driver": 0,
+                "trips_as_passenger": 0,
+                "total_trips": 0
+            }

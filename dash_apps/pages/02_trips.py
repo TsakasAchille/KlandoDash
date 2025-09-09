@@ -497,10 +497,10 @@ def render_trip_details_panel(selected_trip):
         return details_panel
 
     # Read-Through pattern: le cache service gère tout
-    return TripsCacheService._get_cached_panel_generic(
-            selected_trip_id, 'details', redis_getter, api_fetcher, redis_setter, renderer
-        )
-    #return TripsCacheService.get_trip_details_panel(trip_id_value)
+   
+    return TripsCacheService.get_trip_details_panel(trip_id_value)
+    #return TripsCacheService._get_cached_panel_generic(trip_id_value, 'details')
+
 
 
 

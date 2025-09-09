@@ -5,7 +5,7 @@ import dash
 import json
 import math
 from dash_apps.config import Config
-from dash_apps.repositories.trip_repository import TripRepository
+# Removed TripRepository import - now using REST API via RepositoryFactory
 
 def render_custom_trips_table(trips, current_page, total_trips, selected_trip_id=None):
     """Rendu d'un tableau personnalisé avec pagination manuelle pour les trajets

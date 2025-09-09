@@ -2,9 +2,9 @@
 Repository pour les trajets utilisant l'API REST Supabase
 """
 from dash_apps.repositories.supabase_repository import SupabaseRepository
-from typing import List, Optional, Dict
-import datetime
+from typing import List, Optional, Dict, Any
 import logging
+from datetime import datetime
 
 # Logger
 logger = logging.getLogger(__name__)
@@ -20,31 +20,6 @@ class TripRepositoryRest(SupabaseRepository):
         """
         super().__init__("trips")
     
-    def get_trip(self, trip_id: str) -> Optional[Dict]:
-        """
-        Récupère un trajet par son ID
-        
-        Args:
-            trip_id: Identifiant du trajet
-            
-        Returns:
-            Dictionnaire contenant les informations du trajet ou None si non trouvé
-        """
-        return self.get_by_id("trip_id", trip_id)
-    
-    def list_trips(self, skip: int = 0, limit: int = 100) -> List[Dict]:
-        """
-        Liste les trajets avec pagination
-        
-        Args:
-            skip: Nombre d'éléments à sauter
-            limit: Nombre maximum d'éléments à retourner
-            
-        Returns:
-            Liste de trajets
-        """
-        return self.get_all(offset=skip, limit=limit)
-    
     def get_trip_by_id(self, trip_id: str) -> Optional[Dict]:
         """
         Récupère un trajet par son ID
@@ -57,336 +32,57 @@ class TripRepositoryRest(SupabaseRepository):
         """
         return self.get_by_id("trip_id", trip_id)
     
-    def get_trip_position(self, trip_id: str) -> Optional[int]:
+    def get_trip(self, trip_id: str) -> Optional[Dict]:
         """
-        Trouve la position d'un trajet dans la liste triée par date de création (desc par défaut)
+        Alias pour get_trip_by_id pour compatibilité
         
         Args:
             trip_id: Identifiant du trajet
             
         Returns:
-            Position du trajet (0-based index) ou None si non trouvé
+            Dictionnaire contenant les informations du trajet ou None si non trouvé
         """
-        try:
-            # Récupérer le trajet cible
-            target_trip = self.get_by_id("trip_id", trip_id)
-            if not target_trip or not target_trip.get("created_at"):
-                return None
-            
-            # Récupérer la date de création du trajet cible
-            target_created_at = target_trip.get("created_at")
-            
-            # Récupérer tous les trajets triés par date de création (desc)
-            trips = self.get_all(order_by="created_at", order_direction="desc")
-            
-            # Trouver la position du trajet
-            for i, trip in enumerate(trips):
-                if trip.get("trip_id") == trip_id:
-                    return i
-            
-            return None
-        
-        except Exception as e:
-            logger.error(f"Erreur lors de la récupération de la position du trajet: {str(e)}")
-            return None
+        return self.get_trip_by_id(trip_id)
     
-    def get_trips_paginated_minimal(self, page: int = 0, page_size: int = 10, filters: dict = None) -> Dict:
+    def list_trips(self, skip: int = 0, limit: int = 100) -> List[Dict]:
         """
-        Version optimisée qui ne charge que les champs essentiels pour le tableau
+        Liste les trajets avec pagination
         
         Args:
-            page: Numéro de page (commence à 0)
-            page_size: Nombre d'éléments par page
-            filters: Dictionnaire des filtres à appliquer
+            skip: Nombre d'éléments à sauter
+            limit: Nombre maximum d'éléments à retourner
             
         Returns:
-            Un dictionnaire contenant:
-            - trips: Liste des trajets avec champs minimaux
-            - total_count: Nombre total de trajets après filtrage
+            Liste de trajets
         """
-        try:
-            # Initialiser les paramètres de filtre pour Supabase
-            supabase_filters = {}
-            order_by = "created_at"
-            order_direction = "desc"
-            
-            # Appliquer les filtres de base qui correspondent directement à des colonnes
-            if filters:
-                # Filtre statut
-                if filters.get("status") and filters["status"] != "all":
-                    supabase_filters["status"] = filters["status"].upper()
-                
-                # Tri par date
-                date_sort = filters.get("date_sort", "desc")
-                if date_sort in ["asc", "desc"]:
-                    order_direction = date_sort
-            
-            # Récupérer tous les trajets avec les filtres de base
-            all_trips = self.get_all(order_by=order_by, order_direction=order_direction, filters=supabase_filters)
-            
-            # Appliquer les filtres plus complexes en post-traitement
-            filtered_trips = all_trips
-            
-            if filters:
-                # Filtre texte (origine, destination, trip_id)
-                if filters.get("text"):
-                    search_term = filters["text"].lower()
-                    filtered_trips = [
-                        t for t in filtered_trips if (
-                            search_term in (t.get("departure_name", "") or "").lower() or
-                            search_term in (t.get("destination_name", "") or "").lower() or
-                            search_term in (t.get("trip_id", "") or "").lower()
-                        )
-                    ]
-                
-                # Filtrage par date de création
-                date_filter_type = filters.get("date_filter_type", "range")
-                
-                if date_filter_type == "after" and filters.get("single_date"):
-                    try:
-                        date_obj = datetime.datetime.strptime(filters["single_date"], "%Y-%m-%d").date()
-                        filtered_trips = [
-                            t for t in filtered_trips if (
-                                t.get("created_at") and 
-                                datetime.datetime.fromisoformat(t["created_at"].replace('Z', '+00:00')).date() >= date_obj
-                            )
-                        ]
-                    except (ValueError, TypeError):
-                        pass
-                
-                elif date_filter_type == "before" and filters.get("single_date"):
-                    try:
-                        date_obj = datetime.datetime.strptime(filters["single_date"], "%Y-%m-%d").date()
-                        filtered_trips = [
-                            t for t in filtered_trips if (
-                                t.get("created_at") and 
-                                datetime.datetime.fromisoformat(t["created_at"].replace('Z', '+00:00')).date() <= date_obj
-                            )
-                        ]
-                    except (ValueError, TypeError):
-                        pass
-                
-                else:  # range
-                    if filters.get("date_from"):
-                        try:
-                            date_from = datetime.datetime.strptime(filters["date_from"], "%Y-%m-%d").date()
-                            filtered_trips = [
-                                t for t in filtered_trips if (
-                                    t.get("created_at") and 
-                                    datetime.datetime.fromisoformat(t["created_at"].replace('Z', '+00:00')).date() >= date_from
-                                )
-                            ]
-                        except (ValueError, TypeError):
-                            pass
-                    
-                    if filters.get("date_to"):
-                        try:
-                            date_to = datetime.datetime.strptime(filters["date_to"], "%Y-%m-%d").date()
-                            filtered_trips = [
-                                t for t in filtered_trips if (
-                                    t.get("created_at") and 
-                                    datetime.datetime.fromisoformat(t["created_at"].replace('Z', '+00:00')).date() <= date_to
-                                )
-                            ]
-                        except (ValueError, TypeError):
-                            pass
-            
-            # Calculer le nombre total après filtrage
-            total_count = len(filtered_trips)
-            
-            # Appliquer la pagination
-            start_idx = page * page_size
-            end_idx = start_idx + page_size
-            paginated_trips = filtered_trips[start_idx:end_idx]
-            
-            # Extraire seulement les champs nécessaires pour optimiser
-            trips_data = []
-            for trip in paginated_trips:
-                trips_data.append({
-                    "trip_id": trip.get("trip_id"),
-                    "departure_name": trip.get("departure_name"),
-                    "destination_name": trip.get("destination_name"),
-                    "departure_date": trip.get("departure_date"),
-                    "departure_schedule": trip.get("departure_schedule"),
-                    "seats_available": trip.get("seats_available"),
-                    "passenger_price": trip.get("passenger_price"),
-                    "status": trip.get("status"),
-                    "created_at": trip.get("created_at")
-                })
-            
-            return {
-                "trips": trips_data,
-                "total_count": total_count
-            }
-            
-        except Exception as e:
-            logger.error(f"[TRIP_REPO] Erreur get_trips_paginated_minimal: {str(e)}")
-            return {
-                "trips": [],
-                "total_count": 0
-            }
-    
-    def get_trips_paginated(self, page: int = 0, page_size: int = 10, filters: dict = None) -> Dict:
-        """
-        Récupère les trajets de façon paginée avec filtrage optionnel
-        
-        Args:
-            page: Numéro de page (commence à 0)
-            page_size: Nombre d'éléments par page
-            filters: Dictionnaire des filtres à appliquer avec les clés suivantes:
-                - text: Recherche par origine, destination ou trip_id
-                - date_from: Date de création minimale
-                - date_to: Date de création maximale
-                - status: Filtrer par statut (active, completed, cancelled)
-            
-        Returns:
-            Un dictionnaire contenant:
-            - trips: Liste des trajets de la page
-            - total_count: Nombre total de trajets après filtrage
-        """
-        # Cette implémentation est presque identique à get_trips_paginated_minimal
-        # mais renvoie tous les champs des trajets au lieu des champs minimaux
-        try:
-            # Initialiser les paramètres de filtre pour Supabase
-            supabase_filters = {}
-            order_by = "created_at"
-            order_direction = "desc"
-            
-            # Appliquer les filtres de base qui correspondent directement à des colonnes
-            if filters:
-                # Filtre statut
-                if filters.get("status") and filters["status"] != "all":
-                    supabase_filters["status"] = filters["status"].upper()
-                
-                # Tri par date
-                date_sort = filters.get("date_sort", "desc")
-                if date_sort in ["asc", "desc"]:
-                    order_direction = date_sort
-            
-            # Récupérer tous les trajets avec les filtres de base
-            all_trips = self.get_all(order_by=order_by, order_direction=order_direction, filters=supabase_filters)
-            
-            # Appliquer les filtres plus complexes en post-traitement
-            filtered_trips = all_trips
-            
-            if filters:
-                # Filtre texte (origine, destination, trip_id)
-                if filters.get("text"):
-                    search_term = filters["text"].lower()
-                    filtered_trips = [
-                        t for t in filtered_trips if (
-                            search_term in (t.get("departure_name", "") or "").lower() or
-                            search_term in (t.get("destination_name", "") or "").lower() or
-                            search_term in (t.get("trip_id", "") or "").lower()
-                        )
-                    ]
-                
-                # Filtrage par date de création
-                date_filter_type = filters.get("date_filter_type", "range")
-                
-                if date_filter_type == "after" and filters.get("single_date"):
-                    try:
-                        date_obj = datetime.datetime.strptime(filters["single_date"], "%Y-%m-%d").date()
-                        filtered_trips = [
-                            t for t in filtered_trips if (
-                                t.get("created_at") and 
-                                datetime.datetime.fromisoformat(t["created_at"].replace('Z', '+00:00')).date() >= date_obj
-                            )
-                        ]
-                    except (ValueError, TypeError):
-                        pass
-                
-                elif date_filter_type == "before" and filters.get("single_date"):
-                    try:
-                        date_obj = datetime.datetime.strptime(filters["single_date"], "%Y-%m-%d").date()
-                        filtered_trips = [
-                            t for t in filtered_trips if (
-                                t.get("created_at") and 
-                                datetime.datetime.fromisoformat(t["created_at"].replace('Z', '+00:00')).date() <= date_obj
-                            )
-                        ]
-                    except (ValueError, TypeError):
-                        pass
-                
-                else:  # range
-                    if filters.get("date_from"):
-                        try:
-                            date_from = datetime.datetime.strptime(filters["date_from"], "%Y-%m-%d").date()
-                            filtered_trips = [
-                                t for t in filtered_trips if (
-                                    t.get("created_at") and 
-                                    datetime.datetime.fromisoformat(t["created_at"].replace('Z', '+00:00')).date() >= date_from
-                                )
-                            ]
-                        except (ValueError, TypeError):
-                            pass
-                    
-                    if filters.get("date_to"):
-                        try:
-                            date_to = datetime.datetime.strptime(filters["date_to"], "%Y-%m-%d").date()
-                            filtered_trips = [
-                                t for t in filtered_trips if (
-                                    t.get("created_at") and 
-                                    datetime.datetime.fromisoformat(t["created_at"].replace('Z', '+00:00')).date() <= date_to
-                                )
-                            ]
-                        except (ValueError, TypeError):
-                            pass
-            
-            # Calculer le nombre total après filtrage
-            total_count = len(filtered_trips)
-            
-            # Appliquer la pagination
-            start_idx = page * page_size
-            end_idx = start_idx + page_size
-            paginated_trips = filtered_trips[start_idx:end_idx]
-            
-            # Optimisation du count pour éviter de compter tous les résultats
-            # comme dans l'implémentation d'origine
-            if len(paginated_trips) < page_size:
-                # Page incomplète = on a atteint la fin
-                total_count = page * page_size + len(paginated_trips)
-            else:
-                # Page complète : estimation optimiste
-                # On suppose qu'il y a au moins une page de plus
-                total_count = (page + 1) * page_size + 1
-            
-            return {
-                "trips": paginated_trips,
-                "total_count": total_count
-            }
-            
-        except Exception as e:
-            logger.error(f"[TRIP_REPO] Erreur get_trips_paginated: {str(e)}")
-            return {
-                "trips": [],
-                "total_count": 0
-            }
+        return self.get_all(offset=skip, limit=limit, order_by="created_at", order_direction="desc")
     
     def create_trip(self, trip_data: dict) -> Optional[Dict]:
         """
         Crée un nouveau trajet
         
         Args:
-            trip_data: Données du trajet à créer
+            trip_data: Données du trajet
             
         Returns:
-            Trajet créé ou None en cas d'erreur
+            Le trajet créé ou None
         """
         return self.create(trip_data)
     
-    def update_trip(self, trip_id: str, updates: dict) -> bool:
+    def update_trip(self, trip_id: str, updates: dict) -> Optional[Dict]:
         """
         Met à jour un trajet existant
         
         Args:
             trip_id: Identifiant du trajet
-            updates: Données à mettre à jour
+            updates: Dictionnaire avec les modifications
             
         Returns:
-            True si la mise à jour a réussi, False sinon
+            Le trajet mis à jour ou None en cas d'erreur
         """
-        return self.update("trip_id", trip_id, updates)
+        if self.update("trip_id", trip_id, updates):
+            return self.get_by_id("trip_id", trip_id)
+        return None
     
     def delete_trip(self, trip_id: str) -> bool:
         """
@@ -396,6 +92,305 @@ class TripRepositoryRest(SupabaseRepository):
             trip_id: Identifiant du trajet
             
         Returns:
-            True si la suppression a réussi, False sinon
+            True si supprimé, False sinon
         """
         return self.delete("trip_id", trip_id)
+    
+    def count_trips(self, status: Optional[str] = None) -> int:
+        """
+        Compte le nombre total de trajets, filtré par statut si spécifié
+        
+        Args:
+            status: Filtre optionnel par statut
+            
+        Returns:
+            Nombre de trajets correspondant aux critères
+        """
+        filters = {}
+        if status:
+            filters["status"] = status
+        return self.count(filters=filters)
+    
+    def get_trips_by_driver(self, driver_id: str, limit: int = 100) -> List[Dict]:
+        """
+        Récupère les trajets d'un conducteur
+        
+        Args:
+            driver_id: Identifiant du conducteur
+            limit: Nombre maximum de trajets à retourner
+            
+        Returns:
+            Liste des trajets du conducteur
+        """
+        return self.get_all(
+            filters={"driver_id": driver_id},
+            limit=limit,
+            order_by="departure_date",
+            order_direction="desc"
+        )
+    
+    def get_trips_by_status(self, status: str, limit: int = 100) -> List[Dict]:
+        """
+        Récupère les trajets par statut
+        
+        Args:
+            status: Statut des trajets à récupérer
+            limit: Nombre maximum de trajets à retourner
+            
+        Returns:
+            Liste des trajets avec le statut spécifié
+        """
+        return self.get_all(
+            filters={"status": status},
+            limit=limit,
+            order_by="departure_date",
+            order_direction="desc"
+        )
+    
+    def get_trips_with_pagination(self, page: int = 1, page_size: int = 10, 
+                                 status: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Récupère une page de trajets avec pagination et métadonnées
+        
+        Args:
+            page: Numéro de page (commence à 1)
+            page_size: Nombre d'éléments par page
+            status: Filtre optionnel par statut
+            
+        Returns:
+            Un dictionnaire contenant la liste des trajets et les métadonnées de pagination
+        """
+        try:
+            # Calculer le décalage (offset)
+            skip = (page - 1) * page_size
+            
+            # Préparer les filtres
+            filters = {}
+            if status:
+                filters["status"] = status
+            
+            # Récupérer les trajets pour cette page
+            trips = self.get_all(
+                offset=skip,
+                limit=page_size,
+                order_by="departure_date",
+                order_direction="desc",
+                filters=filters
+            )
+            
+            # Compter le nombre total de trajets
+            total_count = self.count(filters=filters)
+            
+            # Calculer le nombre total de pages
+            total_pages = max(1, (total_count + page_size - 1) // page_size)
+            
+            return {
+                "trips": trips,
+                "pagination": {
+                    "total_count": total_count,
+                    "page": page,
+                    "page_size": page_size,
+                    "total_pages": total_pages
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Erreur get_trips_with_pagination: {str(e)}")
+            return {
+                "trips": [],
+                "pagination": {
+                    "total_count": 0,
+                    "page": page,
+                    "page_size": page_size,
+                    "total_pages": 1
+                }
+            }
+    
+    def search_trips(self, query: str, limit: int = 50) -> List[Dict]:
+        """
+        Recherche des trajets par lieu de départ ou d'arrivée
+        
+        Args:
+            query: Terme de recherche
+            limit: Nombre maximum de résultats
+            
+        Returns:
+            Liste de trajets correspondant à la recherche
+        """
+        try:
+            from dash_apps.utils.supabase_client import supabase
+            
+            # Recherche par lieu de départ ou d'arrivée
+            response = supabase.table(self.table_name)\
+                .select("*")\
+                .or_(f"departure_location.ilike.%{query}%,arrival_location.ilike.%{query}%")\
+                .limit(limit)\
+                .order("departure_date", desc=True)\
+                .execute()
+            
+            return response.data if response.data else []
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la recherche de trajets avec '{query}': {str(e)}")
+            return []
+    
+    def get_upcoming_trips(self, limit: int = 50) -> List[Dict]:
+        """
+        Récupère les trajets à venir
+        
+        Args:
+            limit: Nombre maximum de trajets à retourner
+            
+        Returns:
+            Liste des trajets à venir
+        """
+        try:
+            from dash_apps.utils.supabase_client import supabase
+            
+            # Récupérer les trajets avec une heure de départ future
+            now = datetime.now().isoformat()
+            response = supabase.table(self.table_name)\
+                .select("*")\
+                .gte("departure_date", now)\
+                .eq("status", "active")\
+                .order("departure_date", desc=False)\
+                .limit(limit)\
+                .execute()
+            
+            return response.data if response.data else []
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des trajets à venir: {str(e)}")
+            return []
+    
+    def get_trip_bookings(self, trip_id: str) -> List[Dict]:
+        """
+        Récupère les réservations d'un trajet
+        
+        Args:
+            trip_id: Identifiant du trajet
+            
+        Returns:
+            Liste des réservations du trajet
+        """
+        try:
+            from dash_apps.utils.supabase_client import supabase
+            
+            response = supabase.table("bookings")\
+                .select("*")\
+                .eq("trip_id", trip_id)\
+                .execute()
+            
+            return response.data if response.data else []
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des réservations pour le trajet {trip_id}: {str(e)}")
+            return []
+    
+    def get_trip_passengers(self, trip_id: str) -> List[Dict]:
+        """
+        Récupère les passagers d'un trajet avec leurs informations
+        
+        Args:
+            trip_id: Identifiant du trajet
+            
+        Returns:
+            Liste des passagers avec leurs informations
+        """
+        try:
+            from dash_apps.utils.supabase_client import supabase
+            
+            # Récupérer les réservations avec les informations des utilisateurs
+            response = supabase.table("bookings")\
+                .select("*, users(uid, display_name, email, phone_number)")\
+                .eq("trip_id", trip_id)\
+                .execute()
+            
+            return response.data if response.data else []
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des passagers pour le trajet {trip_id}: {str(e)}")
+            return []
+    
+    def get_trip_stats(self, trip_id: str) -> Dict[str, Any]:
+        """
+        Récupère les statistiques d'un trajet
+        
+        Args:
+            trip_id: Identifiant du trajet
+            
+        Returns:
+            Dictionnaire contenant les statistiques du trajet
+        """
+        try:
+            # Récupérer les informations du trajet
+            trip = self.get_by_id("trip_id", trip_id)
+            if not trip:
+                return {}
+            
+            # Récupérer les réservations
+            bookings = self.get_trip_bookings(trip_id)
+            
+            # Calculer les statistiques
+            total_bookings = len(bookings)
+            total_seats_booked = sum(booking.get("seats_count", 1) for booking in bookings)
+            available_seats = trip.get("available_seats", 0)
+            total_seats = trip.get("total_seats", 0)
+            
+            return {
+                "trip_id": trip_id,
+                "total_bookings": total_bookings,
+                "total_seats_booked": total_seats_booked,
+                "available_seats": available_seats,
+                "total_seats": total_seats,
+                "occupancy_rate": (total_seats_booked / total_seats * 100) if total_seats > 0 else 0,
+                "status": trip.get("status", "unknown")
+            }
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des statistiques pour le trajet {trip_id}: {str(e)}")
+            return {}
+    
+    def get_trips_paginated_minimal(self, page_index: int, page_size: int, 
+                                   filters: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Version optimisée pour récupérer les trajets avec pagination minimale
+        Compatible avec TripsCacheService
+        
+        Args:
+            page_index: Index de la page (0-based)
+            page_size: Nombre d'éléments par page
+            filters: Dictionnaire des filtres
+            
+        Returns:
+            Dict contenant trips, total_count et pagination
+        """
+        try:
+            # Convertir page_index (0-based) en page (1-based)
+            page = page_index + 1
+            
+            # Utiliser la méthode existante
+            result = self.get_trips_with_pagination(
+                page=page,
+                page_size=page_size,
+                status=filters.get('status') if filters else None
+            )
+            
+            return {
+                "trips": result["trips"],
+                "total_count": result["pagination"]["total_count"],
+                "pagination": result["pagination"]
+            }
+                
+        except Exception as e:
+            logger.error(f"Erreur get_trips_paginated_minimal: {str(e)}")
+            return {
+                "trips": [],
+                "total_count": 0,
+                "pagination": {
+                    "total_count": 0,
+                    "page": page_index + 1,
+                    "page_size": page_size,
+                    "total_pages": 1
+                }
+            }

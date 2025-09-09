@@ -2,8 +2,7 @@ from dash import html
 import dash_bootstrap_components as dbc
 from jinja2 import Environment, FileSystemLoader
 import os
-from dash_apps.core.database import get_session
-from dash_apps.models.user import User
+from dash_apps.repositories.repository_factory import RepositoryFactory
 
 # Initialisation de Jinja2 pour le template du conducteur du trajet
 template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
@@ -44,12 +43,11 @@ def render_trip_driver(trip):
             className="klando-card klando-card-minimal"
         )
     
-    # Récupération des informations du conducteur depuis la base de données
+    # Récupération des informations du conducteur via REST API
     driver_data = None
     try:
-        with get_session() as session:
-            driver = session.query(User).filter(User.uid == driver_id).first()
-            driver_data = driver.to_dict() if driver else None
+        user_repository = RepositoryFactory.get_user_repository()
+        driver_data = user_repository.get_user(driver_id)
     except Exception as e:
         import traceback
         print(f"Erreur lors de la récupération des informations du conducteur: {str(e)}")

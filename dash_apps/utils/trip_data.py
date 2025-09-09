@@ -1,38 +1,50 @@
 import pandas as pd
-from dash_apps.repositories.trip_repository import TripRepository
-from dash_apps.schemas.trip import TripSchema
-from dash_apps.core.database import get_session
-import pandas as pd
+from dash_apps.repositories.repository_factory import RepositoryFactory
 
 # Fonction pour initialiser/récupérer les données de trajets
 def get_trip_data():
     """
-    Récupère les données de trajets depuis la base de données via TripRepository (SQLAlchemy)
+    Récupère les données de trajets depuis l'API REST via RepositoryFactory
     """
-    with get_session() as session:
-        trips = TripRepository.list_trips(session)
-        return pd.DataFrame([trip.model_dump() for trip in trips])
+    try:
+        trip_repository = RepositoryFactory.get_trip_repository()
+        trips = trip_repository.list_trips(limit=1000)  # Récupérer plus de trajets pour les stats
+        return pd.DataFrame(trips)
+    except Exception as e:
+        print(f"Erreur lors de la récupération des trajets: {e}")
+        return pd.DataFrame()
 
 def get_single_trip(trip_id):
     """
-    Récupère un trajet spécifique par son ID via TripRepository
+    Récupère un trajet spécifique par son ID via REST API
     """
-    with get_session() as session:
-        trip = TripRepository.get_trip(session, trip_id)
-        return trip.model_dump() if trip else None
+    try:
+        trip_repository = RepositoryFactory.get_trip_repository()
+        trip = trip_repository.get_trip(trip_id)
+        return trip
+    except Exception as e:
+        print(f"Erreur lors de la récupération du trajet {trip_id}: {e}")
+        return None
 
 def get_user_trips(user_id, as_driver=False, as_passenger=False):
     """
-    Récupère les trajets d'un utilisateur spécifique (conducteur/passager)
+    Récupère les trajets d'un utilisateur spécifique via REST API
     """
-    # À adapter si tu veux des requêtes personnalisées (par défaut, retourne tous les trajets où driver_id = user_id si as_driver)
-    with get_session() as session:
+    try:
+        trip_repository = RepositoryFactory.get_trip_repository()
+        
         if as_driver:
-            trips = session.query(TripRepository.Trip).filter_by(driver_id=user_id).all()
+            # Filtrer les trajets où l'utilisateur est conducteur
+            trips = trip_repository.search_trips(filters={'driver_id': user_id})
         elif as_passenger:
-            # Nécessite une jointure avec Booking si tu veux les trajets où l'utilisateur est passager
-            # À implémenter selon besoin
+            # Pour les passagers, il faudrait une méthode spécifique ou une jointure
+            # Pour l'instant, retourner une liste vide
             trips = []
         else:
-            trips = session.query(TripRepository.Trip).all()
-        return pd.DataFrame([TripSchema.model_validate(trip).model_dump() for trip in trips])
+            # Retourner tous les trajets
+            trips = trip_repository.list_trips(limit=1000)
+            
+        return pd.DataFrame(trips)
+    except Exception as e:
+        print(f"Erreur lors de la récupération des trajets utilisateur {user_id}: {e}")
+        return pd.DataFrame()

@@ -50,7 +50,7 @@ flask-session>=0.5.0
 authlib>=1.2.0
 oauthlib>=3.2.0
 requests-oauthlib>=1.3.0
-redis>=4.0.0
+# redis>=4.0.0  # Remplacé par le cache local
 
 # Pydantic v2 is required by dash_apps/schemas/* (uses ConfigDict)
 pydantic>=2.7.0,<3

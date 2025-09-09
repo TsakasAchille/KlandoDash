@@ -1,0 +1,104 @@
+{
+  "table_name": "trips",
+  "columns": {
+    "trip_id": {
+      "label": "ID Trajet",
+      "type": "string",
+      "supabase_column": "trip_id",
+      "sortable": false,
+      "visible": true
+    },
+    "departure_name": {
+      "label": "Départ",
+      "type": "string", 
+      "supabase_column": "departure_name",
+      "sortable": true,
+      "visible": true
+    },
+    "destination_name": {
+      "label": "Arrivée",
+      "type": "string",
+      "supabase_column": "destination_name", 
+      "sortable": true,
+      "visible": true
+    },
+    "departure_date": {
+      "label": "Date de départ",
+      "type": "date",
+      "supabase_column": "departure_date",
+      "sortable": true,
+      "visible": true
+    },
+    "departure_schedule": {
+      "label": "Heure de départ",
+      "type": "time",
+      "supabase_column": "departure_schedule",
+      "sortable": true,
+      "visible": true
+    },
+    "seats_available": {
+      "label": "Places disponibles",
+      "type": "integer",
+      "supabase_column": "seats_available",
+      "sortable": true,
+      "visible": true
+    },
+    "passenger_price": {
+      "label": "Prix",
+      "type": "currency",
+      "supabase_column": "passenger_price",
+      "unit": "FCFA",
+      "sortable": true,
+      "visible": true
+    },
+    "status": {
+      "label": "Statut",
+      "type": "enum",
+      "supabase_column": "status",
+      "values": {
+        "PENDING": "En attente",
+        "CONFIRMED": "Confirmé", 
+        "CANCELED": "Annulé",
+        "COMPLETED": "Terminé"
+      },
+      "sortable": true,
+      "visible": true
+    },
+    "driver_id": {
+      "label": "Conducteur ID",
+      "type": "string",
+      "supabase_column": "driver_id",
+      "sortable": false,
+      "visible": false
+    },
+    "created_at": {
+      "label": "Créé le",
+      "type": "datetime",
+      "supabase_column": "created_at",
+      "sortable": true,
+      "visible": false
+    }
+  },
+  "default_sort": {
+    "column": "departure_date",
+    "direction": "desc"
+  },
+  "pagination": {
+    "default_page_size": 5,
+    "page_sizes": [5, 10, 20, 50]
+  },
+  "filters": {
+    "date_range": {
+      "enabled": true,
+      "column": "departure_date"
+    },
+    "status": {
+      "enabled": true,
+      "column": "status"
+    },
+    "location": {
+      "enabled": true,
+      "columns": ["departure_name", "destination_name"]
+    }
+  }
+}

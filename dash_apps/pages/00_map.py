@@ -6,7 +6,7 @@ from dash import dash_table
 from dash_apps.components.map_trips_table import render_map_trips_table
 from dash_apps.components.user_profile import render_user_profile, render_user_summary
 from dash_apps.config import Config
-from dash_apps.repositories.trip_repository import TripRepository
+from dash_apps.repositories.repository_factory import RepositoryFactory
 import polyline as polyline_lib
 
 
@@ -48,10 +48,10 @@ def expose_selected_trip_to_dom(selected_trip_id):
 
 
 def _get_last_trips(n=10):
-    # Fetch last n trips using repository (ordered by created_at desc by default)
+    # Fetch last n trips using REST repository
     try:
-        data = TripRepository.get_trips_paginated(page=0, page_size=n)
-        trips = data.get("trips", []) if isinstance(data, dict) else []
+        trip_repository = RepositoryFactory.get_trip_repository()
+        trips = trip_repository.list_trips(limit=n)
         return trips
     except Exception as e:
         print(f"Warning: Could not load trips data: {e}")

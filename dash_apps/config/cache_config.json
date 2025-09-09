@@ -1,0 +1,83 @@
+{
+  "cache_system": {
+    "type": "local_memory",
+    "description": "Système de cache local en mémoire avec TTL",
+    "settings": {
+      "max_size": 1000,
+      "default_ttl": 300,
+      "cleanup_interval": 60,
+      "enabled": true
+    }
+  },
+  "cache_types": {
+    "trip_details": {
+      "ttl": 300,
+      "max_entries": 100,
+      "key_pattern": "trip_details:{trip_id}",
+      "description": "Cache des détails de trajets"
+    },
+    "trip_stats": {
+      "ttl": 180,
+      "max_entries": 50,
+      "key_pattern": "trip_stats:{trip_id}",
+      "description": "Cache des statistiques de trajets"
+    },
+    "trip_passengers": {
+      "ttl": 120,
+      "max_entries": 200,
+      "key_pattern": "trip_passengers:{trip_id}",
+      "description": "Cache des passagers de trajets"
+    },
+    "user_profile": {
+      "ttl": 600,
+      "max_entries": 500,
+      "key_pattern": "user_profile:{user_id}",
+      "description": "Cache des profils utilisateurs"
+    },
+    "trips_list": {
+      "ttl": 60,
+      "max_entries": 20,
+      "key_pattern": "trips_list:{page}:{filters_hash}",
+      "description": "Cache des listes de trajets paginées"
+    }
+  },
+  "storage_layers": {
+    "memory": {
+      "enabled": true,
+      "priority": 1,
+      "description": "Cache en mémoire Python (dictionnaire)"
+    },
+    "file": {
+      "enabled": false,
+      "priority": 2,
+      "path": "/tmp/klando_cache",
+      "description": "Cache sur disque (optionnel)"
+    }
+  },
+  "cleanup_rules": {
+    "auto_cleanup": true,
+    "cleanup_on_startup": true,
+    "max_memory_mb": 50,
+    "cleanup_strategies": [
+      {
+        "name": "lru",
+        "description": "Supprime les entrées les moins récemment utilisées"
+      },
+      {
+        "name": "ttl_expired",
+        "description": "Supprime les entrées expirées"
+      },
+      {
+        "name": "size_limit",
+        "description": "Supprime les plus anciennes si limite de taille atteinte"
+      }
+    ]
+  },
+  "monitoring": {
+    "enabled": true,
+    "log_hits": false,
+    "log_misses": false,
+    "log_cleanup": true,
+    "stats_collection": true
+  }
+}

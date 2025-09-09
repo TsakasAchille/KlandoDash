@@ -3,7 +3,7 @@ API endpoints pour l'intégration N8N avec le système de support
 """
 from flask import Blueprint, request, jsonify
 from dash_apps.core.database import get_session
-from dash_apps.repositories.support_comment_repository import SupportCommentRepository
+# Removed old SQL repository import - using REST repositories now
 from dash_apps.services.support_cache_service import SupportCacheService
 from datetime import datetime
 import logging

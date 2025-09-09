@@ -271,40 +271,122 @@ class EmailReceiverService:
         """Ajoute la réponse client comme commentaire en base de données"""
         try:
             from dash_apps.core.database import get_session
-            from dash_apps.repositories.support_comment_repository import SupportCommentRepository
+            from dash_apps.repositories.repository_factory import RepositoryFactory
             from dash_apps.services.support_cache_service import SupportCacheService
             
-            with get_session() as db_session:
-                # Ajouter le commentaire avec type 'external_received'
-                comment = SupportCommentRepository.add_comment_with_type(
-                    db_session,
-                    ticket_id,
-                    'client',  # user_id générique pour le client
-                    "",  # comment_text vide
-                    sender_email,  # user_name = email du client
-                    'external_received',  # Type pour réponse reçue
-                    comment_received=reply_content,  # Le message reçu va dans comment_received
-                    comment_source='mail'  # Source email
-                )
+            # Utiliser le repository REST
+            comment_repo = RepositoryFactory.get_support_comment_repository()
+            comment_data = {
+                'ticket_id': ticket_id,
+                'user_id': 'client',
+                'comment_text': reply_content,
+                'user_name': sender_email,
+                'comment_type': 'external_received'
+            }
+            comment = comment_repo.create_comment(comment_data)
+            
+            if comment:
+                logger.info(f"DEBUG: Commentaire client ajouté via REST API")
                 
-                if comment:
-                    logger.info(f"DEBUG: Commentaire client ajouté - ID: {comment.comment_id}")
-                    
-                    # Mettre à jour le timestamp du ticket principal
-                    EmailReceiverService._update_ticket_timestamp(ticket_id)
-                    
-                    # Invalider le cache du ticket pour affichage immédiat
-                    SupportCacheService.clear_ticket_cache(ticket_id)
-                    
-                    return True
-                else:
-                    logger.error("DEBUG: Échec création commentaire")
-                    return False
-                    
+                # Mettre à jour le timestamp du ticket principal
+                EmailReceiverService._update_ticket_timestamp(ticket_id)
+                
+                # Invalider le cache du ticket pour affichage immédiat
+                SupportCacheService.clear_ticket_cache(ticket_id)
+                
+                return True
+            else:
+                logger.error("DEBUG: Échec création commentaire")
+                return False
+                
         except Exception as e:
             logger.error(f"DEBUG: Erreur ajout réponse en base: {e}")
             return False
+
+@staticmethod
+def process_incoming_email(message_data: Dict[str, Any]) -> bool:
+    """
+    Traite un email entrant et l'ajoute comme commentaire si c'est une réponse à un ticket
     
+    Args:
+        message_data: Données du message Gmail API
+        
+    Returns:
+        bool: True si traité avec succès, False sinon
+    """
+    try:
+        logger.info("=== DEBUG EMAIL RECEIVER ===")
+        
+        # Extraire les headers
+        headers = {h['name']: h['value'] for h in message_data.get('payload', {}).get('headers', [])}
+        subject = headers.get('Subject', '')
+        sender = headers.get('From', '')
+        
+        logger.info(f"DEBUG: Email reçu de {sender}")
+        logger.info(f"DEBUG: Sujet: {subject}")
+        
+        # Vérifier si c'est une réponse à un ticket de support
+        if not any(keyword in subject.lower() for keyword in ['re:', 'réponse', 'ticket', 'support']):
+            logger.info("DEBUG: Email ignoré (pas une réponse de ticket)")
+            return False
+        
+        # Extraire le corps du message
+        body = EmailReceiverService._extract_email_body(message_data.get('payload', {}))
+        
+        # Extraire l'ID du ticket
+        ticket_id = EmailReceiverService.extract_ticket_id_from_email(subject, body)
+        if not ticket_id:
+            logger.warning("DEBUG: Impossible d'identifier le ticket associé")
+            return False
+        
+        # Extraire le contenu de la réponse
+        reply_content = EmailReceiverService.extract_reply_content(body)
+        if not reply_content.strip():
+            logger.warning("DEBUG: Contenu de réponse vide")
+            return False
+        
+        logger.info(f"DEBUG: Ticket ID identifié: {ticket_id}")
+        logger.info(f"DEBUG: Contenu réponse: {reply_content[:100]}...")
+        
+        # Ajouter le commentaire en base de données
+        success = EmailReceiverService._add_reply_to_database(ticket_id, reply_content, sender)
+        
+        if success:
+            logger.info(f"DEBUG: ✅ Réponse ajoutée au ticket {ticket_id}")
+            return True
+        else:
+            logger.error(f"DEBUG: ❌ Échec ajout réponse au ticket {ticket_id}")
+            return False
+                
+    except Exception as e:
+        logger.error(f"DEBUG: Erreur traitement email entrant: {e}")
+        return False
+
+@staticmethod
+def _extract_email_body(payload: Dict[str, Any]) -> str:
+    """Extrait le corps du message depuis le payload Gmail"""
+    try:
+        # Message simple (text/plain)
+        if payload.get('mimeType') == 'text/plain':
+            data = payload.get('body', {}).get('data', '')
+            if data:
+                return base64.urlsafe_b64decode(data).decode('utf-8')
+        
+        # Message multipart
+        if payload.get('mimeType', '').startswith('multipart/'):
+            parts = payload.get('parts', [])
+            for part in parts:
+                if part.get('mimeType') == 'text/plain':
+                    data = part.get('body', {}).get('data', '')
+                    if data:
+                        return base64.urlsafe_b64decode(data).decode('utf-8')
+        
+        return ""
+        
+    except Exception as e:
+        logger.error(f"Erreur extraction corps email: {e}")
+        return ""
+
     @staticmethod
     def _update_ticket_timestamp(ticket_id: str):
         """Met à jour le timestamp updated_at du ticket principal"""
