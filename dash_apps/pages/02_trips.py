@@ -8,7 +8,6 @@ from dash.exceptions import PreventUpdate
 from dash_apps.config import Config
 # Import du nouveau composant personnalisé à la place du DataTable
 from dash_apps.components.trips_table_custom import render_custom_trips_table
-from dash_apps.components.trip_details_layout import create_trip_details_layout
 from dash_apps.components.trip_search_widget import render_trip_search_widget, render_active_trip_filters
 from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.redis_cache import redis_cache
@@ -171,7 +170,7 @@ def get_layout():
                 children=html.Div(id="trip-details-panel"),
                 type="default"
             )
-        ], width=6),
+        ], width=12),
     ]),
     dbc.Row([
         dbc.Col([
@@ -498,7 +497,12 @@ def render_trip_details_panel(selected_trip):
         return details_panel
 
     # Read-Through pattern: le cache service gère tout
-    return TripsCacheService.get_trip_details_panel(trip_id_value)
+    return TripsCacheService._get_cached_panel_generic(
+            selected_trip_id, 'details', redis_getter, api_fetcher, redis_setter, renderer
+        )
+    #return TripsCacheService.get_trip_details_panel(trip_id_value)
+
+
 
 
 

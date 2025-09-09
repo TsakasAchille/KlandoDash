@@ -49,12 +49,5 @@ def render_trip_stats(data):
             },
             sandbox='allow-scripts',
         ),
-        style={
-            'backgroundColor': 'white',
-            'borderRadius': '28px',
-            'boxShadow': 'rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px',
-            'padding': '15px',
-            'overflow': 'hidden',
-            'marginBottom': '20px'
-        }
+        className="klando-card klando-card-minimal"
     )

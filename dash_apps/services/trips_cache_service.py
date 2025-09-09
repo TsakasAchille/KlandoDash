@@ -198,26 +198,38 @@ class TripsCacheService:
         return trips, total_count, table_rows_data
     
     @staticmethod
-    def get_trip_details_panel(selected_trip_id: str):
-        """Cache HTML → Redis → DB pour panneau détails trajet"""
+    def _get_cached_panel_generic(selected_trip_id: str, panel_type: str, redis_getter, api_fetcher, redis_setter, renderer):
+        """
+        Fonction générique pour récupérer un panneau avec cache HTML → Redis → API REST → Render
+        
+        Args:
+            selected_trip_id: ID du trajet
+            panel_type: Type de panneau ('details', 'stats', 'passengers')
+            redis_getter: Fonction pour récupérer depuis Redis
+            api_fetcher: Fonction pour récupérer depuis l'API REST
+            redis_setter: Fonction pour stocker dans Redis
+            renderer: Fonction pour rendre le composant
+        """
         if not selected_trip_id:
             return html.Div()
         
+        panel_name = panel_type.upper()
+        
         # Cache HTML
-        cached_panel = TripsCacheService.get_cached_panel(selected_trip_id, 'details')
+        cached_panel = TripsCacheService.get_cached_panel(selected_trip_id, panel_type)
         if cached_panel:
             if TripsCacheService._debug_mode:
-                print(f"[TRIP_DETAILS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_trip_id[:8]}...")
+                print(f"[{panel_name}][HTML CACHE HIT] Panneau récupéré du cache pour {selected_trip_id[:8]}...")
             return cached_panel
         
         # Redis
         data = None
         try:
-            cached_trip = redis_cache.get_trip_details(selected_trip_id)
-            if cached_trip:
+            cached_data = redis_getter(selected_trip_id)
+            if cached_data:
                 if TripsCacheService._debug_mode:
-                    print(f"[TRIP_DETAILS][REDIS HIT] Détails récupérés pour {selected_trip_id[:8]}...")
-                data = cached_trip
+                    print(f"[{panel_name}][REDIS HIT] Données récupérées pour {selected_trip_id[:8]}...")
+                data = cached_data
         except Exception:
             pass
         
@@ -225,37 +237,55 @@ class TripsCacheService:
         if not data:
             try:
                 if TripsCacheService._debug_mode:
-                    print(f"[TRIP_DETAILS][API FETCH] Chargement {selected_trip_id[:8]}... via API REST")
-                from dash_apps.utils.data_schema_rest import get_trip_by_id
-                print(f"[TRIP_DETAILS] Utilisation de l'API REST pour {selected_trip_id[:8]}")
-                data = get_trip_by_id(selected_trip_id)
+                    print(f"[{panel_name}][API FETCH] Chargement {selected_trip_id[:8]}... via API REST")
+                data = api_fetcher(selected_trip_id)
                 if not data:
-                    print(f"[TRIP_DETAILS][ERROR] Trajet avec ID {selected_trip_id} non trouvé")
+                    print(f"[{panel_name}][ERROR] Données non trouvées pour {selected_trip_id}")
                     import dash_bootstrap_components as dbc
-                    return html.Div(dbc.Alert(f"Trajet avec l'ID {selected_trip_id} non trouvé.", color="warning", className="mb-3"))
-                # Cache trip details
+                    return html.Div(dbc.Alert(f"Données non trouvées pour {selected_trip_id}.", color="warning", className="mb-3"))
+                
+                # Cache dans Redis
                 try:
-                    redis_cache.set_trip_details(selected_trip_id, data, ttl_seconds=TripsCacheService._profile_ttl_seconds)
+                    redis_setter(selected_trip_id, data, ttl_seconds=TripsCacheService._profile_ttl_seconds)
                 except Exception as e:
                     print(f"[REDIS] Erreur stockage cache: {e}")
             except Exception as e:
-                print(f"[TRIP_DETAILS][ERROR] Erreur lors de la récupération du trajet {selected_trip_id}: {e}")
+                print(f"[{panel_name}][ERROR] Erreur lors de la récupération: {e}")
                 import dash_bootstrap_components as dbc
-                return html.Div(dbc.Alert(f"Erreur lors de la récupération du trajet {selected_trip_id}: {e}", color="danger", className="mb-3"))
+                return html.Div(dbc.Alert(f"Erreur lors de la récupération: {e}", color="danger", className="mb-3"))
         
         # Render
         try:
-            # Utiliser le composant original de layout pour le rendu des détails du trajet
-            from dash_apps.components.trip_details_layout import create_trip_details_layout
-            panel = create_trip_details_layout(selected_trip_id, data)
-            
-            TripsCacheService.set_cached_panel(selected_trip_id, 'details', panel)
+            panel = renderer(selected_trip_id, data)
+            TripsCacheService.set_cached_panel(selected_trip_id, panel_type, panel)
             return panel
         except Exception as e:
             if TripsCacheService._debug_mode:
-                print(f"[TRIP_DETAILS] Erreur génération panneau: {e}")
+                print(f"[{panel_name}] Erreur génération panneau: {e}")
             import dash_bootstrap_components as dbc
-            return html.Div(dbc.Alert(f"Erreur lors de la génération du panneau de détails: {e}", color="danger", className="mb-3"))
+            return html.Div(dbc.Alert(f"Erreur lors de la génération du panneau: {e}", color="danger", className="mb-3"))
+
+    @staticmethod
+    def get_trip_details_panel(selected_trip_id: str):
+        """Cache HTML → Redis → DB pour panneau détails trajet"""
+        def redis_getter(trip_id):
+            return redis_cache.get_trip_details(trip_id)
+        
+        def api_fetcher(trip_id):
+            from dash_apps.utils.data_schema_rest import get_trip_by_id
+            print(f"[TRIP_DETAILS] Utilisation de l'API REST pour {trip_id[:8]}")
+            return get_trip_by_id(trip_id)
+        
+        def redis_setter(trip_id, data, ttl_seconds):
+            return redis_cache.set_trip_details(trip_id, data, ttl_seconds)
+        
+        def renderer(trip_id, data):
+            from dash_apps.components.trip_details_layout import create_trip_details_layout
+            return create_trip_details_layout(trip_id, data)
+        
+        return TripsCacheService._get_cached_panel_generic(
+            selected_trip_id, 'details', redis_getter, api_fetcher, redis_setter, renderer
+        )
     
     @staticmethod
     def get_trip_stats_panel(selected_trip_id: str):

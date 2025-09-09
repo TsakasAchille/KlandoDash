@@ -414,3 +414,60 @@ a, .klando-link {
 .klando-card-pop .klando-card-body {
     padding: 1.4rem 1.5rem;
 }
+
+/* === Trip details page reusable wrappers === */
+.trip-section-card {
+    background: #fff;
+    border-radius: 28px;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px;
+    padding: 15px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.trip-section-title {
+    font-weight: 600;
+    font-size: 18px;
+    color: #3a4654;
+    margin: 0 0 15px 0;
+    display: flex;
+    align-items: center;
+}
+
+.trip-section-title .icon {
+    margin-right: 10px;
+    color: #4281ec;
+}
+
+/* === Exact-match versions (pixel-identical to current inline styles) === */
+.trip-section-card-exact {
+    background-color: white !important;
+    border-radius: 28px !important;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px !important;
+    padding: 15px !important;
+    overflow: hidden !important;
+    margin-bottom: 16px !important;
+}
+
+.trip-section-title-exact {
+    font-weight: 600 !important;
+    font-size: 18px !important;
+    color: #3a4654 !important;
+    margin: 0 0 15px 0 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.trip-section-icon-exact {
+    margin-right: 10px !important;
+    color: #4281ec !important;
+}
+
+.trip-details-iframe {
+    width: 100% !important;
+    height: 400px !important;
+    border: none !important;
+    overflow: auto !important;
+    background-color: transparent !important;
+    border-radius: 18px !important;
+}

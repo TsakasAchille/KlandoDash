@@ -10,15 +10,6 @@ template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templat
 env = Environment(loader=FileSystemLoader(template_dir))
 trip_driver_template = env.get_template("trip_driver_template.jinja2")
 
-# Styles communs pour une cohérence visuelle
-CARD_STYLE = {
-    'backgroundColor': 'white',
-    'borderRadius': '28px',
-    'boxShadow': 'rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px',
-    'padding': '0px',
-    'overflow': 'hidden',
-    'marginBottom': '16px'
-}
 
 def render_trip_driver(trip):
     """
@@ -50,7 +41,7 @@ def render_trip_driver(trip):
                 id='driver-iframe',
                 sandbox='allow-scripts allow-top-navigation',
             ),
-            style=CARD_STYLE
+            className="klando-card klando-card-minimal"
         )
     
     # Récupération des informations du conducteur depuis la base de données
@@ -83,5 +74,5 @@ def render_trip_driver(trip):
             id='driver-iframe',
             sandbox='allow-scripts allow-top-navigation',
         ),
-        style=CARD_STYLE
+        className="klando-card klando-card-minimal"
     )

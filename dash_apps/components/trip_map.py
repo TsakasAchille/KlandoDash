@@ -111,30 +111,10 @@ def render_trip_map(trip_row):
     # Container externe avec style unifié
     map_container = html.Div(
         map_inner,
-        style={
-            'backgroundColor': 'white',
-            'borderRadius': '28px',
-            'boxShadow': 'rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px',
-            'padding': '15px',
-            'overflow': 'hidden',
-            'marginBottom': '20px'
-        }
+        className="klando-card klando-card-minimal"
     )
 
-    return html.Div([
-     
-        html.Div(
-            map_container,
-            style={
-                "backgroundColor": "#fafcfe",
-                "borderRadius": "18px",
-                "padding": "10px",
-            }
-        )
-    ]
-  
-    
-    )
+    return html.Div(map_container)
 
 def render_trips_map(trips_df, max_trips=10, show_heat=True, height="600px"):
     """
