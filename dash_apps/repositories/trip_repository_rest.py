@@ -355,31 +355,68 @@ class TripRepositoryRest(SupabaseRepository):
                                    filters: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Version optimisée pour récupérer les trajets avec pagination minimale
-        Compatible avec TripsCacheService
+        Compatible avec TripsCacheService - Utilise le même système de filtres que users
         
         Args:
             page_index: Index de la page (0-based)
             page_size: Nombre d'éléments par page
-            filters: Dictionnaire des filtres
+            filters: Dictionnaire des filtres (text, status, etc.)
             
         Returns:
             Dict contenant trips, total_count et pagination
         """
         try:
+            from dash_apps.utils.supabase_client import supabase
+            
             # Convertir page_index (0-based) en page (1-based)
             page = page_index + 1
+            skip = page_index * page_size
             
-            # Utiliser la méthode existante
-            result = self.get_trips_with_pagination(
-                page=page,
-                page_size=page_size,
-                status=filters.get('status') if filters else None
-            )
+            # Construire la requête de base
+            query = supabase.table(self.table_name).select("*")
+            
+            # Appliquer les filtres si fournis
+            if filters:
+                # Filtre par texte (trip_id, lieux de départ/arrivée)
+                if filters.get('text'):
+                    text_filter = filters['text']
+                    query = query.or_(f"trip_id.ilike.%{text_filter}%,departure_name.ilike.%{text_filter}%,destination_name.ilike.%{text_filter}%")
+                
+                # Filtre par statut
+                if filters.get('status'):
+                    query = query.eq("status", filters['status'])
+            
+            # Appliquer la pagination et l'ordre
+            query = query.order("departure_date", desc=True).range(skip, skip + page_size - 1)
+            
+            # Exécuter la requête
+            response = query.execute()
+            trips = response.data if response.data else []
+            
+            # Compter le total avec les mêmes filtres
+            count_query = supabase.table(self.table_name).select("*", count="exact")
+            if filters:
+                if filters.get('text'):
+                    text_filter = filters['text']
+                    count_query = count_query.or_(f"trip_id.ilike.%{text_filter}%,departure_name.ilike.%{text_filter}%,destination_name.ilike.%{text_filter}%")
+                if filters.get('status'):
+                    count_query = count_query.eq("status", filters['status'])
+            
+            count_response = count_query.execute()
+            total_count = count_response.count if count_response.count is not None else 0
+            
+            # Calculer le nombre total de pages
+            total_pages = max(1, (total_count + page_size - 1) // page_size)
             
             return {
-                "trips": result["trips"],
-                "total_count": result["pagination"]["total_count"],
-                "pagination": result["pagination"]
+                "trips": trips,
+                "total_count": total_count,
+                "pagination": {
+                    "total_count": total_count,
+                    "page": page,
+                    "page_size": page_size,
+                    "total_pages": total_pages
+                }
             }
                 
         except Exception as e:

@@ -190,17 +190,19 @@ def get_layout():
 @callback(
     Output("trips-current-page", "data"),
     Output("selected-trip-id", "data", allow_duplicate=True),
+    Output("trips-filter-store", "data", allow_duplicate=True),
     Input("refresh-trips-btn", "n_clicks"),
     Input("trips-url", "search"),  # Ajout de l'URL comme input
     State("trips-current-page", "data"),
     State("selected-trip-id", "data"),
+    State("trips-filter-store", "data"),
     prevent_initial_call=True
 )
-def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip):
+def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip, current_filters):
     log_callback(
         "get_page_info_on_page_load",
         {"n_clicks": n_clicks, "url_search": url_search},
-        {"current_page": current_page, "selected_trip": selected_trip}
+        {"current_page": current_page, "selected_trip": selected_trip, "current_filters": current_filters}
     )
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
@@ -212,19 +214,26 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
         trip_id_list = params.get('trip_id')
         
         if trip_id_list:
-            trip_from_url = {"trip_id": trip_id_list[0]}
-            # Retourner simplement la page courante pour éviter l'appel DB coûteux
-            # Le trajet sera trouvé automatiquement lors du chargement de la table
-            return current_page, trip_from_url
+            selected_trip_id = trip_id_list[0]
+            trip_from_url = {"trip_id": selected_trip_id}
+            
+            # Appliquer automatiquement un filtre de recherche sur le trip_id
+            # Cela affichera uniquement ce trajet et il sera sélectionné automatiquement
+            filter_with_trip_id = {
+                "text": selected_trip_id  # Utiliser le trip_id comme filtre de recherche
+            }
+            
+            print(f"[URL_SELECTION] Application du filtre pour le trajet: {selected_trip_id}")
+            return 1, trip_from_url, filter_with_trip_id
     # Si refresh a été cliqué
     if triggered_id == "refresh-trips-btn" and n_clicks is not None:
-        return 1, selected_trip
+        return 1, selected_trip, current_filters
     
     # Pour le chargement initial ou autres cas
     if current_page is None or not isinstance(current_page, (int, float)):
-        return 1, selected_trip
+        return 1, selected_trip, current_filters
         
-    return current_page, selected_trip
+    return current_page, selected_trip, current_filters
 
 @callback(
     Output("refresh-trips-message", "children"),

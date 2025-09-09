@@ -246,17 +246,19 @@ def get_layout():
 @callback(
     Output("users-current-page", "data"),
     Output("selected-user-uid", "data", allow_duplicate=True),
+    Output("users-filter-store", "data", allow_duplicate=True),
     Input("refresh-users-btn", "n_clicks"),
     Input("users-url", "search"),  # Ajout de l'URL comme input
     State("users-current-page", "data"),
     State("selected-user-uid", "data"),
+    State("users-filter-store", "data"),
     prevent_initial_call=True
 )
-def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_user):
+def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_user, current_filters):
     log_callback(
         "get_page_info_on_page_load",
         {"n_clicks": n_clicks, "url_search": url_search},
-        {"current_page": current_page, "selected_user": selected_user}
+        {"current_page": current_page, "selected_user": selected_user, "current_filters": current_filters}
     )
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
@@ -268,25 +270,26 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_user
         uid_list = params.get('uid')
         
         if uid_list:
-            user_from_url = {"uid": uid_list[0]}
-            # On va chercher sur quelle page se trouve l'utilisateur
-            uid = uid_list[0]
-            page_index = find_user_page_index(uid, Config.USERS_TABLE_PAGE_SIZE)
-            if page_index is not None:
-                # Convertir en 1-indexed pour l'interface
-                new_page = page_index + 1
-                return new_page, user_from_url
-            else:
-                return current_page, user_from_url
+            selected_uid = uid_list[0]
+            user_from_url = {"uid": selected_uid}
+            
+            # Appliquer automatiquement un filtre de recherche sur l'uid
+            # Cela affichera uniquement cet utilisateur et il sera sélectionné automatiquement
+            filter_with_uid = {
+                "text": selected_uid  # Utiliser l'uid comme filtre de recherche
+            }
+            
+            print(f"[URL_SELECTION] Application du filtre pour l'utilisateur: {selected_uid}")
+            return 1, user_from_url, filter_with_uid
     # Si refresh a été cliqué
     if triggered_id == "refresh-users-btn" and n_clicks is not None:
-        return 1, selected_user
+        return 1, selected_user, current_filters
     
     # Pour le chargement initial ou autres cas
     if current_page is None or not isinstance(current_page, (int, float)):
-        return 1, selected_user
+        return 1, selected_user, current_filters
         
-    return current_page, selected_user
+    return current_page, selected_user, current_filters
 
 @callback( 
     Output("refresh-users-message", "children"),

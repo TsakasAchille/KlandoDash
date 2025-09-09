@@ -653,19 +653,15 @@ class UsersCacheService:
     @staticmethod
     def get_user_trips_panel(selected_uid: str):
         """Cache HTML → Cache local → API REST pour panneau trips - utilise la nouvelle config JSON"""
-        print(f"[TRIPS_SERVICE_DEBUG] === DÉBUT get_user_trips_panel ===")
-        print(f"[TRIPS_SERVICE_DEBUG] selected_uid: {selected_uid}")
         
         config = UsersCacheService._load_panel_config()
         panel_config = config.get('trips', {})
         
-        print(f"[TRIPS_SERVICE_DEBUG] Config chargée: {len(config)} panneaux")
-        print(f"[TRIPS_SERVICE_DEBUG] Panel config trips: {panel_config}")
+ 
         
         result = UsersCacheService._get_cached_panel_generic(selected_uid, panel_config)
         
-        print(f"[TRIPS_SERVICE_DEBUG] Résultat _get_cached_panel_generic: {type(result)}")
-        print(f"[TRIPS_SERVICE_DEBUG] === FIN get_user_trips_panel ===")
+        
         
         return result
     

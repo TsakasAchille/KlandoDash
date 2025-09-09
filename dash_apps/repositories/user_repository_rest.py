@@ -265,7 +265,7 @@ class UserRepositoryRest(SupabaseRepository):
                 # Filtre par texte (nom, email, téléphone)
                 if filters.get('text'):
                     text_filter = filters['text']
-                    query = query.or_(f"display_name.ilike.%{text_filter}%,email.ilike.%{text_filter}%,phone.ilike.%{text_filter}%")
+                    query = query.or_(f"uid.ilike.%{text_filter}%,display_name.ilike.%{text_filter}%,email.ilike.%{text_filter}%,phone_number.ilike.%{text_filter}%")
                 
                 # Filtre par rôle
                 if filters.get('role'):
@@ -304,7 +304,7 @@ class UserRepositoryRest(SupabaseRepository):
                     'uid': user.get('uid', ''),
                     'display_name': user.get('display_name', ''),
                     'email': user.get('email', ''),
-                    'phone': user.get('phone', ''),
+                    'phone': user.get('phone_number', ''),
                     'gender': user.get('gender', ''),
                     'is_driver': user.get('is_driver', False),
                     'is_driver_doc_validated': user.get('is_driver_doc_validated', False),
