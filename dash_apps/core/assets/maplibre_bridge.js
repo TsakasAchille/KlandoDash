@@ -42,6 +42,9 @@ if (!window.dash_clientside.mapbridge.poll) {
 
 // Fonction utilitaire pour mettre à jour les événements
 window.updateMapEvents = function(hoverTripId, clickTripId) {
+    if (clickTripId !== null) {
+        console.log('[MAP_BRIDGE] Mise à jour click_trip_id:', clickTripId);
+    }
     window.__map_events.hover_trip_id = hoverTripId;
     window.__map_events.click_trip_id = clickTripId;
     window.__map_events.last_update = Date.now();

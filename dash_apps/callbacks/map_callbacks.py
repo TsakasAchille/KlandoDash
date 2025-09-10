@@ -381,6 +381,7 @@ dash.clientside_callback(
     prevent_initial_call=False,
 )
 def update_detail_visibility(selected_trip_id):
+    print(f"[MAP_CALLBACK] update_detail_visibility called with: {selected_trip_id}")
     if not selected_trip_id:
         return False
     return bool(selected_trip_id)
@@ -393,6 +394,8 @@ def update_detail_visibility(selected_trip_id):
     prevent_initial_call=False,
 )
 def render_side_panel(selected_trip_id, detail_visible):
+    print(f"[MAP_CALLBACK] render_side_panel called with trip_id: {selected_trip_id}, visible: {detail_visible}")
+    
     # Fallback texte si rien
     if not detail_visible or not selected_trip_id:
         return html.Div([

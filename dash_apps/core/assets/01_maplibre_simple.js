@@ -301,7 +301,9 @@ function setupTripLayersAndEvents(map) {
     });
     map.on('click', 'trips-line', e => {
         const f = e.features && e.features[0];
-        emitHoverClick(null, f && f.properties && f.properties.trip_id || null);
+        const tripId = f && f.properties && f.properties.trip_id || null;
+        console.log('[MAP_CLICK] Clic sur trajet ligne:', tripId);
+        emitHoverClick(null, tripId);
     });
     map.on('mousemove', 'trips-points', e => {
         const f = e.features && e.features[0];
@@ -309,6 +311,8 @@ function setupTripLayersAndEvents(map) {
     });
     map.on('click', 'trips-points', e => {
         const f = e.features && e.features[0];
-        emitHoverClick(null, f && f.properties && f.properties.trip_id || null);
+        const tripId = f && f.properties && f.properties.trip_id || null;
+        console.log('[MAP_CLICK] Clic sur trajet point:', tripId);
+        emitHoverClick(null, tripId);
     });
 }
