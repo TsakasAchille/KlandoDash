@@ -12,10 +12,8 @@ from dash_apps.components.user_profile import render_user_profile, render_user_s
 from dash_apps.config import Config
 from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.trips_cache_service import TripsCacheService
+from dash_apps.services.map_cache_service import MapCacheService
 import polyline as polyline_lib
-
-# Flag to prevent multiple callback registrations
-_CALLBACKS_REGISTERED = False
 
 # Import dash app instance to check if callbacks already exist
 import dash
@@ -23,14 +21,18 @@ from dash import callback_context
 
 
 def _get_last_trips(n=10):
-    """Fetch last n trips using the TripsCacheService for caching performance.
-    Falls back to direct repository if needed.
+    """Fetch last n trips using MapCacheService with fallback to TripsCacheService.
+    Optimized for map page with caching.
     """
     try:
-        # Use first page with page_size=n and no filters to leverage cache layers
+        # Essayer d'abord le cache spécifique à la map
+        trips = MapCacheService.get_cached_trips(int(n or 10))
+        if trips:
+            return trips
+        
+        # Fallback: TripsCacheService
         result = TripsCacheService.get_trips_page_result(page_index=0, page_size=int(n or 10), filter_params={})
         trips = result.get("trips", [])
-        # Defensive: ensure it's a list
         return trips if isinstance(trips, list) else []
     except Exception as e:
         print(f"[MAP_CALLBACKS] Cache fetch failed, fallback to direct repo: {e}")
@@ -97,26 +99,37 @@ def expose_selected_trip_to_dom(selected_trip_id):
     Input("map-trip-inc", "n_clicks"),
     Input("map-trip-dec", "n_clicks"),
     State("map-trip-count", "value"),
-    prevent_initial_call=True,
+    prevent_initial_call=False,  # Permettre l'appel initial pour charger depuis le cache
 )
-def adjust_map_trip_count(n_inc, n_dec, current):
-    ctx = dash.callback_context
+def update_trip_count(inc_clicks, dec_clicks, current_value):
+    ctx = callback_context
+    
+    # Si pas de déclencheur (appel initial), charger depuis le cache
     if not ctx.triggered:
-        raise dash.exceptions.PreventUpdate
-    trigger = ctx.triggered[0]["prop_id"].split(".")[0]
-    total = len(_TRIPS) if _TRIPS else 0
-    if total <= 0:
-        return 0
-    current = int(current or 0)
-    if trigger == "map-trip-inc":
-        new_val = current + 1
-    elif trigger == "map-trip-dec":
-        new_val = current - 1
+        try:
+            settings = MapCacheService.load_map_settings()
+            cached_count = settings.get('trip_count', 10)
+            return str(cached_count)
+        except Exception:
+            return "10"
+    
+    try:
+        current = int(current_value)
+    except Exception:
+        current = 10
+    
+    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    if button_id == "map-trip-inc":
+        new_value = min(current + 1, len(_TRIPS) if _TRIPS else 50)  # Max 50 si pas de trips
+    elif button_id == "map-trip-dec":
+        new_value = max(current - 1, 1)
     else:
-        raise dash.exceptions.PreventUpdate
-    # clamp
-    new_val = max(1, min(new_val, total))
-    return new_val
+        new_value = current
+    
+    # Sauvegarder le nouveau count dans le cache
+    MapCacheService.save_map_settings(new_value)
+    
+    return str(new_value)
 
 
 @callback(
@@ -315,42 +328,36 @@ def sync_selection(count, checkbox_values, checkbox_ids, prev_selected):
         return []
     count = max(1, min(int(count), len(_TRIPS)))
 
-    # If checkboxes are not in the DOM yet, try to preserve previous selection (session)
+    # If checkboxes are not in the DOM yet, try to load from cache first
     if not checkbox_ids:
         visible = {getattr(t, 'trip_id', None) if not isinstance(t, dict) else t.get('trip_id', None) for t in _TRIPS[:count]}
+        
+        # Essayer de charger les sélections depuis le cache
+        cached_selections = MapCacheService.load_selected_trips()
+        if cached_selections:
+            # Garder seulement celles qui sont encore visibles
+            valid_cached = [sid for sid in cached_selections if sid in visible]
+            if valid_cached:
+                return valid_cached
+        
+        # Fallback: utiliser prev_selected ou sélection par défaut
         if prev_selected:
-            # Keep only those still visible
             return [sid for sid in prev_selected if sid in visible]
-        # Fallback: select first 3 trips by default (or all if less than 3)
-        default_trips = []
-        for t in _TRIPS[:min(3, count)]:
-            if isinstance(t, dict):
-                trip_id = t.get('trip_id', None)
-            else:
-                trip_id = getattr(t, 'trip_id', None)
-            if trip_id:
-                default_trips.append(trip_id)
-        return default_trips
+        return list(visible)[:3]
 
-    # If checkboxes exist, compute selection from their values
-    selected = []
-    checkbox_values = checkbox_values or []
-    for v, id_obj in zip(checkbox_values, checkbox_ids):
-        try:
-            if v and isinstance(id_obj, dict):
-                selected.append(id_obj.get("index"))
-        except Exception:
-            continue
-    # Safety: limit to visible last N trips
-    visible = set()
-    for t in _TRIPS[:count]:
-        if isinstance(t, dict):
-            trip_id = t.get('trip_id', None)
-        else:
-            trip_id = getattr(t, 'trip_id', None)
-        if trip_id:
-            visible.add(trip_id)
-    return [sid for sid in selected if sid in visible]
+    # Extract trip IDs from checkbox IDs
+    trip_ids = [cb_id["index"] for cb_id in checkbox_ids]
+    
+    # Determine which checkboxes are checked
+    selected_trip_ids = []
+    for i, is_checked in enumerate(checkbox_values or []):
+        if is_checked and i < len(trip_ids):
+            selected_trip_ids.append(trip_ids[i])
+    
+    # Sauvegarder les sélections dans le cache pour persistance
+    MapCacheService.save_selected_trips(selected_trip_ids)
+    
+    return selected_trip_ids
 
 
 # --- Clientside bridge: poll window.__map_events and update Stores ---
@@ -416,4 +423,36 @@ def render_side_panel(selected_trip_id, detail_visible):
     return html.Div([html.Strong("Trajet:"), html.Span(f" {selected_trip_id}")])
 
 
-print("[MAP_CALLBACKS] Callbacks de la page Map enregistrés")
+def register_callbacks():
+    """Force l'enregistrement des callbacks si nécessaire"""
+    try:
+        # Vérifier si l'app Dash existe
+        from dash import get_app
+        app = get_app()
+        print(f"[MAP_CALLBACKS] App trouvée avec {len(app.callback_map)} callbacks enregistrés")
+        
+        # Vérifier si nos callbacks sont présents
+        required_outputs = [
+            'map-trips-table-container.children',
+            'map-selected-trips.data', 
+            'map-detail-visible.data',
+            'map-side-panel.children',
+            'home-maplibre.data-geojson'
+        ]
+        
+        missing = [output for output in required_outputs if output not in app.callback_map]
+        if missing:
+            print(f"[MAP_CALLBACKS] ATTENTION: Callbacks manquants: {missing}")
+        else:
+            print("[MAP_CALLBACKS] Tous les callbacks requis sont enregistrés")
+            
+    except Exception as e:
+        print(f"[MAP_CALLBACKS] Erreur vérification callbacks: {e}")
+
+# Enregistrer immédiatement si possible, sinon attendre
+try:
+    register_callbacks()
+except Exception:
+    print("[MAP_CALLBACKS] Callbacks seront vérifiés plus tard")
+
+print("[MAP_CALLBACKS] Module callbacks map chargé")

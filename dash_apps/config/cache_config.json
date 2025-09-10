@@ -39,6 +39,24 @@
       "max_entries": 20,
       "key_pattern": "trips_list:{page}:{filters_hash}",
       "description": "Cache des listes de trajets paginées"
+    },
+    "map_selections": {
+      "ttl": 86400,
+      "max_entries": 10,
+      "key_pattern": "map_selections:{session_id}",
+      "description": "Cache des sélections de trajets sur la carte (persistance 24h)"
+    },
+    "map_trips_data": {
+      "ttl": 300,
+      "max_entries": 5,
+      "key_pattern": "map_trips_data:{count}",
+      "description": "Cache des derniers N trajets pour la carte"
+    },
+    "map_settings": {
+      "ttl": 86400,
+      "max_entries": 5,
+      "key_pattern": "map_settings:{session_id}",
+      "description": "Cache des paramètres de la carte (nombre de trajets, etc.) - persistance 24h"
     }
   },
   "storage_layers": {

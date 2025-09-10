@@ -40,6 +40,7 @@ env/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.backup
 
 # Jupyter Notebook
 .ipynb_checkpoints

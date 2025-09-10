@@ -28,32 +28,96 @@ function ensureMapLibreLoaded(callback) {
 }
 
 function tryInitMap() {
-    if (mapInitStarted) return; // guard against multiple calls
     const container = document.getElementById(MAP_CONTAINER_ID);
-    if (!container) return; // not yet mounted by Dash
-    const styleUrl = container.getAttribute('data-style-url');
-    if (!styleUrl) {
-        console.warn('[MAPLIBRE] data-style-url manquant sur #', MAP_CONTAINER_ID);
+    if (!container) {
+        console.log('[MAPLIBRE] Container pas encore disponible');
         return;
     }
-    mapInitStarted = true;
-    ensureMapLibreLoaded(function () {
+    
+    // Vérifier si le container est visible et a des dimensions
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+        console.log('[MAPLIBRE] Container pas encore dimensionné, retry dans 200ms');
+        setTimeout(tryInitMap, 200);
+        return;
+    }
+    
+    // Avoid multiple initializations on same container
+    if (mapInstance && mapInstance.getContainer() === container && !mapInstance._removed) {
+        console.log('[MAPLIBRE] Carte déjà initialisée sur ce container');
+        // Forcer un resize au cas où les dimensions auraient changé
+        setTimeout(function() {
+            if (mapInstance && !mapInstance._removed) {
+                mapInstance.resize();
+                console.log('[MAPLIBRE] Resize forcé de la carte existante');
+            }
+        }, 100);
+        return;
+    }
+    
+    // Clean up old instance if container has changed or if instance is removed
+    if (mapInstance && (mapInstance.getContainer() !== container || mapInstance._removed)) {
+        console.log('[MAPLIBRE] Nettoyage ancienne instance de carte');
         try {
-            const map = new maplibregl.Map({
-                container: MAP_CONTAINER_ID,
-                style: styleUrl,
-                center: [-17.4441, 14.6928],
-                zoom: 12
-            });
-            map.addControl(new maplibregl.NavigationControl());
-            // expose for debugging
-            window.mapLibreInstance = map;
-            mapInstance = map;
-            setupTripLayersAndEvents(map);
+            mapInstance.remove();
         } catch (e) {
-            mapInitStarted = false; // allow retry on failure
-            console.error('[MAPLIBRE] Erreur initialisation carte:', e);
+            console.warn('[MAPLIBRE] Erreur lors du nettoyage:', e);
         }
+        mapInstance = null;
+        mapInitStarted = false;
+    }
+    
+    if (mapInitStarted) {
+        console.log('[MAPLIBRE] Initialisation déjà en cours');
+        return;
+    }
+    
+    mapInitStarted = true;
+    console.log('[MAPLIBRE] Début initialisation carte sur container:', container.id);
+    
+    ensureMapLibreLoaded(function() {
+        console.log('[MAPLIBRE] Script chargé, création de la carte...');
+        
+        // Vérifier une dernière fois que le container existe toujours
+        if (!document.getElementById(MAP_CONTAINER_ID)) {
+            console.warn('[MAPLIBRE] Container disparu pendant le chargement');
+            mapInitStarted = false;
+            return;
+        }
+        
+        // Utiliser un style par défaut si pas de data-style-url
+        let styleUrl = container.getAttribute('data-style-url');
+        if (!styleUrl) {
+            styleUrl = 'https://demotiles.maplibre.org/style.json';
+            console.log('[MAPLIBRE] Utilisation du style par défaut');
+        }
+        
+        mapInstance = new maplibregl.Map({
+            container: MAP_CONTAINER_ID,
+            style: styleUrl,
+            center: [2.3522, 48.8566], // Paris par défaut
+            zoom: 10,
+            preserveDrawingBuffer: true
+        });
+        
+        mapInstance.on('load', function() {
+            console.log('[MAPLIBRE] Carte chargée avec succès');
+            setupTripLayersAndEvents(mapInstance);
+        });
+        
+        mapInstance.on('error', function(e) {
+            console.error('[MAPLIBRE] Erreur carte:', e);
+            mapInitStarted = false;
+        });
+        
+        // Forcer un resize après initialisation
+        setTimeout(function() {
+            if (mapInstance && !mapInstance._removed) {
+                mapInstance.resize();
+                console.log('[MAPLIBRE] Resize post-initialisation');
+            }
+        }, 500);
+        
     });
 }
 
@@ -61,21 +125,88 @@ function tryInitMap() {
 function watchForContainer() {
     // initial quick check
     tryInitMap();
-    // MutationObserver for robust detection
-    const observer = new MutationObserver(function () {
-        if (document.getElementById(MAP_CONTAINER_ID)) {
-            tryInitMap();
+    
+    // MutationObserver for robust detection avec surveillance continue
+    const observer = new MutationObserver(function (mutations) {
+        let shouldCheck = false;
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                // Vérifier si des noeuds ont été ajoutés qui pourraient contenir notre container
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        if (node.id === MAP_CONTAINER_ID || node.querySelector('#' + MAP_CONTAINER_ID)) {
+                            shouldCheck = true;
+                        }
+                    }
+                });
+            }
+        });
+        
+        if (shouldCheck || document.getElementById(MAP_CONTAINER_ID)) {
+            // Petit délai pour laisser Dash finir le rendu
+            setTimeout(tryInitMap, 100);
         }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
-    // safety timeout to disconnect observer after init
-    const stopWhenInited = setInterval(function () {
-        if (mapInitStarted) {
-            observer.disconnect();
-            clearInterval(stopWhenInited);
+    
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true,
+        attributes: false  // Pas besoin de surveiller les attributs
+    });
+    
+    // Vérification périodique pour les cas où MutationObserver rate quelque chose
+    const periodicCheck = setInterval(function() {
+        const container = document.getElementById(MAP_CONTAINER_ID);
+        if (container && (!mapInstance || mapInstance.getContainer() !== container)) {
+            tryInitMap();
         }
-    }, 500);
+    }, 2000);
+    
+    // Nettoyer les vérifications périodiques après 30 secondes
+    setTimeout(function() {
+        clearInterval(periodicCheck);
+    }, 30000);
 }
+
+// Écouter les changements de page Dash
+function handlePageChange() {
+    console.log('[MAPLIBRE] Changement de page détecté');
+    // Réinitialiser les flags pour permettre une nouvelle initialisation
+    mapInitStarted = false;
+    // Lancer la surveillance du container
+    setTimeout(watchForContainer, 100);
+}
+
+// Écouter les événements de navigation Dash
+document.addEventListener('DOMContentLoaded', function() {
+    // Observer les changements dans le conteneur principal de Dash
+    const dashContainer = document.getElementById('_dash-app-content') || document.body;
+    const pageObserver = new MutationObserver(function(mutations) {
+        let pageChanged = false;
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        // Détecter si une nouvelle page a été chargée
+                        if (node.querySelector && (node.querySelector('[data-dash-is-loading]') || 
+                            node.id === 'page-content' || node.className.includes('page-'))) {
+                            pageChanged = true;
+                        }
+                    }
+                });
+            }
+        });
+        
+        if (pageChanged) {
+            handlePageChange();
+        }
+    });
+    
+    pageObserver.observe(dashContainer, {
+        childList: true,
+        subtree: true
+    });
+});
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', watchForContainer);

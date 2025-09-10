@@ -6,6 +6,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Importer les callbacks AVANT la définition du layout
+from dash_apps.callbacks import map_callbacks  # noqa: F401
+
 def create_maplibre_simple():
     """MapLibre simple - container seul avec style Firebase via data-style-url"""
     
@@ -65,7 +68,7 @@ def get_layout():
                     dbc.Button("-", id="map-trip-dec", color="secondary", outline=True),
                     dbc.Input(
                         id="map-trip-count", 
-                        value="1", 
+                        value="5", 
                         readonly=True, 
                         style={"textAlign": "center", "width": "80px"}
                     ),
@@ -108,7 +111,4 @@ def get_layout():
 def layout():
     return get_layout()
 
-# Enregistrer les callbacks de la page Map via import (même pattern que trips.py)
-from dash_apps.callbacks import map_callbacks  # noqa: F401
-
-# L'enregistrement se fera automatiquement par Dash Pages lors de la découverte des modules
+# L'enregistrement des callbacks se fait automatiquement via l'import en haut du fichier
