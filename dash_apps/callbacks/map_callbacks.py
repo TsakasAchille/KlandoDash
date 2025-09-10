@@ -114,7 +114,12 @@ def adjust_map_trip_count(n_inc, n_dec, current):
     Input("map-selected-trips", "data"),
 )
 def update_map_geojson(count, selected_ids):
-    if not _TRIPS or not count or count <= 0:
+    # Coercion robuste du compteur
+    try:
+        count = int(count)
+    except Exception:
+        count = 0
+    if not _TRIPS or count <= 0:
         return None
     count = max(1, min(int(count), len(_TRIPS)))
     # If there is a selection, use it; else default to last N trips
@@ -247,7 +252,11 @@ def update_map_geojson(count, selected_ids):
     Input("map-click-trip-id", "data"),
 )
 def render_map_table(count, selected_ids, active_trip_id):
-    if not _TRIPS or not count or count <= 0:
+    try:
+        count = int(count)
+    except Exception:
+        count = 0
+    if not _TRIPS or count <= 0:
         return render_map_trips_table([], selected_ids or [])
     count = max(1, min(int(count), len(_TRIPS)))
     trips = _TRIPS[:count]
@@ -264,7 +273,11 @@ def render_map_table(count, selected_ids, active_trip_id):
 )
 def sync_selection(count, checkbox_values, checkbox_ids, prev_selected):
     # If no trips or invalid count => empty selection
-    if not _TRIPS or not count or count <= 0:
+    try:
+        count = int(count)
+    except Exception:
+        count = 0
+    if not _TRIPS or count <= 0:
         return []
     count = max(1, min(int(count), len(_TRIPS)))
 
