@@ -75,7 +75,8 @@ def create_app():
     
     # Pages admin enregistrées sans être dans le registre public (pas de name pour éviter l'affichage automatique)
     dash.register_page("admin", path='/admin', layout=admin.layout)
-    dash.register_page("driver_validation", path='/driver-validation', layout=driver_validation.layout)
+    dash.register_page("driver_validation", path='/driver-validation', layout=driver_validation.serve_layout)
+
 
     # --- Logging configuration ---
     try:

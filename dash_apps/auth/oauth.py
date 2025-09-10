@@ -121,6 +121,13 @@ def google_callback():
         picture = user_info.get('picture', '')
         user_id = user_info.get('sub', '')  # ID unique Google
         
+        print(f"[GOOGLE_AUTH_DEBUG] ✅ Authentification Google réussie")
+        print(f"[GOOGLE_AUTH_DEBUG] Email récupéré: '{email}'")
+        print(f"[GOOGLE_AUTH_DEBUG] Nom: '{name}'")
+        print(f"[GOOGLE_AUTH_DEBUG] ID Google: '{user_id}'")
+        print(f"[GOOGLE_AUTH_DEBUG] Photo: '{picture}'")
+        print(f"[GOOGLE_AUTH_DEBUG] Email vérifié: {user_info.get('email_verified', False)}")
+        
     except Exception as e:
         error_str = str(e)
         if _debug_mode:
@@ -162,9 +169,13 @@ def google_callback():
     # Vérification avec la table SQL dash_authorized_users
     from dash_apps.utils.admin_db_rest import is_user_authorized
     
-    if not is_user_authorized(email):
-        if _debug_mode:
-            print(f"Email non autorisé dans dash_authorized_users: {email}")
+    print(f"[GOOGLE_AUTH_DEBUG] 🔍 Vérification de l'autorisation pour l'email: '{email}'")
+    
+    is_authorized = is_user_authorized(email)
+    print(f"[GOOGLE_AUTH_DEBUG] Résultat is_user_authorized: {is_authorized}")
+    
+    if not is_authorized:
+        print(f"[GOOGLE_AUTH_DEBUG] ❌ Email non autorisé dans dash_authorized_users: {email}")
         error_msg = f"⚠️ ATTENTION : ÉCHEC DE CONNEXION - Vous n'êtes pas autorisé à accéder à cette application."
         
         session.clear()
@@ -176,9 +187,13 @@ def google_callback():
     from dash_apps.utils.admin_db_rest import get_user_role
     user_role = get_user_role(email)
     
+    print(f"[GOOGLE_AUTH_DEBUG] 🔍 Récupération du rôle pour l'email: '{email}'")
+    print(f"[GOOGLE_AUTH_DEBUG] Rôle récupéré: '{user_role}'")
+    
     # Si pas de rôle défini, utiliser 'user' par défaut
     if not user_role:
         user_role = 'user'
+        print(f"[GOOGLE_AUTH_DEBUG] Aucun rôle trouvé, utilisation du rôle par défaut: 'user'")
     
     # Créer un User en mémoire avec le rôle approprié
     user = User(
@@ -203,8 +218,13 @@ def google_callback():
     session['is_admin'] = (user_role == 'admin')
     session.modified = True
     
-    if _debug_mode:
-        print(f"Utilisateur connecté: {email}")
+    print(f"[GOOGLE_AUTH_DEBUG] ✅ Session créée avec succès:")
+    print(f"[GOOGLE_AUTH_DEBUG] - Email: {email}")
+    print(f"[GOOGLE_AUTH_DEBUG] - Nom: {name}")
+    print(f"[GOOGLE_AUTH_DEBUG] - Rôle: {user_role}")
+    print(f"[GOOGLE_AUTH_DEBUG] - Is Admin: {user_role == 'admin'}")
+    print(f"[GOOGLE_AUTH_DEBUG] - Session Keys: {list(session.keys())}")
+    
     return redirect('/')
 
 def logout():

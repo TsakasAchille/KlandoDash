@@ -1,7 +1,7 @@
 """Callbacks pour la page d'administration"""
 
 from dash import callback, Input, Output, State, ctx, ALL, no_update, html, dcc
-from dash_apps.pages.admin.admin_templates import ADMIN_LAYOUT, USER_FORM_TEMPLATE, ADMIN_JS
+from dash_apps.pages.admin.admin_templates import ADMIN_LAYOUT, USER_FORM_TEMPLATE, USER_TABLE_TEMPLATE, ADMIN_JS
 import dash_bootstrap_components as dbc
 from flask import session, render_template_string
 from dash_apps.utils.admin_db_rest import (
@@ -20,7 +20,8 @@ def register_admin_callbacks(app):
     # Vérifier si l'utilisateur est autorisé à accéder à la page admin
     @app.callback(
         Output(f"{ADMIN_PREFIX}auth-store", "data", allow_duplicate=True),
-        Input(f"{ADMIN_PREFIX}page-loaded", "n_clicks")
+        Input(f"{ADMIN_PREFIX}page-loaded", "children"),
+        prevent_initial_call=False
     )
     def check_admin_auth(_):
         # Récupérer l'email de l'utilisateur depuis la session
@@ -62,11 +63,46 @@ def register_admin_callbacks(app):
         
         # Préparer les données pour le template
         users = users_data if users_data else []
-        
-        # Rendu du template avec les données des utilisateurs
+
+        # Normaliser les clés attendues par le template Jinja (user_table.html)
+        # Le template attend: email, role, active, added_at, updated_at, added_by, notes
+        normalized_users = []
+        for u in users:
+            try:
+                # Autoriser à fonctionner avec dict-like (venant de DataFrame.to_dict('records'))
+                email = u.get('email') if isinstance(u, dict) else getattr(u, 'email', None)
+                role = (u.get('role') if isinstance(u, dict) else getattr(u, 'role', None)) or 'user'
+                active = (
+                    (u.get('active') if isinstance(u, dict) else getattr(u, 'active', None))
+                    if (isinstance(u, dict) and 'active' in u) or (not isinstance(u, dict) and hasattr(u, 'active'))
+                    else (u.get('is_active') if isinstance(u, dict) else getattr(u, 'is_active', True))
+                )
+                added_at = u.get('added_at') if isinstance(u, dict) else getattr(u, 'added_at', '')
+                updated_at = u.get('updated_at') if isinstance(u, dict) else getattr(u, 'updated_at', '')
+                added_by = u.get('added_by') if isinstance(u, dict) else getattr(u, 'added_by', '')
+                notes = u.get('notes') if isinstance(u, dict) else getattr(u, 'notes', '')
+            except Exception:
+                email = None; role = 'user'; active = True; added_at = updated_at = added_by = notes = ''
+
+            normalized_users.append({
+                'email': email or 'N/A',
+                'role': role,
+                'active': bool(active),
+                'added_at': added_at or '',
+                'updated_at': updated_at or '',
+                'added_by': added_by or '',
+                'notes': notes or ''
+            })
+
+        # Pré-rendre les sous-templates puis injecter dans le layout principal
+        user_form_html = render_template_string(USER_FORM_TEMPLATE, admin_prefix=ADMIN_PREFIX)
+        user_table_html = render_template_string(USER_TABLE_TEMPLATE, users=normalized_users, admin_prefix=ADMIN_PREFIX)
+
         admin_layout_html = render_template_string(
             ADMIN_LAYOUT,
-            users=users,
+            user_form=user_form_html,
+            user_table=user_table_html,
+            admin_js=ADMIN_JS,
             admin_prefix=ADMIN_PREFIX
         )
         
@@ -96,8 +132,8 @@ def register_admin_callbacks(app):
                 ], className="col-12")
             ], className="row mb-4"),
             
-            # Table des utilisateurs
-            html.Div(admin_layout_html),
+            # Rendu du layout admin (HTML) dans Dash
+            dcc.Markdown(admin_layout_html, dangerously_allow_html=True),
             
             # Modal pour ajouter un utilisateur
             html.Div(
@@ -228,5 +264,51 @@ def register_admin_callbacks(app):
         # La logique de suppression sera gérée par le script JS
         # Ce callback ne met à jour que le store pour déclencher une actualisation
         return {"target": target_email, "timestamp": datetime.now().isoformat()}
+    
+    # Callback simple pour la liste d'utilisateurs dans l'interface basique
+    @app.callback(
+        Output(f"{ADMIN_PREFIX}users-list", "children"),
+        Input(f"{ADMIN_PREFIX}refresh-button", "n_clicks"),
+        Input(f"{ADMIN_PREFIX}auth-store", "data"),
+        prevent_initial_call=False
+    )
+    def update_simple_users_list(n_clicks, auth_data):
+        if not auth_data or not auth_data.get("is_admin", False):
+            return html.P("Accès non autorisé", className="text-danger")
+        
+        try:
+            # Charger les utilisateurs depuis la base de données
+            users_df = get_all_authorized_users()
+            if isinstance(users_df, pd.DataFrame) and not users_df.empty:
+                users_list = []
+                for _, user in users_df.iterrows():
+                    status_badge = dbc.Badge(
+                        "Actif" if user.get('is_active', True) else "Inactif",
+                        color="success" if user.get('is_active', True) else "secondary",
+                        className="me-2"
+                    )
+                    role_badge = dbc.Badge(
+                        user.get('role', 'user').title(),
+                        color="primary" if user.get('role') == 'admin' else "info",
+                        className="me-2"
+                    )
+                    
+                    users_list.append(
+                        dbc.ListGroupItem([
+                            html.Div([
+                                html.Strong(user.get('email', 'N/A')),
+                                html.Br(),
+                                status_badge,
+                                role_badge,
+                                html.Small(f"Ajouté le: {user.get('added_at', 'N/A')}", className="text-muted")
+                            ])
+                        ])
+                    )
+                
+                return dbc.ListGroup(users_list)
+            else:
+                return dbc.Alert("Aucun utilisateur autorisé trouvé", color="info")
+        except Exception as e:
+            return dbc.Alert(f"Erreur lors du chargement des utilisateurs: {str(e)}", color="danger")
     
     return app

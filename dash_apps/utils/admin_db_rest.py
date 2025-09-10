@@ -9,11 +9,19 @@ def get_all_authorized_users():
     """
     Récupère tous les utilisateurs autorisés depuis la table dash_authorized_users.
     """
+    print(f"[ADMIN_DB_DEBUG] get_all_authorized_users() appelé")
+    
     try:
+        print(f"[ADMIN_DB_DEBUG] Requête Supabase: SELECT * FROM dash_authorized_users ORDER BY added_at DESC")
         response = supabase.table("dash_authorized_users").select("*").order("added_at", desc=True).execute()
+        
+        print(f"[ADMIN_DB_DEBUG] Nombre d'utilisateurs trouvés: {len(response.data)}")
+        for i, user in enumerate(response.data):
+            print(f"[ADMIN_DB_DEBUG] Utilisateur {i+1}: {user.get('email')} - Role: {user.get('role')} - Active: {user.get('active')}")
+        
         return response.data
     except Exception as e:
-        print(f"[ERROR] Erreur lors de la récupération des utilisateurs autorisés: {str(e)}")
+        print(f"[ADMIN_DB_DEBUG] ❌ ERREUR lors de la récupération des utilisateurs autorisés: {str(e)}")
         return []
 
 def add_authorized_user(email, role, added_by, notes=None):
@@ -154,16 +162,38 @@ def is_admin(email):
     """
     Vérifie si un utilisateur a le rôle d'administrateur.
     """
+    print(f"[ADMIN_DB_DEBUG] is_admin() appelé avec email: '{email}'")
+    
     if not email:
+        print(f"[ADMIN_DB_DEBUG] Email vide ou None, retour False")
         return False
         
+    # Normaliser l'email
+    normalized_email = email.lower().strip()
+    print(f"[ADMIN_DB_DEBUG] Email normalisé: '{normalized_email}'")
+        
     try:
-        response = supabase.table("dash_authorized_users").select("role").eq("email", email).eq("active", True).execute()
-        if response.data and response.data[0].get("role") == "admin":
-            return True
-        return False
+        print(f"[ADMIN_DB_DEBUG] Requête Supabase: SELECT role FROM dash_authorized_users WHERE email='{normalized_email}' AND active=True")
+        response = supabase.table("dash_authorized_users").select("role, email, active").eq("email", normalized_email).eq("active", True).execute()
+        
+        print(f"[ADMIN_DB_DEBUG] Réponse Supabase: {response.data}")
+        
+        if response.data:
+            user_data = response.data[0]
+            user_role = user_data.get("role")
+            print(f"[ADMIN_DB_DEBUG] Utilisateur trouvé - Email: {user_data.get('email')}, Role: {user_role}, Active: {user_data.get('active')}")
+            
+            if user_role == "admin":
+                print(f"[ADMIN_DB_DEBUG] ✅ Utilisateur est admin, retour True")
+                return True
+            else:
+                print(f"[ADMIN_DB_DEBUG] ❌ Utilisateur n'est pas admin (role: {user_role}), retour False")
+                return False
+        else:
+            print(f"[ADMIN_DB_DEBUG] ❌ Aucun utilisateur trouvé avec cet email, retour False")
+            return False
     except Exception as e:
-        print(f"[ERROR] Erreur lors de la vérification du rôle admin: {str(e)}")
+        print(f"[ADMIN_DB_DEBUG] ❌ ERREUR lors de la vérification du rôle admin: {str(e)}")
         return False
 
 def delete_user(email, deleted_by):
