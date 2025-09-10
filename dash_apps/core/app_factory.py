@@ -63,8 +63,7 @@ def create_app():
     # Importer et enregistrer chaque page (sauf admin et driver_validation qui sont gérées séparément)
     from dash_apps.pages import map, users, trips, stats, support, admin, driver_validation
     
-    dash.register_page("home", path='/', layout=map.layout, name='Carte MapLibre')
-    dash.register_page("map", path='/map', layout=map.layout, name='Carte')
+    dash.register_page("home", path='/', layout=map.layout, name='Carte')
     dash.register_page("users", path='/users', layout=users.layout, name='Utilisateurs')
     dash.register_page("trips", path='/trips', layout=trips.layout, name='Trajets')
     dash.register_page("stats", path='/stats', layout=stats.layout, name='Statistiques')
