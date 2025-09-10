@@ -7,34 +7,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 def create_maplibre_simple():
-    """MapLibre simple - utilise seulement les assets automatiques de Dash"""
+    """MapLibre simple - container seul avec style Firebase via data-style-url"""
     
     # Récupérer l'URL du style depuis la config (avec clé API Firebase)
     maplibre_style_url = Config.MAPLIBRE_STYLE_URL
-    print("[LAYOUT] create_maplibre_simple called with style URL: %s", maplibre_style_url)
-    return html.Div([
-        html.H3("🔧 DEBUG: Fonction create_maplibre_simple appelée"),
-        html.P(f"Style URL: {maplibre_style_url}"),
-        html.Div(
-            id="maplibre-map",
-            style={
-                "height": "500px",
-                "width": "100%",
-                "border": "2px solid red",
-                "backgroundColor": "#f0f0f0"
-            },
-            **{"data-style-url": maplibre_style_url}  # Passer l'URL via attribut HTML
-        ),
-        html.P("🔧 DEBUG: Container créé avec data-style-url")
-    ])
+    return html.Div(
+        id="maplibre-map",
+        style={
+            "height": "70vh",
+            "width": "100%",
+        },
+        **{"data-style-url": maplibre_style_url}
+    )
 
 
 def get_layout():
-    """Génère le layout de la page de carte avec des IDs uniquement pour cette page"""
-    print("[LAYOUT] get_layout called for map page")
+    """Génère le layout de la page Map avec composants requis pour callbacks JS/Python"""
     return dbc.Container([
-        html.H2("Carte - BETA testing", style={"marginTop": "20px", "marginBottom": "16px"}),
-        html.P("Vue d'ensemble géographique", className="text-muted"),
+        html.H2("Carte", style={"marginTop": "20px", "marginBottom": "16px"}),
         dbc.Row([
             dbc.Col([
                 dbc.InputGroup([
@@ -48,7 +38,7 @@ def get_layout():
                 dbc.ButtonGroup([
                     dbc.Button("-", id="map-trip-dec", color="secondary", outline=True),
                     dbc.Input(
-                        id="map-trip-display", 
+                        id="map-trip-count", 
                         value="1", 
                         readonly=True, 
                         style={"textAlign": "center", "width": "80px"}
@@ -57,6 +47,13 @@ def get_layout():
                 ])
             ], md=12)
         ], className="mb-2"),
+        # Bridge components requis par map_callbacks.py et mapbridge.js
+        dcc.Store(id="map-selected-trips"),
+        dcc.Store(id="map-hover-trip-id"),
+        dcc.Store(id="map-click-trip-id"),
+        dcc.Store(id="map-detail-visible"),
+        dcc.Interval(id="map-event-poll", interval=800, n_intervals=0),
+        html.Div(id="home-maplibre", style={"display": "none"}),
         dbc.Row([
             dbc.Col([
                 html.Div(id="map-trips-table-container")
@@ -73,7 +70,7 @@ def get_layout():
                              "borderRadius": "12px",
                              "boxShadow": "0 4px 12px rgba(0,0,0,0.08)",
                              "padding": "12px",
-                             "height": "80vh",
+                             "height": "70vh",
                              "overflow": "auto"
                          })
             ], md=3)
@@ -84,5 +81,8 @@ def get_layout():
 # Définir le layout comme CALLABLE pour exécuter get_layout au rendu (après config logging)
 def layout():
     return get_layout()
+
+# Enregistrer les callbacks de la page Map via import (même pattern que trips.py)
+from dash_apps.callbacks import map_callbacks  # noqa: F401
 
 # L'enregistrement se fera automatiquement par Dash Pages lors de la découverte des modules
