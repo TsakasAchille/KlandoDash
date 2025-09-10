@@ -11,6 +11,7 @@ from dash_apps.components.map_trips_table import render_map_trips_table
 from dash_apps.components.user_profile import render_user_profile, render_user_summary
 from dash_apps.config import Config
 from dash_apps.repositories.repository_factory import RepositoryFactory
+from dash_apps.services.trips_cache_service import TripsCacheService
 import polyline as polyline_lib
 
 # Flag to prevent multiple callback registrations
@@ -22,14 +23,24 @@ from dash import callback_context
 
 
 def _get_last_trips(n=10):
-    # Fetch last n trips using REST repository
+    """Fetch last n trips using the TripsCacheService for caching performance.
+    Falls back to direct repository if needed.
+    """
     try:
-        trip_repository = RepositoryFactory.get_trip_repository()
-        trips = trip_repository.list_trips(limit=n)
-        return trips
+        # Use first page with page_size=n and no filters to leverage cache layers
+        result = TripsCacheService.get_trips_page_result(page_index=0, page_size=int(n or 10), filter_params={})
+        trips = result.get("trips", [])
+        # Defensive: ensure it's a list
+        return trips if isinstance(trips, list) else []
     except Exception as e:
-        print(f"Warning: Could not load trips data: {e}")
-        return []
+        print(f"[MAP_CALLBACKS] Cache fetch failed, fallback to direct repo: {e}")
+        try:
+            trip_repository = RepositoryFactory.get_trip_repository()
+            trips = trip_repository.list_trips(limit=n)
+            return trips
+        except Exception as e2:
+            print(f"[MAP_CALLBACKS] Warning: Could not load trips data: {e2}")
+            return []
 
 
 def _trip_to_option(trip):
@@ -125,7 +136,8 @@ def update_map_geojson(count, selected_ids):
     # If there is a selection, use it; else default to last N trips
     visible_trips = _TRIPS[:count]
     # If nothing is selected, show none (do not default to all)
-    selected_set = set(selected_ids or [])
+    # Normalize selected IDs to strings for robust comparison
+    selected_set = {str(s) for s in (selected_ids or [])}
     features = []
     # Palette de couleurs pour différencier les trajets simultanés
     palette = [
@@ -145,10 +157,12 @@ def update_map_geojson(count, selected_ids):
             trip_id = t.get('trip_id', None)
         else:
             trip_id = getattr(t, 'trip_id', None)
-        if trip_id in selected_set:
+        if trip_id is None:
+            continue
+        if str(trip_id) in selected_set:
             filtered.append(t)
     for idx, trip in enumerate(filtered):
-        # Handle both dict and object formats
+        # Handle both dict and object formats and ensure polyline is available
         if isinstance(trip, dict):
             p = trip.get('polyline', None)
             trip_id = trip.get('trip_id', None)
@@ -173,6 +187,26 @@ def update_map_geojson(count, selected_ids):
             departure_name = getattr(trip, 'departure_name', None)
             destination_name = getattr(trip, 'destination_name', None)
             departure_schedule = str(getattr(trip, 'departure_schedule', '') or '')
+
+        # If polyline is missing, fetch full trip details on-demand
+        if not p and trip_id:
+            try:
+                repo = RepositoryFactory.get_trip_repository()
+                full = repo.get_trip(trip_id)
+                if isinstance(full, dict):
+                    p = full.get('polyline') or p
+                    driver_id = full.get('driver_id', driver_id)
+                    driver_name = full.get('driver_name', driver_name)
+                    seats_booked = full.get('seats_booked', seats_booked)
+                    seats_available = full.get('seats_available', seats_available)
+                    passenger_price = full.get('passenger_price', passenger_price)
+                    distance = full.get('distance', distance)
+                    departure_name = full.get('departure_name', departure_name)
+                    destination_name = full.get('destination_name', destination_name)
+                    departure_schedule = str(full.get('departure_schedule', departure_schedule) or '')
+            except Exception as _e:
+                # Silent fallback: if we can't fetch details, skip this trip
+                pass
         
         if not p:
             continue

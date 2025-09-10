@@ -19,10 +19,19 @@ def render_map_trips_table(trips, selected_ids=None, active_id=None):
 
     rows = []
     for i, t in enumerate(trips, start=1):
-        trip_id = getattr(t, "trip_id", "-") or "-"
+        # Support both dict and object formats
+        if isinstance(t, dict):
+            trip_id = t.get("trip_id", "-") or "-"
+            dep_raw = t.get("departure_name", "-") or "-"
+            arr_raw = t.get("destination_name", "-") or "-"
+        else:
+            trip_id = getattr(t, "trip_id", "-") or "-"
+            dep_raw = getattr(t, "departure_name", "-") or "-"
+            arr_raw = getattr(t, "destination_name", "-") or "-"
+
         is_active = (str(trip_id) == str(active_id)) if active_id is not None else False
-        dep = _short(getattr(t, "departure_name", "-") or "-")
-        arr = _short(getattr(t, "destination_name", "-") or "-")
+        dep = _short(dep_raw)
+        arr = _short(arr_raw)
         link = dcc.Link(
             dbc.Button("Voir trajet", color="primary", size="sm"),
             href=f"/trips?trip_id={trip_id}",
