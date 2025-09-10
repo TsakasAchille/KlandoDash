@@ -94,27 +94,24 @@ def render_admin_users_table(users_data, page=1, total=0, selected_email=None, t
             className="me-2"
         )
         
-        # Boutons d'action
-        action_buttons = dbc.ButtonGroup([
-            dbc.Button(
+        # Boutons d'action avec style original
+        action_buttons = html.Div([
+            html.Button(
                 "Activer" if not active else "Désactiver",
                 id={"type": "admin-toggle-status", "index": email},
-                color="success" if not active else "warning",
-                size="sm"
+                className=f"btn btn-sm btn-{'success' if not active else 'danger'} mx-1"
             ),
-            dbc.Button(
-                "Changer rôle",
+            html.Button(
+                "Rôle",
                 id={"type": "admin-toggle-role", "index": email},
-                color="primary",
-                size="sm"
+                className="btn btn-sm btn-primary mx-1"
             ),
-            dbc.Button(
-                "Supprimer",
+            html.Button(
+                html.I(className="fas fa-trash"),
                 id={"type": "admin-delete-user", "index": email},
-                color="danger",
-                size="sm"
+                className="btn btn-sm btn-danger mx-1"
             )
-        ], size="sm")
+        ], className="d-flex justify-content-around")
         
         # Ligne du tableau
         row_class = "table-active" if email == selected_email else ""
@@ -199,24 +196,40 @@ def serve_layout():
         dcc.Store(id="admin-refresh", storage_type="session", data=0),
         dcc.Store(id="admin-tab-pref", storage_type="session", data="active"),
         
-        # En-tête avec onglets
-        dbc.Card([
-            dbc.CardHeader([
-                dbc.Nav([
-                    dbc.NavItem(dbc.NavLink("Utilisateurs actifs", href="#", id="admin-tab1-link", active=True, className="fw-bold")),
-                    dbc.NavItem(dbc.NavLink("Utilisateurs inactifs", href="#", id="admin-tab2-link")),
-                ], pills=True, card=True, className="nav-justified"),
-                html.Hr(),
-                dbc.ButtonGroup([
-                    dbc.Button("Actualiser", id="admin-refresh-btn", color="primary", size="sm"),
-                    dbc.Button("Ajouter utilisateur", id="admin-add-user-btn", color="success", size="sm")
-                ])
+        # Onglets de navigation
+        html.Ul([
+            html.Li([
+                html.A("Gestion des utilisateurs", href="#", id="admin-tab1-link", className="nav-link active")
+            ], className="nav-item"),
+            html.Li([
+                html.A("Utilisateurs inactifs", href="#", id="admin-tab2-link", className="nav-link")
+            ], className="nav-item"),
+        ], className="nav nav-tabs mb-4"),
+        
+        # Zone pour les notifications
+        html.Div(id="admin-notification-container", className="my-3"),
+        
+        # Contenu principal
+        html.Div([
+            # Panneau d'ajout d'utilisateur
+            html.Div([
+                dbc.Button("Ajouter utilisateur", id="admin-add-user-btn", color="success", size="sm", className="mb-3")
             ]),
-            dbc.CardBody([
-                html.Div(id="admin-active-users-container", className="mt-2"),
-                html.Div(id="admin-inactive-users-container", className="mt-2", style={"display": "none"}),
-            ]),
-        ], className="mt-3"),
+            
+            # Tableau des utilisateurs autorisés
+            html.Div([
+                html.Div([
+                    html.H4("Utilisateurs autorisés", className="card-title"),
+                    html.Button([
+                        "🕐 Rafraîchir"
+                    ], id="admin-refresh-btn", className="btn btn-secondary btn-sm ms-auto")
+                ], className="card-header d-flex justify-content-between align-items-center"),
+                html.Div([
+                    html.Div(id="admin-active-users-container", className="mt-2"),
+                    html.Div(id="admin-inactive-users-container", className="mt-2", style={"display": "none"}),
+                ], className="card-body")
+            ], className="card", style={"border-radius": "28px", "box-shadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px, rgba(0, 0, 0, 0.1) 0px 10px 30px", "padding": "20px"})
+        ], id="admin-content"),
         
         # Modal pour ajouter un utilisateur
         dbc.Modal([
@@ -401,6 +414,165 @@ def add_new_user(n_clicks, email, role, notes):
         
         if success:
             return dbc.Alert(message, color="success", dismissable=True), n_clicks + 1
+        else:
+            return dbc.Alert(message, color="danger", dismissable=True), no_update
+    except Exception as e:
+        return dbc.Alert(f"Erreur: {str(e)}", color="danger", dismissable=True), no_update
+
+@callback(
+    Output("admin-messages", "children", allow_duplicate=True),
+    Output("admin-refresh", "data", allow_duplicate=True),
+    Input({"type": "admin-toggle-status", "index": dash.ALL}, "n_clicks"),
+    prevent_initial_call=True
+)
+def toggle_user_status(n_clicks_list):
+    ctx = callback_context
+    if not ctx.triggered or not any(n_clicks_list):
+        return no_update, no_update
+    
+    try:
+        triggered_prop = ctx.triggered[0]["prop_id"]
+        print(f"[DEBUG] Toggle status - Triggered prop: {triggered_prop}")
+        
+        # Extract the JSON part before the last dot (property name)
+        # Find the last occurrence of ".n_clicks" and split there
+        if ".n_clicks" in triggered_prop:
+            json_part = triggered_prop.replace(".n_clicks", "")
+        else:
+            # Fallback: find last dot
+            json_part = triggered_prop.rsplit(".", 1)[0]
+        
+        print(f"[DEBUG] Toggle status - JSON part: {json_part}")
+        
+        # Parse the JSON safely
+        import json
+        try:
+            button_id = json.loads(json_part)
+            email = button_id.get("index")
+            print(f"[DEBUG] Toggle status - Parsed email: {email}")
+        except json.JSONDecodeError as je:
+            print(f"[DEBUG] JSON decode error: {je}")
+            return dbc.Alert(f"Erreur de parsing JSON: {str(je)}", color="danger", dismissable=True), no_update
+        
+        from dash_apps.utils.admin_db_rest import update_user_status, get_all_authorized_users
+        admin_email = session.get('user_email', 'admin')
+        
+        # Trouver l'état actuel de l'utilisateur
+        users = get_all_authorized_users()
+        user = next((u for u in users if u.get('email') == email), None)
+        if not user:
+            return dbc.Alert("Utilisateur non trouvé", color="danger", dismissable=True), no_update
+        
+        current_status = user.get('active', True)
+        new_status = not current_status
+        
+        success, message = update_user_status(email, new_status, admin_email)
+        
+        if success:
+            return dbc.Alert(message, color="success", dismissable=True), ctx.triggered[0]["value"]
+        else:
+            return dbc.Alert(message, color="danger", dismissable=True), no_update
+    except Exception as e:
+        return dbc.Alert(f"Erreur: {str(e)}", color="danger", dismissable=True), no_update
+
+@callback(
+    Output("admin-messages", "children", allow_duplicate=True),
+    Output("admin-refresh", "data", allow_duplicate=True),
+    Input({"type": "admin-toggle-role", "index": dash.ALL}, "n_clicks"),
+    prevent_initial_call=True
+)
+def toggle_user_role(n_clicks_list):
+    ctx = callback_context
+    if not ctx.triggered or not any(n_clicks_list):
+        return no_update, no_update
+    
+    try:
+        triggered_prop = ctx.triggered[0]["prop_id"]
+        print(f"[DEBUG] Toggle role - Triggered prop: {triggered_prop}")
+        
+        # Extract the JSON part before the last dot (property name)
+        # Find the last occurrence of ".n_clicks" and split there
+        if ".n_clicks" in triggered_prop:
+            json_part = triggered_prop.replace(".n_clicks", "")
+        else:
+            # Fallback: find last dot
+            json_part = triggered_prop.rsplit(".", 1)[0]
+        
+        print(f"[DEBUG] Toggle role - JSON part: {json_part}")
+        
+        # Parse the JSON safely
+        import json
+        try:
+            button_id = json.loads(json_part)
+            email = button_id.get("index")
+            print(f"[DEBUG] Toggle role - Parsed email: {email}")
+        except json.JSONDecodeError as je:
+            print(f"[DEBUG] JSON decode error: {je}")
+            return dbc.Alert(f"Erreur de parsing JSON: {str(je)}", color="danger", dismissable=True), no_update
+        
+        from dash_apps.utils.admin_db_rest import update_user_role, get_all_authorized_users
+        admin_email = session.get('user_email', 'admin')
+        
+        # Trouver l'état actuel de l'utilisateur
+        users = get_all_authorized_users()
+        user = next((u for u in users if u.get('email') == email), None)
+        if not user:
+            return dbc.Alert("Utilisateur non trouvé", color="danger", dismissable=True), no_update
+        
+        current_role = user.get('role', 'user')
+        new_role = 'admin' if current_role == 'user' else 'user'
+        
+        success, message = update_user_role(email, new_role, admin_email)
+        
+        if success:
+            return dbc.Alert(message, color="success", dismissable=True), ctx.triggered[0]["value"]
+        else:
+            return dbc.Alert(message, color="danger", dismissable=True), no_update
+    except Exception as e:
+        return dbc.Alert(f"Erreur: {str(e)}", color="danger", dismissable=True), no_update
+
+@callback(
+    Output("admin-messages", "children", allow_duplicate=True),
+    Output("admin-refresh", "data", allow_duplicate=True),
+    Input({"type": "admin-delete-user", "index": dash.ALL}, "n_clicks"),
+    prevent_initial_call=True
+)
+def delete_user_action(n_clicks_list):
+    ctx = callback_context
+    if not ctx.triggered or not any(n_clicks_list):
+        return no_update, no_update
+    
+    try:
+        triggered_prop = ctx.triggered[0]["prop_id"]
+        print(f"[DEBUG] Delete user - Triggered prop: {triggered_prop}")
+        
+        # Extract the JSON part before the last dot (property name)
+        # Find the last occurrence of ".n_clicks" and split there
+        if ".n_clicks" in triggered_prop:
+            json_part = triggered_prop.replace(".n_clicks", "")
+        else:
+            # Fallback: find last dot
+            json_part = triggered_prop.rsplit(".", 1)[0]
+        
+        print(f"[DEBUG] Delete user - JSON part: {json_part}")
+        
+        # Parse the JSON safely
+        import json
+        try:
+            button_id = json.loads(json_part)
+            email = button_id.get("index")
+            print(f"[DEBUG] Delete user - Parsed email: {email}")
+        except json.JSONDecodeError as je:
+            print(f"[DEBUG] JSON decode error: {je}")
+            return dbc.Alert(f"Erreur de parsing JSON: {str(je)}", color="danger", dismissable=True), no_update
+        
+        from dash_apps.utils.admin_db_rest import delete_user
+        admin_email = session.get('user_email', 'admin')
+        
+        success, message = delete_user(email, admin_email)
+        
+        if success:
+            return dbc.Alert(message, color="success", dismissable=True), ctx.triggered[0]["value"]
         else:
             return dbc.Alert(message, color="danger", dismissable=True), no_update
     except Exception as e:
