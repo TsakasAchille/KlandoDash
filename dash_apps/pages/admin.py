@@ -1,3 +1,4 @@
+import dash
 from dash import html, dcc, callback, Input, Output, State, ctx, ALL, no_update
 import dash_bootstrap_components as dbc
 from flask import session, render_template_string
@@ -5,6 +6,8 @@ from dash_apps.utils.admin_db_rest import get_all_authorized_users, add_authoriz
 import pandas as pd
 from datetime import datetime
 import os
+
+# L'enregistrement se fera dans app_factory après la création de l'app
 
 # Définir le chemin vers les templates
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'admin')

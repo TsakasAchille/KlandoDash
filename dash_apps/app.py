@@ -7,23 +7,21 @@ sys.path.insert(0, project_root)
 
 # Importer les modules centraux de l'application
 from dash_apps.core.app_factory import create_app
-# Import map callbacks to ensure they are registered
 from dash_apps.core.auth_manager import setup_authentication
 from dash_apps.core.layout_manager import create_main_layout
-from dash_apps.core.page_manager import load_all_pages
 from dash_apps.core.callbacks import register_callbacks
 
 # Créer l'application Dash et le serveur Flask
 app, server = create_app()
+
+# Import des pages APRÈS création de l'app (requis pour dash.register_page)
+from dash_apps.pages import map, users
 
 # Configurer l'authentification
 login_manager = setup_authentication(server)
 
 # Définir le layout principal
 app.layout = create_main_layout()
-
-# Charger toutes les pages
-page_layouts = load_all_pages()
 
 # Enregistrer tous les callbacks
 register_callbacks(app)

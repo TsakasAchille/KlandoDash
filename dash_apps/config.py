@@ -77,6 +77,7 @@ class Config(object):
     # MapLibre configuration
     # Prefer MAPLIBRE_STYLE_URL; fallback to MAP_API_URL for backward compatibility
     MAPLIBRE_STYLE_URL = os.environ.get('MAPLIBRE_STYLE_URL')
+    MAPLIBRE_API_KEY = os.environ.get('MAPLIBRE_API_KEY')
     
     
     # Mode d'affichage - embed pour iframe ou normal pour HTML complet

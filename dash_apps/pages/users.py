@@ -17,6 +17,8 @@ from dash_apps.services.redis_cache import redis_cache
 from dash_apps.services.users_cache_service import UsersCacheService
 from dash_apps.services.user_panels_preloader import UserPanelsPreloader
 
+# L'enregistrement se fera dans app_factory après la création de l'app
+
 # Utiliser la factory pour obtenir le repository approprié
 user_repository = RepositoryFactory.get_user_repository()
 

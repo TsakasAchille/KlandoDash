@@ -1,10 +1,11 @@
+import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash_apps.auth.simple_auth import render_user_menu
 
 def create_main_layout():
     """
-    Créé le layout principal de l'application avec la barre latérale et l'espace pour le contenu
+    Créé le layout principal de l'application avec Dash Pages
     """
     layout = dbc.Container([
         dcc.Location(id="url", refresh=False),
@@ -21,18 +22,20 @@ def create_main_layout():
                         html.Img(src="assets/icons/klando-500x173.png", style={"width": "100%", "max-width": "180px", "object-fit": "contain"}, className="mt-4 mb-4") 
                     ], style={"text-align": "center"}),
                     dbc.Nav([
-                        dbc.NavLink("Carte", href="/", active="exact", id="nav-map", className="mb-2"),
-                        dbc.NavLink("Utilisateurs", href="/users", active="exact", id="nav-users", className="mb-2"),
-                        dbc.NavLink("Trajets", href="/trips", active="exact", id="nav-trips", className="mb-2"),
-                        dbc.NavLink("Statistiques", href="/stats", active="exact", id="nav-stats", className="mb-2"),
-                        dbc.NavLink("Support", href="/support", active="exact", id="nav-support", className="mb-2"),
+                        # Navigation générée automatiquement depuis le registre des pages (exclut admin et driver_validation)
+                        html.Div([
+                            dcc.Link(
+                                page['name'], 
+                                href=page['relative_path'],
+                                className="nav-link mb-2"
+                            ) for page in dash.page_registry.values() 
+                            if page.get('module') not in ['admin', 'driver_validation']
+                        ]),
                         # Liens d'administration (affichés conditionnellement par callback)
                         html.Div(id="admin-nav-container", children=[
                             dbc.NavLink("Administration", href="/admin", active="exact", id="nav-admin", className="mb-2 text-danger"),
                             dbc.NavLink("Validation Conducteurs", href="/driver-validation", active="exact", id="nav-driver-validation", className="mb-2 text-danger")
                         ], style={"display": "none"}),
-                        # Temporairement désactivé car incompatible avec le nouveau système d'authentification
-                        # dbc.NavLink("Membres", href="/members", active="exact", id="nav-members", className="mb-2"),
                     ], vertical=True, pills=True, className="sidebar-nav"),
                     
                     html.Div([
@@ -56,9 +59,11 @@ def create_main_layout():
                 })
             ], width=2, style={"padding": 0, "maxWidth": "220px"}),
             
-            # Contenu principal
+            # Contenu principal avec dash.page_container
             dbc.Col([
-                html.Div(id="main-content", style={"marginLeft": "12px", "marginRight": "12px"})
+                html.Div([
+                    dash.page_container
+                ], id="main-content", style={"marginLeft": "12px", "marginRight": "12px"})
             ], width=10)
         ], className="g-0"),
 

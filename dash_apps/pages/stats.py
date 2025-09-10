@@ -1,6 +1,9 @@
+import dash
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 import pandas as pd
+
+# L'enregistrement se fera dans app_factory après la création de l'app
 
 # Importer les composants avec templates Jinja2
 from dash_apps.components.stats_general import render_stats_general

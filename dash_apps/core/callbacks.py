@@ -61,51 +61,8 @@ def register_callbacks(app):
         else:
             return {"display": "none"}  # Masquer le lien
 
-    # Callback pour afficher la page demandée dans le contenu principal
-    @app.callback(
-        Output("main-content", "children"),
-        [Input("url", "pathname")]
-    )
-    def display_page(pathname):
-        """
-        Affiche la page demandée ou redirige vers la page de login si non authentifié
-        """
-        # Si c'est la page de login, afficher directement
-        if pathname == "/login":
-            logging.getLogger(__name__).info("[PAGE] Show login page for pathname=%s", pathname)
-            return login_layout
-            
-        # Pour les autres pages, vérifier l'authentification
-        if not current_user.is_authenticated:
-            # L'utilisateur n'est pas authentifié, rediriger vers la page de login
-            logging.getLogger(__name__).info("[AUTH] Not authenticated, redirecting to login for pathname=%s", pathname)
-            return login_layout
-        
-        # L'authentification Google OAuth suffit - pas besoin de double vérification
-    
-        # L'utilisateur est authentifié et autorisé, afficher la page demandée
-        if pathname in ["/", "/trips", "/users", "/stats", "/support", "/admin", "/user-profile", "/driver-validation", "/map", "/simple-map", "/test-map", "/maplibre-simple"]:
-            # Obtenir le layout de la page demandée
-            page_layout = get_page_layout(pathname)
-            if page_layout:
-                logging.getLogger(__name__).info("[PAGE] Rendering page %s (layout found)", pathname)
-                return page_layout() if callable(page_layout) else page_layout
-            else:
-                # Page non trouvée dans les layouts chargés
-                logging.getLogger(__name__).warning("[PAGE][404] Layout not found for pathname=%s", pathname)
-                return html.Div([
-                    html.H3("404 - Page non trouvée", className="text-danger"),
-                    html.P(f"La page '{pathname}' n'existe pas."),
-                    dbc.Button("Retour à l'accueil", href="/", color="primary")
-                ], className="p-5")
-        else:
-            # Page non reconnue
-            logging.getLogger(__name__).warning("[PAGE][404] Unknown pathname requested: %s", pathname)
-            return html.Div([
-                html.H3("404 - Page non trouvée", className="text-danger"),
-                html.P(f"La page '{pathname}' n'existe pas."),
-                dbc.Button("Retour à l'accueil", href="/", color="primary")
-            ], className="p-5")
+    # Note: Avec Dash Pages, pas besoin de callback pour display_page
+    # dash.page_container gère automatiquement l'affichage des pages enregistrées
 
     # --- Floating bubble chatbot window control ---
     @app.callback(

@@ -8,81 +8,53 @@ page_layouts = {}
 
 def load_page_from_file(file_name, page_name):
     """
-    Charge une page à partir d'un fichier Python et retourne son layout
+    Charge une page et retourne son layout
     """
-    print(f"[PAGE_MANAGER] Tentative de chargement de la page: {page_name} (fichier: {file_name})")
     try:
         file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pages', file_name)
-        print(f"[PAGE_MANAGER] Chemin résolu: {file_path}")
+        
         if not os.path.exists(file_path):
-            print(f"[PAGE_MANAGER][ERREUR] Fichier non trouvé: {file_path}")
+            print(f"[PAGE_MANAGER] Fichier non trouvé: {file_name}")
             return None
-        module_name = f"page_{file_name.replace('.py', '')}_module"
-        print(f"[PAGE_MANAGER] Nom du module importé: {module_name}")
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
-        page_module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = page_module
-        try:
-            spec.loader.exec_module(page_module)
-            print(f"[PAGE_MANAGER] Module {module_name} exécuté avec succès.")
             
-            # For map page, also import callbacks separately
-            if file_name == 'map.py':
-                try:
-                    from dash_apps.components import map_callbacks
-                    print(f"[PAGE_MANAGER] Map callbacks imported for {page_name}")
-                except Exception as e:
-                    print(f"[PAGE_MANAGER] Warning: Could not import map callbacks: {e}")
-                    
-        except Exception as import_exc:
-            print(f"[PAGE_MANAGER][ERREUR IMPORT] Exception lors de l'import de {file_name}: {import_exc}")
-            import traceback
-            traceback.print_exc()
-            return None
-        if hasattr(page_module, 'layout'):
-            print(f"[PAGE_MANAGER][SUCCÈS] Layout trouvé pour {page_name} ({file_name})")
-            return page_module.layout
-        else:
-            print(f"[PAGE_MANAGER][ERREUR] Pas de layout dans {file_name}")
-            return None
+        # Import dynamique du module
+        spec = importlib.util.spec_from_file_location(f"page_{file_name[:-3]}", file_path)
+        page_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(page_module)
+        
+        # Cas spécial pour la page map : importer les callbacks
+        if file_name == 'map.py':
+            try:
+                from dash_apps.callbacks import map_callbacks
+                print(f"[PAGE_MANAGER] Map callbacks importés")
+            except Exception as e:
+                print(f"[PAGE_MANAGER] Erreur import callbacks: {e}")
+        
+        # Retourner le layout
+        return getattr(page_module, 'layout', None)
+        
     except Exception as e:
-        print(f"[PAGE_MANAGER][ERREUR GLOBALE] Exception lors du chargement de {file_name}: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"[PAGE_MANAGER] Erreur chargement {file_name}: {e}")
         return None
 
 def load_all_pages():
     """
     Charge toutes les pages de l'application
     """
-    # Page d'accueil (Carte MapLibre simple)
-    page_layouts['/'] = load_page_from_file('map.py', 'Carte MapLibre')
-    page_layouts['/map'] = page_layouts['/']
+    pages = {
+        '/': ('map.py', 'Carte MapLibre'),
+        '/map': ('map.py', 'Carte MapLibre'),
+        '/users': ('users.py', 'Utilisateurs'),
+        '/trips': ('trips.py', 'Trajets'),
+        '/stats': ('stats.py', 'Statistiques'),
+        '/support': ('support.py', 'Support'),
+        '/admin': ('admin.py', 'Administration'),
+        '/driver-validation': ('driver_validation.py', 'Validation Documents Conducteur'),
+        '/user-profile': ('user_profile.py', 'Profil'),
+    }
     
-    # Page d'utilisateurs
-    page_layouts['/users'] = load_page_from_file('users.py', 'Utilisateurs')
-
-    # Page des trajets
-    page_layouts['/trips'] = load_page_from_file('02_trips.py', 'Trajets')
-
-    # Page de statistiques
-    page_layouts['/stats'] = load_page_from_file('03_stats.py', 'Statistiques')
-
-    # Page de support
-    page_layouts['/support'] = load_page_from_file('04_support.py', 'Support')
-
-    # Page d'administration
-    page_layouts['/admin'] = load_page_from_file('05_admin.py', 'Administration')
-    
-    # Page de validation des documents conducteur
-    page_layouts['/driver-validation'] = load_page_from_file('06_driver_validation.py', 'Validation Documents Conducteur')
-    
-    # Page de profil utilisateur
-    page_layouts['/user-profile'] = load_page_from_file('05_user_profile.py', 'Profil')
-
-    # Ancienne page principale (commentée)
-    # page_layouts['/'] = load_page_from_file('trips.py', 'Accueil/Trajets')
-    # page_layouts['/trips'] = page_layouts['/']
+    for route, (filename, title) in pages.items():
+        page_layouts[route] = load_page_from_file(filename, title)
     
     return page_layouts
 

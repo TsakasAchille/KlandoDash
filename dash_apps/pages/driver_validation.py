@@ -2,6 +2,8 @@ import dash_bootstrap_components as dbc
 from dash import html, dcc, callback, Input, Output, State, callback_context
 import dash
 from dash_apps.repositories.repository_factory import RepositoryFactory
+
+# L'enregistrement se fera dans app_factory après la création de l'app
 from dash_apps.utils.admin_db_rest import is_admin
 from flask import session
 from dash.exceptions import PreventUpdate

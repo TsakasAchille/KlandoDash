@@ -1,7 +1,10 @@
+import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from datetime import datetime
 import uuid
+
+# L'enregistrement se fera dans app_factory après la création de l'app
 
 # Importer les composants et callbacks pour la page de support
 from dash_apps.components.support_tickets import render_tickets_list, render_ticket_details

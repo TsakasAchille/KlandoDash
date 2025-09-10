@@ -11,15 +11,18 @@ from dash_apps.auth.routes import auth_bp
 from dash_apps.core.proxy import proxy_bp
 from dash_apps.api.support_api import support_api_bp
 from dash_apps.api.email_webhook import email_webhook_bp
+from dash_apps.core.page_manager import load_all_pages
 from flask import render_template, request
 
 def create_app():
     """
     Crée et configure l'application Dash et le serveur Flask sous-jacent
     """
-    # Configuration de base pour Dash
+    # Configuration de base pour Dash avec Pages
     app = Dash(
         __name__, 
+        use_pages=True,
+        pages_folder="",
         external_stylesheets=[
             dbc.themes.BOOTSTRAP,
             'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
@@ -58,6 +61,22 @@ def create_app():
     # Enregistrer le blueprint webhook email
     server.register_blueprint(email_webhook_bp)
 
+    # Enregistrer les pages manuellement après la création de l'app
+    import dash
+    
+    # Importer et enregistrer chaque page (sauf admin et driver_validation qui sont gérées séparément)
+    from dash_apps.pages import map, users, trips, stats, support, admin, driver_validation
+    
+    dash.register_page("home", path='/', layout=map.layout, name='Carte MapLibre')
+    dash.register_page("users", path='/users', layout=users.layout, name='Utilisateurs')
+    dash.register_page("trips", path='/trips', layout=trips.layout, name='Trajets')
+    dash.register_page("stats", path='/stats', layout=stats.layout, name='Statistiques')
+    dash.register_page("support", path='/support', layout=support.layout, name='Support')
+    
+    # Pages admin enregistrées sans être dans le registre public (pas de name pour éviter l'affichage automatique)
+    dash.register_page("admin", path='/admin', layout=admin.layout)
+    dash.register_page("driver_validation", path='/driver-validation', layout=driver_validation.layout)
+
     # --- Logging configuration ---
     try:
         # Ensure Flask logger propagates to Gunicorn and set level from env or default to INFO
@@ -85,22 +104,7 @@ def create_app():
     except Exception as e:
         server.logger.warning("[ROUTES] Failed to dump url_map: %s", e)
 
-    # Log each request basic info
-    """
-    @server.before_request
-    def _log_request():
-        try:
-            path = request.path
-            method = request.method
-            user_agent = request.headers.get('User-Agent', '-')
-            # Avoid importing session at module top to not create cycles
-            from flask import session
-            user_email = session.get('user_email')
-            is_admin = session.get('is_admin')
-            server.logger.info("[REQUEST] %s %s ua=%s user=%s admin=%s", method, path, user_agent, user_email, is_admin)
-        except Exception as e:
-            server.logger.debug("[REQUEST] log error: %s", e)
-    """
+  
     @server.after_request
     def _log_response(resp):
         try:

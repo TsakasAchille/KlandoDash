@@ -13,6 +13,8 @@ from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.redis_cache import redis_cache
 from dash_apps.services.trips_cache_service import TripsCacheService
 
+# L'enregistrement se fera dans app_factory après la création de l'app
+
 # Utiliser la factory pour obtenir le repository approprié
 trip_repository = RepositoryFactory.get_trip_repository()
 
