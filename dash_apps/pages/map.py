@@ -23,12 +23,38 @@ def create_maplibre_simple():
 
 def get_layout():
     """Génère le layout de la page Map avec composants requis pour callbacks JS/Python"""
+    # Avertissement si le style MapLibre n'est pas configuré
+    style_warning = None
+    try:
+        if not Config.MAPLIBRE_STYLE_URL:
+            style_warning = dbc.Alert(
+                "MAPLIBRE_STYLE_URL non défini dans la configuration. La carte utilisera un style vide.",
+                color="warning",
+                className="mb-2",
+            )
+    except Exception:
+        # En cas d'erreur d'accès à la config, ne bloque pas l'affichage
+        style_warning = dbc.Alert(
+            "Impossible de lire MAPLIBRE_STYLE_URL (voir logs)",
+            color="warning",
+            className="mb-2",
+        )
+
     return dbc.Container([
         html.H2("Carte", style={"marginTop": "20px", "marginBottom": "16px"}),
+        style_warning if style_warning else html.Div(),
         dbc.Row([
             dbc.Col([
                 dbc.InputGroup([
-                    dbc.Input(id="map-trip-input", type="number", placeholder="Numéro trajet", value=1),
+                    dbc.Input(
+                        id="map-trip-input",
+                        type="number",
+                        placeholder="Numéro trajet",
+                        value=1,
+                        min=1,
+                        step=1,
+                        debounce=True,
+                    ),
                     dbc.Button("Charger", id="map-load-trip", color="primary"),
                 ])
             ], md=6)
@@ -48,20 +74,20 @@ def get_layout():
             ], md=12)
         ], className="mb-2"),
         # Bridge components requis par map_callbacks.py et mapbridge.js
-        dcc.Store(id="map-selected-trips"),
-        dcc.Store(id="map-hover-trip-id"),
-        dcc.Store(id="map-click-trip-id"),
-        dcc.Store(id="map-detail-visible"),
-        dcc.Interval(id="map-event-poll", interval=800, n_intervals=0),
+        dcc.Store(id="map-selected-trips", storage_type="session", data=[]),
+        dcc.Store(id="map-hover-trip-id", storage_type="memory", data=None),
+        dcc.Store(id="map-click-trip-id", storage_type="memory", data=None),
+        dcc.Store(id="map-detail-visible", storage_type="session", data=False),
+        dcc.Interval(id="map-event-poll", interval=2000, n_intervals=0),  # Réduit de 800ms à 2s
         html.Div(id="home-maplibre", style={"display": "none"}),
         dbc.Row([
             dbc.Col([
-                html.Div(id="map-trips-table-container")
+                dcc.Loading(html.Div(id="map-trips-table-container"), type="default")
             ], md=12)
         ], className="mb-3"),
         dbc.Row([
             dbc.Col([
-                create_maplibre_simple()
+                dcc.Loading(create_maplibre_simple(), type="default")
             ], md=9),
             dbc.Col([
                 html.Div(id="map-side-panel", children=html.Div("Sélectionnez un trajet sur la carte"),

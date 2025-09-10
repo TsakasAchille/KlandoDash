@@ -303,7 +303,7 @@ def render_map_table(count, selected_ids, active_trip_id):
     Input({"type": "map-trip-check", "index": dash.ALL}, "value"),
     State({"type": "map-trip-check", "index": dash.ALL}, "id"),
     State("map-selected-trips", "data"),
-    prevent_initial_call=False,
+    prevent_initial_call=True,  # Évite le déclenchement initial inutile
 )
 def sync_selection(count, checkbox_values, checkbox_ids, prev_selected):
     # If no trips or invalid count => empty selection
@@ -374,6 +374,8 @@ dash.clientside_callback(
     prevent_initial_call=False,
 )
 def update_detail_visibility(selected_trip_id):
+    if not selected_trip_id:
+        return False
     return bool(selected_trip_id)
 
 

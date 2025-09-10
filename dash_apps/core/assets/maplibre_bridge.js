@@ -15,15 +15,28 @@ window.dash_clientside = window.dash_clientside || {};
 window.dash_clientside.mapbridge = window.dash_clientside.mapbridge || {};
 
 if (!window.dash_clientside.mapbridge.poll) {
+    let lastHover = null;
+    let lastClick = null;
+    
     window.dash_clientside.mapbridge.poll = function(n_intervals) {
         const events = window.__map_events;
-        const now = Date.now();
+        const no_update = window.dash_clientside.no_update;
         
-        // Retourner les événements actuels
-        return [
-            events.hover_trip_id,
-            events.click_trip_id
-        ];
+        // Seulement retourner si les valeurs ont changé
+        const currentHover = events.hover_trip_id;
+        const currentClick = events.click_trip_id;
+        
+        const hoverChanged = currentHover !== lastHover;
+        const clickChanged = currentClick !== lastClick;
+        
+        if (hoverChanged || clickChanged) {
+            lastHover = currentHover;
+            lastClick = currentClick;
+            return [currentHover, currentClick];
+        }
+        
+        // Pas de changement, éviter le re-render
+        return [no_update, no_update];
     };
 }
 
