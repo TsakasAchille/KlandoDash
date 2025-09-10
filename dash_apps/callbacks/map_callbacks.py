@@ -395,7 +395,13 @@ def update_detail_visibility(selected_trip_id):
 def render_side_panel(selected_trip_id, detail_visible):
     # Fallback texte si rien
     if not detail_visible or not selected_trip_id:
-        return html.Div("Sélectionnez un trajet sur la carte")
+        return html.Div([
+            html.Div([
+                html.I(className="fas fa-mouse-pointer me-2"),
+                html.Span("Cliquez sur un trajet sur la carte pour voir les détails")
+            ], className="text-muted text-center py-5")
+        ])
+    
     # Retrouver le trajet
     trip = None
     for t in _TRIPS:
@@ -409,18 +415,136 @@ def render_side_panel(selected_trip_id, detail_visible):
                 break
     
     if not trip:
-        return html.Div([html.Strong("Trajet:"), html.Span(f" {selected_trip_id}")])
+        return html.Div([
+            dbc.Alert([
+                html.I(className="fas fa-exclamation-triangle me-2"),
+                f"Trajet {selected_trip_id} non trouvé"
+            ], color="warning")
+        ])
     
-    # Afficher un résumé compact du conducteur à gauche
+    # Extraire les données du trajet
     if isinstance(trip, dict):
         driver_id = trip.get('driver_id', None)
+        departure_name = trip.get('departure_name', 'Départ inconnu')
+        destination_name = trip.get('destination_name', 'Destination inconnue')
+        passenger_price = trip.get('passenger_price', 0)
+        seats_available = trip.get('seats_available', 0)
+        seats_booked = trip.get('seats_booked', 0)
+        departure_datetime = trip.get('departure_datetime', '')
     else:
         driver_id = getattr(trip, 'driver_id', None)
+        departure_name = getattr(trip, 'departure_name', 'Départ inconnu')
+        destination_name = getattr(trip, 'destination_name', 'Destination inconnue')
+        passenger_price = getattr(trip, 'passenger_price', 0)
+        seats_available = getattr(trip, 'seats_available', 0)
+        seats_booked = getattr(trip, 'seats_booked', 0)
+        departure_datetime = getattr(trip, 'departure_datetime', '')
     
-    if driver_id:
-        return render_user_summary(driver_id)
-    # Fallback minimal si pas de driver_id
-    return html.Div([html.Strong("Trajet:"), html.Span(f" {selected_trip_id}")])
+    # Créer les cartes pour conducteur et passagers
+    driver_card = create_driver_card(driver_id, departure_name, destination_name, departure_datetime, passenger_price)
+    passengers_card = create_passengers_card(selected_trip_id, seats_booked, seats_available)
+    
+    return html.Div([
+        # Informations du trajet
+        dbc.Card([
+            dbc.CardBody([
+                html.H6([
+                    html.I(className="fas fa-route me-2"),
+                    "Informations du trajet"
+                ], className="card-title mb-3"),
+                html.P([
+                    html.Strong("De: "), departure_name
+                ], className="mb-1"),
+                html.P([
+                    html.Strong("À: "), destination_name  
+                ], className="mb-1"),
+                html.P([
+                    html.Strong("Prix: "), f"{passenger_price}€"
+                ], className="mb-1"),
+                html.P([
+                    html.Strong("Places: "), f"{seats_booked}/{seats_booked + seats_available}"
+                ], className="mb-0")
+            ])
+        ], className="mb-3"),
+        
+        # Carte du conducteur
+        driver_card,
+        
+        # Carte des passagers
+        passengers_card
+    ])
+
+
+def create_driver_card(driver_id, departure_name, destination_name, departure_datetime, passenger_price):
+    """Crée une carte pour afficher les informations du conducteur"""
+    if not driver_id:
+        return dbc.Card([
+            dbc.CardBody([
+                html.H6([
+                    html.I(className="fas fa-user-slash me-2"),
+                    "Conducteur"
+                ], className="card-title"),
+                html.P("Informations non disponibles", className="text-muted mb-0")
+            ])
+        ], className="mb-3")
+    
+    # Récupérer les informations du conducteur via render_user_summary
+    try:
+        driver_info = render_user_summary(driver_id)
+        return dbc.Card([
+            dbc.CardBody([
+                html.H6([
+                    html.I(className="fas fa-user-tie me-2"),
+                    "Conducteur"
+                ], className="card-title mb-3"),
+                driver_info
+            ])
+        ], className="mb-3")
+    except Exception:
+        return dbc.Card([
+            dbc.CardBody([
+                html.H6([
+                    html.I(className="fas fa-user-tie me-2"),
+                    "Conducteur"
+                ], className="card-title"),
+                html.P(f"ID: {driver_id}", className="mb-0")
+            ])
+        ], className="mb-3")
+
+
+def create_passengers_card(trip_id, seats_booked, seats_available):
+    """Crée une carte pour afficher les informations des passagers"""
+    return dbc.Card([
+        dbc.CardBody([
+            html.H6([
+                html.I(className="fas fa-users me-2"),
+                "Passagers"
+            ], className="card-title mb-3"),
+            html.Div([
+                dbc.Row([
+                    dbc.Col([
+                        html.Div([
+                            html.H4(str(seats_booked), className="text-primary mb-0"),
+                            html.Small("Réservées", className="text-muted")
+                        ], className="text-center")
+                    ], width=6),
+                    dbc.Col([
+                        html.Div([
+                            html.H4(str(seats_available), className="text-success mb-0"),
+                            html.Small("Disponibles", className="text-muted")
+                        ], className="text-center")
+                    ], width=6)
+                ])
+            ]),
+            html.Hr(),
+            html.Div([
+                html.Small([
+                    html.I(className="fas fa-info-circle me-1"),
+                    f"Total: {seats_booked + seats_available} places"
+                ], className="text-muted")
+            ])
+        ])
+    ], className="mb-3")
 
 
 def register_callbacks():

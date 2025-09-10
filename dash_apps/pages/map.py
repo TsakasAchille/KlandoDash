@@ -85,23 +85,41 @@ def get_layout():
         html.Div(id="home-maplibre", style={"display": "none"}),
         dbc.Row([
             dbc.Col([
-                dcc.Loading(html.Div(id="map-trips-table-container"), type="default")
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.H5("Tableau des trajets", className="mb-0")
+                    ]),
+                    dbc.CardBody([
+                        dcc.Loading(html.Div(id="map-trips-table-container"), type="default")
+                    ])
+                ], className="shadow-sm")
             ], md=12)
         ], className="mb-3"),
         dbc.Row([
             dbc.Col([
-                dcc.Loading(create_maplibre_simple(), type="default")
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.H5("Carte interactive", className="mb-0")
+                    ]),
+                    dbc.CardBody([
+                        dcc.Loading(create_maplibre_simple(), type="default")
+                    ], style={"padding": "0"})
+                ], className="shadow-sm")
             ], md=9),
             dbc.Col([
-                html.Div(id="map-side-panel", children=html.Div("Sélectionnez un trajet sur la carte"),
-                         style={
-                             "backgroundColor": "white",
-                             "borderRadius": "12px",
-                             "boxShadow": "0 4px 12px rgba(0,0,0,0.08)",
-                             "padding": "12px",
-                             "height": "70vh",
-                             "overflow": "auto"
-                         })
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.H5("Détails du trajet", className="mb-0")
+                    ]),
+                    dbc.CardBody([
+                        html.Div(id="map-side-panel", children=[
+                            html.Div([
+                                html.I(className="fas fa-mouse-pointer me-2"),
+                                html.Span("Cliquez sur un trajet sur la carte pour voir les détails")
+                            ], className="text-muted text-center py-5")
+                        ])
+                    ], style={"height": "60vh", "overflow": "auto"})
+                ], className="shadow-sm")
             ], md=3)
         ]),
     ], fluid=True)
