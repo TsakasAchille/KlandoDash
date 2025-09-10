@@ -218,13 +218,8 @@ def google_callback():
     session['is_admin'] = (user_role == 'admin')
     session.modified = True
     
-    print(f"[GOOGLE_AUTH_DEBUG] ✅ Session créée avec succès:")
-    print(f"[GOOGLE_AUTH_DEBUG] - Email: {email}")
-    print(f"[GOOGLE_AUTH_DEBUG] - Nom: {name}")
-    print(f"[GOOGLE_AUTH_DEBUG] - Rôle: {user_role}")
-    print(f"[GOOGLE_AUTH_DEBUG] - Is Admin: {user_role == 'admin'}")
-    print(f"[GOOGLE_AUTH_DEBUG] - Session Keys: {list(session.keys())}")
-    
+    if _debug_mode:
+        print(f"Utilisateur connecté: {email}")
     return redirect('/')
 
 def logout():

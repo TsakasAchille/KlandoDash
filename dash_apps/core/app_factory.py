@@ -26,13 +26,9 @@ def create_app():
         external_stylesheets=[
             dbc.themes.BOOTSTRAP,
             'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
-            # MapLibre GL CSS
-            'https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css',
+            "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
         ],
-        external_scripts=[
-            # MapLibre GL JS
-            'https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js',
-        ],
+        external_scripts=[],
         suppress_callback_exceptions=True,
         url_base_pathname='/',
         assets_folder=os.path.join(os.path.dirname(__file__), 'assets')
@@ -68,6 +64,7 @@ def create_app():
     from dash_apps.pages import map, users, trips, stats, support, admin, driver_validation
     
     dash.register_page("home", path='/', layout=map.layout, name='Carte MapLibre')
+    dash.register_page("map", path='/map', layout=map.layout, name='Carte')
     dash.register_page("users", path='/users', layout=users.layout, name='Utilisateurs')
     dash.register_page("trips", path='/trips', layout=trips.layout, name='Trajets')
     dash.register_page("stats", path='/stats', layout=stats.layout, name='Statistiques')

@@ -2,28 +2,36 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from dash_apps.config import Config
+import logging
 
-def create_maplibre_container(style_height="80vh"):
-    """Crée le conteneur MapLibre avec la configuration appropriée"""
-    # Utiliser MAPLIBRE_STYLE_URL qui contient maintenant l'URL complète avec clé API
-    style_url = Config.MAPLIBRE_STYLE_URL #or "https://demotiles.maplibre.org/globe.json"
+logger = logging.getLogger(__name__)
+
+def create_maplibre_simple():
+    """MapLibre simple - utilise seulement les assets automatiques de Dash"""
     
-    return html.Div(
-        id="home-maplibre",
-        className="maplibre-container",
-        **{"data-style-url": style_url, "data-selected-trip-id": ""},
-        style={
-            "height": style_height,
-            "width": "100%",
-            "borderRadius": "12px",
-            "overflow": "hidden",
-            "boxShadow": "0 4px 12px rgba(0,0,0,0.08)"
-        }
-    )
+    # Récupérer l'URL du style depuis la config (avec clé API Firebase)
+    maplibre_style_url = Config.MAPLIBRE_STYLE_URL
+    print("[LAYOUT] create_maplibre_simple called with style URL: %s", maplibre_style_url)
+    return html.Div([
+        html.H3("🔧 DEBUG: Fonction create_maplibre_simple appelée"),
+        html.P(f"Style URL: {maplibre_style_url}"),
+        html.Div(
+            id="maplibre-map",
+            style={
+                "height": "500px",
+                "width": "100%",
+                "border": "2px solid red",
+                "backgroundColor": "#f0f0f0"
+            },
+            **{"data-style-url": maplibre_style_url}  # Passer l'URL via attribut HTML
+        ),
+        html.P("🔧 DEBUG: Container créé avec data-style-url")
+    ])
 
 
 def get_layout():
     """Génère le layout de la page de carte avec des IDs uniquement pour cette page"""
+    print("[LAYOUT] get_layout called for map page")
     return dbc.Container([
         html.H2("Carte - BETA testing", style={"marginTop": "20px", "marginBottom": "16px"}),
         html.P("Vue d'ensemble géographique", className="text-muted"),
@@ -56,7 +64,7 @@ def get_layout():
         ], className="mb-3"),
         dbc.Row([
             dbc.Col([
-                create_maplibre_container()
+                create_maplibre_simple()
             ], md=9),
             dbc.Col([
                 html.Div(id="map-side-panel", children=html.Div("Sélectionnez un trajet sur la carte"),
@@ -73,7 +81,8 @@ def get_layout():
     ], fluid=True)
 
 
-# Définir le layout au niveau du module pour Dash Pages
-layout = get_layout()
+# Définir le layout comme CALLABLE pour exécuter get_layout au rendu (après config logging)
+def layout():
+    return get_layout()
 
 # L'enregistrement se fera automatiquement par Dash Pages lors de la découverte des modules
