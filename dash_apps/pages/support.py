@@ -8,8 +8,8 @@ import uuid
 
 # Importer les composants et callbacks pour la page de support
 from dash_apps.components.support_tickets import render_tickets_list, render_ticket_details
-# Les callbacks sont maintenant dans support_callbacks.py
-from dash_apps.components import support_callbacks
+# Les callbacks sont maintenant dans callbacks/support_callbacks.py
+from dash_apps.callbacks import support_callbacks
 
 # CSS personnalisé pour la page de support
 support_css = '''
