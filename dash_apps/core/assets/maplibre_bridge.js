@@ -30,6 +30,7 @@ if (!window.dash_clientside.mapbridge.poll) {
         const clickChanged = currentClick !== lastClick;
         
         if (hoverChanged || clickChanged) {
+            console.log('[MAP_BRIDGE_POLL] Changement détecté - hover:', currentHover, 'click:', currentClick);
             lastHover = currentHover;
             lastClick = currentClick;
             return [currentHover, currentClick];

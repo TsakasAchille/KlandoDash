@@ -81,7 +81,7 @@ def get_layout():
         dcc.Store(id="map-hover-trip-id", storage_type="memory", data=None),
         dcc.Store(id="map-click-trip-id", storage_type="memory", data=None),
         dcc.Store(id="map-detail-visible", storage_type="session", data=False),
-        dcc.Interval(id="map-event-poll", interval=2000, n_intervals=0),  # Réduit de 800ms à 2s
+        dcc.Interval(id="map-event-poll", interval=5000, n_intervals=0),  # Réduit à 5s pour moins de charge
         html.Div(id="home-maplibre", style={"display": "none"}),
         dbc.Row([
             dbc.Col([

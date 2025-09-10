@@ -378,10 +378,11 @@ dash.clientside_callback(
 @callback(
     Output("map-detail-visible", "data"),
     Input("map-click-trip-id", "data"),
-    prevent_initial_call=False,
+    prevent_initial_call=True,  # Éviter l'appel initial inutile
 )
 def update_detail_visibility(selected_trip_id):
-    print(f"[MAP_CALLBACK] update_detail_visibility called with: {selected_trip_id}")
+    if selected_trip_id:
+        print(f"[MAP_CALLBACK] update_detail_visibility called with: {selected_trip_id}")
     if not selected_trip_id:
         return False
     return bool(selected_trip_id)

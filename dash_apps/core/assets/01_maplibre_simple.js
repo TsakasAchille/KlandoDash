@@ -218,17 +218,20 @@ if (document.readyState === 'loading') {
 function setupTripLayersAndEvents(map) {
     // Add empty source once; layers added on first update
     function ensureSource() {
+        console.log('[MAP_SETUP] Initialisation des sources et layers');
         if (!map.getSource('trips')) {
+            console.log('[MAP_SETUP] Ajout de la source trips');
             map.addSource('trips', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         }
         if (!map.getLayer('trips-line')) {
+            console.log('[MAP_SETUP] Ajout du layer trips-line');
             map.addLayer({
                 id: 'trips-line',
                 type: 'line',
                 source: 'trips',
                 filter: ['==', ['geometry-type'], 'LineString'],
                 paint: {
-                    'line-width': 4,
+                    'line-width': 8,  // Augmenté de 4 à 8 pixels
                     'line-color': ['get', 'color']
                 }
             });
@@ -240,10 +243,10 @@ function setupTripLayersAndEvents(map) {
                 source: 'trips',
                 filter: ['==', ['geometry-type'], 'Point'],
                 paint: {
-                    'circle-radius': 5,
+                    'circle-radius': 8,  // Augmenté de 5 à 8 pixels
                     'circle-color': ['get', 'color'],
                     'circle-stroke-color': '#fff',
-                    'circle-stroke-width': 1
+                    'circle-stroke-width': 2  // Augmenté de 1 à 2 pixels
                 }
             });
         }
@@ -253,9 +256,18 @@ function setupTripLayersAndEvents(map) {
         if (!geojsonText) return;
         try {
             const data = JSON.parse(geojsonText);
+            console.log('[MAP_GEOJSON] Données GeoJSON reçues:', data);
+            console.log('[MAP_GEOJSON] Nombre de features:', data.features ? data.features.length : 0);
+            
             ensureSource();
             const src = map.getSource('trips');
             src.setData(data);
+            console.log('[MAP_GEOJSON] Données appliquées à la source trips');
+            
+            // Vérifier les layers après mise à jour
+            console.log('[MAP_GEOJSON] Layer trips-line existe:', !!map.getLayer('trips-line'));
+            console.log('[MAP_GEOJSON] Layer trips-points existe:', !!map.getLayer('trips-points'));
+            
             // Fit bounds if there are lines
             const coords = [];
             data.features.forEach(f => {
@@ -290,29 +302,165 @@ function setupTripLayersAndEvents(map) {
     }
 
     // Emit hover/click events to Dash via maplibre_bridge.js
+    let lastEmittedState = { hover: null, click: null };
+    
     function emitHoverClick(hoverId, clickId) {
+        // Éviter le spam en vérifiant si l'état a vraiment changé
+        if (hoverId === lastEmittedState.hover && clickId === lastEmittedState.click) {
+            return; // Pas de changement, ne pas émettre
+        }
+        
+        console.log('[MAP_EMIT] emitHoverClick appelé avec hover:', hoverId, 'click:', clickId);
+        lastEmittedState = { hover: hoverId, click: clickId };
+        
         if (typeof window.updateMapEvents === 'function') {
+            console.log('[MAP_EMIT] Appel de window.updateMapEvents');
             window.updateMapEvents(hoverId, clickId);
+        } else {
+            console.error('[MAP_EMIT] window.updateMapEvents non disponible!');
         }
     }
-    map.on('mousemove', 'trips-line', e => {
-        const f = e.features && e.features[0];
-        emitHoverClick(f && f.properties && f.properties.trip_id || null, null);
+    // Ajouter un test de clic général sur la carte
+    map.on('click', (e) => {
+        console.log('[MAP_DEBUG] Clic général sur la carte à:', e.lngLat);
+        const features = map.queryRenderedFeatures(e.point);
+        console.log('[MAP_DEBUG] Features trouvées au point de clic:', features);
+        const tripFeatures = features.filter(f => f.source === 'trips');
+        console.log('[MAP_DEBUG] Features de trajets:', tripFeatures);
+        
+        // Si on trouve des features de trajets, traiter le clic manuellement
+        if (tripFeatures.length > 0) {
+            const tripFeature = tripFeatures[0];
+            const tripId = tripFeature.properties && tripFeature.properties.trip_id;
+            console.log('[MAP_DEBUG] Clic manuel sur trajet détecté, ID:', tripId);
+            if (tripId) {
+                emitHoverClick(null, tripId);
+            }
+        }
     });
-    map.on('click', 'trips-line', e => {
-        const f = e.features && e.features[0];
-        const tripId = f && f.properties && f.properties.trip_id || null;
-        console.log('[MAP_CLICK] Clic sur trajet ligne:', tripId);
-        emitHoverClick(null, tripId);
+    
+    // Ajouter un test de mousemove général sur la carte avec zone élargie
+    let lastHoveredTripId = null;
+    let lastEmittedHover = null;
+    
+    map.on('mousemove', (e) => {
+        // Augmenter la zone de sélection en utilisant un buffer de 10 pixels
+        const buffer = 10;
+        const bbox = [
+            [e.point.x - buffer, e.point.y - buffer],
+            [e.point.x + buffer, e.point.y + buffer]
+        ];
+        const features = map.queryRenderedFeatures(bbox);
+        const tripFeatures = features.filter(f => f.source === 'trips');
+        
+        if (tripFeatures.length > 0) {
+            const tripFeature = tripFeatures[0];
+            const tripId = tripFeature.properties && tripFeature.properties.trip_id;
+            map.getCanvas().style.cursor = 'pointer';
+            
+            // Logs seulement si c'est un nouveau trajet survolé
+            if (tripId && tripId !== lastHoveredTripId) {
+                console.log('🚗 [HOVER] Survol du trajet:', tripId);
+                console.log('📍 [HOVER] Propriétés:', tripFeature.properties);
+                lastHoveredTripId = tripId;
+            }
+            
+            // Émettre l'événement hover seulement si changement
+            if (tripId && tripId !== lastEmittedHover) {
+                emitHoverClick(tripId, null);
+                lastEmittedHover = tripId;
+            }
+        } else {
+            if (lastHoveredTripId) {
+                console.log('👋 [HOVER] Fin du survol du trajet:', lastHoveredTripId);
+                lastHoveredTripId = null;
+            }
+            map.getCanvas().style.cursor = '';
+            
+            // Émettre null seulement si on avait un hover avant
+            if (lastEmittedHover !== null) {
+                emitHoverClick(null, null);
+                lastEmittedHover = null;
+            }
+        }
     });
-    map.on('mousemove', 'trips-points', e => {
-        const f = e.features && e.features[0];
-        emitHoverClick(f && f.properties && f.properties.trip_id || null, null);
-    });
-    map.on('click', 'trips-points', e => {
-        const f = e.features && e.features[0];
-        const tripId = f && f.properties && f.properties.trip_id || null;
-        console.log('[MAP_CLICK] Clic sur trajet point:', tripId);
-        emitHoverClick(null, tripId);
+    
+    // Attendre que les layers soient ajoutés avant d'ajouter les événements
+    map.on('sourcedata', (e) => {
+        if (e.sourceId === 'trips' && e.isSourceLoaded) {
+            console.log('[MAP_EVENTS] Source trips chargée, ajout des événements');
+            
+            // Vérifier les features dans la source
+            const source = map.getSource('trips');
+            if (source && source._data) {
+                console.log('[MAP_DEBUG] Features dans la source trips:', source._data.features);
+            }
+            
+            // Supprimer les anciens événements pour éviter les doublons
+            map.off('click', 'trips-line');
+            map.off('click', 'trips-points');
+            map.off('mousemove', 'trips-line');
+            map.off('mousemove', 'trips-points');
+            
+            // Ajouter les événements de clic
+            map.on('click', 'trips-line', e => {
+                console.log('[MAP_CLICK] Événement clic détecté sur trips-line');
+                console.log('[MAP_CLICK] Features disponibles:', e.features);
+                const f = e.features && e.features[0];
+                const tripId = f && f.properties && f.properties.trip_id || null;
+                console.log('[MAP_CLICK] Feature extraite:', f);
+                console.log('[MAP_CLICK] Trip ID extrait:', tripId);
+                console.log('[MAP_CLICK] Clic sur trajet ligne:', tripId);
+                emitHoverClick(null, tripId);
+            });
+            
+            map.on('click', 'trips-points', e => {
+                console.log('[MAP_CLICK] Événement clic détecté sur trips-points');
+                console.log('[MAP_CLICK] Features disponibles:', e.features);
+                const f = e.features && e.features[0];
+                const tripId = f && f.properties && f.properties.trip_id || null;
+                console.log('[MAP_CLICK] Feature extraite:', f);
+                console.log('[MAP_CLICK] Trip ID extrait:', tripId);
+                console.log('[MAP_CLICK] Clic sur trajet point:', tripId);
+                emitHoverClick(null, tripId);
+            });
+            
+            // Ajouter les événements de hover avec debug
+            map.on('mousemove', 'trips-line', e => {
+                console.log('[MAP_HOVER] Événement mousemove sur trips-line détecté');
+                console.log('[MAP_HOVER] Features:', e.features);
+                const f = e.features && e.features[0];
+                const tripId = f && f.properties && f.properties.trip_id || null;
+                console.log('[MAP_HOVER] Trip ID extrait:', tripId);
+                if (tripId) {
+                    console.log('[MAP_HOVER] Hover sur ligne:', tripId);
+                    map.getCanvas().style.cursor = 'pointer';
+                } else {
+                    console.log('[MAP_HOVER] Aucun trip ID trouvé');
+                }
+                emitHoverClick(tripId, null);
+            });
+            
+            map.on('mousemove', 'trips-points', e => {
+                const f = e.features && e.features[0];
+                const tripId = f && f.properties && f.properties.trip_id || null;
+                if (tripId) {
+                    console.log('[MAP_HOVER] Hover sur point:', tripId);
+                    map.getCanvas().style.cursor = 'pointer';
+                }
+                emitHoverClick(tripId, null);
+            });
+            
+            // Réinitialiser le curseur quand on quitte les layers
+            map.on('mouseleave', 'trips-line', () => {
+                map.getCanvas().style.cursor = '';
+                emitHoverClick(null, null);
+            });
+            
+            map.on('mouseleave', 'trips-points', () => {
+                map.getCanvas().style.cursor = '';
+                emitHoverClick(null, null);
+            });
+        }
     });
 }
