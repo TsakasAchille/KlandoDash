@@ -73,6 +73,16 @@ def create_app():
     dash.register_page("admin", path='/admin', layout=admin.layout)
     dash.register_page("driver_validation", path='/driver-validation', layout=driver_validation.serve_layout)
 
+    # --- Ensure callbacks are imported and registered early ---
+    # Import map callbacks explicitly at app startup so Dash registers them
+    # before any _dash-update-component POST occurs. This prevents KeyError
+    # "Callback function not found" for outputs like 'map-trips-table-container.children'.
+    try:
+        from dash_apps.callbacks import map_callbacks as _map_callbacks  # noqa: F401
+        app.logger.info("[APP_FACTORY] Map callbacks module imported; callbacks should be registered.")
+    except Exception as e:
+        app.logger.warning("[APP_FACTORY] Failed to import map callbacks: %s", e)
+
 
     # --- Logging configuration ---
     try:

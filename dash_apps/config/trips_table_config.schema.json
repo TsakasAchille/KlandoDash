@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Configuration de Tableau KlandoDash",
+  "description": "Schéma JSON pour la configuration des tableaux dynamiques",
+  "type": "object",
+  "required": ["table_name", "columns"],
+  "properties": {
+    "table_name": {
+      "type": "string",
+      "description": "Nom de la table SQL de référence"
+    },
+    "columns": {
+      "type": "object",
+      "description": "Configuration des colonnes du tableau",
+      "patternProperties": {
+        "^[a-zA-Z_][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/column"
+        }
+      }
+    },
+    "default_sort": {
+      "type": "object",
+      "description": "Tri par défaut",
+      "properties": {
+        "column": {
+          "type": "string",
+          "description": "Nom de la colonne pour le tri"
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["asc", "desc"],
+          "description": "Direction du tri"
+        }
+      },
+      "required": ["column", "direction"]
+    },
+    "pagination": {
+      "type": "object",
+      "description": "Configuration de la pagination",
+      "properties": {
+        "default_page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Taille de page par défaut"
+        },
+        "page_sizes": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "Tailles de page disponibles"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "column": {
+      "type": "object",
+      "required": ["label", "type", "supabase_column", "visible"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Libellé affiché dans l'en-tête"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "integer", "number", "currency", "date", "time", "datetime", "enum", "boolean"],
+          "description": "Type de données de la colonne"
+        },
+        "supabase_column": {
+          "type": "string",
+          "description": "Nom de la colonne dans la base de données"
+        },
+        "visible": {
+          "type": "boolean",
+          "description": "Si la colonne doit être affichée"
+        },
+        "sortable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Si la colonne peut être triée"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unité pour les types currency (ex: FCFA, €)"
+        },
+        "truncate": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre de caractères avant troncature"
+        },
+        "values": {
+          "type": "object",
+          "description": "Mapping des valeurs pour le type enum",
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          }
+        },
+        "transform": {
+          "$ref": "#/definitions/transform"
+        }
+      }
+    },
+    "transform": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["from_iso", "currency", "enum_badge", "truncate", "format_number"],
+          "description": "Type de transformation à appliquer"
+        },
+        "source": {
+          "type": "string",
+          "description": "Colonne source pour la transformation (si différente de la colonne courante)"
+        },
+        "output": {
+          "type": "string",
+          "enum": ["date", "time", "datetime"],
+          "description": "Format de sortie pour from_iso"
+        },
+        "format": {
+          "type": "string",
+          "description": "Format strftime pour les dates/heures"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unité monétaire pour currency"
+        },
+        "max_length": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Longueur maximale pour truncate"
+        },
+        "decimals": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Nombre de décimales pour format_number"
+        },
+        "values": {
+          "type": "object",
+          "description": "Mapping des valeurs pour enum_badge",
+          "patternProperties": {
+            ".*": {
+              "type": "string"
+            }
+          }
+        },
+        "colors": {
+          "type": "object",
+          "description": "Couleurs des badges pour enum_badge",
+          "patternProperties": {
+            ".*": {
+              "type": "string",
+              "enum": ["primary", "secondary", "success", "danger", "warning", "info", "light", "dark"]
+            }
+          }
+        }
+      }
+    }
+  }
+}

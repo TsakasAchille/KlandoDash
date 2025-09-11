@@ -48,18 +48,7 @@ def get_layout():
         style_warning if style_warning else html.Div(),
         dbc.Row([
             dbc.Col([
-                dbc.InputGroup([
-                    dbc.Input(
-                        id="map-trip-input",
-                        type="number",
-                        placeholder="Numéro trajet",
-                        value=1,
-                        min=1,
-                        step=1,
-                        debounce=True,
-                    ),
-                    dbc.Button("Charger", id="map-load-trip", color="primary"),
-                ])
+                html.Div()
             ], md=6)
         ], className="mb-3"),
         dbc.Row([

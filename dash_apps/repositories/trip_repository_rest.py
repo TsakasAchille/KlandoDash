@@ -5,6 +5,7 @@ from dash_apps.repositories.supabase_repository import SupabaseRepository
 from typing import List, Optional, Dict, Any
 import logging
 from datetime import datetime
+from dash_apps.utils.settings import load_json_config
 
 # Logger
 logger = logging.getLogger(__name__)
@@ -148,44 +149,75 @@ class TripRepositoryRest(SupabaseRepository):
         )
     
     def get_trips_with_pagination(self, page: int = 1, page_size: int = 10, 
-                                 status: Optional[str] = None) -> Dict[str, Any]:
+                                 status: Optional[str] = None, filters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Récupère une page de trajets avec pagination et métadonnées
+        Récupère une page de trajets avec pagination et filtres complets
         
         Args:
             page: Numéro de page (commence à 1)
             page_size: Nombre d'éléments par page
-            status: Filtre optionnel par statut
+            status: Filtre optionnel par statut (rétrocompatibilité)
+            filters: Dictionnaire complet des filtres (text, date_from, date_to, etc.)
             
         Returns:
             Un dictionnaire contenant la liste des trajets et les métadonnées de pagination
         """
         try:
+            # Charger la configuration JSON pour les mappings
+            from dash_apps.utils.settings import load_json_config
+            config = load_json_config('trips_table_config.json')
+            filters_config = config.get('filters', {})
+            
             # Calculer le décalage (offset)
             skip = (page - 1) * page_size
             
-            # Préparer les filtres
-            filters = {}
-            if status:
-                filters["status"] = status
+            # Construire la requête avec filtres basés sur la config JSON
+            from dash_apps.utils.supabase_client import supabase
+            query = supabase.table(self.table_name).select("*")
             
-            # Récupérer les trajets pour cette page
-            trips = self.get_all(
-                offset=skip,
-                limit=page_size,
-                order_by="departure_date",
-                order_direction="desc",
-                filters=filters
-            )
+            # Appliquer les filtres avec une fonction réutilisable
+            query = self._apply_filters_to_query(query, filters, status, filters_config)
             
-            # Compter le nombre total de trajets
-            total_count = self.count(filters=filters)
+            # Appliquer le tri selon la config
+            default_sort = config.get('default_sort', {})
+            sort_column = default_sort.get('column', 'departure_date')
+            sort_desc = default_sort.get('direction', 'desc') == 'desc'
+            
+            # Override du tri si spécifié dans les filtres
+            if filters and filters.get('date_sort'):
+                sort_desc = filters['date_sort'] == 'desc'
+            
+            query = query.order(sort_column, desc=sort_desc)
+            
+            # Appliquer la pagination
+            query = query.range(skip, skip + page_size - 1)
+            
+            # Exécuter la requête
+            print(f"[DEBUG_QUERY] Exécution de la requête avec filtres appliqués")
+            response = query.execute()
+            trips = response.data or []
+            print(f"[DEBUG_QUERY] Résultats: {len(trips)} trajets trouvés")
+            
+            # Debug: afficher quelques exemples de dates si on a des résultats
+            if trips:
+                for i, trip in enumerate(trips[:3]):  # 3 premiers trajets
+                    print(f"[DEBUG_DATES] Trajet {i+1}: departure_date={trip.get('departure_date')}, departure_schedule={trip.get('departure_schedule')}")
+            else:
+                print("[DEBUG_DATES] Aucun trajet trouvé - vérifier les formats de dates")
+            
+            # Compter le nombre total avec les mêmes filtres (réutilisation de la logique)
+            count_query = supabase.table(self.table_name).select('*', count='exact')
+            count_query = self._apply_filters_to_query(count_query, filters, status, filters_config)
+            
+            count_response = count_query.execute()
+            total_count = count_response.count if hasattr(count_response, 'count') else 0
             
             # Calculer le nombre total de pages
             total_pages = max(1, (total_count + page_size - 1) // page_size)
             
             return {
                 "trips": trips,
+                "total_count": total_count,
                 "pagination": {
                     "total_count": total_count,
                     "page": page,
@@ -198,6 +230,7 @@ class TripRepositoryRest(SupabaseRepository):
             logger.error(f"Erreur get_trips_with_pagination: {str(e)}")
             return {
                 "trips": [],
+                "total_count": 0,
                 "pagination": {
                     "total_count": 0,
                     "page": page,
@@ -205,6 +238,57 @@ class TripRepositoryRest(SupabaseRepository):
                     "total_pages": 1
                 }
             }
+    
+    def _apply_filters_to_query(self, query, filters: Optional[Dict[str, Any]], status: Optional[str], filters_config: Dict):
+        """
+        Applique les filtres à une requête Supabase de manière optimisée
+        Ordre des filtres optimisé pour les performances des index
+        """
+        print(f"[DEBUG_FILTERS] Filters reçus: {filters}")
+        print(f"[DEBUG_FILTERS] Status: {status}")
+        print(f"[DEBUG_FILTERS] Config filtres: {filters_config}")
+        
+        # 1. Filtres d'égalité d'abord (meilleur pour les index)
+        if filters:
+            # Filtre de statut (config: filters.status.column)
+            if filters.get('status') and filters_config.get('status', {}).get('enabled'):
+                status_column = filters_config['status']['column']
+                print(f"[DEBUG_FILTERS] Applique filtre statut: {status_column} = {filters['status']}")
+                query = query.eq(status_column, filters['status'])
+        
+        # Rétrocompatibilité: ajouter le statut si fourni directement
+        if status:
+            status_column = filters_config.get('status', {}).get('column', 'status')
+            print(f"[DEBUG_FILTERS] Applique statut rétrocompatible: {status_column} = {status}")
+            query = query.eq(status_column, status)
+        
+        # 2. Filtres de plage (date) - après les filtres d'égalité
+        if filters and filters_config.get('date_range', {}).get('enabled'):
+            date_column = filters_config['date_range']['column']
+            print(f"[DEBUG_FILTERS] Colonne date configurée: {date_column}")
+            
+            if filters.get('date_filter_type') == 'after' and filters.get('single_date'):
+                print(f"[DEBUG_FILTERS] Applique filtre AFTER: {date_column} >= {filters['single_date']}")
+                query = query.gte(date_column, filters['single_date'])
+            elif filters.get('date_filter_type') == 'before' and filters.get('single_date'):
+                print(f"[DEBUG_FILTERS] Applique filtre BEFORE: {date_column} <= {filters['single_date']}")
+                query = query.lte(date_column, filters['single_date'])
+            elif filters.get('date_filter_type') == 'range':
+                if filters.get('date_from'):
+                    print(f"[DEBUG_FILTERS] Applique filtre RANGE FROM: {date_column} >= {filters['date_from']}")
+                    query = query.gte(date_column, filters['date_from'])
+                if filters.get('date_to'):
+                    print(f"[DEBUG_FILTERS] Applique filtre RANGE TO: {date_column} <= {filters['date_to']}")
+                    query = query.lte(date_column, filters['date_to'])
+        
+        # 3. Filtres de recherche textuelle en dernier (plus coûteux)
+        if filters and filters.get('text') and filters_config.get('location', {}).get('enabled'):
+            location_columns = filters_config['location']['columns']
+            search_text = filters['text']
+            or_conditions = [f"{col}.ilike.%{search_text}%" for col in location_columns]
+            query = query.or_(','.join(or_conditions))
+        
+        return query
     
     def search_trips(self, query: str, limit: int = 50) -> List[Dict]:
         """
@@ -287,6 +371,7 @@ class TripRepositoryRest(SupabaseRepository):
             logger.error(f"Erreur lors de la récupération des réservations pour le trajet {trip_id}: {str(e)}")
             return []
     
+    
     def get_trip_passengers(self, trip_id: str) -> List[Dict]:
         """
         Récupère les passagers d'un trajet avec leurs informations
@@ -351,83 +436,4 @@ class TripRepositoryRest(SupabaseRepository):
             logger.error(f"Erreur lors de la récupération des statistiques pour le trajet {trip_id}: {str(e)}")
             return {}
     
-    def get_trips_paginated_minimal(self, page_index: int, page_size: int, 
-                                   filters: Dict[str, Any] = None) -> Dict[str, Any]:
-        """
-        Version optimisée pour récupérer les trajets avec pagination minimale
-        Compatible avec TripsCacheService - Utilise le même système de filtres que users
-        
-        Args:
-            page_index: Index de la page (0-based)
-            page_size: Nombre d'éléments par page
-            filters: Dictionnaire des filtres (text, status, etc.)
-            
-        Returns:
-            Dict contenant trips, total_count et pagination
-        """
-        try:
-            from dash_apps.utils.supabase_client import supabase
-            
-            # Convertir page_index (0-based) en page (1-based)
-            page = page_index + 1
-            skip = page_index * page_size
-            
-            # Construire la requête de base
-            query = supabase.table(self.table_name).select("*")
-            
-            # Appliquer les filtres si fournis
-            if filters:
-                # Filtre par texte (trip_id, lieux de départ/arrivée)
-                if filters.get('text'):
-                    text_filter = filters['text']
-                    query = query.or_(f"trip_id.ilike.%{text_filter}%,departure_name.ilike.%{text_filter}%,destination_name.ilike.%{text_filter}%")
-                
-                # Filtre par statut
-                if filters.get('status'):
-                    query = query.eq("status", filters['status'])
-            
-            # Appliquer la pagination et l'ordre
-            query = query.order("departure_date", desc=True).range(skip, skip + page_size - 1)
-            
-            # Exécuter la requête
-            response = query.execute()
-            trips = response.data if response.data else []
-            
-            # Compter le total avec les mêmes filtres
-            count_query = supabase.table(self.table_name).select("*", count="exact")
-            if filters:
-                if filters.get('text'):
-                    text_filter = filters['text']
-                    count_query = count_query.or_(f"trip_id.ilike.%{text_filter}%,departure_name.ilike.%{text_filter}%,destination_name.ilike.%{text_filter}%")
-                if filters.get('status'):
-                    count_query = count_query.eq("status", filters['status'])
-            
-            count_response = count_query.execute()
-            total_count = count_response.count if count_response.count is not None else 0
-            
-            # Calculer le nombre total de pages
-            total_pages = max(1, (total_count + page_size - 1) // page_size)
-            
-            return {
-                "trips": trips,
-                "total_count": total_count,
-                "pagination": {
-                    "total_count": total_count,
-                    "page": page,
-                    "page_size": page_size,
-                    "total_pages": total_pages
-                }
-            }
-                
-        except Exception as e:
-            logger.error(f"Erreur get_trips_paginated_minimal: {str(e)}")
-            return {
-                "trips": [],
-                "total_count": 0,
-                "pagination": {
-                    "total_count": 0,
-                    "page": page_index + 1,
-                    "page_size": page_size,
-                    "total_pages": 1
-                }
-            }
+  

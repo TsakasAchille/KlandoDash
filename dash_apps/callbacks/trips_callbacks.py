@@ -338,30 +338,16 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     # Convertir la page en index 0-based pour l'API
     page_index = current_page - 1 if current_page > 0 else 0
     
-    # Préparer les filtres pour le repository
+    # Préparer les filtres pour le repository (optimisé)
     filter_params = {}
-    
-    # Ajouter le filtre texte s'il existe
-    if filters and filters.get("text"):
-        filter_params["text"] = filters.get("text")
+    if filters:
+        # Copier tous les filtres valides en une seule passe
+        valid_keys = ["text", "date_from", "date_to", "date_filter_type", "single_date", "date_sort", "has_signalement"]
+        filter_params.update({k: v for k, v in filters.items() if k in valid_keys and v})
         
-    # Ajouter les filtres de date s'ils existent
-    if filters and (filters.get("date_from") or filters.get("date_to") or filters.get("single_date")):
-        filter_params["date_from"] = filters.get("date_from")
-        filter_params["date_to"] = filters.get("date_to")
-        filter_params["date_filter_type"] = filters.get("date_filter_type")
-        filter_params["single_date"] = filters.get("single_date")
-        
-    # Ajouter le tri par date s'il est défini
-    if filters and filters.get("date_sort"):
-        filter_params["date_sort"] = filters.get("date_sort")
-        
-    # Ajouter les filtres de statut et signalement s'ils sont différents de "all"
-    if filters and filters.get("status") and filters.get("status") != "all":
-        filter_params["status"] = filters.get("status")
-        
-    if filters and filters.get("has_signalement"):
-        filter_params["has_signalement"] = filters.get("has_signalement")
+        # Traitement spécial pour le statut (exclure "all")
+        if filters.get("status") and filters["status"] != "all":
+            filter_params["status"] = filters["status"]
 
     # Déterminer si on force le rechargement (bouton refresh)
     ctx = dash.callback_context
@@ -375,9 +361,10 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
         page_index, page_size, filter_params, force_reload
     )
     
-    # Extraire les données nécessaires pour le tableau
-    trips, total_trips, table_rows_data = TripsCacheService.extract_table_data(result)
-    print(f"[TABLE] {len(trips)} trajets chargés")
+    # Utiliser directement les données optimisées du repository
+    trips = result.get("trips", [])
+    total_trips = result.get("total_count", 0)
+    print(f"[TABLE] {len(trips)} trajets chargés, total_count={total_trips}")
 
     # Auto-sélection du premier trajet si aucun n'est sélectionné
    
@@ -393,19 +380,10 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
         current_page = 1
     
     # Si on arrive sur une page vide (pas de trajets), revenir à la page précédente
-    if len(table_rows_data) == 0 and current_page > 1:
-        print(f"[PAGINATION] Page {current_page} vide, retour à la page {current_page - 1}")
-        current_page = current_page - 1
-        # Recharger les données pour la page corrigée
-        page_index = current_page - 1
-        result = TripsCacheService.get_trips_page_result(
-            page_index, page_size, filter_params, force_reload
-        )
-        trips, total_trips, table_rows_data = TripsCacheService.extract_table_data(result)
-
+    # Cette logique est maintenant gérée par la validation de pagination ci-dessus
     # Rendu de la table avec les données pré-calculées
     table_component = render_custom_trips_table(
-        table_rows_data, 
+        trips, 
         current_page=current_page,
         total_trips=total_trips,
         selected_trip_id=selected_trip  # Passer la sélection depuis le store

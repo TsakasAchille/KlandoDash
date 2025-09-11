@@ -27,14 +27,26 @@
       "type": "date",
       "supabase_column": "departure_date",
       "sortable": true,
-      "visible": true
+      "visible": true,
+      "transform": {
+        "type": "from_iso",
+        "source": "departure_schedule",
+        "output": "date",
+        "format": "%Y-%m-%d"
+      }
     },
     "departure_schedule": {
       "label": "Heure de départ",
       "type": "time",
       "supabase_column": "departure_schedule",
       "sortable": true,
-      "visible": true
+      "visible": true,
+      "transform": {
+        "type": "from_iso",
+        "source": "departure_schedule",
+        "output": "time",
+        "format": "%H:%M"
+      }
     },
     "seats_available": {
       "label": "Places disponibles",
@@ -76,7 +88,13 @@
       "type": "datetime",
       "supabase_column": "created_at",
       "sortable": true,
-      "visible": false
+      "visible": true,
+      "transform": {
+        "type": "from_iso",
+        "source": "created_at",
+        "output": "datetime",
+        "format": "%Y-%m-%d %H:%M"
+      }
     }
   },
   "default_sort": {
@@ -90,7 +108,7 @@
   "filters": {
     "date_range": {
       "enabled": true,
-      "column": "departure_date"
+      "column": "departure_schedule"
     },
     "status": {
       "enabled": true,

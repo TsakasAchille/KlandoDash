@@ -26,16 +26,46 @@ class TripsCacheService:
     
     @staticmethod
     def _get_cache_key(page_index: int, page_size: int, filter_params: Dict[str, Any]) -> str:
-        """Génère une clé de cache cohérente pour les pages de trajets"""
+        """Génère une clé de cache optimisée avec partitioning"""
         import hashlib
         import json
+        from datetime import datetime
         
         # Normaliser les filtres pour une clé déterministe
         normalized_filters = filter_params or {}
-        filter_str = json.dumps(normalized_filters, sort_keys=True)
-        filter_hash = hashlib.md5(filter_str.encode()).hexdigest()[:8]
         
-        return f"trips_page:{page_index}:{page_size}:{filter_hash}"
+        # Extraire les partitions principales pour optimiser le cache
+        partition_parts = []
+        
+        # Partition par statut
+        if normalized_filters.get('status'):
+            partition_parts.append(f"status={normalized_filters['status']}")
+        
+        # Partition par période (pour optimiser les filtres de date)
+        if normalized_filters.get('date_filter_type') == 'range':
+            if normalized_filters.get('date_from') and normalized_filters.get('date_to'):
+                partition_parts.append(f"range={normalized_filters['date_from']}_{normalized_filters['date_to']}")
+        elif normalized_filters.get('single_date'):
+            # Partitionner par mois pour les dates uniques
+            try:
+                date_obj = datetime.fromisoformat(normalized_filters['single_date'])
+                month_partition = date_obj.strftime('%Y-%m')
+                partition_parts.append(f"month={month_partition}")
+            except:
+                partition_parts.append(f"date={normalized_filters['single_date']}")
+        
+        # Autres filtres (tri, recherche textuelle)
+        other_filters = {k: v for k, v in normalized_filters.items() 
+                        if k not in ['status', 'date_from', 'date_to', 'single_date', 'date_filter_type']}
+        
+        # Construire la clé avec partitions
+        partition_str = ':'.join(sorted(partition_parts)) if partition_parts else 'all'
+        
+        if other_filters:
+            other_hash = hashlib.md5(json.dumps(other_filters, sort_keys=True).encode()).hexdigest()[:6]
+            return f"trips:{partition_str}:filters={other_hash}:page={page_index}:size={page_size}"
+        else:
+            return f"trips:{partition_str}:page={page_index}:size={page_size}"
     
     @staticmethod
     def _get_from_cache(cache_key: str) -> Optional[Dict]:
@@ -137,8 +167,13 @@ class TripsCacheService:
                 
                 return cached_data
         
-        # Niveau 3: Base de données (version optimisée)
-        result = trip_repository.get_trips_paginated_minimal(page_index, page_size, filters=filter_params)
+        # Niveau 3: Base de données (passer tous les filtres)
+        page = page_index + 1  # Convertir 0-based en 1-based
+        result = trip_repository.get_trips_with_pagination(
+            page=page, 
+            page_size=page_size, 
+            filters=filter_params  # Passer tous les filtres, pas seulement le statut
+        )
         
         # Mettre à jour tous les niveaux de cache
         TripsCacheService._store_in_local_cache(cache_key, result)
@@ -154,42 +189,6 @@ class TripsCacheService:
         
         return result
     
-    @staticmethod
-    def extract_table_data(result: Dict[str, Any]) -> tuple:
-        """
-        Extrait les données nécessaires pour le tableau depuis le résultat
-        
-        Args:
-            result: Résultat de get_trips_page_result
-            
-        Returns:
-            tuple: (trips, total_count, table_rows_data)
-        """
-        trips = result.get("trips", [])
-        total_count = result.get("total_count", 0)
-        
-        # Convertir les objets TripSchema en dictionnaires pour le tableau
-        table_rows_data = []
-        if trips:
-            for trip in trips:
-                if hasattr(trip, 'model_dump'):
-                    # Pydantic model - convertir en dict
-                    table_rows_data.append(trip.model_dump())
-                elif hasattr(trip, 'to_dict'):
-                    # DataFrame ou autre objet avec to_dict
-                    table_rows_data.append(trip.to_dict())
-                elif isinstance(trip, dict):
-                    # Déjà un dictionnaire
-                    table_rows_data.append(trip)
-                else:
-                    # Fallback: essayer de convertir en dict via __dict__
-                    try:
-                        table_rows_data.append(trip.__dict__)
-                    except:
-                        # Si tout échoue, ignorer cet élément
-                        continue
-        
-        return trips, total_count, table_rows_data
     
     @staticmethod
     def _load_panel_config():

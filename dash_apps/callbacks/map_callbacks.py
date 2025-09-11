@@ -20,7 +20,7 @@ import dash
 from dash import callback_context
 
 
-def _get_last_trips(n=10):
+def _get_last_trips(n=5):
     """Fetch last n trips using MapCacheService with fallback to TripsCacheService.
     Optimized for map page with caching.
     """
@@ -406,77 +406,40 @@ def render_side_panel(selected_trip_id, detail_visible):
             ], className="text-muted text-center py-5")
         ])
     
-    # Retrouver le trajet
-    trip = None
-    for t in _TRIPS:
-        if isinstance(t, dict):
-            if t.get('trip_id', None) == selected_trip_id:
-                trip = t
-                break
-        else:
-            if getattr(t, 'trip_id', None) == selected_trip_id:
-                trip = t
-                break
-    
-    if not trip:
-        return html.Div([
-            dbc.Alert([
-                html.I(className="fas fa-exclamation-triangle me-2"),
-                f"Trajet {selected_trip_id} non trouvé"
-            ], color="warning")
-        ])
-    
-    # Extraire les données du trajet
-    if isinstance(trip, dict):
-        driver_id = trip.get('driver_id', None)
-        departure_name = trip.get('departure_name', 'Départ inconnu')
-        destination_name = trip.get('destination_name', 'Destination inconnue')
-        passenger_price = trip.get('passenger_price', 0)
-        seats_available = trip.get('seats_available', 0)
-        seats_booked = trip.get('seats_booked', 0)
-        departure_datetime = trip.get('departure_datetime', '')
-    else:
-        driver_id = getattr(trip, 'driver_id', None)
-        departure_name = getattr(trip, 'departure_name', 'Départ inconnu')
-        destination_name = getattr(trip, 'destination_name', 'Destination inconnue')
-        passenger_price = getattr(trip, 'passenger_price', 0)
-        seats_available = getattr(trip, 'seats_available', 0)
-        seats_booked = getattr(trip, 'seats_booked', 0)
-        departure_datetime = getattr(trip, 'departure_datetime', '')
-    
-    # Créer les cartes pour conducteur et passagers
-    driver_card = create_driver_card(driver_id, departure_name, destination_name, departure_datetime, passenger_price)
-    passengers_card = create_passengers_card(selected_trip_id, seats_booked, seats_available)
-    
-    return html.Div([
-        # Informations du trajet
-        dbc.Card([
-            dbc.CardBody([
-                html.H6([
+    # Utiliser le service de cache des trajets pour récupérer les détails
+    try:
+        from dash_apps.services.trips_cache_service import TripsCacheService
+        print(f"[MAP_CALLBACK] Récupération des détails du trajet via TripsCacheService: {selected_trip_id}")
+        
+        # Récupérer le panneau de détails du trajet avec toutes les infos du conducteur
+        trip_details_panel = TripsCacheService.get_trip_details_panel(selected_trip_id)
+        
+        if trip_details_panel:
+            return html.Div([
+                html.H5([
                     html.I(className="fas fa-route me-2"),
-                    "Informations du trajet"
-                ], className="card-title mb-3"),
-                html.P([
-                    html.Strong("De: "), departure_name
-                ], className="mb-1"),
-                html.P([
-                    html.Strong("À: "), destination_name  
-                ], className="mb-1"),
-                html.P([
-                    html.Strong("Prix: "), f"{passenger_price}€"
-                ], className="mb-1"),
-                html.P([
-                    html.Strong("Places: "), f"{seats_booked}/{seats_booked + seats_available}"
-                ], className="mb-0")
+                    f"Détails du trajet"
+                ], className="mb-3"),
+                trip_details_panel
             ])
-        ], className="mb-3"),
-        
-        # Carte du conducteur
-        driver_card,
-        
-        # Carte des passagers
-        passengers_card
-    ])
+        else:
+            return html.Div([
+                html.Div([
+                    html.I(className="fas fa-exclamation-triangle me-2"),
+                    html.Span(f"Trajet {selected_trip_id[:8]}... non trouvé")
+                ], className="text-warning text-center py-3")
+            ])
+            
+    except Exception as e:
+        print(f"[MAP_CALLBACK] Erreur lors de la récupération des détails: {e}")
+        return html.Div([
+            html.Div([
+                html.I(className="fas fa-exclamation-circle me-2"),
+                html.Span(f"Erreur lors du chargement des détails: {str(e)}")
+            ], className="text-danger text-center py-3")
+        ])
+
+
 
 
 def create_driver_card(driver_id, departure_name, destination_name, departure_datetime, passenger_price):
