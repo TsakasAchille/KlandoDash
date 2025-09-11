@@ -214,7 +214,7 @@ class TripsCacheService:
         if data_source == 'sql':
             # Mode SQL direct
             def sql_fetcher(trip_id):
-                print(f"[{panel_type.upper()}] Utilisation du SQL Query Builder pour {trip_id[:8]}")
+                print(f"[{panel_type.upper()}] Utilisation du SQL Query Builder pour {trip_id[:8] if trip_id else 'None'}")
                 try:
                     from dash_apps.services.sql_query_builder import SQLQueryBuilder
                     return SQLQueryBuilder.get_panel_data_via_sql(panel_type, trip_id)
@@ -234,7 +234,7 @@ class TripsCacheService:
                 return None
             
             def rest_fetcher(trip_id):
-                print(f"[{panel_type.upper()}] Utilisation de l'API REST pour {trip_id[:8]}")
+                print(f"[{panel_type.upper()}] Utilisation de l'API REST pour {trip_id[:8] if trip_id else 'None'}")
                 try:
                     module = __import__(api_module, fromlist=[api_function])
                     api_func = getattr(module, api_function)
@@ -296,7 +296,7 @@ class TripsCacheService:
         
         cached_panel = TripsCacheService.get_cached_panel(selected_trip_id, panel_type)
         if cached_panel and TripsCacheService._debug_mode:
-            print(f"[{panel_type.upper()}][HTML CACHE HIT] Panneau récupéré pour {selected_trip_id[:8]}...")
+            print(f"[{panel_type.upper()}][HTML CACHE HIT] Panneau récupéré pour {selected_trip_id[:8] if selected_trip_id else 'None'}...")
         return cached_panel
     
     @staticmethod
@@ -311,7 +311,7 @@ class TripsCacheService:
                 cached_data = TripsCacheService._get_cache_data_generic(selected_trip_id, panel_type)
                 if cached_data:
                     if TripsCacheService._debug_mode:
-                        print(f"[{panel_type.upper()}] Données récupérées pour {selected_trip_id[:8]}...")
+                        print(f"[{panel_type.upper()}] Données récupérées pour {selected_trip_id[:8] if selected_trip_id else 'None'}...")
                     return cached_data
             except Exception as e:
                 print(f"[{panel_type.upper()}] Erreur cache: {e}")
@@ -324,7 +324,7 @@ class TripsCacheService:
         """Exécute le data fetcher et met en cache"""
         try:
             if TripsCacheService._debug_mode:
-                print(f"[{panel_type.upper()}][DATA FETCH] Chargement {selected_trip_id[:8]}...")
+                print(f"[{panel_type.upper()}][DATA FETCH] Chargement {selected_trip_id[:8] if selected_trip_id else 'None'}...")
             
             # Validation inputs
             inputs = {'trip_id': selected_trip_id}
@@ -479,7 +479,7 @@ class TripsCacheService:
         cached_panel = TripsCacheService.get_cached_panel(selected_trip_id, 'passengers')
         if cached_panel:
             if TripsCacheService._debug_mode:
-                print(f"[TRIP_PASSENGERS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_trip_id[:8]}...")
+                print(f"[TRIP_PASSENGERS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_trip_id[:8] if selected_trip_id else 'None'}...")
             return cached_panel
         
         # Redis
@@ -488,7 +488,7 @@ class TripsCacheService:
             cached_passengers = cache.get_trip_passengers(selected_trip_id)
             if cached_passengers:
                 if TripsCacheService._debug_mode:
-                    print(f"[TRIP_PASSENGERS][CACHE HIT] Passagers récupérés pour {selected_trip_id[:8]}...")
+                    print(f"[TRIP_PASSENGERS][CACHE HIT] Passagers récupérés pour {selected_trip_id[:8] if selected_trip_id else 'None'}...")
                 # Utiliser le pandas importé en haut du fichier
                 data = {'trip_id': selected_trip_id, 'passengers': pd.DataFrame(cached_passengers)}
         except Exception:
@@ -498,7 +498,7 @@ class TripsCacheService:
         if not data:
             try:
                 if TripsCacheService._debug_mode:
-                    print(f"[TRIP_PASSENGERS][API FETCH] Chargement {selected_trip_id[:8]}... via API REST")
+                    print(f"[TRIP_PASSENGERS][API FETCH] Chargement {selected_trip_id[:8] if selected_trip_id else 'None'}... via API REST")
                 
                 # Utiliser directement les repositories REST
                 from dash_apps.repositories.repository_factory import RepositoryFactory
@@ -508,7 +508,7 @@ class TripsCacheService:
                 # Dans le futur, il faudra implémenter get_bookings_for_trip dans le repository
                 passengers_df = pd.DataFrame()
                 
-                print(f"[TRIP_PASSENGERS] Utilisation de l'API REST pour {selected_trip_id[:8]}")
+                print(f"[TRIP_PASSENGERS] Utilisation de l'API REST pour {selected_trip_id[:8] if selected_trip_id else 'None'}")
                 
                 if passengers_df.empty:
                     print(f"[TRIP_PASSENGERS][EMPTY] Aucun passager trouvé pour le trajet {selected_trip_id}")
@@ -575,7 +575,7 @@ class TripsCacheService:
         TripsCacheService._html_cache[cache_key] = panel
         
         if TripsCacheService._debug_mode:
-            print(f"[HTML_CACHE] Panneau {panel_type} mis en cache pour trajet {trip_id[:8]}...")
+            print(f"[HTML_CACHE] Panneau {panel_type} mis en cache pour trajet {trip_id[:8] if trip_id else 'None'}...")
     
     @staticmethod
     def clear_trip_cache(trip_id: str):
@@ -590,7 +590,7 @@ class TripsCacheService:
             del TripsCacheService._html_cache[key]
         
         if TripsCacheService._debug_mode:
-            print(f"[HTML_CACHE] Cache effacé pour trajet {trip_id[:8]}...")
+            print(f"[HTML_CACHE] Cache effacé pour trajet {trip_id[:8] if trip_id else 'None'}...")
     
     @staticmethod
     def clear_all_html_cache():
@@ -625,4 +625,4 @@ class TripsCacheService:
                         TripsCacheService.get_trip_passengers_panel(trip_id)
                 except Exception as e:
                     if TripsCacheService._debug_mode:
-                        print(f"[PRELOAD] Erreur préchargement {panel_type} pour {trip_id[:8]}: {e}")
+                        print(f"[PRELOAD] Erreur préchargement {panel_type} pour {trip_id[:8] if trip_id else 'None'}: {e}")

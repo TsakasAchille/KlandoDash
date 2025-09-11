@@ -278,8 +278,16 @@ class TripRepositoryRest(SupabaseRepository):
         if filters and filters.get('text') and filters_config.get('location', {}).get('enabled'):
             location_columns = filters_config['location']['columns']
             search_text = filters['text']
-            or_conditions = [f"{col}.ilike.%{search_text}%" for col in location_columns]
-            query = query.or_(','.join(or_conditions))
+            
+            # Vérifier si c'est une recherche par ID de trajet
+            if search_text.startswith('TRIP-'):
+                print(f"[DEBUG_SEARCH] Recherche par ID: {search_text}")
+                query = query.eq('trip_id', search_text)
+            else:
+                # Recherche textuelle normale dans les lieux
+                print(f"[DEBUG_SEARCH] Recherche textuelle: {search_text}")
+                or_conditions = [f"{col}.ilike.%{search_text}%" for col in location_columns]
+                query = query.or_(','.join(or_conditions))
         
         return query
     

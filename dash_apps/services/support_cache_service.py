@@ -220,7 +220,7 @@ class SupportCacheService:
         cached_panel = SupportCacheService.get_cached_panel(selected_ticket_id, 'details')
         if cached_panel:
             if SupportCacheService._debug_mode:
-                print(f"[TICKET_DETAILS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_ticket_id[:8]}...")
+                print(f"[TICKET_DETAILS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_ticket_id[:8] if selected_ticket_id else 'None'}...")
             return cached_panel
         
         # Redis
@@ -229,7 +229,7 @@ class SupportCacheService:
             cached_ticket = redis_cache.get_json_by_key(f"ticket_details:{selected_ticket_id}")
             if cached_ticket:
                 if SupportCacheService._debug_mode:
-                    print(f"[TICKET_DETAILS][REDIS HIT] Détails récupérés pour {selected_ticket_id[:8]}...")
+                    print(f"[TICKET_DETAILS][REDIS HIT] Détails récupérés pour {selected_ticket_id[:8] if selected_ticket_id else 'None'}...")
                 data = cached_ticket
         except Exception:
             pass
@@ -238,7 +238,7 @@ class SupportCacheService:
         if not data:
             try:
                 if SupportCacheService._debug_mode:
-                    print(f"[TICKET_DETAILS][API FETCH] Chargement {selected_ticket_id[:8]}... via API REST")
+                    print(f"[TICKET_DETAILS][API FETCH] Chargement {selected_ticket_id[:8] if selected_ticket_id else 'None'}... via API REST")
                 
                 # Utiliser l'API REST via le repository pour récupérer le ticket
                 from dash_apps.repositories.support_ticket_repository_rest import SupportTicketRepositoryRest
@@ -256,7 +256,7 @@ class SupportCacheService:
                     
                     if not ticket_data:
                         if SupportCacheService._debug_mode:
-                            print(f"[TICKET_DETAILS][API ERROR] Ticket {selected_ticket_id[:8]}... non trouvé via API REST")
+                            print(f"[TICKET_DETAILS][API ERROR] Ticket {selected_ticket_id[:8] if selected_ticket_id else 'None'}... non trouvé via API REST")
                         return html.Div("Ticket non trouvé", className="alert alert-warning")
                     
                     # Utiliser directement les données du ticket
@@ -300,7 +300,7 @@ class SupportCacheService:
         # Render
         try:
             if SupportCacheService._debug_mode:
-                print(f"[TICKET_DETAILS][RENDER] Début génération panneau pour {selected_ticket_id[:8]}...")
+                print(f"[TICKET_DETAILS][RENDER] Début génération panneau pour {selected_ticket_id[:8] if selected_ticket_id else 'None'}...")
             
             from dash_apps.components.support_tickets import render_ticket_details
             from dash_apps.components.support_callbacks import load_comments_for_ticket
@@ -360,7 +360,7 @@ class SupportCacheService:
         SupportCacheService._html_cache[cache_key] = panel
         
         if SupportCacheService._debug_mode:
-            print(f"[HTML_CACHE] Panneau {panel_type} mis en cache pour ticket {ticket_id[:8]}...")
+            print(f"[HTML_CACHE] Panneau {panel_type} mis en cache pour ticket {ticket_id[:8] if ticket_id else 'None'}...")
     
     @staticmethod
     def clear_ticket_cache(ticket_id: str):
@@ -375,7 +375,7 @@ class SupportCacheService:
             del SupportCacheService._html_cache[key]
         
         if SupportCacheService._debug_mode:
-            print(f"[HTML_CACHE] Cache effacé pour ticket {ticket_id[:8]}...")
+            print(f"[HTML_CACHE] Cache effacé pour ticket {ticket_id[:8] if ticket_id else 'None'}...")
     
     @staticmethod
     def clear_all_html_cache():

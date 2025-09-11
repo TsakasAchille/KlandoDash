@@ -95,7 +95,7 @@ class EmailReceiverService:
         if token:
             ticket_id = TicketReferenceService.resolve_reference_token(token)
             if ticket_id:
-                logger.info(f"DEBUG: Token {token} résolu vers ticket {ticket_id[:8]}...")
+                logger.info(f"DEBUG: Token {token} résolu vers ticket {ticket_id[:8] if ticket_id else 'None'}...")
                 return ticket_id
         
         # 1c. Fallback pour les tests (TEST DE TICKET -> ID connu)
@@ -120,7 +120,7 @@ class EmailReceiverService:
                 if re.match(r'[A-Z]{2,3}-\d{4}-[A-Z0-9]{4}', found_value):
                     ticket_id = TicketReferenceService.resolve_reference_token(found_value)
                     if ticket_id:
-                        logger.info(f"DEBUG: Token {found_value} du corps résolu vers {ticket_id[:8]}...")
+                        logger.info(f"DEBUG: Token {found_value} du corps résolu vers {ticket_id[:8] if ticket_id else 'None'}...")
                         return ticket_id
                 else:
                     # C'est un UUID direct
@@ -400,7 +400,7 @@ def _extract_email_body(payload: Dict[str, Any]) -> str:
                 if ticket:
                     ticket.updated_at = datetime.now()
                     db_session.commit()
-                    logger.info(f"DEBUG: Ticket {ticket_id[:8]}... updated_at mis à jour (réponse reçue)")
+                    logger.info(f"DEBUG: Ticket {ticket_id[:8] if ticket_id else 'None'}... updated_at mis à jour (réponse reçue)")
                 else:
                     logger.warning(f"DEBUG: Ticket {ticket_id} non trouvé pour mise à jour timestamp")
                     

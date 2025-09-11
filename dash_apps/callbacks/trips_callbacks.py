@@ -114,7 +114,6 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
         
         if trip_id_list:
             selected_trip_id = trip_id_list[0]
-            trip_from_url = {"trip_id": selected_trip_id}
             
             # Appliquer automatiquement un filtre de recherche sur le trip_id
             # Cela affichera uniquement ce trajet et il sera sélectionné automatiquement
@@ -123,7 +122,8 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
             }
             
             print(f"[URL_SELECTION] Application du filtre pour le trajet: {selected_trip_id}")
-            return 1, trip_from_url, filter_with_trip_id
+            # Retourner directement le trip_id string, pas un dict
+            return 1, selected_trip_id, filter_with_trip_id
     # Si refresh a été cliqué
     if triggered_id == "refresh-trips-btn" and n_clicks is not None:
         return 1, selected_trip, current_filters
@@ -361,32 +361,20 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     Input("selected-trip-id", "data"),
     prevent_initial_call=True
 )
-def render_trip_details_panel(selected_trip):
+def render_trip_details_panel(selected_trip_id):
     """Callback séparé pour le rendu du panneau détails trajet avec cache HTML"""
     log_callback(
         "render_trip_details_panel",
-        {"selected_trip": selected_trip},
+        {"selected_trip_id": selected_trip_id},
         {}
     )
     
-    # Panneau vide par défaut
-    details_panel = html.Div()
-    
-    # Extraire l'ID si c'est un dict
-    trip_id_value = None
-    if selected_trip:
-        if isinstance(selected_trip, dict):
-            trip_id_value = getattr(selected_trip, "trip_id", None) if hasattr(selected_trip, "trip_id") else selected_trip.get("trip_id")
-        else:
-            trip_id_value = selected_trip
-    
     # Si pas d'ID, retourner un panneau vide
-    if not trip_id_value:
-        return details_panel
+    if not selected_trip_id:
+        return html.Div()
 
     # Read-Through pattern: le cache service gère tout
-   
-    return TripsCacheService.get_trip_details_panel(trip_id_value)
+    return TripsCacheService.get_trip_details_panel(selected_trip_id)
 
 
 @callback(
@@ -394,21 +382,13 @@ def render_trip_details_panel(selected_trip):
     [Input("selected-trip-id", "data")],
     prevent_initial_call=True
 )
-def render_trip_passengers_panel(selected_trip):
+def render_trip_passengers_panel(selected_trip_id):
     """Callback séparé pour le rendu du panneau passagers trajet avec cache HTML"""
     log_callback(
         "render_trip_passengers_panel",
-        {"selected_trip": selected_trip},
+        {"selected_trip_id": selected_trip_id},
         {}
     )
     
-    # Extraire l'ID si c'est un dict
-    trip_id_value = None
-    if selected_trip:
-        if isinstance(selected_trip, dict):
-            trip_id_value = getattr(selected_trip, "trip_id", None) if hasattr(selected_trip, "trip_id") else selected_trip.get("trip_id")
-        else:
-            trip_id_value = selected_trip
-    
     # Read-Through pattern: le cache service gère tout
-    return TripsCacheService.get_trip_passengers_panel(trip_id_value)
+    return TripsCacheService.get_trip_passengers_panel(selected_trip_id)

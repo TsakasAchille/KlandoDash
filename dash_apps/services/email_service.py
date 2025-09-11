@@ -315,7 +315,7 @@ Référence: {reference_token or 'N/A'}
                 if ticket:
                     ticket.updated_at = datetime.now()
                     db_session.commit()
-                    logger.info(f"DEBUG: Ticket {ticket_id[:8]}... updated_at mis à jour")
+                    logger.info(f"DEBUG: Ticket {ticket_id[:8] if ticket_id else 'None'}... updated_at mis à jour")
                 else:
                     logger.warning(f"DEBUG: Ticket {ticket_id} non trouvé pour mise à jour timestamp")
                     

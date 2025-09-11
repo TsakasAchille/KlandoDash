@@ -233,5 +233,5 @@ class SQLQueryBuilder:
         Returns:
             Données formatées du panel ou None si erreur
         """
-        print(f"[SQL_BUILDER] Récupération données {panel_type} pour trip {trip_id[:8]}...")
+        print(f"[SQL_BUILDER] Récupération données {panel_type} pour trip {trip_id[:8] if trip_id else 'None'}...")
         return SQLQueryBuilder.execute_panel_query(panel_type, trip_id)

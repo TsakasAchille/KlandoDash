@@ -36,7 +36,7 @@ class TicketReferenceService:
             year = datetime.now().year
             token = f"{format_type}-{year}-{random_part}"
             
-            logger.info(f"DEBUG: Token généré: {token} pour ticket {ticket_id[:8]}...")
+            logger.info(f"DEBUG: Token généré: {token} pour ticket {ticket_id[:8] if ticket_id else 'None'}...")
             return token
             
         except Exception as e:
@@ -87,7 +87,7 @@ class TicketReferenceService:
                 session.add(reference)
                 session.commit()
                 
-                logger.info(f"DEBUG: Mapping créé: {token} -> {ticket_id[:8]}...")
+                logger.info(f"DEBUG: Mapping créé: {token} -> {ticket_id[:8] if ticket_id else 'None'}...")
                 return token
                 
         except Exception as e:
@@ -112,7 +112,7 @@ class TicketReferenceService:
                 ).first()
                 
                 if reference:
-                    logger.info(f"DEBUG: Token {token} résolu vers {reference.ticket_id[:8]}...")
+                    logger.info(f"DEBUG: Token {token} résolu vers {reference.ticket_id[:8] if reference.ticket_id else 'None'}...")
                     return reference.ticket_id
                 else:
                     logger.warning(f"DEBUG: Token {token} non trouvé")
@@ -143,7 +143,7 @@ class TicketReferenceService:
                     return reference.reference_token
                 else:
                     # Créer automatiquement un token si il n'existe pas
-                    logger.info(f"DEBUG: Création automatique token pour {ticket_id[:8]}...")
+                    logger.info(f"DEBUG: Création automatique token pour {ticket_id[:8] if ticket_id else 'None'}...")
                     return TicketReferenceService.create_reference_mapping(ticket_id)
                     
         except Exception as e:
