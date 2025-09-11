@@ -178,15 +178,8 @@ class TripRepositoryRest(SupabaseRepository):
             # Appliquer les filtres avec une fonction réutilisable
             query = self._apply_filters_to_query(query, filters, status, filters_config)
             
-            # Appliquer le tri selon la config
-            default_sort = config.get('default_sort', {})
-            sort_column = default_sort.get('column', 'departure_date')
-            sort_desc = default_sort.get('direction', 'desc') == 'desc'
-            
-            # Override du tri si spécifié dans les filtres
-            if filters and filters.get('date_sort'):
-                sort_desc = filters['date_sort'] == 'desc'
-            
+            # Appliquer le tri avec mapping automatique des colonnes
+            sort_column, sort_desc = self._get_sort_config(config, filters)
             query = query.order(sort_column, desc=sort_desc)
             
             # Appliquer la pagination
@@ -289,6 +282,31 @@ class TripRepositoryRest(SupabaseRepository):
             query = query.or_(','.join(or_conditions))
         
         return query
+    
+    def _get_sort_config(self, config: Dict, filters: Optional[Dict[str, Any]]) -> tuple:
+        """
+        Détermine la colonne et direction de tri en mappant les colonnes virtuelles vers les vraies colonnes
+        """
+        # Configuration par défaut
+        default_sort = config.get('default_sort', {})
+        sort_column = default_sort.get('column', 'departure_date')
+        sort_desc = default_sort.get('direction', 'desc') == 'desc'
+        
+        # Override par les filtres utilisateur
+        if filters and filters.get('date_sort'):
+            sort_desc = filters['date_sort'] == 'desc'
+        
+        # Mapping des colonnes virtuelles vers les colonnes réelles
+        column_mapping = {
+            'departure_date': 'departure_schedule',  # Date virtuelle → timestamp réel
+            'created_at': 'created_at',  # Pas de mapping nécessaire
+            'status': 'status'  # Pas de mapping nécessaire
+        }
+        
+        # Appliquer le mapping si nécessaire
+        real_column = column_mapping.get(sort_column, sort_column)
+        
+        return real_column, sort_desc
     
     def search_trips(self, query: str, limit: int = 50) -> List[Dict]:
         """

@@ -85,52 +85,6 @@ def log_callback(name, inputs, states=None):
         print(sep)
 
 
-def find_trip_page_index_from_cache(trip_id, page_size, filter_params=None):
-    """Trouve l'index de page en parcourant le cache existant (évite l'appel DB)
-    
-    Args:
-        trip_id: ID du trajet à trouver
-        page_size: Taille de chaque page
-        filter_params: Paramètres de filtrage actuels
-        
-    Returns:
-        Index de la page (0-based) ou None si non trouvé
-    """
-    try:
-        # Parcourir les pages en cache pour trouver le trajet
-        max_pages_to_check = 10  # Limiter la recherche pour éviter la lenteur
-        
-        for page_index in range(max_pages_to_check):
-            cache_key = redis_cache.make_trips_page_key(page_index, page_size, filter_params or {})
-            
-            # Vérifier d'abord le cache local
-            if cache_key in TripsCacheService._local_cache:
-                cached_data = TripsCacheService._local_cache[cache_key]
-                trips = cached_data.get("trips", [])
-                
-                # Chercher le trajet dans cette page
-                for trip in trips:
-                    trip_id_in_cache = trip.get("trip_id") if isinstance(trip, dict) else getattr(trip, "trip_id", None)
-                    if str(trip_id_in_cache) == str(trip_id):
-                        print(f"[CACHE_SEARCH] Trajet {trip_id} trouvé en page {page_index} (cache local)")
-                        return page_index
-            
-            # Vérifier le cache Redis si pas trouvé en local
-            cached_data = redis_cache.get_json_by_key(cache_key)
-            if cached_data:
-                trips = cached_data.get("trips", [])
-                for trip in trips:
-                    trip_id_in_cache = trip.get("trip_id") if isinstance(trip, dict) else getattr(trip, "trip_id", None)
-                    if str(trip_id_in_cache) == str(trip_id):
-                        print(f"[CACHE_SEARCH] Trajet {trip_id} trouvé en page {page_index} (cache Redis)")
-                        return page_index
-        
-        print(f"[CACHE_SEARCH] Trajet {trip_id} non trouvé dans les {max_pages_to_check} premières pages en cache")
-        return None
-    except Exception as e:
-        print(f"[CACHE_SEARCH] Erreur lors de la recherche: {str(e)}")
-        return None
-
 
 @callback(
     Output("trips-current-page", "data"),
