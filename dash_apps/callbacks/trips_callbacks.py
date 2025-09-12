@@ -376,6 +376,7 @@ def render_trip_details_panel(selected_trip_id):
     # 1. Récupérer les données via le service de cache
     from dash_apps.services.trip_details_cache_service import TripDetailsCache
     from dash_apps.layouts.trip_detail_layout import TripDetailLayout
+    from dash_apps.utils.settings import load_json_config, get_jinja_template
     
     data = TripDetailsCache.get_trip_details_data(selected_trip_id)
     
@@ -385,8 +386,46 @@ def render_trip_details_panel(selected_trip_id):
             "Impossible de récupérer les données du trajet."
         )
     
-    # 3. Générer le layout avec les données
-    return TripDetailLayout.render_trip_details_layout(selected_trip_id, data)
+    # 3. Générer le layout avec le template Jinja2 et la configuration JSON
+    try:
+        # Charger la configuration layout
+        config = load_json_config('trip_details_config.json')
+        layout_config = config.get('trip_details', {}).get('layout', {})
+        card_height = layout_config.get('card_height', '400px')
+        card_width = layout_config.get('card_width', '100%')
+        card_min_height = layout_config.get('card_min_height', '300px')
+        
+        # Charger le template via utils.settings
+        template = get_jinja_template('trip_details_template.jinja2')
+        
+        # Rendre le template avec les données du cache
+        html_content = template.render(
+            trip=data,
+            layout={
+                'card_height': card_height,
+                'card_width': card_width,
+                'card_min_height': card_min_height
+            }
+        )
+        
+        # Retourner le HTML rendu dans un iframe
+        return html.Div([
+            html.Iframe(
+                srcDoc=html_content,
+                style={
+                    "width": card_width,
+                    "height": card_height,
+                    "minHeight": card_min_height,
+                    "border": "none",
+                    "borderRadius": "12px"
+                }
+            )
+        ])
+        
+    except Exception as e:
+        print(f"Erreur rendu template: {e}")
+        # Fallback vers l'ancienne méthode en cas d'erreur
+        return TripDetailLayout.render_trip_details_layout(selected_trip_id, data)
 
 
 @callback(

@@ -5,6 +5,11 @@
       "ttl_seconds": 300,
       "key_prefix": "trip_details"
     },
+    "layout": {
+      "card_height": "350",
+      "card_width": "50%",
+      "card_min_height": "300px"
+    },
     "validation": {
       "required_inputs": ["trip_id"],
       "trip_id": {
@@ -19,26 +24,50 @@
           "label": "ID Trajet",
           "type": "string",
           "display": true,
-          "order": 1
+          "order": 1,
+          "label_font_size": "12px",
+          "value_font_size": "18px",
+          "label_width": "120px",
+          "icon": "assets/User.png",
+          "icon_color": "#667eea",
+          "icon_size": "20px"
         },
         "departure_name": {
           "label": "Départ",
           "type": "string",
           "display": true,
-          "order": 2
+          "order": 2,
+          "label_font_size": "14px",
+          "value_font_size": "24px",
+          "label_width": "80px",
+          "icon": "assets/depart.png",
+          "icon_color": "#28a745",
+          "icon_size": "22px"
         },
         "destination_name": {
           "label": "Destination",
           "type": "string",
           "display": true,
-          "order": 3
+          "order": 3,
+          "label_font_size": "14px",
+          "value_font_size": "24px",
+          "label_width": "100px",
+          "icon": "assets/arrive.png",
+          "icon_color": "#dc3545",
+          "icon_size": "22px"
         },
         "departure_schedule": {
           "label": "Heure de départ",
           "type": "datetime",
           "format": "DD/MM/YYYY HH:mm",
           "display": true,
-          "order": 4
+          "order": 4,
+          "label_font_size": "12px",
+          "value_font_size": "16px",
+          "label_width": "140px",
+          "icon": "assets/heure.png",
+          "icon_color": "#ffc107",
+          "icon_size": "18px"
         }
       },
       "driver_info": {

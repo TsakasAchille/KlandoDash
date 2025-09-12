@@ -19,7 +19,9 @@
       padding: 25px;
       overflow: hidden;
       margin-bottom: 20px;
-      min-height: 400px;
+      min-height: {{ layout.card_min_height if layout else '400px' }};
+      height: {{ layout.card_height if layout else '400px' }};
+      width: {{ layout.card_width if layout else '100%' }};
     }
     
     .card-header {

@@ -1,0 +1,103 @@
+{
+  "panels": {
+    "default": {
+      "layout": "horizontal",
+      "show_logo": true,
+      "show_description": true,
+      "show_contact": true,
+      "title": "Informations Entreprise"
+    },
+    "compact": {
+      "layout": "horizontal",
+      "show_logo": true,
+      "show_description": false,
+      "show_contact": true,
+      "title": "Entreprise"
+    },
+    "full": {
+      "layout": "vertical",
+      "show_logo": true,
+      "show_description": true,
+      "show_contact": true,
+      "title": "Profil Entreprise"
+    },
+    "card": {
+      "layout": "card",
+      "show_logo": true,
+      "show_description": true,
+      "show_contact": true,
+      "title": "Carte Entreprise"
+    },
+    "minimal": {
+      "layout": "horizontal",
+      "show_logo": false,
+      "show_description": false,
+      "show_contact": false,
+      "title": "Nom Entreprise"
+    },
+    "detailed": {
+      "layout": "card",
+      "show_logo": true,
+      "show_description": true,
+      "show_contact": true,
+      "show_extra_fields": true,
+      "title": "Profil Détaillé",
+      "fields": ["name", "description", "website", "contact_email", "phone", "address", "employees", "founded", "industry", "status"]
+    }
+  },
+  "field_icons": {
+    "name": "fas fa-building",
+    "description": "fas fa-info-circle",
+    "website": "fas fa-globe",
+    "contact_email": "fas fa-envelope",
+    "phone": "fas fa-phone",
+    "address": "fas fa-map-marker-alt",
+    "employees": "fas fa-users",
+    "revenue": "fas fa-dollar-sign",
+    "founded": "fas fa-calendar-alt",
+    "industry": "fas fa-industry",
+    "status": "fas fa-check-circle"
+  },
+  "sample_data": {
+    "klando": {
+      "name": "Klando",
+      "logo_url": "https://via.placeholder.com/120x120/667eea/white?text=K",
+      "description": "Plateforme de covoiturage moderne et sécurisée pour connecter conducteurs et passagers.",
+      "website": "https://klando.com",
+      "contact_email": "contact@klando.com",
+      "phone": "+33 1 23 45 67 89",
+      "address": "Paris, France",
+      "employees": "50-100",
+      "founded": "2020",
+      "industry": "Transport",
+      "status": "Actif"
+    },
+    "test_company": {
+      "name": "Test Company",
+      "logo_url": "https://via.placeholder.com/120x120/28a745/white?text=TC",
+      "description": "Entreprise de test pour démonstration des panels dynamiques.",
+      "website": "https://test-company.com",
+      "contact_email": "info@test-company.com",
+      "phone": "+33 9 87 65 43 21",
+      "address": "Lyon, France",
+      "employees": "10-50",
+      "founded": "2018",
+      "industry": "Tech",
+      "status": "En croissance"
+    },
+    "startup_example": {
+      "name": "StartupTech",
+      "logo_url": "https://via.placeholder.com/120x120/ff6b6b/white?text=ST",
+      "description": "Startup innovante dans le domaine de l'IA et du machine learning.",
+      "website": "https://startuptech.ai",
+      "contact_email": "hello@startuptech.ai",
+      "phone": "+33 6 12 34 56 78",
+      "address": "Toulouse, France",
+      "employees": "5-10",
+      "revenue": "500K€",
+      "founded": "2023",
+      "industry": "Intelligence Artificielle",
+      "status": "Levée de fonds"
+    }
+  }
+}

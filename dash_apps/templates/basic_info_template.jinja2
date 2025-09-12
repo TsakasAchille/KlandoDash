@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    .basic-info-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .info-field {
+      display: flex;
+      align-items: center;
+      min-width: 200px;
+      flex: 1;
+    }
+    
+    .icon-container {
+      width: {{ config.icon_size or '20px' }};
+      height: {{ config.icon_size or '20px' }};
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+    
+    .icon-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    
+    .field-content {
+      flex-grow: 1;
+    }
+    
+    .field-label {
+      font-size: {{ config.label_font_size or '12px' }};
+      color: #666;
+      font-weight: 500;
+      margin-bottom: 4px;
+      display: block;
+    }
+    
+    .field-value {
+      font-size: {{ config.value_font_size or '16px' }};
+      color: #1c2b46;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="basic-info-container">
+    {% for field_name, field_config in fields.items() %}
+      {% if field_config.display %}
+        <div class="info-field">
+          {% if field_config.icon %}
+            <div class="icon-container">
+              <img src="{{ field_config.icon }}" alt="{{ field_config.label }}">
+            </div>
+          {% endif %}
+          
+          <div class="field-content">
+            <span class="field-label">{{ field_config.label }}</span>
+            <div class="field-value">{{ trip_data.get(field_name, '-') }}</div>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</body>
+</html>

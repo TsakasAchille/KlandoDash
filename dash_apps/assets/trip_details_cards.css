@@ -1,0 +1,197 @@
+/* CSS pour les cards de détails de trajet */
+
+.trip-details-container {
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+}
+
+.trip-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.trip-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.trip-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.trip-card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 16px 16px 0 0;
+    position: relative;
+}
+
+.trip-card-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+}
+
+.trip-card-header h5 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.trip-card-body {
+    padding: 25px;
+}
+
+.trip-field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+
+.trip-field-row:last-child {
+    border-bottom: none;
+}
+
+.trip-field-row:hover {
+    background-color: #f8f9ff;
+    border-radius: 8px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.trip-field-label {
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 0.9rem;
+    flex: 0 0 40%;
+}
+
+.trip-field-value {
+    color: #2d3748;
+    font-size: 0.95rem;
+    text-align: right;
+    flex: 1;
+    font-weight: 500;
+}
+
+/* Couleurs spécifiques par type de card */
+.trip-card.basic-info .trip-card-header {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.trip-card.driver-info .trip-card-header {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.trip-card.trip-details .trip-card-header {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.trip-card.status-info .trip-card-header {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+/* Styles pour les valeurs spéciales */
+.trip-field-value.currency {
+    color: #38a169;
+    font-weight: 700;
+}
+
+.trip-field-value.status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.trip-field-value.status.active {
+    background-color: #c6f6d5;
+    color: #22543d;
+}
+
+.trip-field-value.status.completed {
+    background-color: #bee3f8;
+    color: #2a4365;
+}
+
+.trip-field-value.status.cancelled {
+    background-color: #fed7d7;
+    color: #742a2a;
+}
+
+.trip-field-value.status.pending {
+    background-color: #faf089;
+    color: #744210;
+}
+
+.trip-field-value.datetime {
+    color: #553c9a;
+    font-weight: 600;
+}
+
+/* Animation d'entrée */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.trip-card {
+    animation: slideInUp 0.6s ease-out;
+}
+
+.trip-card:nth-child(1) { animation-delay: 0.1s; }
+.trip-card:nth-child(2) { animation-delay: 0.2s; }
+.trip-card:nth-child(3) { animation-delay: 0.3s; }
+.trip-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .trip-details-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .trip-card-body {
+        padding: 20px;
+    }
+    
+    .trip-field-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .trip-field-label {
+        flex: none;
+    }
+    
+    .trip-field-value {
+        text-align: left;
+    }
+}

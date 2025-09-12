@@ -5,8 +5,7 @@ Responsable du rendu HTML des panels de détails de trajet
 from typing import Dict, Any
 from dash import html
 import dash_bootstrap_components as dbc
-import json
-import os
+from dash_apps.utils.settings import load_json_config
 
 
 class TripDetailLayout:
@@ -15,22 +14,14 @@ class TripDetailLayout:
     @staticmethod
     def _load_config() -> Dict[str, Any]:
         """Charge la configuration JSON des détails de trajet"""
-        config_path = os.path.join(
-            os.path.dirname(__file__), 
-            '..', 'config', 'trip_details_config.json'
-        )
-        print(f"🔧 [CONFIG_DEBUG] Chemin config: {config_path}")
-        print(f"🔧 [CONFIG_DEBUG] Fichier existe: {os.path.exists(config_path)}")
-        
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-                print(f"🔧 [CONFIG_DEBUG] Config chargée: {list(config.keys())}")
-                if 'fields' in config:
-                    print(f"🔧 [CONFIG_DEBUG] Fields trouvés: {list(config['fields'].keys())}")
-                if 'rendering' in config:
-                    print(f"🔧 [CONFIG_DEBUG] Rendering trouvé: {list(config['rendering'].keys())}")
-                return config
+            config = load_json_config('trip_details_config.json')
+            print(f"🔧 [CONFIG_DEBUG] Config chargée: {list(config.keys())}")
+            if 'trip_details' in config and 'fields' in config['trip_details']:
+                print(f"🔧 [CONFIG_DEBUG] Fields trouvés: {list(config['trip_details']['fields'].keys())}")
+            if 'trip_details' in config and 'rendering' in config['trip_details']:
+                print(f"🔧 [CONFIG_DEBUG] Rendering trouvé: {list(config['trip_details']['rendering'].keys())}")
+            return config
         except Exception as e:
             print(f"❌ Erreur lors du chargement de la config: {e}")
             return {}
