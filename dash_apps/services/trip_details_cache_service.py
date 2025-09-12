@@ -19,7 +19,7 @@ class TripDetailsCache:
     
     @staticmethod
     def _load_config() -> Dict[str, Any]:
-        """Charge la configuration JSON pour les détails de trajet avec validation Supabase"""
+        """Charge la configuration JSON pour les détails de trajet (validation différée)"""
         if TripDetailsCache._config_cache is None:
             config_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)), 
@@ -30,24 +30,22 @@ class TripDetailsCache:
                 with open(config_path, 'r', encoding='utf-8') as f:
                     TripDetailsCache._config_cache = json.load(f)
                 
-                # Validation automatique contre le schéma avec Pydantic
-                from dash_apps.services.config_validator import ConfigValidator
-                validation_result = ConfigValidator.validate_config_file(config_path)
-                
-                if not validation_result.success:
-                    print(f"[TRIP_DETAILS_CONFIG] ⚠️  ERREURS DE VALIDATION DÉTECTÉES:")
-                    for error in validation_result.errors:
-                        print(f"  - {error}")
-                    print(f"[TRIP_DETAILS_CONFIG] Utilisation de la configuration malgré les erreurs")
-                else:
-                    if TripDetailsCache._debug_mode:
-                        print(f"[TRIP_DETAILS_CONFIG] ✅ Configuration validée contre le schéma")
-                
-                if TripDetailsCache._debug_mode:
-                    print(f"[TRIP_DETAILS_CONFIG] Configuration chargée depuis {config_path}")
+                from dash_apps.utils.callback_logger import CallbackLogger
+                CallbackLogger.log_callback(
+                    "load_trip_config",
+                    {"config_path": os.path.basename(config_path)},
+                    status="SUCCESS",
+                    extra_info="Trip details configuration loaded"
+                )
                     
             except Exception as e:
-                print(f"[TRIP_DETAILS_CONFIG] Erreur chargement config: {e}")
+                from dash_apps.utils.callback_logger import CallbackLogger
+                CallbackLogger.log_callback(
+                    "load_trip_config",
+                    {"config_path": os.path.basename(config_path), "error": str(e)},
+                    status="ERROR",
+                    extra_info="Configuration loading failed"
+                )
                 TripDetailsCache._config_cache = {}
         
         return TripDetailsCache._config_cache.get('trip_details', {})
@@ -90,13 +88,30 @@ class TripDetailsCache:
             cache_key = TripDetailsCache._get_cache_key(trip_id)
             cached_data = cache.get('trip_details', key=cache_key)
             
-            if cached_data and TripDetailsCache._debug_mode:
-                print(f"[TRIP_DETAILS_CACHE][HIT] Données récupérées pour {trip_id[:8] if trip_id else 'None'}")
+            if cached_data:
+                from dash_apps.utils.callback_logger import CallbackLogger
+                CallbackLogger.log_callback(
+                    "cache_get_trip_details",
+                    {
+                        "trip_id": trip_id[:8] if trip_id else 'None',
+                        "cache_hit": True
+                    },
+                    status="SUCCESS",
+                    extra_info="Cache hit - data retrieved"
+                )
             
             return cached_data
         except Exception as e:
-            if TripDetailsCache._debug_mode:
-                print(f"[TRIP_DETAILS_CACHE][ERROR] Erreur lecture cache: {e}")
+            from dash_apps.utils.callback_logger import CallbackLogger
+            CallbackLogger.log_callback(
+                "cache_get_trip_details",
+                {
+                    "trip_id": trip_id[:8] if trip_id else 'None',
+                    "error": str(e)
+                },
+                status="ERROR",
+                extra_info="Cache get operation failed"
+            )
             return None
     
     @staticmethod
@@ -114,36 +129,56 @@ class TripDetailsCache:
             
             cache.set('trip_details', data, ttl=ttl, key=cache_key)
             
-            if TripDetailsCache._debug_mode:
-                print(f"[TRIP_DETAILS_CACHE][SET] Données mises en cache pour {trip_id[:8] if trip_id else 'None'} (TTL: {ttl}s)")
+            from dash_apps.utils.callback_logger import CallbackLogger
+            CallbackLogger.log_callback(
+                "cache_set_trip_details",
+                {
+                    "trip_id": trip_id[:8] if trip_id else 'None',
+                    "ttl_seconds": ttl,
+                    "cache_key": cache_key
+                },
+                status="SUCCESS",
+                extra_info="Trip details cached successfully"
+            )
         
         except Exception as e:
-            if TripDetailsCache._debug_mode:
-                print(f"[TRIP_DETAILS_CACHE][ERROR] Erreur mise en cache: {e}")
+            from dash_apps.utils.callback_logger import CallbackLogger
+            CallbackLogger.log_callback(
+                "cache_set_trip_details",
+                {
+                    "trip_id": trip_id[:8] if trip_id else 'None',
+                    "error": str(e)
+                },
+                status="ERROR",
+                extra_info="Cache set operation failed"
+            )
     
     @staticmethod
     def get_trip_details_data(trip_id: str) -> Dict[str, Any]:
         """
         Point d'entrée principal pour récupérer les données de trajet.
-        Implémente le flux: Cache → JSON Config → DB/API → Cache → Return Data
-        Retourne None en cas d'erreur ou données invalides.
+        Implémente le flux: Cache → DB/API → Validation → Cache → Return Data
+        Validation unique à la fin pour éviter la double validation.
         """
         # 1. Validation des inputs selon JSON
         validation_error = TripDetailsCache._validate_inputs(trip_id)
         if validation_error:
             return None
         
-        # 2. Vérifier le cache
+        # 2. Vérifier le cache (sans validation)
         cached_data = TripDetailsCache._get_cached_data(trip_id)
         if cached_data:
             return cached_data
         
-        # 3. Récupérer depuis l'API REST avec validation
+        # 3. Récupérer depuis l'API REST
         from dash_apps.utils.data_schema_rest import get_trip_details_configured
         data = get_trip_details_configured(trip_id)
         
-        # 4. Mettre en cache (même si data est None ou vide)
+        # 4. Les données sont déjà validées dans get_trip_details_configured()
+        # Pas besoin de validation supplémentaire ici
+        
+        # 5. Mettre en cache les données validées
         TripDetailsCache._set_cache_data(trip_id, data)
         
-        # 5. Retourner les données (peut être None si validation Pydantic échoue)
+        # 6. Retourner les données validées
         return data

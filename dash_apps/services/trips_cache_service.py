@@ -140,13 +140,7 @@ class TripsCacheService:
             if (cache_key in TripsCacheService._local_cache and 
                 TripsCacheService._is_local_cache_valid(cache_key)):
                 
-                if TripsCacheService._debug_mode:
-                    try:
-                        trips_count = len(TripsCacheService._local_cache[cache_key].get("trips", []))
-                        total_count = TripsCacheService._local_cache[cache_key].get("total_count", 0)
-                        print(f"[TRIPS][LOCAL CACHE HIT] page_index={page_index} trips={trips_count} total={total_count}")
-                    except Exception:
-                        pass
+                # Cache hit - pas de log pour éviter le spam
 
                 cached = TripsCacheService._local_cache[cache_key]
                 return cached
@@ -157,13 +151,7 @@ class TripsCacheService:
                 # Stocker dans le cache local pour les prochains accès
                 TripsCacheService._store_in_local_cache(cache_key, cached_data)
                 
-                if TripsCacheService._debug_mode:
-                    try:
-                        trips_count = len(cached_data.get("trips", []))
-                        total_count = cached_data.get("total_count", 0)
-                        print(f"[TRIPS][CACHE HIT] page_index={page_index} trips={trips_count} total={total_count}")
-                    except Exception:
-                        pass
+                # Cache hit - pas de log pour éviter le spam
                 
                 return cached_data
         
@@ -179,13 +167,19 @@ class TripsCacheService:
         TripsCacheService._store_in_local_cache(cache_key, result)
         TripsCacheService._store_in_cache(cache_key, result, ttl_seconds=300)
         
-        if TripsCacheService._debug_mode:
-            try:
-                trips_count = len(result.get("trips", []))
-                total_count = result.get("total_count", 0)
-                print(f"[TRIPS][FETCH] page_index={page_index} trips={trips_count} total={total_count} refresh={force_reload}")
-            except Exception:
-                pass
+        # Database fetch - utiliser le nouveau logger
+        from dash_apps.utils.callback_logger import CallbackLogger
+        try:
+            trips_count = len(result.get("trips", []))
+            total_count = result.get("total_count", 0)
+            CallbackLogger.log_cache_operation(
+                "DB_FETCH", 
+                f"page_{page_index}_size_{page_size}",
+                hit=False,
+                details={"trips": trips_count, "total": total_count, "refresh": force_reload}
+            )
+        except Exception:
+            pass
         
         return result
     
@@ -478,8 +472,7 @@ class TripsCacheService:
         # Cache HTML
         cached_panel = TripsCacheService.get_cached_panel(selected_trip_id, 'passengers')
         if cached_panel:
-            if TripsCacheService._debug_mode:
-                print(f"[TRIP_PASSENGERS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_trip_id[:8] if selected_trip_id else 'None'}...")
+            # Cache hit - pas de log pour éviter le spam
             return cached_panel
         
         # Redis
@@ -487,9 +480,7 @@ class TripsCacheService:
         try:
             cached_passengers = cache.get_trip_passengers(selected_trip_id)
             if cached_passengers:
-                if TripsCacheService._debug_mode:
-                    print(f"[TRIP_PASSENGERS][CACHE HIT] Passagers récupérés pour {selected_trip_id[:8] if selected_trip_id else 'None'}...")
-                # Utiliser le pandas importé en haut du fichier
+                # Cache hit - pas de log pour éviter le spam
                 data = {'trip_id': selected_trip_id, 'passengers': pd.DataFrame(cached_passengers)}
         except Exception:
             pass
@@ -497,8 +488,9 @@ class TripsCacheService:
         # API REST
         if not data:
             try:
-                if TripsCacheService._debug_mode:
-                    print(f"[TRIP_PASSENGERS][API FETCH] Chargement {selected_trip_id[:8] if selected_trip_id else 'None'}... via API REST")
+                # API fetch - utiliser le nouveau logger
+                from dash_apps.utils.callback_logger import CallbackLogger
+                CallbackLogger.log_api_call("TRIP_PASSENGERS_FETCH", {"trip_id": selected_trip_id[:8] + "..." if selected_trip_id else "None"})
                 
                 # Utiliser directement les repositories REST
                 from dash_apps.repositories.repository_factory import RepositoryFactory
@@ -508,10 +500,8 @@ class TripsCacheService:
                 # Dans le futur, il faudra implémenter get_bookings_for_trip dans le repository
                 passengers_df = pd.DataFrame()
                 
-                print(f"[TRIP_PASSENGERS] Utilisation de l'API REST pour {selected_trip_id[:8] if selected_trip_id else 'None'}")
-                
                 if passengers_df.empty:
-                    print(f"[TRIP_PASSENGERS][EMPTY] Aucun passager trouvé pour le trajet {selected_trip_id}")
+                    CallbackLogger.log_api_call("TRIP_PASSENGERS_EMPTY", {"trip_id": selected_trip_id}, status="WARNING")
                     import dash_bootstrap_components as dbc
                     return html.Div(dbc.Alert(f"Aucun passager pour ce trajet.", color="warning", className="mb-3"))
                 

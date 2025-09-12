@@ -1,14 +1,16 @@
-from dash import html, dcc, Input, Output, callback, callback_context, State
+from dash import html, dcc, callback, Input, Output, State, callback_context, dash_table, ALL, MATCH
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
-import dash
 import json
-import math
-from dash_apps.config import Config
+import pandas as pd
+from datetime import datetime
+from typing import Dict, Any, List, Optional
+from dash_apps.utils.callback_logger import CallbackLogger
 from dash_apps.utils.settings import load_json_config
 from dash_apps.utils.data_transformer import DataTransformer, TableConfigValidator
 # Removed TripRepository import - now using REST API via RepositoryFactory
-
+from dash_apps.config import Config
+import math
 def _load_table_config():
     """Charge et valide la configuration des colonnes depuis trips_table_config.json"""
     config = load_json_config('trips_table_config.json')
@@ -338,51 +340,73 @@ def handle_trips_pagination_buttons(prev_clicks, next_clicks, current_page):
 # 2. Gestion des clics sur les lignes
 @callback(
     Output("selected-trip-id", "data", allow_duplicate=True),
-    Input({"type": "trip-row", "index": dash.ALL}, "n_clicks"),
+    Input({"type": "trip-row", "index": ALL}, "n_clicks"),
     prevent_initial_call=True  # Ceci ne suffit pas toujours avec les pattern-matching callbacks
 )
 def handle_trip_row_selection(row_clicks):
-    # Gestion de la sélection de ligne
+    """Gestion de la sélection de ligne"""
+    CallbackLogger.log_callback(
+        "handle_trip_row_selection",
+        {"row_clicks_count": len(row_clicks) if row_clicks else 0},
+        status="INFO",
+        extra_info="Processing row selection"
+    )
     
     ctx = callback_context
     if not ctx.triggered:
-        # Pas de déclencheur
+        CallbackLogger.log_callback(
+            "handle_trip_row_selection", 
+            {}, 
+            status="WARNING", 
+            extra_info="No trigger context"
+        )
         raise PreventUpdate
     
     # Vérifier si le callback est déclenché lors du chargement initial
-    # Les clicks seront tous à zéro lors du chargement initial
     if not any(clicks > 0 for clicks in row_clicks):
-        # Chargement initial, ignorer
+        CallbackLogger.log_callback(
+            "handle_trip_row_selection", 
+            {"all_clicks_zero": True}, 
+            status="INFO", 
+            extra_info="Initial load, ignoring"
+        )
         raise PreventUpdate
     
     # Déterminer ce qui a été cliqué
     clicked_id = ctx.triggered[0]["prop_id"].split(".")[0]
-    # ID cliqué identifié
     
     try:
         # Extraire l'index (trip_id) de l'ID JSON
         id_dict = json.loads(clicked_id)
         trip_id = id_dict["index"]
-        # Trip ID extrait avec succès
         
-        # Retourner l'ID extrait
+        CallbackLogger.log_callback(
+            "handle_trip_row_selection",
+            {"selected_trip_id": trip_id},
+            status="SUCCESS",
+            extra_info=f"Trip {trip_id} selected"
+        )
+        
         return trip_id
     except Exception as e:
-        print(f"\n[ERROR] Erreur extraction trip_id: {str(e)}")
-        import traceback
-        print(traceback.format_exc())
+        CallbackLogger.log_callback(
+            "handle_trip_row_selection",
+            {"error": str(e), "clicked_id": clicked_id},
+            status="ERROR",
+            extra_info="Failed to extract trip_id"
+        )
         raise PreventUpdate
 
 
 # 3. Nouveau callback pour gérer uniquement la mise en surbrillance des lignes
 @callback(
-    Output({"type": "trip-row", "index": dash.ALL}, "style"),
-    Output({"type": "trip-row", "index": dash.ALL}, "className"),
-    Output({"type": "select-trip-btn", "index": dash.ALL}, "color"),
-    Output({"type": "select-trip-btn", "index": dash.ALL}, "outline"),
+    Output({"type": "trip-row", "index": ALL}, "style"),
+    Output({"type": "trip-row", "index": ALL}, "className"),
+    Output({"type": "select-trip-btn", "index": ALL}, "color"),
+    Output({"type": "select-trip-btn", "index": ALL}, "outline"),
     Input("selected-trip-id", "data"),
-    State({"type": "trip-row", "index": dash.ALL}, "id"),
-    State({"type": "select-trip-btn", "index": dash.ALL}, "id"),
+    State({"type": "trip-row", "index": ALL}, "id"),
+    State({"type": "select-trip-btn", "index": ALL}, "id"),
     prevent_initial_call=False
 )
 def highlight_selected_trip_row(selected_trip, row_ids, button_ids):

@@ -186,17 +186,8 @@ class TripRepositoryRest(SupabaseRepository):
             query = query.range(skip, skip + page_size - 1)
             
             # Exécuter la requête
-            print(f"[DEBUG_QUERY] Exécution de la requête avec filtres appliqués")
             response = query.execute()
             trips = response.data or []
-            print(f"[DEBUG_QUERY] Résultats: {len(trips)} trajets trouvés")
-            
-            # Debug: afficher quelques exemples de dates si on a des résultats
-            if trips:
-                for i, trip in enumerate(trips[:3]):  # 3 premiers trajets
-                    print(f"[DEBUG_DATES] Trajet {i+1}: departure_date={trip.get('departure_date')}, departure_schedule={trip.get('departure_schedule')}")
-            else:
-                print("[DEBUG_DATES] Aucun trajet trouvé - vérifier les formats de dates")
             
             # Compter le nombre total avec les mêmes filtres (réutilisation de la logique)
             count_query = supabase.table(self.table_name).select('*', count='exact')
@@ -237,41 +228,32 @@ class TripRepositoryRest(SupabaseRepository):
         Applique les filtres à une requête Supabase de manière optimisée
         Ordre des filtres optimisé pour les performances des index
         """
-        print(f"[DEBUG_FILTERS] Filters reçus: {filters}")
-        print(f"[DEBUG_FILTERS] Status: {status}")
-        print(f"[DEBUG_FILTERS] Config filtres: {filters_config}")
+       
         
         # 1. Filtres d'égalité d'abord (meilleur pour les index)
         if filters:
             # Filtre de statut (config: filters.status.column)
             if filters.get('status') and filters_config.get('status', {}).get('enabled'):
                 status_column = filters_config['status']['column']
-                print(f"[DEBUG_FILTERS] Applique filtre statut: {status_column} = {filters['status']}")
                 query = query.eq(status_column, filters['status'])
         
         # Rétrocompatibilité: ajouter le statut si fourni directement
         if status:
             status_column = filters_config.get('status', {}).get('column', 'status')
-            print(f"[DEBUG_FILTERS] Applique statut rétrocompatible: {status_column} = {status}")
             query = query.eq(status_column, status)
         
         # 2. Filtres de plage (date) - après les filtres d'égalité
         if filters and filters_config.get('date_range', {}).get('enabled'):
             date_column = filters_config['date_range']['column']
-            print(f"[DEBUG_FILTERS] Colonne date configurée: {date_column}")
             
             if filters.get('date_filter_type') == 'after' and filters.get('single_date'):
-                print(f"[DEBUG_FILTERS] Applique filtre AFTER: {date_column} >= {filters['single_date']}")
                 query = query.gte(date_column, filters['single_date'])
             elif filters.get('date_filter_type') == 'before' and filters.get('single_date'):
-                print(f"[DEBUG_FILTERS] Applique filtre BEFORE: {date_column} <= {filters['single_date']}")
                 query = query.lte(date_column, filters['single_date'])
             elif filters.get('date_filter_type') == 'range':
                 if filters.get('date_from'):
-                    print(f"[DEBUG_FILTERS] Applique filtre RANGE FROM: {date_column} >= {filters['date_from']}")
                     query = query.gte(date_column, filters['date_from'])
                 if filters.get('date_to'):
-                    print(f"[DEBUG_FILTERS] Applique filtre RANGE TO: {date_column} <= {filters['date_to']}")
                     query = query.lte(date_column, filters['date_to'])
         
         # 3. Filtres de recherche textuelle en dernier (plus coûteux)
@@ -281,11 +263,9 @@ class TripRepositoryRest(SupabaseRepository):
             
             # Vérifier si c'est une recherche par ID de trajet
             if search_text.startswith('TRIP-'):
-                print(f"[DEBUG_SEARCH] Recherche par ID: {search_text}")
                 query = query.eq('trip_id', search_text)
             else:
                 # Recherche textuelle normale dans les lieux
-                print(f"[DEBUG_SEARCH] Recherche textuelle: {search_text}")
                 or_conditions = [f"{col}.ilike.%{search_text}%" for col in location_columns]
                 query = query.or_(','.join(or_conditions))
         

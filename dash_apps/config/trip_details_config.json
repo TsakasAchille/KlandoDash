@@ -10,6 +10,115 @@
       "card_width": "50%",
       "card_min_height": "300px"
     },
+    "dash_layout": {
+      "trip_details_panel": {
+        "width": 6,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      },
+      "trip_stats_panel": {
+        "width": 6,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      },
+      "trip_passengers_panel": {
+        "width": 12,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        }
+      }
+    },
+    "data_formatting": {
+      "datetime_fields": {
+        "departure_schedule": {
+          "input_format": "timestamp_with_timezone",
+          "output_format": "HH:mm",
+          "display_format": "HH:mm"
+        },
+        "departure_date": {
+          "input_format": "timestamp_with_timezone", 
+          "output_format": "DD/MM/YYYY",
+          "display_format": "DD/MM/YYYY"
+        },
+        "created_at": {
+          "input_format": "timestamp_with_timezone",
+          "output_format": "DD/MM/YYYY HH:mm",
+          "display_format": "DD/MM/YYYY HH:mm"
+        },
+        "updated_at": {
+          "input_format": "timestamp_with_timezone",
+          "output_format": "DD/MM/YYYY HH:mm", 
+          "display_format": "DD/MM/YYYY HH:mm"
+        }
+      }
+    },
+    "trip_stats": {
+      "layout": {
+        "card_height": "300px",
+        "card_width": "100%",
+        "card_min_height": "250px"
+      },
+      "fields": {
+        "passenger_price": {
+          "label": "Prix par place",
+          "type": "currency",
+          "currency": "FCFA",
+          "display": true,
+          "order": 1
+        },
+        "driver_price": {
+          "label": "Prix conducteur", 
+          "type": "currency",
+          "currency": "FCFA",
+          "display": true,
+          "order": 2
+        },
+        "seats_published": {
+          "label": "Nombre de places",
+          "type": "integer",
+          "display": true,
+          "order": 3
+        },
+        "seats_available": {
+          "label": "Places disponibles",
+          "type": "integer", 
+          "display": true,
+          "order": 4
+        },
+        "seats_booked": {
+          "label": "Réservations",
+          "type": "integer",
+          "display": true,
+          "order": 5
+        },
+        "status": {
+          "label": "Statut",
+          "type": "enum",
+          "values": {
+            "PENDING": "En attente",
+            "ACTIVE": "Actif", 
+            "COMPLETED": "Terminé",
+            "CANCELLED": "Annulé"
+          },
+          "display": true,
+          "order": 6
+        }
+      }
+    },
     "validation": {
       "required_inputs": ["trip_id"],
       "trip_id": {

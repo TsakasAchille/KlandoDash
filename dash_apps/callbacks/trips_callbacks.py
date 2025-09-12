@@ -11,78 +11,16 @@ from dash_apps.components.trip_search_widget import render_trip_search_widget, r
 from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.redis_cache import redis_cache
 from dash_apps.services.trips_cache_service import TripsCacheService
+from dash_apps.utils.callback_logger import CallbackLogger
 
 # Utiliser la factory pour obtenir le repository approprié
 trip_repository = RepositoryFactory.get_trip_repository()
 
 
-# Helper de log standardisé pour tous les callbacks (compatible Python < 3.10)
+# Use the enhanced callback logger
 def log_callback(name, inputs, states=None):
-    def _short_str(s):
-        try:
-            s = str(s)
-        except Exception:
-            return s
-        if len(s) > 14:
-            return f"{s[:4]}…{s[-4:]}"
-        return s
-
-    def _clean(value):
-        # Nettoyage récursif: supprime None, "", et valeurs par défaut "all"
-        if isinstance(value, dict):
-            cleaned = {}
-            for k, v in value.items():
-                if v is None or v == "":
-                    continue
-                if isinstance(v, str) and v == "all":
-                    continue
-                # Flatten pour selected_trip
-                if k in ("selected_trip", "selected_trip_id") and isinstance(v, dict) and "trip_id" in v:
-                    cleaned["selected_trip_id"] = _short_str(v.get("trip_id"))
-                    continue
-                cleaned[k] = _clean(v)
-            return cleaned
-        if isinstance(value, list):
-            return [_clean(v) for v in value if v is not None and v != ""]
-        if isinstance(value, str):
-            return _short_str(value)
-        return value
-
-    def _kv_lines(dct):
-        if not dct:
-            return ["  (none)"]
-        lines = []
-        for k, v in dct.items():
-            try:
-                if isinstance(v, (dict, list)):
-                    v_str = json.dumps(v, ensure_ascii=False)
-                else:
-                    v_str = str(v)
-            except Exception:
-                v_str = str(v)
-            lines.append(f"  - {k}: {v_str}")
-        return lines
-
-    try:
-        c_inputs = _clean(inputs)
-        c_states = _clean(states or {})
-        sep = "=" * 74
-        print("\n" + sep)
-        print(f"[CB] {name}")
-        print("Inputs:")
-        for line in _kv_lines(c_inputs):
-            print(line)
-        print("States:")
-        for line in _kv_lines(c_states):
-            print(line)
-        print(sep)
-    except Exception:
-        sep = "=" * 74
-        print("\n" + sep)
-        print(f"[CB] {name}")
-        print(f"Inputs: {inputs}")
-        print(f"States: {states or {}}")
-        print(sep)
+    """Wrapper for backward compatibility with enhanced logging"""
+    CallbackLogger.log_callback(name, inputs, states)
 
 
 
@@ -98,10 +36,12 @@ def log_callback(name, inputs, states=None):
     prevent_initial_call=True
 )
 def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip, current_filters):
-    log_callback(
+    CallbackLogger.log_callback(
         "get_page_info_on_page_load",
         {"n_clicks": n_clicks, "url_search": url_search},
-        {"current_page": current_page, "selected_trip": selected_trip, "current_filters": current_filters}
+        {"current_page": current_page, "selected_trip": selected_trip, "current_filters": current_filters},
+        status="INFO",
+        extra_info="Page initialization"
     )
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
@@ -121,7 +61,9 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
                 "text": selected_trip_id  # Utiliser le trip_id comme filtre de recherche
             }
             
-            print(f"[URL_SELECTION] Application du filtre pour le trajet: {selected_trip_id}")
+            CallbackLogger.log_api_call("URL_SELECTION", 
+                {"trip_id": selected_trip_id, "filter_applied": True}, 
+                status="SUCCESS")
             # Retourner directement le trip_id string, pas un dict
             return 1, selected_trip_id, filter_with_trip_id
     # Si refresh a été cliqué
@@ -141,7 +83,7 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
     prevent_initial_call=True
 )
 def show_refresh_trips_message(n_clicks):
-    log_callback("show_refresh_trips_message", {"n_clicks": n_clicks}, {})
+    CallbackLogger.log_callback("show_refresh_trips_message", {"n_clicks": n_clicks})
     return dbc.Alert("Données des trajets rafraîchies!", 
                      color="success", 
                      dismissable=True,
@@ -155,7 +97,7 @@ def show_refresh_trips_message(n_clicks):
 )
 def toggle_trip_filters_collapse(n_clicks, is_open):
     """Toggle l'affichage des filtres avancés pour les trajets"""
-    log_callback("toggle_trip_filters_collapse", {"n_clicks": n_clicks}, {"is_open": is_open})
+    CallbackLogger.log_callback("toggle_trip_filters_collapse", {"n_clicks": n_clicks}, {"is_open": is_open})
     if n_clicks:
         return not is_open
     return is_open
@@ -178,20 +120,10 @@ def toggle_trip_filters_collapse(n_clicks, is_open):
 def update_trip_filters(n_clicks, search_text, date_from, date_to, single_date, date_filter_type, 
                        date_sort, status, has_signalement, current_filters):
     """Met à jour les filtres de recherche des trajets"""
-    log_callback(
+    CallbackLogger.log_callback(
         "update_trip_filters",
-        {
-            "n_clicks": n_clicks,
-            "search_text": search_text,
-            "date_from": date_from,
-            "date_to": date_to,
-            "single_date": single_date,
-            "date_filter_type": date_filter_type,
-            "date_sort": date_sort,
-            "status": status,
-            "has_signalement": has_signalement
-        },
-        {"current_filters": current_filters}
+        {"search_text": search_text, "status": status, "has_signalement": has_signalement},
+        extra_info="Applying filters"
     )
     
     # Construction du dictionnaire de filtres
@@ -220,7 +152,9 @@ def update_trip_filters(n_clicks, search_text, date_from, date_to, single_date, 
 )
 def reset_trip_page_on_filter_change(filters):
     """Réinitialise la page à 1 lorsque les filtres changent"""
-    log_callback("reset_trip_page_on_filter_change", {"filters": filters}, {})
+    # Compact log for simple reset
+    if filters:
+        CallbackLogger.log_callback("reset_trip_page_on_filter_change", {"filters": filters})
     # Toujours revenir à la page 1 quand un filtre change
     return 1
 
@@ -242,7 +176,7 @@ def reset_trip_page_on_filter_change(filters):
 )
 def reset_trip_filters(n_clicks):
     """Réinitialise tous les filtres et vide la barre de recherche"""
-    log_callback("reset_trip_filters", {"n_clicks": n_clicks}, {})
+    CallbackLogger.log_callback("reset_trip_filters", {"n_clicks": n_clicks})
     # Valeurs par défaut
     return (
         {},              # trips-filter-store
@@ -263,7 +197,9 @@ def reset_trip_filters(n_clicks):
 )
 def display_active_trip_filters(filters):
     """Affiche les filtres actifs sous forme de badges"""
-    log_callback("display_active_trip_filters", {"filters": filters}, {})
+    # Only log if filters are not empty
+    if filters:
+        CallbackLogger.log_callback("display_active_trip_filters", {"filters": filters})
     return render_active_trip_filters(filters)
 
 
@@ -277,9 +213,11 @@ def display_active_trip_filters(filters):
 )
 def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     """Callback pour le rendu du tableau des trajets avec persistance de sélection"""
-    log_callback(
+    CallbackLogger.log_callback(
         "render_trips_table",
-        {"current_page": current_page, "refresh_clicks": refresh_clicks, "filters": filters, "selected_trip": selected_trip}
+        {"current_page": current_page, "refresh_clicks": refresh_clicks, "filters": filters, "selected_trip": selected_trip},
+        status="INFO",
+        extra_info=f"Page {current_page}"
     )
     
     # Configuration pagination
@@ -309,7 +247,11 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     force_reload = (triggered_id == "refresh-trips-btn" and refresh_clicks is not None)
 
     # Utiliser le service de cache centralisé
-    print(f"[TABLE] Chargement page {current_page} (index {page_index}), force_reload={force_reload}")
+    CallbackLogger.log_cache_operation(
+        "get_trips_page_result", 
+        f"page_{page_index}_size_{page_size}", 
+        details={"force_reload": force_reload, "filters": len(filter_params)}
+    )
     
     result = TripsCacheService.get_trips_page_result(
         page_index, page_size, filter_params, force_reload
@@ -318,7 +260,12 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     # Utiliser directement les données optimisées du repository
     trips = result.get("trips", [])
     total_trips = result.get("total_count", 0)
-    print(f"[TABLE] {len(trips)} trajets chargés, total_count={total_trips}")
+    
+    CallbackLogger.log_api_call(
+        "TRIPS_DATA_LOADED", 
+        {"trips_count": len(trips), "total_count": total_trips, "page": current_page},
+        status="SUCCESS" if trips else "WARNING"
+    )
 
     # Auto-sélection du premier trajet si aucun n'est sélectionné
    
@@ -327,10 +274,14 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     
     # Validation stricte de la page courante
     if current_page > page_count and page_count > 0:
-        print(f"[PAGINATION] Page {current_page} invalide, redirection vers page {page_count}")
+        CallbackLogger.log_api_call("PAGINATION_REDIRECT", 
+            {"from_page": current_page, "to_page": page_count, "reason": "page_too_high"}, 
+            status="WARNING")
         current_page = page_count
     elif current_page < 1:
-        print(f"[PAGINATION] Page {current_page} invalide, redirection vers page 1")
+        CallbackLogger.log_api_call("PAGINATION_REDIRECT", 
+            {"from_page": current_page, "to_page": 1, "reason": "page_too_low"}, 
+            status="WARNING")
         current_page = 1
     
     # Si on arrive sur une page vide (pas de trajets), revenir à la page précédente
@@ -357,21 +308,29 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
 
 
 @callback(
-    Output("trip-details-panel", "children"),
+    [Output("trip-details-panel", "children"),
+     Output("trip-stats-panel", "children")],
     Input("selected-trip-id", "data"),
-    prevent_initial_call=True
+    prevent_initial_call=False
 )
 def render_trip_details_panel(selected_trip_id):
     """Callback séparé pour le rendu du panneau détails trajet avec cache HTML"""
-    log_callback(
+    CallbackLogger.log_callback(
         "render_trip_details_panel",
         {"selected_trip_id": selected_trip_id},
-        {}
+        status="INFO",
+        extra_info="Loading trip details"
     )
     
-    # Si pas d'ID, retourner un panneau vide
+    # Si pas d'ID, retourner des panneaux vides
     if not selected_trip_id:
-        return html.Div()
+        CallbackLogger.log_callback(
+            "render_trip_details_panel", 
+            {"selected_trip_id": "None"}, 
+            status="WARNING", 
+            extra_info="No trip selected"
+        )
+        return html.Div(), html.Div()
 
     # 1. Récupérer les données via le service de cache
     from dash_apps.services.trip_details_cache_service import TripDetailsCache
@@ -380,52 +339,77 @@ def render_trip_details_panel(selected_trip_id):
     
     data = TripDetailsCache.get_trip_details_data(selected_trip_id)
     
-    # 2. Si pas de données, retourner un panel d'erreur
+    # 2. Si pas de données, retourner des panels d'erreur
     if not data:
-        return TripDetailLayout.render_error_panel(
+        error_panel = TripDetailLayout.render_error_panel(
             "Impossible de récupérer les données du trajet."
         )
+        return error_panel, error_panel
     
-    # 3. Générer le layout avec le template Jinja2 et la configuration JSON
-    try:
-        # Charger la configuration layout
-        config = load_json_config('trip_details_config.json')
-        layout_config = config.get('trip_details', {}).get('layout', {})
-        card_height = layout_config.get('card_height', '400px')
-        card_width = layout_config.get('card_width', '100%')
-        card_min_height = layout_config.get('card_min_height', '300px')
+    # 3. Charger la configuration complète
+    config = load_json_config('trip_details_config.json')
+    
+    # 4. Générer le panneau DETAILS
+    details_layout_config = config.get('trip_details', {}).get('layout', {})
+    details_card_height = details_layout_config.get('card_height', '400px')
+    details_card_width = details_layout_config.get('card_width', '100%')
+    details_card_min_height = details_layout_config.get('card_min_height', '300px')
         
-        # Charger le template via utils.settings
-        template = get_jinja_template('trip_details_template.jinja2')
-        
-        # Rendre le template avec les données du cache
-        html_content = template.render(
-            trip=data,
-            layout={
-                'card_height': card_height,
-                'card_width': card_width,
-                'card_min_height': card_min_height
+    details_template = get_jinja_template('trip_details_template.jinja2')
+    details_html_content = details_template.render(
+        trip=data,
+        layout={
+            'card_height': details_card_height,
+            'card_width': details_card_width,
+            'card_min_height': details_card_min_height
+        }
+    )
+    
+    details_panel = html.Div([
+        html.Iframe(
+            srcDoc=details_html_content,
+            style={
+                "width": details_card_width,
+                "height": details_card_height,
+                "minHeight": details_card_min_height,
+                "border": "none",
+                "borderRadius": "12px"
             }
         )
+    ])
+    
+    # 5. Générer le panneau STATS
+    stats_layout_config = config.get('trip_stats', {}).get('layout', {})
+    stats_card_height = stats_layout_config.get('card_height', '300px')
+    stats_card_width = stats_layout_config.get('card_width', '100%')
+    stats_card_min_height = stats_layout_config.get('card_min_height', '250px')
         
-        # Retourner le HTML rendu dans un iframe
-        return html.Div([
-            html.Iframe(
-                srcDoc=html_content,
-                style={
-                    "width": card_width,
-                    "height": card_height,
-                    "minHeight": card_min_height,
-                    "border": "none",
-                    "borderRadius": "12px"
-                }
-            )
-        ])
+    stats_template = get_jinja_template('trip_stats_template.jinja2')
+    stats_html_content = stats_template.render(
+        trip=data,
+        layout={
+            'card_height': stats_card_height,
+            'card_width': stats_card_width,
+            'card_min_height': stats_card_min_height
+        }
+    )
+    
+    stats_panel = html.Div([
+        html.Iframe(
+            srcDoc=stats_html_content,
+            style={
+                "width": stats_card_width,
+                "height": stats_card_height,
+                "minHeight": stats_card_min_height,
+                "border": "none",
+                "borderRadius": "12px"
+            }
+        )
+    ])
         
-    except Exception as e:
-        print(f"Erreur rendu template: {e}")
-        # Fallback vers l'ancienne méthode en cas d'erreur
-        return TripDetailLayout.render_trip_details_layout(selected_trip_id, data)
+    # 6. Retourner les deux panneaux
+    return details_panel, stats_panel
+
 
 
 @callback(
@@ -435,10 +419,11 @@ def render_trip_details_panel(selected_trip_id):
 )
 def render_trip_passengers_panel(selected_trip_id):
     """Callback séparé pour le rendu du panneau passagers trajet avec cache HTML"""
-    log_callback(
+    CallbackLogger.log_callback(
         "render_trip_passengers_panel",
         {"selected_trip_id": selected_trip_id},
-        {}
+        status="INFO",
+        extra_info="Loading passengers"
     )
     
     # Read-Through pattern: le cache service gère tout

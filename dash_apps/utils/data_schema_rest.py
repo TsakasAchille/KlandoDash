@@ -464,8 +464,12 @@ def get_trip_details_configured(trip_id):
             logger.error(f"[TRIP_CONFIGURED] Données invalides pour {trip_id}, retour None")
             return None  # Propager l'erreur vers le cache service
         
-        logger.info(f"[TRIP_CONFIGURED] Données validées et filtrées pour {trip_id}")
-        return filtered_data
+        # 6. Formater les données selon la configuration
+        from dash_apps.utils.data_formatter import DataFormatter
+        formatted_data = DataFormatter.format_trip_data(filtered_data)
+        
+        logger.info(f"[TRIP_CONFIGURED] Données validées, filtrées et formatées pour {trip_id}")
+        return formatted_data
         
     except Exception as e:
         logger.error(f"Erreur lors de la récupération configurée du trajet {trip_id}: {e}")
