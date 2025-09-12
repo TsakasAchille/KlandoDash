@@ -414,3 +414,60 @@ def get_signalements_for_trip(trip_id):
     except Exception as e:
         logger.error(f"Erreur lors de la récupération des signalements pour le trajet {trip_id}: {e}")
         return []
+
+def get_trip_details_configured(trip_id):
+    """
+    Récupère les détails d'un trajet selon la configuration JSON avec validation Pydantic
+    """
+    try:
+        # 1. Charger la configuration via settings.py
+        from dash_apps.utils.settings import load_json_config
+        
+        config = load_json_config('trip_details_config.json')
+        trip_config = config.get('trip_details', {})
+        fields_config = trip_config.get('fields', {})
+        
+        # 2. Extraire tous les champs configurés
+        configured_fields = []
+        for section_name, section_fields in fields_config.items():
+            configured_fields.extend(section_fields.keys())
+        
+        logger.info(f"[TRIP_CONFIGURED] Champs configurés: {configured_fields}")
+        
+        # 3. Récupérer les données brutes de Supabase
+        response = supabase.table("trips").select("*").eq("trip_id", trip_id).execute()
+        
+        if not response.data:
+            logger.warning(f"[TRIP_CONFIGURED] Trajet {trip_id} non trouvé")
+            return None
+        
+        raw_data = response.data[0]
+        logger.info(f"[TRIP_CONFIGURED] Données brutes récupérées pour {trip_id}")
+        
+        # 4. Filtrer selon la configuration (garder seulement les champs configurés)
+        filtered_data = {}
+        for field in configured_fields:
+            if field in raw_data:
+                filtered_data[field] = raw_data[field]
+            else:
+                logger.warning(f"[TRIP_CONFIGURED] Champ '{field}' configuré mais absent des données")
+        
+        # 5. Validation avec Pydantic
+        from dash_apps.models.config_models import TripDataModel
+        from dash_apps.utils.validation_utils import validate_data
+        
+        # Valider les données filtrées avec le modèle Pydantic
+        validation_result = validate_data(TripDataModel, filtered_data)
+        
+        if not validation_result.success:
+            logger.error(f"[TRIP_CONFIGURED] Erreurs de validation: {validation_result.get_error_summary()}")
+            logger.error(f"[TRIP_CONFIGURED] Données invalides pour {trip_id}, retour None")
+            return None  # Propager l'erreur vers le cache service
+        
+        logger.info(f"[TRIP_CONFIGURED] Données validées et filtrées pour {trip_id}")
+        return filtered_data
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération configurée du trajet {trip_id}: {e}")
+        # Fallback vers la méthode classique
+        return get_trip_by_id(trip_id)

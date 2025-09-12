@@ -1,0 +1,144 @@
+{
+  "trip_details": {
+    "cache": {
+      "enabled": true,
+      "ttl_seconds": 300,
+      "key_prefix": "trip_details"
+    },
+    "validation": {
+      "required_inputs": ["trip_id"],
+      "trip_id": {
+        "type": "string",
+        "min_length": 10,
+        "pattern": "^TRIP-.*"
+      }
+    },
+    "fields": {
+      "basic_info": {
+        "trip_id": {
+          "label": "ID Trajet",
+          "type": "string",
+          "display": true,
+          "order": 1
+        },
+        "departure_name": {
+          "label": "Départ",
+          "type": "string",
+          "display": true,
+          "order": 2
+        },
+        "destination_name": {
+          "label": "Destination",
+          "type": "string",
+          "display": true,
+          "order": 3
+        },
+        "departure_schedule": {
+          "label": "Heure de départ",
+          "type": "datetime",
+          "format": "DD/MM/YYYY HH:mm",
+          "display": true,
+          "order": 4
+        }
+      },
+      "driver_info": {
+        "driver_id": {
+          "label": "ID Conducteur",
+          "type": "string",
+          "display": true,
+          "order": 5
+        }
+      },
+      "trip_details": {
+        "seats_published": {
+          "label": "Places publiées",
+          "type": "integer",
+          "display": true,
+          "order": 7
+        },
+        "seats_available": {
+          "label": "Places disponibles",
+          "type": "integer",
+          "display": true,
+          "order": 8
+        },
+        "seats_booked": {
+          "label": "Places réservées",
+          "type": "integer",
+          "display": true,
+          "order": 9
+        },
+        "passenger_price": {
+          "label": "Prix passager",
+          "type": "currency",
+          "currency": "FCFA",
+          "display": true,
+          "order": 10
+        },
+        "driver_price": {
+          "label": "Prix conducteur",
+          "type": "currency",
+          "currency": "FCFA",
+          "display": true,
+          "order": 11
+        },
+        "distance": {
+          "label": "Distance",
+          "type": "distance",
+          "unit": "km",
+          "display": true,
+          "order": 12
+        }
+      },
+      "status_info": {
+        "status": {
+          "label": "Statut",
+          "type": "enum",
+          "values": {
+            "active": "Actif",
+            "completed": "Terminé",
+            "cancelled": "Annulé",
+            "pending": "En attente"
+          },
+          "display": true,
+          "order": 11
+        },
+        "created_at": {
+          "label": "Créé le",
+          "type": "datetime",
+          "format": "DD/MM/YYYY HH:mm",
+          "display": true,
+          "order": 13
+        },
+        "updated_at": {
+          "label": "Mis à jour le",
+          "type": "datetime",
+          "format": "DD/MM/YYYY HH:mm",
+          "display": true,
+          "order": 14
+        }
+      }
+    },
+    "rendering": {
+      "template": "trip_details_dynamic",
+      "sections": [
+        {
+          "title": "Informations générales",
+          "fields": ["trip_id", "departure_name", "destination_name", "departure_schedule"]
+        },
+        {
+          "title": "Conducteur",
+          "fields": ["driver_id"]
+        },
+        {
+          "title": "Détails du trajet",
+          "fields": ["seats_published", "seats_available", "seats_booked", "passenger_price", "driver_price", "distance"]
+        },
+        {
+          "title": "Statut",
+          "fields": ["status", "created_at", "updated_at"]
+        }
+      ]
+    }
+  }
+}

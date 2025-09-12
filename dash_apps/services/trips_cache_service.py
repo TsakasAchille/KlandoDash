@@ -457,10 +457,10 @@ class TripsCacheService:
 
     @staticmethod
     def get_trip_details_panel(selected_trip_id: str):
-        """Cache HTML → Cache local → API REST pour panneau détails trajet - utilise la nouvelle config JSON"""
-        config = TripsCacheService._load_panel_config()
-        panel_config = config.get('details', {})
-        return TripsCacheService._get_cached_panel_generic(selected_trip_id, panel_config)
+        """Cache HTML → JSON Config → DB/API → Cache → Panel HTML dynamique"""
+        # Utiliser le nouveau service spécialisé avec configuration JSON
+        from dash_apps.services.trip_details_cache_service import TripDetailsCache
+        return TripDetailsCache.get_trip_details_panel(selected_trip_id)
     
     @staticmethod
     def get_trip_stats_panel(selected_trip_id: str):

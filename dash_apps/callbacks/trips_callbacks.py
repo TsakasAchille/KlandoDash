@@ -373,8 +373,20 @@ def render_trip_details_panel(selected_trip_id):
     if not selected_trip_id:
         return html.Div()
 
-    # Read-Through pattern: le cache service gère tout
-    return TripsCacheService.get_trip_details_panel(selected_trip_id)
+    # 1. Récupérer les données via le service de cache
+    from dash_apps.services.trip_details_cache_service import TripDetailsCache
+    from dash_apps.layouts.trip_detail_layout import TripDetailLayout
+    
+    data = TripDetailsCache.get_trip_details_data(selected_trip_id)
+    
+    # 2. Si pas de données, retourner un panel d'erreur
+    if not data:
+        return TripDetailLayout.render_error_panel(
+            "Impossible de récupérer les données du trajet."
+        )
+    
+    # 3. Générer le layout avec les données
+    return TripDetailLayout.render_trip_details_layout(selected_trip_id, data)
 
 
 @callback(
