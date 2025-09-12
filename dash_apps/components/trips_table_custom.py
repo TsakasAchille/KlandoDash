@@ -345,31 +345,37 @@ def handle_trips_pagination_buttons(prev_clicks, next_clicks, current_page):
 )
 def handle_trip_row_selection(row_clicks):
     """Gestion de la sélection de ligne"""
-    CallbackLogger.log_callback(
-        "handle_trip_row_selection",
-        {"row_clicks_count": len(row_clicks) if row_clicks else 0},
-        status="INFO",
-        extra_info="Processing row selection"
-    )
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "handle_trip_row_selection",
+            {"row_clicks_count": len(row_clicks) if row_clicks else 0},
+            status="INFO",
+            extra_info="Processing row selection"
+        )
     
     ctx = callback_context
     if not ctx.triggered:
-        CallbackLogger.log_callback(
-            "handle_trip_row_selection", 
-            {}, 
-            status="WARNING", 
-            extra_info="No trigger context"
-        )
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "handle_trip_row_selection", 
+                {}, 
+                status="WARNING", 
+                extra_info="No trigger context"
+            )
         raise PreventUpdate
     
     # Vérifier si le callback est déclenché lors du chargement initial
     if not any(clicks > 0 for clicks in row_clicks):
-        CallbackLogger.log_callback(
-            "handle_trip_row_selection", 
-            {"all_clicks_zero": True}, 
-            status="INFO", 
-            extra_info="Initial load, ignoring"
-        )
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "handle_trip_row_selection", 
+                {"all_clicks_zero": True}, 
+                status="INFO", 
+                extra_info="Initial load, ignoring"
+            )
         raise PreventUpdate
     
     # Déterminer ce qui a été cliqué
@@ -380,21 +386,23 @@ def handle_trip_row_selection(row_clicks):
         id_dict = json.loads(clicked_id)
         trip_id = id_dict["index"]
         
-        CallbackLogger.log_callback(
-            "handle_trip_row_selection",
-            {"selected_trip_id": trip_id},
-            status="SUCCESS",
-            extra_info=f"Trip {trip_id} selected"
-        )
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "handle_trip_row_selection",
+                {"selected_trip_id": trip_id},
+                status="SUCCESS",
+                extra_info=f"Trip {trip_id} selected"
+            )
         
         return trip_id
     except Exception as e:
-        CallbackLogger.log_callback(
-            "handle_trip_row_selection",
-            {"error": str(e), "clicked_id": clicked_id},
-            status="ERROR",
-            extra_info="Failed to extract trip_id"
-        )
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "handle_trip_row_selection",
+                {"error": str(e), "clicked_id": clicked_id},
+                status="ERROR",
+                extra_info="Failed to extract trip_id"
+            )
         raise PreventUpdate
 
 

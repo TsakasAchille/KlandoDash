@@ -36,13 +36,18 @@ def log_callback(name, inputs, states=None):
     prevent_initial_call=True
 )
 def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip, current_filters):
-    CallbackLogger.log_callback(
-        "get_page_info_on_page_load",
-        {"n_clicks": n_clicks, "url_search": url_search},
-        {"current_page": current_page, "selected_trip": selected_trip, "current_filters": current_filters},
-        status="INFO",
-        extra_info="Page initialization"
-    )
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "get_page_info_on_page_load",
+            {"n_clicks": n_clicks, "url_search": url_search},
+            {"current_page": current_page, "selected_trip": selected_trip, "current_filters": current_filters},
+            status="INFO",
+            extra_info="Page initialization"
+        )
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
     
@@ -61,9 +66,10 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
                 "text": selected_trip_id  # Utiliser le trip_id comme filtre de recherche
             }
             
-            CallbackLogger.log_api_call("URL_SELECTION", 
-                {"trip_id": selected_trip_id, "filter_applied": True}, 
-                status="SUCCESS")
+            if debug_trips:
+                CallbackLogger.log_api_call("URL_SELECTION", 
+                    {"trip_id": selected_trip_id, "filter_applied": True}, 
+                    status="SUCCESS")
             # Retourner directement le trip_id string, pas un dict
             return 1, selected_trip_id, filter_with_trip_id
     # Si refresh a été cliqué
@@ -83,7 +89,12 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_trip
     prevent_initial_call=True
 )
 def show_refresh_trips_message(n_clicks):
-    CallbackLogger.log_callback("show_refresh_trips_message", {"n_clicks": n_clicks})
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if debug_trips:
+        CallbackLogger.log_callback("show_refresh_trips_message", {"n_clicks": n_clicks})
     return dbc.Alert("Données des trajets rafraîchies!", 
                      color="success", 
                      dismissable=True,
@@ -97,7 +108,12 @@ def show_refresh_trips_message(n_clicks):
 )
 def toggle_trip_filters_collapse(n_clicks, is_open):
     """Toggle l'affichage des filtres avancés pour les trajets"""
-    CallbackLogger.log_callback("toggle_trip_filters_collapse", {"n_clicks": n_clicks}, {"is_open": is_open})
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if debug_trips:
+        CallbackLogger.log_callback("toggle_trip_filters_collapse", {"n_clicks": n_clicks}, {"is_open": is_open})
     if n_clicks:
         return not is_open
     return is_open
@@ -120,11 +136,16 @@ def toggle_trip_filters_collapse(n_clicks, is_open):
 def update_trip_filters(n_clicks, search_text, date_from, date_to, single_date, date_filter_type, 
                        date_sort, status, has_signalement, current_filters):
     """Met à jour les filtres de recherche des trajets"""
-    CallbackLogger.log_callback(
-        "update_trip_filters",
-        {"search_text": search_text, "status": status, "has_signalement": has_signalement},
-        extra_info="Applying filters"
-    )
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "update_trip_filters",
+            {"search_text": search_text, "status": status, "has_signalement": has_signalement},
+            extra_info="Applying filters"
+        )
     
     # Construction du dictionnaire de filtres
     filters = {
@@ -153,7 +174,11 @@ def update_trip_filters(n_clicks, search_text, date_from, date_to, single_date, 
 def reset_trip_page_on_filter_change(filters):
     """Réinitialise la page à 1 lorsque les filtres changent"""
     # Compact log for simple reset
-    if filters:
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if filters and debug_trips:
         CallbackLogger.log_callback("reset_trip_page_on_filter_change", {"filters": filters})
     # Toujours revenir à la page 1 quand un filtre change
     return 1
@@ -176,7 +201,12 @@ def reset_trip_page_on_filter_change(filters):
 )
 def reset_trip_filters(n_clicks):
     """Réinitialise tous les filtres et vide la barre de recherche"""
-    CallbackLogger.log_callback("reset_trip_filters", {"n_clicks": n_clicks})
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if debug_trips:
+        CallbackLogger.log_callback("reset_trip_filters", {"n_clicks": n_clicks})
     # Valeurs par défaut
     return (
         {},              # trips-filter-store
@@ -198,7 +228,11 @@ def reset_trip_filters(n_clicks):
 def display_active_trip_filters(filters):
     """Affiche les filtres actifs sous forme de badges"""
     # Only log if filters are not empty
-    if filters:
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if filters and debug_trips:
         CallbackLogger.log_callback("display_active_trip_filters", {"filters": filters})
     return render_active_trip_filters(filters)
 
@@ -213,12 +247,17 @@ def display_active_trip_filters(filters):
 )
 def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     """Callback pour le rendu du tableau des trajets avec persistance de sélection"""
-    CallbackLogger.log_callback(
-        "render_trips_table",
-        {"current_page": current_page, "refresh_clicks": refresh_clicks, "filters": filters, "selected_trip": selected_trip},
-        status="INFO",
-        extra_info=f"Page {current_page}"
-    )
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "render_trips_table",
+            {"current_page": current_page, "refresh_clicks": refresh_clicks, "filters": filters, "selected_trip": selected_trip},
+            status="INFO",
+            extra_info=f"Page {current_page}"
+        )
     
     # Configuration pagination
     page_size = Config.USERS_TABLE_PAGE_SIZE
@@ -247,11 +286,12 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     force_reload = (triggered_id == "refresh-trips-btn" and refresh_clicks is not None)
 
     # Utiliser le service de cache centralisé
-    CallbackLogger.log_cache_operation(
-        "get_trips_page_result", 
-        f"page_{page_index}_size_{page_size}", 
-        details={"force_reload": force_reload, "filters": len(filter_params)}
-    )
+    if debug_trips:
+        CallbackLogger.log_cache_operation(
+            "get_trips_page_result", 
+            f"page_{page_index}_size_{page_size}", 
+            details={"force_reload": force_reload, "filters": len(filter_params)}
+        )
     
     result = TripsCacheService.get_trips_page_result(
         page_index, page_size, filter_params, force_reload
@@ -261,11 +301,12 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     trips = result.get("trips", [])
     total_trips = result.get("total_count", 0)
     
-    CallbackLogger.log_api_call(
-        "TRIPS_DATA_LOADED", 
-        {"trips_count": len(trips), "total_count": total_trips, "page": current_page},
-        status="SUCCESS" if trips else "WARNING"
-    )
+    if debug_trips:
+        CallbackLogger.log_api_call(
+            "TRIPS_DATA_LOADED", 
+            {"trips_count": len(trips), "total_count": total_trips, "page": current_page},
+            status="SUCCESS" if trips else "WARNING"
+        )
 
     # Auto-sélection du premier trajet si aucun n'est sélectionné
    
@@ -274,14 +315,16 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     
     # Validation stricte de la page courante
     if current_page > page_count and page_count > 0:
-        CallbackLogger.log_api_call("PAGINATION_REDIRECT", 
-            {"from_page": current_page, "to_page": page_count, "reason": "page_too_high"}, 
-            status="WARNING")
+        if debug_trips:
+            CallbackLogger.log_api_call("PAGINATION_REDIRECT", 
+                {"from_page": current_page, "to_page": page_count, "reason": "page_too_high"}, 
+                status="WARNING")
         current_page = page_count
     elif current_page < 1:
-        CallbackLogger.log_api_call("PAGINATION_REDIRECT", 
-            {"from_page": current_page, "to_page": 1, "reason": "page_too_low"}, 
-            status="WARNING")
+        if debug_trips:
+            CallbackLogger.log_api_call("PAGINATION_REDIRECT", 
+                {"from_page": current_page, "to_page": 1, "reason": "page_too_low"}, 
+                status="WARNING")
         current_page = 1
     
     # Si on arrive sur une page vide (pas de trajets), revenir à la page précédente
@@ -315,21 +358,27 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
 )
 def render_trip_details_panel(selected_trip_id):
     """Callback séparé pour le rendu du panneau détails trajet avec cache HTML"""
-    CallbackLogger.log_callback(
-        "render_trip_details_panel",
-        {"selected_trip_id": selected_trip_id},
-        status="INFO",
-        extra_info="Loading trip details"
-    )
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "render_trip_details_panel",
+            {"selected_trip_id": selected_trip_id},
+            status="INFO",
+            extra_info="Loading trip details"
+        )
     
     # Si pas d'ID, retourner des panneaux vides
     if not selected_trip_id:
-        CallbackLogger.log_callback(
-            "render_trip_details_panel", 
-            {"selected_trip_id": "None"}, 
-            status="WARNING", 
-            extra_info="No trip selected"
-        )
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "render_trip_details_panel", 
+                {"selected_trip_id": "None"}, 
+                status="WARNING", 
+                extra_info="No trip selected"
+            )
         return html.Div(), html.Div()
 
     # 1. Récupérer les données via le service de cache
@@ -419,12 +468,17 @@ def render_trip_details_panel(selected_trip_id):
 )
 def render_trip_passengers_panel(selected_trip_id):
     """Callback séparé pour le rendu du panneau passagers trajet avec cache HTML"""
-    CallbackLogger.log_callback(
-        "render_trip_passengers_panel",
-        {"selected_trip_id": selected_trip_id},
-        status="INFO",
-        extra_info="Loading passengers"
-    )
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "render_trip_passengers_panel",
+            {"selected_trip_id": selected_trip_id},
+            status="INFO",
+            extra_info="Loading passengers"
+        )
     
     # Read-Through pattern: le cache service gère tout
     return TripsCacheService.get_trip_passengers_panel(selected_trip_id)

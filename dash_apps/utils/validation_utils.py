@@ -55,12 +55,17 @@ def validate_data(
         
         validated = model_class.model_validate(data, strict=strict)
         
-        CallbackLogger.log_callback(
-            "validate_data",
-            {"model": model_class.__name__, "strict": strict},
-            status="SUCCESS",
-            extra_info="Data validation successful"
-        )
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "validate_data",
+                {"model": model_class.__name__, "strict": strict},
+                status="SUCCESS",
+                extra_info="Data validation successful"
+            )
         
         return ValidationResult(success=True, data=validated)
     except ValidationError as e:
@@ -74,21 +79,31 @@ def validate_data(
             for err in e.errors()
         ]
         
-        CallbackLogger.log_callback(
-            "validate_data",
-            {"model": model_class.__name__, "error_count": len(errors)},
-            status="ERROR",
-            extra_info="Pydantic validation failed"
-        )
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "validate_data",
+                {"model": model_class.__name__, "error_count": len(errors)},
+                status="ERROR",
+                extra_info="Pydantic validation failed"
+            )
         
         return ValidationResult(success=False, errors=errors)
     except Exception as e:
-        CallbackLogger.log_callback(
-            "validate_data",
-            {"model": model_class.__name__, "error": str(e)},
-            status="ERROR",
-            extra_info="Unexpected validation error"
-        )
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "validate_data",
+                {"model": model_class.__name__, "error": str(e)},
+                status="ERROR",
+                extra_info="Unexpected validation error"
+            )
         
         return ValidationResult(success=False, errors=[{
             'field': 'global',
@@ -117,12 +132,17 @@ def validate_json_file(
         from dash_apps.utils.callback_logger import CallbackLogger
         
         if not os.path.exists(file_path):
-            CallbackLogger.log_callback(
-                "validate_json_file",
-                {"file_path": file_path, "model": model_class.__name__},
-                status="ERROR",
-                extra_info="File not found"
-            )
+            # Vérifier si le debug des trajets est activé
+            import os
+            debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+            
+            if debug_trips:
+                CallbackLogger.log_callback(
+                    "validate_json_file",
+                    {"file_path": file_path, "model": model_class.__name__},
+                    status="ERROR",
+                    extra_info="File not found"
+                )
             return ValidationResult(success=False, errors=[{
                 'field': 'file',
                 'message': f'Fichier non trouvé: {file_path}',
@@ -132,34 +152,49 @@ def validate_json_file(
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
-        CallbackLogger.log_callback(
-            "validate_json_file",
-            {"file_path": os.path.basename(file_path), "model": model_class.__name__},
-            status="INFO",
-            extra_info="JSON file loaded, validating"
-        )
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "validate_json_file",
+                {"file_path": os.path.basename(file_path), "model": model_class.__name__},
+                status="INFO",
+                extra_info="JSON file loaded, validating"
+            )
         
         return validate_data(model_class, data, strict)
         
     except json.JSONDecodeError as e:
-        CallbackLogger.log_callback(
-            "validate_json_file",
-            {"file_path": os.path.basename(file_path), "json_error": e.msg},
-            status="ERROR",
-            extra_info="JSON decode error"
-        )
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "validate_json_file",
+                {"file_path": os.path.basename(file_path), "json_error": e.msg},
+                status="ERROR",
+                extra_info="JSON decode error"
+            )
         return ValidationResult(success=False, errors=[{
             'field': 'json',
             'message': f'JSON invalide: {e.msg} (ligne {e.lineno})',
             'type': 'json_decode_error'
         }])
     except Exception as e:
-        CallbackLogger.log_callback(
-            "validate_json_file",
-            {"file_path": os.path.basename(file_path), "error": str(e)},
-            status="ERROR",
-            extra_info="File read error"
-        )
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "validate_json_file",
+                {"file_path": os.path.basename(file_path), "error": str(e)},
+                status="ERROR",
+                extra_info="File read error"
+            )
         return ValidationResult(success=False, errors=[{
             'field': 'file',
             'message': f'Erreur lecture fichier: {str(e)}',

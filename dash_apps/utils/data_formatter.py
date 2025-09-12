@@ -27,12 +27,17 @@ class DataFormatter:
                 return datetime.fromisoformat(timestamp_str)
         except Exception as e:
             from dash_apps.utils.callback_logger import CallbackLogger
-            CallbackLogger.log_callback(
-                "parse_timestamp",
-                {"timestamp": timestamp_str, "error": str(e)},
-                status="ERROR",
-                extra_info="Timestamp parsing failed"
-            )
+            # Vérifier si le debug des trajets est activé
+            import os
+            debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+            
+            if debug_trips:
+                CallbackLogger.log_callback(
+                    "parse_timestamp",
+                    {"timestamp": timestamp_str, "error": str(e)},
+                    status="ERROR",
+                    extra_info="Timestamp parsing failed"
+                )
             return None
     
     @staticmethod
@@ -61,12 +66,17 @@ class DataFormatter:
         from dash_apps.utils.callback_logger import CallbackLogger
         
         if not raw_data:
-            CallbackLogger.log_callback(
-                "format_trip_data",
-                {"data_empty": True},
-                status="WARNING",
-                extra_info="No data to format"
-            )
+            # Vérifier si le debug des trajets est activé
+            import os
+            debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+            
+            if debug_trips:
+                CallbackLogger.log_callback(
+                    "format_trip_data",
+                    {"data_empty": True},
+                    status="WARNING",
+                    extra_info="No data to format"
+                )
             return raw_data
             
         try:
@@ -98,35 +108,50 @@ class DataFormatter:
                             formatted_data['departure_date'] = DataFormatter._format_datetime(dt, date_format)
                             formatted_fields.append('departure_date')
                         
-                        CallbackLogger.log_callback(
-                            "format_datetime_field",
-                            {
-                                "field": field_name,
-                                "original": raw_data[field_name],
-                                "formatted": formatted_value,
-                                "format": output_format
-                            },
-                            status="SUCCESS",
-                            extra_info="Datetime field formatted"
-                        )
+                        # Vérifier si le debug des trajets est activé
+                        import os
+                        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+                        
+                        if debug_trips:
+                            CallbackLogger.log_callback(
+                                "format_datetime_field",
+                                {
+                                    "field": field_name,
+                                    "original": raw_data[field_name],
+                                    "formatted": formatted_value,
+                                    "format": output_format
+                                },
+                                status="SUCCESS",
+                                extra_info="Datetime field formatted"
+                            )
             
-            CallbackLogger.log_callback(
-                "format_trip_data",
-                {
-                    "fields_formatted": len(formatted_fields),
-                    "formatted_fields": formatted_fields
-                },
-                status="SUCCESS",
-                extra_info="Trip data formatting completed"
-            )
+            # Vérifier si le debug des trajets est activé
+            import os
+            debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+            
+            if debug_trips:
+                CallbackLogger.log_callback(
+                    "format_trip_data",
+                    {
+                        "fields_formatted": len(formatted_fields),
+                        "formatted_fields": formatted_fields
+                    },
+                    status="SUCCESS",
+                    extra_info="Trip data formatting completed"
+                )
             
             return formatted_data
             
         except Exception as e:
-            CallbackLogger.log_callback(
-                "format_trip_data",
-                {"error": str(e)},
-                status="ERROR",
-                extra_info="Data formatting failed"
-            )
+            # Vérifier si le debug des trajets est activé
+            import os
+            debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+            
+            if debug_trips:
+                CallbackLogger.log_callback(
+                    "format_trip_data",
+                    {"error": str(e)},
+                    status="ERROR",
+                    extra_info="Data formatting failed"
+                )
             return raw_data  # Retourner les données brutes en cas d'erreur

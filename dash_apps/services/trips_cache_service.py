@@ -167,19 +167,23 @@ class TripsCacheService:
         TripsCacheService._store_in_local_cache(cache_key, result)
         TripsCacheService._store_in_cache(cache_key, result, ttl_seconds=300)
         
-        # Database fetch - utiliser le nouveau logger
-        from dash_apps.utils.callback_logger import CallbackLogger
-        try:
-            trips_count = len(result.get("trips", []))
-            total_count = result.get("total_count", 0)
-            CallbackLogger.log_cache_operation(
-                "DB_FETCH", 
-                f"page_{page_index}_size_{page_size}",
-                hit=False,
-                details={"trips": trips_count, "total": total_count, "refresh": force_reload}
-            )
-        except Exception:
-            pass
+        # Database fetch - utiliser le nouveau logger avec contrôle DEBUG_TRIPS
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
+            from dash_apps.utils.callback_logger import CallbackLogger
+            try:
+                trips_count = len(result.get("trips", []))
+                total_count = result.get("total_count", 0)
+                CallbackLogger.log_cache_operation(
+                    "DB_FETCH", 
+                    f"page_{page_index}_size_{page_size}",
+                    hit=False,
+                    details={"trips": trips_count, "total": total_count, "refresh": force_reload}
+                )
+            except Exception:
+                pass
         
         return result
     
@@ -490,7 +494,12 @@ class TripsCacheService:
             try:
                 # API fetch - utiliser le nouveau logger
                 from dash_apps.utils.callback_logger import CallbackLogger
-                CallbackLogger.log_api_call("TRIP_PASSENGERS_FETCH", {"trip_id": selected_trip_id[:8] + "..." if selected_trip_id else "None"})
+                # Vérifier si le debug des trajets est activé
+                import os
+                debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+                
+                if debug_trips:
+                    CallbackLogger.log_api_call("TRIP_PASSENGERS_FETCH", {"trip_id": selected_trip_id[:8] + "..." if selected_trip_id else "None"})
                 
                 # Utiliser directement les repositories REST
                 from dash_apps.repositories.repository_factory import RepositoryFactory
@@ -501,7 +510,8 @@ class TripsCacheService:
                 passengers_df = pd.DataFrame()
                 
                 if passengers_df.empty:
-                    CallbackLogger.log_api_call("TRIP_PASSENGERS_EMPTY", {"trip_id": selected_trip_id}, status="WARNING")
+                    if debug_trips:
+                        CallbackLogger.log_api_call("TRIP_PASSENGERS_EMPTY", {"trip_id": selected_trip_id}, status="WARNING")
                     import dash_bootstrap_components as dbc
                     return html.Div(dbc.Alert(f"Aucun passager pour ce trajet.", color="warning", className="mb-3"))
                 
@@ -513,7 +523,8 @@ class TripsCacheService:
                 except Exception as e:
                     print(f"[CACHE] Erreur stockage cache passagers: {e}")
             except Exception as e:
-                print(f"[TRIP_PASSENGERS][ERROR] Erreur lors de la récupération des passagers du trajet {selected_trip_id}: {e}")
+                if debug_trips:
+                    print(f"[TRIP_PASSENGERS][ERROR] Erreur lors de la récupération des passagers du trajet {selected_trip_id}: {e}")
                 import dash_bootstrap_components as dbc
                 return html.Div(dbc.Alert(f"Erreur lors du chargement des passagers: {e}", color="danger", className="mb-3"))
         
@@ -525,7 +536,8 @@ class TripsCacheService:
             return panel
         except Exception as e:
             if TripsCacheService._debug_mode:
-                print(f"[TRIP_PASSENGERS] Erreur génération panneau: {e}")
+                if debug_trips:
+                    print(f"[TRIP_PASSENGERS] Erreur génération panneau: {e}")
             import dash_bootstrap_components as dbc
             return html.Div(dbc.Alert(f"Erreur lors de la génération du panneau des passagers: {e}", color="danger", className="mb-3"))
     
@@ -564,7 +576,11 @@ class TripsCacheService:
         cache_key = f"{trip_id}_{panel_type}"
         TripsCacheService._html_cache[cache_key] = panel
         
-        if TripsCacheService._debug_mode:
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
             print(f"[HTML_CACHE] Panneau {panel_type} mis en cache pour trajet {trip_id[:8] if trip_id else 'None'}...")
     
     @staticmethod
@@ -579,14 +595,22 @@ class TripsCacheService:
         for key in keys_to_remove:
             del TripsCacheService._html_cache[key]
         
-        if TripsCacheService._debug_mode:
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
             print(f"[HTML_CACHE] Cache effacé pour trajet {trip_id[:8] if trip_id else 'None'}...")
     
     @staticmethod
     def clear_all_html_cache():
         """Efface tout le cache HTML"""
         TripsCacheService._html_cache.clear()
-        if TripsCacheService._debug_mode:
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
             print("[HTML_CACHE] Tout le cache HTML effacé")
     
     @staticmethod
@@ -601,7 +625,11 @@ class TripsCacheService:
         if not trip_ids or not panel_types:
             return
         
-        if TripsCacheService._debug_mode:
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        if debug_trips:
             print(f"[PRELOAD] Préchargement de {len(trip_ids)} trajets, panneaux: {panel_types}")
         
         for trip_id in trip_ids[:5]:  # Limiter à 5 trajets pour éviter la surcharge
@@ -614,5 +642,5 @@ class TripsCacheService:
                     elif panel_type == 'passengers':
                         TripsCacheService.get_trip_passengers_panel(trip_id)
                 except Exception as e:
-                    if TripsCacheService._debug_mode:
+                    if debug_trips:
                         print(f"[PRELOAD] Erreur préchargement {panel_type} pour {trip_id[:8] if trip_id else 'None'}: {e}")

@@ -420,6 +420,10 @@ def get_trip_details_configured(trip_id):
     Récupère les détails d'un trajet selon la configuration JSON avec validation Pydantic
     """
     try:
+        # Vérifier si le debug des trajets est activé
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
         # 1. Charger la configuration via settings.py
         from dash_apps.utils.settings import load_json_config
         
@@ -432,17 +436,37 @@ def get_trip_details_configured(trip_id):
         for section_name, section_fields in fields_config.items():
             configured_fields.extend(section_fields.keys())
         
-        logger.info(f"[TRIP_CONFIGURED] Champs configurés: {configured_fields}")
+        # Utiliser CallbackLogger pour tracer les colonnes configurées
+        from dash_apps.utils.callback_logger import CallbackLogger
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "get_trip_configured_fields",
+                {"configured_fields": configured_fields, "fields_count": len(configured_fields)},
+                status="SUCCESS",
+                extra_info="Champs extraits de la configuration"
+            )
         
         # 3. Récupérer les données brutes de Supabase
         response = supabase.table("trips").select("*").eq("trip_id", trip_id).execute()
         
         if not response.data:
-            logger.warning(f"[TRIP_CONFIGURED] Trajet {trip_id} non trouvé")
+            if debug_trips:
+                CallbackLogger.log_callback(
+                "trip_not_found",
+                {"trip_id": trip_id},
+                status="WARNING",
+                extra_info="Trajet non trouvé dans Supabase"
+            )
             return None
         
         raw_data = response.data[0]
-        logger.info(f"[TRIP_CONFIGURED] Données brutes récupérées pour {trip_id}")
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "supabase_trip_query",
+                {"trip_id": trip_id, "columns_requested": "*", "data_found": True},
+                status="SUCCESS",
+                extra_info="Données brutes récupérées de Supabase"
+            )
         
         # 4. Filtrer selon la configuration (garder seulement les champs configurés)
         filtered_data = {}
@@ -450,7 +474,13 @@ def get_trip_details_configured(trip_id):
             if field in raw_data:
                 filtered_data[field] = raw_data[field]
             else:
-                logger.warning(f"[TRIP_CONFIGURED] Champ '{field}' configuré mais absent des données")
+                if debug_trips:
+                    CallbackLogger.log_callback(
+                        "field_missing",
+                        {"field": field, "trip_id": trip_id},
+                        status="WARNING",
+                        extra_info="Champ configuré mais absent des données Supabase"
+                    )
         
         # 5. Validation avec Pydantic
         from dash_apps.models.config_models import TripDataModel
@@ -460,15 +490,23 @@ def get_trip_details_configured(trip_id):
         validation_result = validate_data(TripDataModel, filtered_data)
         
         if not validation_result.success:
-            logger.error(f"[TRIP_CONFIGURED] Erreurs de validation: {validation_result.get_error_summary()}")
-            logger.error(f"[TRIP_CONFIGURED] Données invalides pour {trip_id}, retour None")
+            if debug_trips:
+                CallbackLogger.log_callback(
+                    "validation_error",
+                    {"trip_id": trip_id, "errors": validation_result.get_error_summary()},
+                    status="ERROR",
+                    extra_info="Échec de la validation Pydantic"
+                )
+            if debug_trips:
+                logger.error(f"[TRIP_CONFIGURED] Données invalides pour {trip_id}, retour None")
             return None  # Propager l'erreur vers le cache service
         
         # 6. Formater les données selon la configuration
         from dash_apps.utils.data_formatter import DataFormatter
         formatted_data = DataFormatter.format_trip_data(filtered_data)
         
-        logger.info(f"[TRIP_CONFIGURED] Données validées, filtrées et formatées pour {trip_id}")
+        if debug_trips:
+            logger.info(f"[TRIP_CONFIGURED] Données validées, filtrées et formatées pour {trip_id}")
         return formatted_data
         
     except Exception as e:

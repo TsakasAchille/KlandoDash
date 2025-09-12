@@ -2,12 +2,18 @@
 Enhanced callback logging system with colors and consistent formatting
 """
 import json
+import threading
+import uuid
 from typing import Dict, Any, Optional
 from datetime import datetime
 
 
 class CallbackLogger:
     """Enhanced logger for Dash callbacks with colors and consistent formatting"""
+    
+    # Thread-local storage for execution context
+    _local = threading.local()
+    _print_lock = threading.Lock()
     
     # ANSI color codes
     COLORS = {
@@ -113,6 +119,13 @@ class CallbackLogger:
         return lines
     
     @classmethod
+    def _get_execution_id(cls) -> str:
+        """Get or create execution ID for current thread"""
+        if not hasattr(cls._local, 'execution_id'):
+            cls._local.execution_id = str(uuid.uuid4())[:8]
+        return cls._local.execution_id
+    
+    @classmethod
     def _create_separator(cls, char: str = "─", length: int = 50) -> str:
         """Create colored separator line"""
         return f"{cls.COLORS['SEPARATOR']}{char * length}{cls.COLORS['RESET']}"
@@ -135,40 +148,43 @@ class CallbackLogger:
             cleaned_inputs = cls._clean_value(inputs or {})
             cleaned_states = cls._clean_value(states or {})
             
-            # Get colors
+            # Get colors and execution context
             callback_color = cls._get_callback_color(name)
             status_color = cls.COLORS.get(status, cls.COLORS['INFO'])
+            execution_id = cls._get_execution_id()
             
             # Create timestamp
             timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
             
-            # Print formatted log
-            print(f"\n{cls._create_separator()}")
-            
-            # Header with callback name and timestamp
-            header = f"[CB] {name}"
-            if extra_info:
-                header += f" | {extra_info}"
-            
-            print(f"{callback_color}{cls.COLORS['BOLD']}{header}{cls.COLORS['RESET']} "
-                  f"{cls.COLORS['DIM']}@ {timestamp}{cls.COLORS['RESET']}")
-            
-            # Status indicator
-            if status != "INFO":
-                print(f"{status_color}[{status}]{cls.COLORS['RESET']}")
-            
-            # Inputs section
-            print(f"{cls.COLORS['HEADER']}Inputs:{cls.COLORS['RESET']}")
-            for line in cls._format_key_value_pairs(cleaned_inputs):
-                print(line)
-            
-            # States section
-            if cleaned_states:
-                print(f"{cls.COLORS['HEADER']}States:{cls.COLORS['RESET']}")
-                for line in cls._format_key_value_pairs(cleaned_states):
+            # Thread-safe printing
+            with cls._print_lock:
+                # Print formatted log
+                print(f"\n{cls._create_separator()}")
+                
+                # Header with callback name, execution ID and timestamp
+                header = f"[CB:{execution_id}] {name}"
+                if extra_info:
+                    header += f" | {extra_info}"
+                
+                print(f"{callback_color}{cls.COLORS['BOLD']}{header}{cls.COLORS['RESET']} "
+                      f"{cls.COLORS['DIM']}@ {timestamp}{cls.COLORS['RESET']}")
+                
+                # Status indicator
+                if status != "INFO":
+                    print(f"{status_color}[{status}]{cls.COLORS['RESET']}")
+                
+                # Inputs section
+                print(f"{cls.COLORS['HEADER']}Inputs:{cls.COLORS['RESET']}")
+                for line in cls._format_key_value_pairs(cleaned_inputs):
                     print(line)
-            
-            print(cls._create_separator())
+                
+                # States section
+                if cleaned_states:
+                    print(f"{cls.COLORS['HEADER']}States:{cls.COLORS['RESET']}")
+                    for line in cls._format_key_value_pairs(cleaned_states):
+                        print(line)
+                
+                print(cls._create_separator())
             
         except Exception as e:
             # Fallback to simple logging if color formatting fails
@@ -184,18 +200,20 @@ class CallbackLogger:
         try:
             timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
             status_color = cls.COLORS.get(status, cls.COLORS['INFO'])
+            execution_id = cls._get_execution_id()
             
-            print(f"\n{cls.COLORS['SEPARATOR']}{'─' * 80}{cls.COLORS['RESET']}")
-            print(f"{cls.COLORS['INFO']}{cls.COLORS['BOLD']}[API] {operation}{cls.COLORS['RESET']} "
-                  f"{cls.COLORS['DIM']}@ {timestamp}{cls.COLORS['RESET']}")
-            
-            if status != "INFO":
-                print(f"{status_color}[{status}]{cls.COLORS['RESET']}")
-            
-            for line in cls._format_key_value_pairs(details):
-                print(line)
-            
-            print(f"{cls.COLORS['SEPARATOR']}{'─' * 80}{cls.COLORS['RESET']}")
+            with cls._print_lock:
+                print(f"\n{cls.COLORS['SEPARATOR']}{'─' * 80}{cls.COLORS['RESET']}")
+                print(f"{cls.COLORS['INFO']}{cls.COLORS['BOLD']}[API:{execution_id}] {operation}{cls.COLORS['RESET']} "
+                      f"{cls.COLORS['DIM']}@ {timestamp}{cls.COLORS['RESET']}")
+                
+                if status != "INFO":
+                    print(f"{status_color}[{status}]{cls.COLORS['RESET']}")
+                
+                for line in cls._format_key_value_pairs(details):
+                    print(line)
+                
+                print(f"{cls.COLORS['SEPARATOR']}{'─' * 80}{cls.COLORS['RESET']}")
             
         except Exception as e:
             print(f"[API] {operation} (logging error: {e}) - {details}")
@@ -205,6 +223,7 @@ class CallbackLogger:
         """Log cache operations with consistent formatting"""
         try:
             timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+            execution_id = cls._get_execution_id()
             
             # Determine status color based on cache hit/miss
             if hit is True:
@@ -217,20 +236,21 @@ class CallbackLogger:
                 status_color = cls.COLORS['INFO']
                 status_text = "INFO"
             
-            print(f"\n{cls.COLORS['SEPARATOR']}{'·' * 80}{cls.COLORS['RESET']}")
-            print(f"{cls.COLORS['INFO']}{cls.COLORS['BOLD']}[CACHE] {operation}{cls.COLORS['RESET']} "
-                  f"{status_color}[{status_text}]{cls.COLORS['RESET']} "
-                  f"{cls.COLORS['DIM']}@ {timestamp}{cls.COLORS['RESET']}")
-            
-            # Show cache key
-            print(f"  {cls.COLORS['KEY']}key{cls.COLORS['RESET']}: {cls.COLORS['VALUE']}{cls._short_str(key, 50)}{cls.COLORS['RESET']}")
-            
-            # Show additional details if provided
-            if details:
-                for line in cls._format_key_value_pairs(details):
-                    print(line)
-            
-            print(f"{cls.COLORS['SEPARATOR']}{'·' * 80}{cls.COLORS['RESET']}")
+            with cls._print_lock:
+                print(f"\n{cls.COLORS['SEPARATOR']}{'·' * 80}{cls.COLORS['RESET']}")
+                print(f"{cls.COLORS['INFO']}{cls.COLORS['BOLD']}[CACHE:{execution_id}] {operation}{cls.COLORS['RESET']} "
+                      f"{status_color}[{status_text}]{cls.COLORS['RESET']} "
+                      f"{cls.COLORS['DIM']}@ {timestamp}{cls.COLORS['RESET']}")
+                
+                # Show cache key
+                print(f"  {cls.COLORS['KEY']}key{cls.COLORS['RESET']}: {cls.COLORS['VALUE']}{cls._short_str(key, 50)}{cls.COLORS['RESET']}")
+                
+                # Show additional details if provided
+                if details:
+                    for line in cls._format_key_value_pairs(details):
+                        print(line)
+                
+                print(f"{cls.COLORS['SEPARATOR']}{'·' * 80}{cls.COLORS['RESET']}")
             
         except Exception as e:
             print(f"[CACHE] {operation} - {key} (logging error: {e})")
