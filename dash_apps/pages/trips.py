@@ -71,6 +71,13 @@ def get_layout():
     ]),
     dbc.Row([
         create_responsive_col(
+            "trip_driver_panel",
+            dcc.Loading(
+                children=html.Div(id="trip-driver-panel"),
+                type="default"
+            )
+        ),
+        create_responsive_col(
             "trip_passengers_panel",
             dcc.Loading(
                 children=html.Div(id="trip-passengers-panel"),

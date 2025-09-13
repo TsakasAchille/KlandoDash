@@ -11,7 +11,11 @@ from dash_apps.components.trip_search_widget import render_trip_search_widget, r
 from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.redis_cache import redis_cache
 from dash_apps.services.trips_cache_service import TripsCacheService
+from dash_apps.services.trip_details_cache_service import TripDetailsCache
+from dash_apps.services.trip_driver_cache_service import TripDriverCache
+from dash_apps.layouts.trip_detail_layout import TripDetailLayout
 from dash_apps.utils.callback_logger import CallbackLogger
+from dash_apps.utils.settings import load_json_config, get_jinja_template
 
 # Utiliser la factory pour obtenir le repository approprié
 trip_repository = RepositoryFactory.get_trip_repository()
@@ -356,7 +360,7 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     Input("selected-trip-id", "data"),
     prevent_initial_call=False
 )
-def render_trip_details_panel(selected_trip_id):
+def render_trip_details_and_stats_panel(selected_trip_id):
     """Callback séparé pour le rendu du panneau détails trajet avec cache HTML"""
     # Vérifier si le debug des trajets est activé
     import os
@@ -382,10 +386,6 @@ def render_trip_details_panel(selected_trip_id):
         return html.Div(), html.Div()
 
     # 1. Récupérer les données via le service de cache
-    from dash_apps.services.trip_details_cache_service import TripDetailsCache
-    from dash_apps.layouts.trip_detail_layout import TripDetailLayout
-    from dash_apps.utils.settings import load_json_config, get_jinja_template
-    
     data = TripDetailsCache.get_trip_details_data(selected_trip_id)
     
     # 2. Si pas de données, retourner des panels d'erreur
@@ -459,6 +459,84 @@ def render_trip_details_panel(selected_trip_id):
     # 6. Retourner les deux panneaux
     return details_panel, stats_panel
 
+
+@callback(
+    Output("trip-driver-panel", "children"),
+    [Input("selected-trip-id", "data")],
+    prevent_initial_call=False
+)
+def render_trip_driver_panel(selected_trip_id):
+    """Callback séparé pour le rendu du panneau conducteur trajet avec cache HTML"""
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    debug_trips = True
+
+    print("selected_trip_id", selected_trip_id)
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "render_trip_driver_panel", 
+            {"selected_trip_id": selected_trip_id}, 
+            status="INFO", 
+            extra_info="Driver panel rendering"
+        )
+
+    # Si aucun trajet sélectionné, retourner un div vide
+    if not selected_trip_id:
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "render_trip_driver_panel", 
+                {"selected_trip_id": "None"}, 
+                status="WARNING", 
+                extra_info="No trip selected"
+            )
+        return html.Div()
+
+    # 1. Récupérer les données conducteur via le service de cache spécialisé
+    data = TripDriverCache.get_trip_driver_data(selected_trip_id)
+    
+    # 2. Si pas de données, retourner un panel d'erreur
+    if not data:
+        error_panel = TripDetailLayout.render_error_panel(
+            "Impossible de récupérer les données du conducteur."
+        )
+        return error_panel
+    
+    # 3. Charger la configuration complète
+    config = load_json_config('trip_driver_config.json')
+    
+    # 4. Générer le panneau DRIVER (pour l'instant, panneau basique)
+    driver_layout_config = config.get('trip_driver', {}).get('layout', {})
+    driver_card_height = driver_layout_config.get('card_height', '300px')
+    driver_card_width = driver_layout_config.get('card_width', '100%')
+    driver_card_min_height = driver_layout_config.get('card_min_height', '250px')
+        
+    # 5. Générer le panneau DRIVER avec template dynamique
+    driver_template = get_jinja_template('trip_driver_template_dynamic.jinja2')
+    driver_html_content = driver_template.render(
+        trip=data,
+        config=config.get('trip_driver', {}),
+        layout={
+            'card_height': driver_card_height,
+            'card_width': driver_card_width,
+            'card_min_height': driver_card_min_height
+        }
+    )
+    
+    driver_panel = html.Div([
+        html.Iframe(
+            srcDoc=driver_html_content,
+            style={
+                "width": driver_card_width,
+                "height": driver_card_height,
+                "minHeight": driver_card_min_height,
+                "border": "none",
+                "borderRadius": "12px"
+            }
+        )
+    ])
+        
+    return driver_panel
 
 
 @callback(

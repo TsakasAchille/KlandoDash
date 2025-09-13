@@ -1,0 +1,238 @@
+{
+  "trip_driver": {
+    "cache": {
+      "enabled": true,
+      "ttl_seconds": 300,
+      "key_prefix": "trip_driver"
+    },
+    "layout": {
+      "width": "100%",
+      "height": "400px",
+      "padding": "15px",
+      "background_color": "#ffffff",
+      "border_radius": "8px",
+      "box_shadow": "0 2px 4px rgba(0,0,0,0.1)"
+    },
+    "dash_layout": {
+      "trip_driver_panel": {
+        "width": 12,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        }
+      }
+    },
+    "data_formatting": {
+      "date_format": "%d/%m/%Y",
+      "datetime_format": "%d/%m/%Y %H:%M",
+      "currency_format": "€{:.2f}",
+      "phone_format": "+33 {} {} {} {} {}",
+      "decimal_places": 2,
+      "datetime_fields": {
+        "driver_license_expiry": {
+          "input_format": "timestamp_with_timezone",
+          "output_format": "DD/MM/YYYY",
+          "display_format": "DD/MM/YYYY"
+        },
+        "vehicle_registration_date": {
+          "input_format": "timestamp_with_timezone",
+          "output_format": "DD/MM/YYYY",
+          "display_format": "DD/MM/YYYY"
+        }
+      }
+    },
+    "validation": {
+      "required_inputs": ["trip_id"],
+      "optional_fields": ["name", "email", "uid", "role", "phone", "driver_rating", "rating_count", "birth", "gender", "photo_url", "driver_license_url", "is_driver_doc_validated"],
+      "field_types": {
+        "trip_id": "string",
+        "name": "string",
+        "email": "email",
+        "uid": "string",
+        "role": "string",
+        "phone": "string",
+        "driver_rating": "float",
+        "rating_count": "integer",
+        "birth": "date",
+        "gender": "string",
+        "photo_url": "url",
+        "driver_license_url": "url",
+        "is_driver_doc_validated": "boolean"
+      },
+      "trip_id": {
+        "type": "string",
+        "min_length": 10,
+        "pattern": "^TRIP-.*"
+      }
+    },
+    "fields": {
+      "driver_info": {
+        "name": {
+          "label": "Nom complet",
+          "type": "string",
+          "display": true,
+          "order": 1,
+          "label_font_size": "12px",
+          "value_font_size": "18px",
+          "label_width": "100px",
+          "icon": "👤",
+          "icon_color": "#28a745",
+          "icon_size": "18px"
+        },
+        "email": {
+          "label": "Email",
+          "type": "email",
+          "display": true,
+          "order": 2,
+          "label_font_size": "12px",
+          "value_font_size": "16px",
+          "label_width": "80px",
+          "icon": "📧",
+          "icon_color": "#007bff",
+          "icon_size": "16px"
+        },
+        "uid": {
+          "label": "ID Utilisateur",
+          "type": "string",
+          "display": false,
+          "order": 3,
+          "label_font_size": "12px",
+          "value_font_size": "14px",
+          "label_width": "120px",
+          "icon": "🆔",
+          "icon_color": "#6c757d",
+          "icon_size": "16px",
+          "css_class": "user-id"
+        },
+        "role": {
+          "label": "Rôle",
+          "type": "string",
+          "display": true,
+          "order": 4,
+          "label_font_size": "12px",
+          "value_font_size": "16px",
+          "label_width": "60px",
+          "icon": "🎭",
+          "icon_color": "#17a2b8",
+          "icon_size": "16px"
+        },
+        "phone": {
+          "label": "Téléphone",
+          "type": "phone",
+          "display": true,
+          "order": 5,
+          "label_font_size": "12px",
+          "value_font_size": "16px",
+          "label_width": "100px",
+          "icon": "📱",
+          "icon_color": "#ffc107",
+          "icon_size": "16px"
+        },
+        "birth": {
+          "label": "Date de naissance",
+          "type": "date",
+          "display": false,
+          "order": 6,
+          "label_font_size": "12px",
+          "value_font_size": "14px",
+          "label_width": "140px",
+          "icon": "🎂",
+          "icon_color": "#e83e8c",
+          "icon_size": "16px"
+        },
+        "gender": {
+          "label": "Genre",
+          "type": "string",
+          "display": false,
+          "order": 7,
+          "label_font_size": "12px",
+          "value_font_size": "14px",
+          "label_width": "80px",
+          "icon": "⚧️",
+          "icon_color": "#6f42c1",
+          "icon_size": "16px"
+        },
+        "photo_url": {
+          "label": "Photo de profil",
+          "type": "url",
+          "display": false,
+          "order": 8,
+          "label_font_size": "12px",
+          "value_font_size": "14px",
+          "label_width": "120px",
+          "icon": "📷",
+          "icon_color": "#17a2b8",
+          "icon_size": "16px"
+        },
+        "driver_license_url": {
+          "label": "Permis de conduire",
+          "type": "url",
+          "display": true,
+          "order": 9,
+          "label_font_size": "12px",
+          "value_font_size": "14px",
+          "label_width": "140px",
+          "icon": "🪪",
+          "icon_color": "#6f42c1",
+          "icon_size": "16px"
+        },
+        "is_driver_doc_validated": {
+          "label": "Documents validés",
+          "type": "boolean",
+          "display": true,
+          "order": 10,
+          "label_font_size": "12px",
+          "value_font_size": "14px",
+          "label_width": "140px",
+          "icon": "✅",
+          "icon_color": "#28a745",
+          "icon_size": "16px"
+        },
+        "driver_rating": {
+          "label": "Note",
+          "type": "number",
+          "display": true,
+          "order": 11,
+          "label_font_size": "12px",
+          "value_font_size": "18px",
+          "label_width": "60px",
+          "icon": "⭐",
+          "icon_color": "#ffc107",
+          "icon_size": "16px"
+        },
+        "rating_count": {
+          "label": "Évaluations",
+          "type": "number",
+          "display": true,
+          "order": 12,
+          "label_font_size": "12px",
+          "value_font_size": "14px",
+          "label_width": "100px",
+          "icon": "📊",
+          "icon_color": "#17a2b8",
+          "icon_size": "16px"
+        }
+      }
+    },
+    "rendering": {
+      "template": "trip_driver_template",
+      "sections": [
+        {
+          "title": "Informations du conducteur",
+          "fields": ["name", "email", "role", "phone", "driver_license_url", "is_driver_doc_validated"],
+          "icon": "👤",
+          "color": "#28a745"
+        },
+        {
+          "title": "Évaluations",
+          "fields": ["driver_rating", "rating_count"],
+          "icon": "⭐",
+          "color": "#ffc107"
+        }
+      ]
+    }
+  }
+}
