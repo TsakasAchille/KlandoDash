@@ -23,6 +23,9 @@ from dash_apps.services.trips_cache_service import TripsCacheService
 
 
 
+# Constante pour l'espacement entre les layouts
+ROW_SPACING = "mb-4"
+
 def get_layout():
     """Génère le layout de la page trajets avec des IDs uniquement pour cette page"""
     return dbc.Container([
@@ -41,7 +44,7 @@ def get_layout():
         dbc.Col([
             dbc.Button("🔄 Rafraîchir les données", id="refresh-trips-btn", color="primary", className="mb-2")
         ], width=3)
-    ]),
+    ], className=ROW_SPACING),
     html.Div(id="refresh-trips-message"),
     # Widget de recherche
     render_trip_search_widget(),
@@ -52,7 +55,7 @@ def get_layout():
             # Conteneur vide qui sera rempli par le callback render_trips_table_callback
             html.Div(id="main-trips-content")
         ], width=12)
-    ]),
+    ], className=ROW_SPACING),
     dbc.Row([
         create_responsive_col(
             "trip_details_panel",
@@ -92,27 +95,40 @@ def get_layout():
             ],
             config_file="trip_details_config.json"
         ),
-    ]),
+    ], className=ROW_SPACING),
     dbc.Row([
-        create_responsive_col(
-            "trip_driver_panel",
-            [
-                # Header avec titre et icône
-                dbc.Card([
-                    dbc.CardHeader([
-                        html.I(className="fas fa-user-tie me-2", style={"color": "#6f42c1"}),
-                        html.H5("Conducteur", className="mb-0", style={"color": "#333"})
-                    ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #6f42c1"}),
-                    dbc.CardBody([
-                        dcc.Loading(
-                            children=html.Div(id="trip-driver-panel"),
-                            type="default"
-                        )
-                    ], style={"padding": "0"})
-                ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
-            ],
-            config_file="trip_driver_config.json"
-        ),
+        dbc.Col([
+            # Carte du trajet
+            dbc.Card([
+                dbc.CardHeader([
+                    html.I(className="fas fa-map-marked-alt me-2", style={"color": "#17a2b8"}),
+                    html.H5("Carte du trajet", className="mb-0", style={"color": "#333"})
+                ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #17a2b8"}),
+                dbc.CardBody([
+                    dcc.Loading(
+                        children=html.Div(id="trip-map-panel"),
+                        type="default"
+                    )
+                ], style={"padding": "0"})
+            ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
+        ], md=8),
+        dbc.Col([
+            # Conducteur
+            dbc.Card([
+                dbc.CardHeader([
+                    html.I(className="fas fa-user-tie me-2", style={"color": "#6f42c1"}),
+                    html.H5("Conducteur", className="mb-0", style={"color": "#333"})
+                ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #6f42c1"}),
+                dbc.CardBody([
+                    dcc.Loading(
+                        children=html.Div(id="trip-driver-panel"),
+                        type="default"
+                    )
+                ], style={"padding": "0"})
+            ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
+        ], md=4)
+    ], className=ROW_SPACING),
+    dbc.Row([
         create_responsive_col(
             "trip_passengers_panel",
             [
@@ -131,28 +147,7 @@ def get_layout():
                 ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
             ]
         )
-    ]),
-    dbc.Row([
-        create_responsive_col(
-            "trip_map_panel",
-            [
-                # Header avec titre et icône
-                dbc.Card([
-                    dbc.CardHeader([
-                        html.I(className="fas fa-map-marked-alt me-2", style={"color": "#17a2b8"}),
-                        html.H5("Carte du trajet", className="mb-0", style={"color": "#333"})
-                    ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #17a2b8"}),
-                    dbc.CardBody([
-                        dcc.Loading(
-                            children=html.Div(id="trip-map-panel"),
-                            type="default"
-                        )
-                    ], style={"padding": "0"})
-                ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
-            ],
-            config_file="trip_map_config.json"
-        )
-    ]),
+    ], className=ROW_SPACING),
     # Element bridge pour les données GeoJSON de la carte trips (caché)
     html.Div(
         id="trips-maplibre",

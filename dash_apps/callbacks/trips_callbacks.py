@@ -615,8 +615,12 @@ def render_trip_driver_panel(selected_trip_id):
     prevent_initial_call=True
 )
 def render_trip_passengers_panel(selected_trip_id):
-    # Vérifier si le debug des trajets est activé
+    """Affiche les passagers d'un trajet en utilisant le système bookings + users."""
+    from dash_apps.services.passengers_service import PassengersService
+    from dash_apps.layouts.trip_passengers_layout import TripPassengersLayout
     import os
+    
+    # Vérifier si le debug des trajets est activé
     debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
     
     if debug_trips:
@@ -624,11 +628,51 @@ def render_trip_passengers_panel(selected_trip_id):
             "render_trip_passengers_panel",
             {"selected_trip_id": selected_trip_id},
             status="INFO",
-            extra_info="Loading passengers"
+            extra_info="Loading passengers with new service"
         )
     
-    # Read-Through pattern: le cache service gère tout
-    return TripsCacheService.get_trip_passengers_panel(selected_trip_id)
+    # Vérifier si un trajet est sélectionné
+    if not selected_trip_id:
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "render_trip_passengers_panel",
+                {"selected_trip_id": selected_trip_id},
+                status="INFO",
+                extra_info="No trip selected"
+            )
+        return TripPassengersLayout.render_empty_state()
+    
+    try:
+        # Utiliser le nouveau service pour récupérer les passagers
+        summary = PassengersService.get_passengers_summary(selected_trip_id)
+        
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "render_trip_passengers_panel",
+                {
+                    "selected_trip_id": selected_trip_id,
+                    "total_passengers": summary.get('total_passengers', 0),
+                    "total_seats": summary.get('total_seats', 0)
+                },
+                status="SUCCESS",
+                extra_info="Passengers loaded successfully"
+            )
+        
+        # Générer le layout avec les données
+        return TripPassengersLayout.render_complete_layout(summary)
+        
+    except Exception as e:
+        error_msg = f"Erreur lors du chargement des passagers: {str(e)}"
+        
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "render_trip_passengers_panel",
+                {"selected_trip_id": selected_trip_id, "error": str(e)},
+                status="ERROR",
+                extra_info=error_msg
+            )
+        
+        return TripPassengersLayout.render_error_state(error_msg)
 
 
 @callback(

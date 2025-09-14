@@ -6,14 +6,14 @@
       "key_prefix": "trip_map"
     },
     "template_style": {
-      "height": "400px",
+      "height": "800px",
       "width": "100%",
-      "min_height": "350px",
+      "min_height": "800px",
       "padding": "0px",
       "background_color": "#ffffff",
       "border_radius": "8px",
       "box_shadow": "0 2px 4px rgba(0,0,0,0.1)",
-      "card_height": "380px",
+      "card_height": "800px",
       "card_width": "100%",
       "card_min_height": "330px"
     },

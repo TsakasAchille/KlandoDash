@@ -1,0 +1,88 @@
+{
+  "queries": {
+    "bookings_by_trip": {
+      "description": "Récupère les réservations pour un trajet donné",
+      "tables": {
+        "primary": "bookings"
+      },
+      "where": {
+        "bookings.trip_id": "{{trip_id}}"
+      },
+      "select": {
+        "base": ["id", "trip_id", "user_id", "seats", "status", "created_at", "updated_at"]
+      }
+    },
+    "users_by_ids": {
+      "description": "Récupère les informations utilisateurs par leurs IDs",
+      "tables": {
+        "primary": "users"
+      },
+      "where": {
+        "users.uid": "{{user_ids}}"
+      },
+      "select": {
+        "base": ["uid", "display_name", "email", "phone_number", "rating", "photo_url", "created_at"]
+      }
+    },
+    "passengers_by_trip": {
+      "description": "Récupère les passagers d'un trajet avec leurs informations complètes",
+      "tables": {
+        "primary": "bookings",
+        "joined": ["users"]
+      },
+      "joins": [
+        {
+          "type": "inner",
+          "table": "users",
+          "alias": "u",
+          "on": "bookings.user_id = u.uid"
+        }
+      ],
+      "where": {
+        "bookings.trip_id": "{{trip_id}}"
+      },
+      "select": {
+        "base": [
+          "bookings.id as booking_id",
+          "bookings.trip_id",
+          "bookings.user_id",
+          "bookings.seats_count",
+          "bookings.status as booking_status",
+          "bookings.created_at as booking_created_at",
+          "u.uid",
+          "u.display_name",
+          "u.email",
+          "u.phone_number",
+          "u.rating",
+          "u.photo_url"
+        ]
+      }
+    }
+  },
+  "field_mappings": {
+    "booking_id": "id",
+    "trip_id": "trip_id",
+    "user_id": "user_id",
+    "seats": "seats_count",
+    "status": "status",
+    "booking_created_at": "created_at",
+    "uid": "uid",
+    "display_name": "display_name",
+    "name": "display_name",
+    "email": "email",
+    "phone": "phone_number",
+    "phone_number": "phone_number",
+    "rating": "rating",
+    "photo_url": "photo_url",
+    "created_at": "created_at",
+    "updated_at": "updated_at"
+  },
+  "status_mappings": {
+    "": "confirmed",
+    "null": "confirmed",
+    "pending": "PENDING",
+    "confirmed": "CONFIRMED",
+    "cancelled": "CANCELLED",
+    "completed": "COMPLETED"
+  }
+}

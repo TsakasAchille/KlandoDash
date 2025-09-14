@@ -3,7 +3,8 @@ Modèles Pydantic pour la validation des configurations JSON
 """
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Dict, List, Optional, Any, Union, Literal
-from datetime import datetime
+from datetime import datetime, date
+from enum import Enum
 
 
 class CacheConfig(BaseModel):
@@ -192,6 +193,285 @@ class TripDriverDataModel(BaseModel):
     driver_id: Optional[str] = None
     driver_name: Optional[str] = None
     driver_email: Optional[str] = None
+
+
+# ===== MODÈLES POUR BOOKINGS ET USERS =====
+
+class BookingStatus(str, Enum):
+    """Statuts possibles pour une réservation."""
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
+    CANCELLED = "CANCELLED"
+    COMPLETED = "COMPLETED"
+
+
+class BookingModel(BaseModel):
+    """Modèle pour une réservation individuelle."""
+    id: str = Field(..., description="ID unique de la réservation")
+    seats: int = Field(..., ge=1, le=8, description="Nombre de places réservées")
+    user_id: str = Field(..., description="ID de l'utilisateur qui a fait la réservation")
+    trip_id: str = Field(..., description="ID du trajet réservé")
+    status: Optional[BookingStatus] = Field(default=BookingStatus.PENDING, description="Statut de la réservation")
+    created_at: Optional[datetime] = Field(default=None, description="Date de création")
+    updated_at: Optional[datetime] = Field(default=None, description="Date de dernière mise à jour")
+    
+    @field_validator('user_id', 'trip_id')
+    @classmethod
+    def validate_ids(cls, v):
+        """Valide que les IDs ne sont pas vides."""
+        if not v or not v.strip():
+            raise ValueError("ID ne peut pas être vide")
+        return v.strip()
+    
+    @field_validator('status', mode='before')
+    @classmethod
+    def validate_status(cls, v):
+        """Normalise le statut."""
+        if v is None or v == "" or v == "null":
+            return BookingStatus.CONFIRMED
+        if isinstance(v, str):
+            # Mapper les valeurs communes
+            status_map = {
+                "": BookingStatus.CONFIRMED,
+                "pending": BookingStatus.PENDING,
+                "confirmed": BookingStatus.CONFIRMED,
+                "cancelled": BookingStatus.CANCELLED,
+                "completed": BookingStatus.COMPLETED
+            }
+            return status_map.get(v.lower(), BookingStatus.CONFIRMED)
+        return v
+
+
+class BookingsQueryResult(BaseModel):
+    """Résultat d'une requête sur les réservations."""
+    bookings: List[BookingModel] = Field(default_factory=list, description="Liste des réservations")
+    total_count: int = Field(default=0, description="Nombre total de réservations")
+    total_seats: int = Field(default=0, description="Nombre total de places réservées")
+    user_ids: List[str] = Field(default_factory=list, description="Liste unique des IDs utilisateurs")
+    
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Calculer les totaux après initialisation
+        if self.bookings:
+            self.user_ids = list(set(booking.user_id for booking in self.bookings))
+            self.total_count = len(self.bookings)
+            self.total_seats = sum(booking.seats for booking in self.bookings)
+
+
+class BookingFilter(BaseModel):
+    """Filtres pour les requêtes de réservations."""
+    trip_id: Optional[str] = Field(default=None, description="Filtrer par ID de trajet")
+    user_id: Optional[str] = Field(default=None, description="Filtrer par ID utilisateur")
+    status: Optional[BookingStatus] = Field(default=None, description="Filtrer par statut")
+    min_seats: Optional[int] = Field(default=None, ge=1, description="Nombre minimum de places")
+    max_seats: Optional[int] = Field(default=None, le=8, description="Nombre maximum de places")
+    
+    def to_query_dict(self) -> dict:
+        """Convertit les filtres en dictionnaire pour les requêtes."""
+        query = {}
+        if self.trip_id:
+            query['trip_id'] = self.trip_id
+        if self.user_id:
+            query['user_id'] = self.user_id
+        if self.status:
+            query['status'] = self.status.value
+        if self.min_seats is not None:
+            query['seats__gte'] = self.min_seats
+        if self.max_seats is not None:
+            query['seats__lte'] = self.max_seats
+        return query
+
+
+class BookingsJsonQuery(BaseModel):
+    """Configuration pour les requêtes JSON sur les bookings."""
+    table: Literal["bookings"] = "bookings"
+    filters: Dict[str, Any] = Field(default_factory=dict, description="Filtres de requête")
+    select: List[str] = Field(
+        default=["id", "seats", "user_id", "trip_id", "status", "created_at", "updated_at"],
+        description="Colonnes à sélectionner"
+    )
+    order_by: Optional[List[str]] = Field(default=None, description="Tri des résultats")
+    limit: Optional[int] = Field(default=None, ge=1, description="Limite du nombre de résultats")
+    
+    @classmethod
+    def for_trip(cls, trip_id: str) -> 'BookingsJsonQuery':
+        """Crée une requête pour récupérer les bookings d'un trajet."""
+        return cls(
+            filters={"trip_id": trip_id},
+            order_by=["created_at"]
+        )
+
+
+class UsersJsonQuery(BaseModel):
+    """Configuration pour les requêtes JSON sur les users."""
+    table: Literal["users"] = "users"
+    filters: Dict[str, Any] = Field(default_factory=dict, description="Filtres de requête")
+    select: List[str] = Field(
+        default=[
+            "uid", "display_name", "email", "first_name", "name", 
+            "phone_number", "birth", "photo_url", "bio", "gender", 
+            "rating", "rating_count", "role", "created_at", "updated_at",
+            "is_driver_doc_validated"
+        ],
+        description="Colonnes à sélectionner"
+    )
+    order_by: Optional[List[str]] = Field(default=None, description="Tri des résultats")
+    limit: Optional[int] = Field(default=None, ge=1, description="Limite du nombre de résultats")
+    
+    @classmethod
+    def for_user_ids(cls, user_ids: List[str]) -> 'UsersJsonQuery':
+        """Crée une requête pour récupérer les users par leurs IDs."""
+        return cls(
+            filters={"uid__in": user_ids},
+            order_by=["display_name", "first_name", "name"]
+        )
+
+
+class UserGender(str, Enum):
+    """Genres possibles pour un utilisateur."""
+    MALE = "MALE"
+    FEMALE = "FEMALE"
+    OTHER = "OTHER"
+    NOT_SPECIFIED = "NOT_SPECIFIED"
+
+
+class UserRole(str, Enum):
+    """Rôles possibles pour un utilisateur."""
+    USER = "USER"
+    DRIVER = "DRIVER"
+    ADMIN = "ADMIN"
+    MODERATOR = "MODERATOR"
+
+
+class UserModel(BaseModel):
+    """Modèle pour un utilisateur."""
+    uid: str = Field(..., description="ID unique de l'utilisateur")
+    display_name: Optional[str] = Field(default=None, description="Nom d'affichage")
+    email: Optional[str] = Field(default=None, description="Adresse email")
+    first_name: Optional[str] = Field(default=None, description="Prénom")
+    name: Optional[str] = Field(default=None, description="Nom de famille")
+    phone_number: Optional[str] = Field(default=None, description="Numéro de téléphone")
+    birth: Optional[date] = Field(default=None, description="Date de naissance")
+    photo_url: Optional[str] = Field(default=None, description="URL de la photo de profil")
+    bio: Optional[str] = Field(default=None, description="Biographie")
+    driver_license_url: Optional[str] = Field(default=None, description="URL du permis de conduire")
+    gender: Optional[UserGender] = Field(default=UserGender.NOT_SPECIFIED, description="Genre")
+    id_card_url: Optional[str] = Field(default=None, description="URL de la carte d'identité")
+    rating: Optional[float] = Field(default=None, ge=0.0, le=5.0, description="Note moyenne")
+    rating_count: Optional[int] = Field(default=0, ge=0, description="Nombre d'évaluations")
+    role: Optional[UserRole] = Field(default=UserRole.USER, description="Rôle de l'utilisateur")
+    updated_at: Optional[datetime] = Field(default=None, description="Date de dernière mise à jour")
+    created_at: Optional[datetime] = Field(default=None, description="Date de création")
+    is_driver_doc_validated: Optional[bool] = Field(default=False, description="Documents conducteur validés")
+    
+    @field_validator('uid')
+    @classmethod
+    def validate_uid(cls, v):
+        """Valide que l'UID n'est pas vide."""
+        if not v or not v.strip():
+            raise ValueError("UID ne peut pas être vide")
+        return v.strip()
+    
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        """Valide le format de l'email."""
+        if v and v.strip():
+            # Validation basique d'email
+            if '@' not in v or '.' not in v.split('@')[-1]:
+                raise ValueError("Format d'email invalide")
+            return v.strip().lower()
+        return None
+    
+    @field_validator('phone_number')
+    @classmethod
+    def validate_phone(cls, v):
+        """Normalise le numéro de téléphone."""
+        if v and v.strip():
+            # Supprime les espaces et caractères spéciaux
+            cleaned = ''.join(c for c in v if c.isdigit() or c in '+')
+            return cleaned if cleaned else None
+        return None
+    
+    @field_validator('gender', mode='before')
+    @classmethod
+    def validate_gender(cls, v):
+        """Normalise le genre."""
+        if v is None or v == '':
+            return UserGender.NOT_SPECIFIED
+        if isinstance(v, str):
+            return v.upper()
+        return v
+    
+    @field_validator('role', mode='before')
+    @classmethod
+    def validate_role(cls, v):
+        """Normalise le rôle."""
+        if v is None or v == '':
+            return UserRole.USER
+        if isinstance(v, str):
+            return v.upper()
+        return v
+    
+    @property
+    def full_name(self) -> str:
+        """Retourne le nom complet de l'utilisateur."""
+        if self.first_name and self.name:
+            return f"{self.first_name} {self.name}"
+        elif self.display_name:
+            return self.display_name
+        elif self.first_name:
+            return self.first_name
+        elif self.name:
+            return self.name
+        else:
+            return "Utilisateur anonyme"
+    
+    @property
+    def is_driver(self) -> bool:
+        """Vérifie si l'utilisateur est un conducteur."""
+        return self.role in [UserRole.DRIVER, UserRole.ADMIN]
+    
+    @property
+    def rating_display(self) -> str:
+        """Retourne l'affichage de la note."""
+        if self.rating is not None and self.rating_count > 0:
+            return f"{self.rating:.1f}/5 ({self.rating_count} avis)"
+        return "Pas encore noté"
+
+
+class PassengerInfo(BaseModel):
+    """Informations d'un passager avec ses réservations."""
+    user: UserModel = Field(..., description="Informations utilisateur")
+    seats_booked: int = Field(..., ge=1, description="Nombre de places réservées")
+    booking_status: str = Field(..., description="Statut de la réservation")
+    booking_id: str = Field(..., description="ID de la réservation")
+    booking_created_at: Optional[datetime] = Field(default=None, description="Date de réservation")
+    
+    @property
+    def passenger_display_name(self) -> str:
+        """Nom d'affichage du passager."""
+        return self.user.full_name
+    
+    @property
+    def seats_text(self) -> str:
+        """Texte pour les places."""
+        return f"{self.seats_booked} place{'s' if self.seats_booked > 1 else ''}"
+
+
+class PassengersQueryResult(BaseModel):
+    """Résultat d'une requête sur les passagers."""
+    passengers: List[PassengerInfo] = Field(default_factory=list, description="Liste des passagers")
+    total_passengers: int = Field(default=0, description="Nombre total de passagers")
+    total_seats: int = Field(default=0, description="Nombre total de places réservées")
+    trip_id: Optional[str] = Field(default=None, description="ID du trajet")
+    
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Calculer les totaux après initialisation
+        if self.passengers:
+            self.total_passengers = len(self.passengers)
+            self.total_seats = sum(p.seats_booked for p in self.passengers)
     driver_phone: Optional[str] = None
     driver_license: Optional[str] = None
     
