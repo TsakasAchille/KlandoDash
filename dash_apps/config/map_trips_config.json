@@ -1,0 +1,40 @@
+{
+  "map_trips": {
+    "cache": {
+      "enabled": true,
+      "ttl_seconds": 300,
+      "key_prefix": "map_trips"
+    },
+    "query": {
+      "default_limit": 10,
+      "max_limit": 50,
+      "fields": [
+        "trip_id",
+        "departure_name", 
+        "destination_name",
+        "polyline",
+        "driver_id",
+        "driver_name",
+        "seats_booked",
+        "seats_available", 
+        "passenger_price",
+        "distance",
+        "departure_schedule"
+      ],
+      "order_by": "departure_schedule",
+      "order_direction": "DESC"
+    },
+    "validation": {
+      "required_fields": ["trip_id", "departure_name", "destination_name"],
+      "polyline_validation": {
+        "min_length": 10,
+        "encoding": "google_polyline"
+      }
+    },
+    "optimization": {
+      "polyline_simplification": true,
+      "coordinate_precision": 6,
+      "remove_duplicates": true
+    }
+  }
+}

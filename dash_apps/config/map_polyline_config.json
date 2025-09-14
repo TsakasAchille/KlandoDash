@@ -1,0 +1,109 @@
+{
+  "polyline_rendering": {
+    "color_palette": [
+      "#4281ec",
+      "#e74c3c", 
+      "#27ae60",
+      "#f1c40f",
+      "#8e44ad",
+      "#16a085",
+      "#d35400",
+      "#2c3e50"
+    ],
+    "feature_types": {
+      "route": {
+        "enabled": true,
+        "geometry_type": "LineString",
+        "style": {
+          "stroke_width": 3,
+          "stroke_opacity": 0.8
+        }
+      },
+      "start_marker": {
+        "enabled": true,
+        "geometry_type": "Point",
+        "role": "start",
+        "style": {
+          "marker_size": "medium",
+          "marker_symbol": "circle"
+        }
+      },
+      "end_marker": {
+        "enabled": true,
+        "geometry_type": "Point", 
+        "role": "end",
+        "style": {
+          "marker_size": "medium",
+          "marker_symbol": "square"
+        }
+      },
+      "car_marker": {
+        "enabled": true,
+        "geometry_type": "Point",
+        "role": "car",
+        "position": "midpoint",
+        "style": {
+          "marker_size": "small",
+          "marker_symbol": "car"
+        }
+      }
+    },
+    "trip_properties": [
+      "trip_id",
+      "driver_id", 
+      "driver_name",
+      "seats_booked",
+      "seats_available",
+      "passenger_price",
+      "distance",
+      "departure_name",
+      "destination_name",
+      "departure_schedule"
+    ],
+    "performance": {
+      "max_trips_per_render": 50,
+      "polyline_cache_enabled": true,
+      "on_demand_fetch_enabled": true,
+      "coordinate_precision": 6
+    },
+    "fallback": {
+      "skip_missing_polylines": true,
+      "silent_errors": true,
+      "empty_collection_on_no_features": true
+    }
+  },
+  "data_extraction": {
+    "dict_fields": {
+      "polyline": "polyline",
+      "trip_id": "trip_id",
+      "driver_id": "driver_id",
+      "driver_name": "driver_name",
+      "seats_booked": "seats_booked",
+      "seats_available": "seats_available", 
+      "passenger_price": "passenger_price",
+      "distance": "distance",
+      "departure_name": "departure_name",
+      "destination_name": "destination_name",
+      "departure_schedule": "departure_schedule"
+    },
+    "object_fields": {
+      "polyline": "polyline",
+      "trip_id": "trip_id", 
+      "driver_id": "driver_id",
+      "driver_name": "driver_name",
+      "seats_booked": "seats_booked",
+      "seats_available": "seats_available",
+      "passenger_price": "passenger_price", 
+      "distance": "distance",
+      "departure_name": "departure_name",
+      "destination_name": "destination_name",
+      "departure_schedule": "departure_schedule"
+    }
+  },
+  "coordinate_transformation": {
+    "input_format": "lat_lon",
+    "output_format": "lon_lat",
+    "decode_bytes": true,
+    "validate_coordinates": true
+  }
+}

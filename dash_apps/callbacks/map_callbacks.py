@@ -13,6 +13,8 @@ from dash_apps.config import Config
 from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.trips_cache_service import TripsCacheService
 from dash_apps.services.map_cache_service import MapCacheService
+from dash_apps.services.map_trips_cache_service import map_trips_cache
+from dash_apps.utils.map_trips_transformer import MapTripsTransformer
 import polyline as polyline_lib
 
 # Import dash app instance to check if callbacks already exist
@@ -138,158 +140,86 @@ def update_trip_count(inc_clicks, dec_clicks, current_value):
     Input("map-selected-trips", "data"),
 )
 def update_map_geojson(count, selected_ids):
-    # Coercion robuste du compteur
+    """
+    Callback optimisé utilisant MapPolylineRenderer pour le rendu des polylines.
+    Configuration externalisée et logique simplifiée.
+    """
+    import os
+    from dash_apps.utils.map_polyline_renderer import map_polyline_renderer
+    from dash_apps.infrastructure.repositories.supabase_trip_repository import SupabaseTripRepository
+    from dash_apps.utils.callback_logger import CallbackLogger
+    
+    debug_enabled = os.getenv('DEBUG_MAP', 'False').lower() == 'true'
+    logger = CallbackLogger()
+    
+    if debug_enabled:
+        logger.log_callback("map_geojson_start", {
+            "count": count,
+            "selected_ids_count": len(selected_ids or [])
+        }, status="INFO", extra_info="Starting map GeoJSON generation")
+    
+    # Validation du compteur
     try:
         count = int(count)
     except Exception:
         count = 0
     if not _TRIPS or count <= 0:
-        return None
-    count = max(1, min(int(count), len(_TRIPS)))
-    # If there is a selection, use it; else default to last N trips
-    visible_trips = _TRIPS[:count]
-    # If nothing is selected, show none (do not default to all)
-    # Normalize selected IDs to strings for robust comparison
-    selected_set = {str(s) for s in (selected_ids or [])}
-    features = []
-    # Palette de couleurs pour différencier les trajets simultanés
-    palette = [
-        "#4281ec",  # bleu
-        "#e74c3c",  # rouge
-        "#27ae60",  # vert
-        "#f1c40f",  # jaune
-        "#8e44ad",  # violet
-        "#16a085",  # sarcelle
-        "#d35400",  # orange
-        "#2c3e50",  # bleu sombre
-    ]
-    # Handle both dict and object formats for filtering
-    filtered = []
-    for t in visible_trips:
-        if isinstance(t, dict):
-            trip_id = t.get('trip_id', None)
-        else:
-            trip_id = getattr(t, 'trip_id', None)
-        if trip_id is None:
-            continue
-        if str(trip_id) in selected_set:
-            filtered.append(t)
-    for idx, trip in enumerate(filtered):
-        # Handle both dict and object formats and ensure polyline is available
-        if isinstance(trip, dict):
-            p = trip.get('polyline', None)
-            trip_id = trip.get('trip_id', None)
-            driver_id = trip.get('driver_id', None)
-            driver_name = trip.get('driver_name', None)
-            seats_booked = trip.get('seats_booked', None)
-            seats_available = trip.get('seats_available', None)
-            passenger_price = trip.get('passenger_price', None)
-            distance = trip.get('distance', None)
-            departure_name = trip.get('departure_name', None)
-            destination_name = trip.get('destination_name', None)
-            departure_schedule = str(trip.get('departure_schedule', '') or '')
-        else:
-            p = getattr(trip, 'polyline', None)
-            trip_id = getattr(trip, 'trip_id', None)
-            driver_id = getattr(trip, 'driver_id', None)
-            driver_name = getattr(trip, 'driver_name', None) if hasattr(trip, 'driver_name') else None
-            seats_booked = getattr(trip, 'seats_booked', None)
-            seats_available = getattr(trip, 'seats_available', None)
-            passenger_price = getattr(trip, 'passenger_price', None)
-            distance = getattr(trip, 'distance', None)
-            departure_name = getattr(trip, 'departure_name', None)
-            destination_name = getattr(trip, 'destination_name', None)
-            departure_schedule = str(getattr(trip, 'departure_schedule', '') or '')
-
-        # If polyline is missing, fetch full trip details on-demand
-        if not p and trip_id:
-            try:
-                repo = RepositoryFactory.get_trip_repository()
-                full = repo.get_trip(trip_id)
-                if isinstance(full, dict):
-                    p = full.get('polyline') or p
-                    driver_id = full.get('driver_id', driver_id)
-                    driver_name = full.get('driver_name', driver_name)
-                    seats_booked = full.get('seats_booked', seats_booked)
-                    seats_available = full.get('seats_available', seats_available)
-                    passenger_price = full.get('passenger_price', passenger_price)
-                    distance = full.get('distance', distance)
-                    departure_name = full.get('departure_name', departure_name)
-                    destination_name = full.get('destination_name', destination_name)
-                    departure_schedule = str(full.get('departure_schedule', departure_schedule) or '')
-            except Exception as _e:
-                # Silent fallback: if we can't fetch details, skip this trip
-                pass
-        
-        if not p:
-            continue
-        try:
-            if isinstance(p, bytes):
-                p = p.decode('utf-8')
-            coords_latlon = polyline_lib.decode(p)  # [(lat, lon), ...]
-            coords_lonlat = [[lon, lat] for (lat, lon) in coords_latlon]
-            # propriétés enrichies pour interactions
-            props = {
-                "trip_id": trip_id,
-                "color": palette[idx % len(palette)],
-                "driver_id": driver_id,
-                "driver_name": driver_name,
-                "seats_booked": seats_booked,
-                "seats_available": seats_available,
-                "passenger_price": passenger_price,
-                "distance": distance,
-                "departure_name": departure_name,
-                "destination_name": destination_name,
-                "departure_schedule": departure_schedule,
-            }
-            features.append({
-                "type": "Feature",
-                "geometry": {"type": "LineString", "coordinates": coords_lonlat},
-                "properties": props,
-            })
-            if coords_lonlat:
-                start = coords_lonlat[0]
-                end = coords_lonlat[-1]
-                features.append({
-                    "type": "Feature",
-                    "geometry": {"type": "Point", "coordinates": start},
-                    "properties": {
-                        "role": "start",
-                        "trip_id": props["trip_id"],
-                        "color": props["color"],
-                    },
-                })
-                features.append({
-                    "type": "Feature",
-                    "geometry": {"type": "Point", "coordinates": end},
-                    "properties": {
-                        "role": "end",
-                        "trip_id": props["trip_id"],
-                        "color": props["color"],
-                    },
-                })
-                # point milieu pour icône voiture
-                try:
-                    mid = coords_lonlat[len(coords_lonlat)//2]
-                    features.append({
-                        "type": "Feature",
-                        "geometry": {"type": "Point", "coordinates": mid},
-                        "properties": {
-                            "role": "car",
-                            "trip_id": props["trip_id"],
-                            "color": props["color"],
-                        },
-                    })
-                except Exception:
-                    pass
-        except Exception:
-            continue
-    if not features:
-        # Send empty collection to clear previously rendered polylines
+        if debug_enabled:
+            logger.log_callback("map_geojson_empty", {
+                "trips_available": len(_TRIPS) if _TRIPS else 0,
+                "count": count
+            }, status="WARNING", extra_info="Returning empty GeoJSON - no trips or invalid count")
         return json.dumps({"type": "FeatureCollection", "features": []})
-    collection = {"type": "FeatureCollection", "features": features}
-    return json.dumps(collection)
-
+    
+    count = max(1, min(int(count), len(_TRIPS)))
+    visible_trips = _TRIPS[:count]
+    
+    if debug_enabled:
+        logger.log_callback("map_trips_prepared", {
+            "total_trips": len(_TRIPS),
+            "visible_trips": count,
+            "selected_count": len(selected_ids or [])
+        }, status="INFO", extra_info="Trips prepared for rendering")
+    
+    # Callback pour récupérer les polylines manquantes
+    def fetch_missing_polyline(trip_id: str) -> dict:
+        try:
+            if debug_enabled:
+                logger.log_callback("fetch_polyline_start", {
+                    "trip_id": str(trip_id)[:8]
+                }, status="INFO", extra_info="Fetching missing polyline from Supabase")
+            repo = SupabaseTripRepository()
+            full_trip = repo.get_trip(trip_id)
+            result = full_trip if isinstance(full_trip, dict) else {}
+            if debug_enabled:
+                logger.log_callback("fetch_polyline_success", {
+                    "trip_id": str(trip_id)[:8],
+                    "has_data": bool(result),
+                    "has_polyline": bool(result.get('polyline'))
+                }, status="SUCCESS", extra_info="Polyline fetch completed")
+            return result
+        except Exception as e:
+            if debug_enabled:
+                logger.log_callback("fetch_polyline_error", {
+                    "trip_id": str(trip_id)[:8],
+                    "error": str(e)
+                }, status="ERROR", extra_info="Failed to fetch polyline from Supabase")
+            return {}
+    
+    # Utiliser le renderer optimisé
+    result = map_polyline_renderer.render_trips_geojson(
+        trips=visible_trips,
+        selected_trip_ids=selected_ids or [],
+        fetch_missing_polyline_callback=fetch_missing_polyline
+    )
+    
+    if debug_enabled:
+        logger.log_callback("map_geojson_complete", {
+            "result_length": len(result),
+            "has_features": '"features":[]' not in result
+        }, status="SUCCESS", extra_info="Map GeoJSON generation completed")
+    
+    return result
 
 # Render the table with checkboxes reflecting current selection
 @callback(

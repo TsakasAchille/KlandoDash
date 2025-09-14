@@ -201,6 +201,38 @@ class TripDriverDataModel(BaseModel):
     }
 
 
+class MapTripDataModel(BaseModel):
+    """Modèle pour les données de trajet optimisées pour la carte"""
+    trip_id: str = Field(min_length=1)
+    departure_name: str = Field(min_length=1)
+    destination_name: str = Field(min_length=1)
+    polyline: Optional[str] = None
+    driver_id: Optional[str] = None
+    driver_name: Optional[str] = None
+    seats_booked: Optional[int] = Field(ge=0, default=0)
+    seats_available: Optional[int] = Field(ge=0, default=1)
+    passenger_price: Optional[float] = Field(ge=0, default=0.0)
+    distance: Optional[float] = Field(ge=0, default=0.0)
+    departure_schedule: Optional[str] = None
+    
+    model_config = {
+        "extra": "forbid",
+        "str_strip_whitespace": True
+    }
+
+
+class MapDataCollectionModel(BaseModel):
+    """Collection de trajets pour la carte"""
+    trips: List[MapTripDataModel]
+    total_count: int = Field(ge=0)
+    cached_at: Optional[datetime] = None
+    
+    model_config = {
+        "extra": "forbid",
+        "str_strip_whitespace": True
+    }
+
+
 class MainConfig(BaseModel):
     """Configuration principale contenant toutes les configurations"""
     trip_details: TripDetailsConfig
