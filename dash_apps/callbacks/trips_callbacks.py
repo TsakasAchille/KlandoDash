@@ -151,17 +151,26 @@ def update_trip_filters(n_clicks, search_text, date_from, date_to, single_date, 
             extra_info="Applying filters"
         )
     
-    # Construction du dictionnaire de filtres
-    filters = {
-        "text": search_text or "",
-        "date_from": date_from,
-        "date_to": date_to,
-        "single_date": single_date,
-        "date_filter_type": date_filter_type or "range",
-        "date_sort": date_sort or "desc",
-        "status": status or "all",
-        "has_signalement": bool(has_signalement)
-    }
+    # Construction du dictionnaire de filtres - ne pas forcer les valeurs par défaut
+    filters = {}
+    
+    # N'ajouter que les filtres qui ont une valeur explicite
+    if search_text:
+        filters["text"] = search_text
+    if date_from:
+        filters["date_from"] = date_from
+    if date_to:
+        filters["date_to"] = date_to
+    if single_date:
+        filters["single_date"] = single_date
+    if date_filter_type:
+        filters["date_filter_type"] = date_filter_type
+    if date_sort:
+        filters["date_sort"] = date_sort
+    if status and status != "all":
+        filters["status"] = status
+    if has_signalement:
+        filters["has_signalement"] = True
     
     # Ne déclencher une mise à jour que si les filtres ont vraiment changé
     if filters != current_filters:
@@ -352,8 +361,7 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
             className="text-muted small mb-3"
         )
         return [info_message, table_component]
-
-
+"""
 @callback(
     [Output("trip-details-panel", "children"),
      Output("trip-stats-panel", "children")],
@@ -361,7 +369,6 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     prevent_initial_call=False
 )
 def render_trip_details_and_stats_panel(selected_trip_id):
-    """Callback séparé pour le rendu du panneau détails trajet avec cache HTML"""
     # Vérifier si le debug des trajets est activé
     import os
     debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
@@ -458,12 +465,11 @@ def render_trip_details_and_stats_panel(selected_trip_id):
         
     # 6. Retourner les deux panneaux
     return details_panel, stats_panel
-
-
+"""
 @callback(
     Output("trip-driver-panel", "children"),
     [Input("selected-trip-id", "data")],
-    prevent_initial_call=False
+    prevent_initial_call=True
 )
 def render_trip_driver_panel(selected_trip_id):
     """Callback séparé pour le rendu du panneau conducteur trajet avec cache HTML"""
@@ -505,11 +511,35 @@ def render_trip_driver_panel(selected_trip_id):
     # 3. Charger la configuration complète
     config = load_json_config('trip_driver_config.json')
     
-    # 4. Générer le panneau DRIVER (pour l'instant, panneau basique)
-    driver_layout_config = config.get('trip_driver', {}).get('layout', {})
-    driver_card_height = driver_layout_config.get('card_height', '300px')
-    driver_card_width = driver_layout_config.get('card_width', '100%')
-    driver_card_min_height = driver_layout_config.get('card_min_height', '250px')
+    # 4. Générer le panneau DRIVER avec la nouvelle configuration séparée
+    driver_style_config = config.get('trip_driver', {}).get('template_style', {})
+    
+    # Paramètres pour l'iframe (conteneur externe)
+    iframe_height = driver_style_config.get('height', '500px')
+    iframe_width = driver_style_config.get('width', '100%')
+    iframe_min_height = driver_style_config.get('min_height', '400px')
+    
+    # Paramètres pour la card interne (template Jinja2)
+    driver_card_height = driver_style_config.get('card_height', '400px')
+    driver_card_width = driver_style_config.get('card_width', '100%')
+    driver_card_min_height = driver_style_config.get('card_min_height', '300px')
+    
+    # Debug pour vérifier les valeurs
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "template_config_debug", 
+            {
+                "iframe_height": iframe_height,
+                "iframe_width": iframe_width,
+                "iframe_min_height": iframe_min_height,
+                "card_height": driver_card_height,
+                "card_width": driver_card_width,
+                "card_min_height": driver_card_min_height,
+                "full_config": driver_style_config
+            }, 
+            status="INFO", 
+            extra_info="Template configuration values (iframe + card)"
+        )
         
     # 5. Générer le panneau DRIVER avec template dynamique
     driver_template = get_jinja_template('trip_driver_template_dynamic.jinja2')
@@ -527,9 +557,9 @@ def render_trip_driver_panel(selected_trip_id):
         html.Iframe(
             srcDoc=driver_html_content,
             style={
-                "width": driver_card_width,
-                "height": driver_card_height,
-                "minHeight": driver_card_min_height,
+                "width": iframe_width,
+                "height": iframe_height,
+                "minHeight": iframe_min_height,
                 "border": "none",
                 "borderRadius": "12px"
             }
@@ -538,14 +568,13 @@ def render_trip_driver_panel(selected_trip_id):
         
     return driver_panel
 
-
+"""
 @callback(
     Output("trip-passengers-panel", "children"),
     [Input("selected-trip-id", "data")],
     prevent_initial_call=True
 )
 def render_trip_passengers_panel(selected_trip_id):
-    """Callback séparé pour le rendu du panneau passagers trajet avec cache HTML"""
     # Vérifier si le debug des trajets est activé
     import os
     debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
@@ -560,3 +589,4 @@ def render_trip_passengers_panel(selected_trip_id):
     
     # Read-Through pattern: le cache service gère tout
     return TripsCacheService.get_trip_passengers_panel(selected_trip_id)
+"""

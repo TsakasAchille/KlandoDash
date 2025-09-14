@@ -19,9 +19,10 @@
       border-radius: 28px;
       padding: 25px;
       overflow: hidden;
+      margin-bottom: 20px;
+      min-height: {{ layout.card_min_height if layout else '400px' }};
       height: {{ layout.card_height if layout else '400px' }};
       width: {{ layout.card_width if layout else '100%' }};
-      min-height: {{ layout.card_min_height if layout else '350px' }};
     }
     
     .card-header {
@@ -50,19 +51,9 @@
     }
     
     .driver-container {
-      background: white;
+      background: #fafcfe;
       border-radius: 18px;
       padding: 20px;
-      display: flex;
-      flex-direction: column;
-      margin-top: 15px;
-    }
-    
-    .driver-card-inner {
-      padding: 15px;
-      border-radius: 15px;
-      background: #fafcfe;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
     
     .driver-header {
@@ -74,8 +65,8 @@
     }
     
     .driver-avatar {
-      width: 40px;
-      height: 40px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       background-color: #e0f0ff;
       display: flex;
@@ -84,6 +75,20 @@
       margin-right: 15px;
       font-size: 20px;
       color: #3366CC;
+      overflow: hidden;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .driver-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+    
+    .driver-avatar-fallback {
+      font-size: 24px;
     }
     
     .driver-name {
@@ -92,36 +97,39 @@
       color: #333;
     }
     
-    .driver-details {
-      list-style-type: none;
-      padding: 0;
-      margin: 0 0 15px 0;
-    }
-    
     .driver-detail-item {
       display: flex;
-      margin-bottom: 10px;
       align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #eaeef3;
     }
     
-    .detail-icon {
-      margin-right: 8px;
-      width: 20px;
-      text-align: center;
+    .driver-detail-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
     }
     
     .detail-label {
       font-weight: 500;
       color: #666;
-      flex-shrink: 0;
-      margin-right: 10px;
+      font-size: 13px;
+      flex-grow: 1;
     }
     
     .detail-value {
-      font-weight: 400;
-      color: #333;
-      word-break: break-word;
-      flex-grow: 1;
+      font-weight: 600;
+      color: #1c2b46;
+      font-size: 16px;
+      padding: 6px 12px;
+      background: #f0f4f9;
+      border-radius: 12px;
+    }
+    
+    .highlight-value {
+      color: #2563eb;
+      background: #e0ecff;
     }
     
     .user-id {
@@ -207,74 +215,68 @@
   <div class="driver-card">
     <div class="driver-container">
       {% if trip and (trip.name or trip.display_name or trip.first_name or trip.email or trip.uid) %}
-        <div class="driver-card-inner">
-          <div class="driver-header">
-            <div class="driver-avatar">👤</div>
-            <div class="driver-name">{{ trip.name or trip.display_name or trip.first_name or 'Conducteur' }}</div>
+        <div class="driver-header">
+          <div class="driver-avatar">
+            {% if trip.photo_url %}
+              <img src="{{ trip.photo_url }}" alt="Photo de {{ trip.name or trip.display_name or trip.first_name or 'Conducteur' }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+              <div class="driver-avatar-fallback" style="display: none;">👤</div>
+            {% else %}
+              <div class="driver-avatar-fallback">👤</div>
+            {% endif %}
           </div>
+          <div class="driver-name">{{ trip.name or trip.display_name or trip.first_name or 'Conducteur' }}</div>
+        </div>
           
           {% if config and config.rendering and config.rendering.sections %}
             {% for section in config.rendering.sections %}
               {% if section.fields %}
-                <div class="section">
-                  <div class="section-title" style="color: {{ section.color or '#333' }};">
-                    <span class="section-icon">{{ section.icon or '📋' }}</span>
-                    {{ section.title or 'Informations' }}
-                  </div>
-                  
-                  <ul class="driver-details">
-                    {% for field_name in section.fields %}
-                      {% set field_config = config.fields.driver_info[field_name] if config.fields and config.fields.driver_info and field_name in config.fields.driver_info else {} %}
-                      {% if field_config.display and trip[field_name] %}
-                        <li class="driver-detail-item">
-                          <span class="detail-icon" style="color: {{ field_config.icon_color or '#666' }}; font-size: {{ field_config.icon_size or '16px' }};">
-                            {{ field_config.icon or '•' }}
-                          </span>
-                          <span class="detail-label" style="font-size: {{ field_config.label_font_size or '12px' }}; width: {{ field_config.label_width or 'auto' }};">
-                            {{ field_config.label or field_name.title() }} :
-                          </span>
-                          <span class="detail-value {{ field_config.css_class or '' }}" style="font-size: {{ field_config.value_font_size or '14px' }};">
-                            {{ trip[field_name] or 'N/A' }}
-                          </span>
-                        </li>
-                      {% endif %}
-                    {% endfor %}
-                  </ul>
-                </div>
+                {% for field_name in section.fields %}
+                  {% set field_config = config.fields.driver_info[field_name] if config.fields and config.fields.driver_info and field_name in config.fields.driver_info else {} %}
+                  {% if field_config.display and trip[field_name] %}
+                    <div class="driver-detail-item">
+                      <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+                        <span class="detail-label">{{ field_config.label or field_name.title() }}</span>
+                        <span class="detail-value {{ 'highlight-value' if field_name == 'name' else '' }}">{{ trip[field_name] or 'N/A' }}</span>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
               {% endif %}
             {% endfor %}
           {% else %}
             <!-- Fallback vers l'affichage simple si pas de config -->
-            <ul class="driver-details">
-              {% if trip.email %}
-                <li class="driver-detail-item">
-                  <span class="detail-icon">📧</span>
-                  <span class="detail-label">Email :</span>
+            {% if trip.email %}
+              <div class="driver-detail-item">
+                <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+                  <span class="detail-label">Email</span>
                   <span class="detail-value">{{ trip.email }}</span>
-                </li>
-              {% endif %}
-              {% if trip.uid %}
-                <li class="driver-detail-item">
-                  <span class="detail-icon">🆔</span>
-                  <span class="detail-label">ID Utilisateur :</span>
+                </div>
+              </div>
+            {% endif %}
+            {% if trip.uid %}
+              <div class="driver-detail-item">
+                <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+                  <span class="detail-label">ID Utilisateur</span>
                   <span class="detail-value user-id">{{ trip.uid }}</span>
-                </li>
-              {% endif %}
-              {% if trip.role %}
-                <li class="driver-detail-item">
-                  <span class="detail-icon">👔</span>
-                  <span class="detail-label">Rôle :</span>
+                </div>
+              </div>
+            {% endif %}
+            {% if trip.role %}
+              <div class="driver-detail-item">
+                <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+                  <span class="detail-label">Rôle</span>
                   <span class="detail-value">{{ trip.role }}</span>
-                </li>
-              {% endif %}
-              {% if trip.phone %}
-                <li class="driver-detail-item">
-                  <span class="detail-icon">📱</span>
-                  <span class="detail-label">Téléphone :</span>
+                </div>
+              </div>
+            {% endif %}
+            {% if trip.phone %}
+              <div class="driver-detail-item">
+                <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+                  <span class="detail-label">Téléphone</span>
                   <span class="detail-value">{{ trip.phone }}</span>
-                </li>
-              {% endif %}
-            </ul>
+                </div>
+              </div>
+            {% endif %}
           {% endif %}
           
           {% if trip.uid %}
@@ -282,7 +284,6 @@
           {% else %}
             <a href="/users" target="_top" class="profile-button">Voir profil</a>
           {% endif %}
-        </div>
       {% else %}
         <div class="empty-message">
           Aucune information sur le conducteur n'est disponible pour ce trajet.

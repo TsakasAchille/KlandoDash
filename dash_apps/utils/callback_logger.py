@@ -4,6 +4,7 @@ Enhanced callback logging system with colors and consistent formatting
 import json
 import threading
 import uuid
+import inspect
 from typing import Dict, Any, Optional
 from datetime import datetime
 
@@ -74,7 +75,7 @@ class CallbackLogger:
         return s
     
     @classmethod
-    def _clean_value(cls, value: Any) -> Any:
+    def _clean_value(cls, value: Any, key_name: str = "") -> Any:
         """Clean and format values for display"""
         if isinstance(value, dict):
             cleaned = {}
@@ -87,11 +88,16 @@ class CallbackLogger:
                 if k in ("selected_trip", "selected_trip_id") and isinstance(v, dict) and "trip_id" in v:
                     cleaned["selected_trip_id"] = cls._short_str(v.get("trip_id"))
                     continue
-                cleaned[k] = cls._clean_value(v)
+                cleaned[k] = cls._clean_value(v, k)
             return cleaned
         elif isinstance(value, list):
-            return [cls._clean_value(v) for v in value if v is not None and v != ""]
+            return [cls._clean_value(v, key_name) for v in value if v is not None and v != ""]
         elif isinstance(value, str):
+            # Ne jamais tronquer les erreurs
+            if 'error' in key_name.lower() or any(keyword in value.lower() for keyword in ['error', 'exception', 'traceback', 'failed']):
+                return value  # Retourner l'erreur complète
+            elif len(value) < 50:
+                return value  # Retourner les courtes chaînes
             return cls._short_str(value)
         return value
     
@@ -110,6 +116,14 @@ class CallbackLogger:
                     value_str = str(value)
             except Exception:
                 value_str = str(value)
+            
+            # Ne pas tronquer les erreurs dans l'affichage final
+            if key == 'error' or 'error' in key.lower():
+                # Afficher l'erreur complète sans troncature
+                pass
+            elif len(value_str) > 200 and not any(keyword in value_str.lower() for keyword in ['error', 'exception', 'traceback']):
+                # Tronquer seulement les très longues valeurs qui ne sont pas des erreurs
+                value_str = f"{value_str[:100]}...{value_str[-50:]}"
             
             # Color formatting
             key_colored = f"{cls.COLORS['KEY']}{key}{cls.COLORS['RESET']}"
@@ -131,6 +145,53 @@ class CallbackLogger:
         return f"{cls.COLORS['SEPARATOR']}{char * length}{cls.COLORS['RESET']}"
     
     @classmethod
+    def _get_caller_info(cls) -> Dict[str, str]:
+        """Get information about the calling function and class"""
+        try:
+            # Get the current frame and walk up the stack
+            frame = inspect.currentframe()
+            
+            # Skip frames until we find the actual caller (not CallbackLogger methods)
+            while frame:
+                frame = frame.f_back
+                if not frame:
+                    break
+                    
+                # Get function name and filenam
+                func_name = frame.f_code.co_name
+                filename = frame.f_code.co_filename
+                
+                # Skip CallbackLogger methods and internal Python frames
+                if (func_name not in ['log_callback', '_get_caller_info'] and 
+                    'callback_logger.py' not in filename and
+                    not filename.startswith('<')):
+                    
+                    # Try to get class name from 'self' or 'cls' in locals
+                    class_name = None
+                    if 'self' in frame.f_locals:
+                        class_name = frame.f_locals['self'].__class__.__name__
+                    elif 'cls' in frame.f_locals:
+                        class_name = frame.f_locals['cls'].__name__
+                    
+                    # Extract module name from filename
+                    module_parts = filename.replace('\\', '/').split('/')
+                    if len(module_parts) > 1:
+                        module_name = module_parts[-1].replace('.py', '')
+                    else:
+                        module_name = 'unknown'
+                    
+                    return {
+                        'function': func_name,
+                        'class': class_name or 'N/A',
+                        'module': module_name
+                    }
+            
+            return {'function': 'unknown', 'class': 'N/A', 'module': 'unknown'}
+            
+        except Exception:
+            return {'function': 'unknown', 'class': 'N/A', 'module': 'unknown'}
+
+    @classmethod
     def log_callback(cls, name: str, inputs: Dict[str, Any], states: Optional[Dict[str, Any]] = None, 
                     status: str = "INFO", extra_info: Optional[str] = None):
         """
@@ -144,9 +205,17 @@ class CallbackLogger:
             extra_info: Additional information to display
         """
         try:
-            # Clean inputs and states
-            cleaned_inputs = cls._clean_value(inputs or {})
-            cleaned_states = cls._clean_value(states or {})
+            # Get caller information
+            caller_info = cls._get_caller_info()
+            
+            # Clean inputs and states, but preserve error messages
+            cleaned_inputs = {}
+            for k, v in (inputs or {}).items():
+                cleaned_inputs[k] = cls._clean_value(v, k)
+            
+            cleaned_states = {}
+            for k, v in (states or {}).items():
+                cleaned_states[k] = cls._clean_value(v, k)
             
             # Get colors and execution context
             callback_color = cls._get_callback_color(name)
@@ -166,8 +235,12 @@ class CallbackLogger:
                 if extra_info:
                     header += f" | {extra_info}"
                 
-                print(f"{callback_color}{cls.COLORS['BOLD']}{header}{cls.COLORS['RESET']} "
-                      f"{cls.COLORS['DIM']}@ {timestamp}{cls.COLORS['RESET']}")
+                # Add caller information
+                caller_display = f"{caller_info['class']}.{caller_info['function']}" if caller_info['class'] != 'N/A' else caller_info['function']
+                caller_text = f" {cls.COLORS['DIM']}({caller_info['module']}::{caller_display}){cls.COLORS['RESET']}"
+                
+                print(f"{callback_color}{cls.COLORS['BOLD']}{header}{cls.COLORS['RESET']}"
+                      f"{caller_text} {cls.COLORS['DIM']}@ {timestamp}{cls.COLORS['RESET']}")
                 
                 # Status indicator
                 if status != "INFO":

@@ -1,0 +1,93 @@
+{
+  "display_formatting": {
+    "name_fallback": {
+      "fields": ["name", "display_name", "first_name"],
+      "default": "Conducteur"
+    },
+    "photo_validation": {
+      "allowed_prefixes": ["http://", "https://", "/"],
+      "fallback_icon": "👤"
+    },
+    "field_formatting": {
+      "required_fields": {
+        "email": {
+          "empty_display": "N/A",
+          "validation": "email"
+        },
+        "phone": {
+          "empty_display": "N/A",
+          "format": "+33 {} {} {} {} {}"
+        },
+        "role": {
+          "empty_display": "N/A"
+        }
+      },
+      "optional_fields": {
+        "bio": {
+          "empty_display": null
+        },
+        "birth": {
+          "empty_display": null,
+          "format": "DD/MM/YYYY"
+        },
+        "gender": {
+          "empty_display": null
+        }
+      }
+    },
+    "links": {
+      "profile": {
+        "base_url": "/users",
+        "with_uid": "/users?uid={uid}"
+      }
+    },
+    "rating": {
+      "stars": {
+        "full": "★",
+        "half": "☆",
+        "empty": "☆",
+        "max_rating": 5
+      },
+      "classes": {
+        "excellent": {
+          "min_rating": 4.5,
+          "class": "excellent-rating"
+        },
+        "good": {
+          "min_rating": 4.0,
+          "class": "good-rating"
+        },
+        "average": {
+          "min_rating": 3.0,
+          "class": "average-rating"
+        },
+        "poor": {
+          "min_rating": 0,
+          "class": "poor-rating"
+        }
+      },
+      "no_rating": {
+        "display": "Pas encore noté",
+        "class": "no-rating"
+      }
+    }
+  },
+  "field_mappings": {
+    "name": "name",
+    "email": "email", 
+    "uid": "uid",
+    "role": "role",
+    "phone": "phone_number",
+    "birth": "birth",
+    "gender": "gender",
+    "bio": "bio",
+    "photo_url": "photo_url",
+    "driver_license_url": "driver_license_url",
+    "id_card_url": "id_card_url",
+    "is_driver_doc_validated": "is_driver_doc_validated",
+    "driver_rating": "rating",
+    "rating_count": "rating_count",
+    "created_at": "created_at",
+    "updated_at": "updated_at"
+  }
+}

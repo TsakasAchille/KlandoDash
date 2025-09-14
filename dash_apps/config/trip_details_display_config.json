@@ -1,0 +1,73 @@
+{
+  "display_formatting": {
+    "datetime_fields": {
+      "start_time": {
+        "input_format": "timestamp_with_timezone",
+        "output_format": "%d/%m/%Y",
+        "display_format": "%d/%m/%Y %H:%M"
+      },
+      "end_time": {
+        "input_format": "timestamp_with_timezone", 
+        "output_format": "%d/%m/%Y",
+        "display_format": "%d/%m/%Y %H:%M"
+      },
+      "created_at": {
+        "input_format": "timestamp_with_timezone",
+        "output_format": "%d/%m/%Y",
+        "display_format": "%d/%m/%Y %H:%M"
+      },
+      "updated_at": {
+        "input_format": "timestamp_with_timezone",
+        "output_format": "%d/%m/%Y", 
+        "display_format": "%d/%m/%Y %H:%M"
+      }
+    },
+    "price_fields": ["price", "total_revenue"],
+    "distance_fields": ["distance"],
+    "duration_fields": ["duration"],
+    "status_formatting": {
+      "pending": {
+        "display": "En attente",
+        "class": "status-pending",
+        "color": "#ffc107"
+      },
+      "confirmed": {
+        "display": "Confirmé",
+        "class": "status-confirmed", 
+        "color": "#28a745"
+      },
+      "in_progress": {
+        "display": "En cours",
+        "class": "status-progress",
+        "color": "#007bff"
+      },
+      "completed": {
+        "display": "Terminé",
+        "class": "status-completed",
+        "color": "#6f42c1"
+      },
+      "cancelled": {
+        "display": "Annulé",
+        "class": "status-cancelled",
+        "color": "#dc3545"
+      }
+    }
+  },
+  "field_mappings": {
+    "trip_id": "trip_id",
+    "status": "status",
+    "created_at": "created_at",
+    "updated_at": "updated_at",
+    "start_location": "start_location",
+    "end_location": "end_location",
+    "start_time": "start_time",
+    "end_time": "end_time",
+    "distance": "distance",
+    "duration": "duration",
+    "price": "price",
+    "driver_id": "driver_id",
+    "driver_name": "driver_name",
+    "driver_email": "driver_email",
+    "driver_phone": "driver_phone"
+  }
+}

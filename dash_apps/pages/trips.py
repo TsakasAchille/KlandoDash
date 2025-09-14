@@ -75,7 +75,8 @@ def get_layout():
             dcc.Loading(
                 children=html.Div(id="trip-driver-panel"),
                 type="default"
-            )
+            ),
+            config_file="trip_driver_config.json"
         ),
         create_responsive_col(
             "trip_passengers_panel",

@@ -129,6 +129,47 @@ class TripDataModel(BaseModel):
     }
 
 
+class TripDriverDataModel(BaseModel):
+    """Modèle Pydantic pour valider les données conducteur depuis l'API"""
+    trip_id: str = Field(min_length=10, pattern=r"^TRIP-.*")
+    
+    # Informations conducteur (correspondant au schéma users réel)
+    name: Optional[str] = None
+    email: Optional[str] = None
+    uid: Optional[str] = None
+    role: Optional[str] = None
+    phone: Optional[str] = None
+    
+    # Informations supplémentaires du schéma users
+    birth: Optional[str] = None
+    gender: Optional[str] = None
+    bio: Optional[str] = None
+    photo_url: Optional[str] = None
+    driver_license_url: Optional[str] = None
+    id_card_url: Optional[str] = None
+    is_driver_doc_validated: Optional[bool] = None
+    
+    # Évaluations (colonnes réelles du schéma users)
+    driver_rating: Optional[float] = Field(ge=0, le=5, default=None)
+    rating_count: Optional[int] = Field(ge=0, default=None)
+    
+    # Timestamps
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    # Champs legacy pour compatibilité
+    driver_id: Optional[str] = None
+    driver_name: Optional[str] = None
+    driver_email: Optional[str] = None
+    driver_phone: Optional[str] = None
+    driver_license: Optional[str] = None
+    
+    model_config = {
+        "extra": "allow",  # Permet des champs supplémentaires
+        "str_strip_whitespace": True
+    }
+
+
 class MainConfig(BaseModel):
     """Configuration principale contenant toutes les configurations"""
     trip_details: TripDetailsConfig

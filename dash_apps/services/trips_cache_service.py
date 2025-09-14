@@ -644,3 +644,41 @@ class TripsCacheService:
                 except Exception as e:
                     if debug_trips:
                         print(f"[PRELOAD] Erreur préchargement {panel_type} pour {trip_id[:8] if trip_id else 'None'}: {e}")
+    
+    @staticmethod
+    def get_trip_driver_data(selected_trip_id: str):
+        """
+        Récupère les données conducteur via TripDriverCache avec système de cache générique
+        
+        Args:
+            selected_trip_id: ID du trajet sélectionné
+            
+        Returns:
+            dict: Données conducteur formatées ou None si erreur
+        """
+        import os
+        debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+        
+        try:
+            # Utiliser TripDriverCache avec le système de cache générique
+            from dash_apps.services.trip_driver_cache_service import TripDriverCache
+            
+            # Créer une instance pour accéder aux méthodes d'instance
+            cache_instance = TripDriverCache()
+            driver_data = cache_instance.get_driver_data(selected_trip_id)
+            
+            if driver_data and isinstance(driver_data, dict):
+                # Utiliser _set_cache_data_generic pour mettre en cache
+                config = TripDriverCache._load_config()
+                cache_config = config.get('cache', {})
+                cache_ttl = cache_config.get('ttl', 300)
+                
+                TripsCacheService._set_cache_data_generic(selected_trip_id, 'driver', driver_data, cache_ttl)
+                return driver_data
+            
+            return None
+            
+        except Exception as e:
+            if debug_trips:
+                print(f"[CACHE] Erreur récupération données conducteur pour {selected_trip_id[:8] if selected_trip_id else 'None'}: {e}")
+            return None

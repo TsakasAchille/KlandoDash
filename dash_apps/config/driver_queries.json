@@ -1,0 +1,72 @@
+{
+  "queries": {
+    "driver_by_trip": {
+      "description": "Récupère les données conducteur pour un trajet donné",
+      "tables": {
+        "primary": "trips",
+        "joined": ["users"]
+      },
+      "joins": [
+        {
+          "type": "inner",
+          "table": "users",
+          "alias": "u",
+          "on": "trips.driver_id = u.uid"
+        }
+      ],
+      "where": {
+        "trips.trip_id": "{{trip_id}}"
+      },
+      "select": {
+        "base": ["u.uid", "u.name", "u.email", "u.phone_number", "u.role", "u.photo_url"],
+        "dynamic": "{{fields}}"
+      },
+      "limit": 1
+    },
+    "driver_by_id": {
+      "description": "Récupère les données conducteur par son ID",
+      "tables": {
+        "primary": "users"
+      },
+      "where": {
+        "users.uid": "{{driver_id}}"
+      },
+      "select": {
+        "base": ["uid", "name", "email", "phone_number", "role", "photo_url"],
+        "dynamic": "{{fields}}"
+      },
+      "limit": 1
+    },
+    "trip_driver_id": {
+      "description": "Récupère uniquement l'ID du conducteur d'un trajet",
+      "tables": {
+        "primary": "trips"
+      },
+      "where": {
+        "trips.trip_id": "{{trip_id}}"
+      },
+      "select": {
+        "base": ["driver_id"]
+      },
+      "limit": 1
+    }
+  },
+  "field_mappings": {
+    "name": "name",
+    "email": "email",
+    "uid": "uid",
+    "role": "role",
+    "phone": "phone_number",
+    "birth": "birth",
+    "gender": "gender",
+    "bio": "bio",
+    "photo_url": "photo_url",
+    "driver_license_url": "driver_license_url",
+    "id_card_url": "id_card_url",
+    "is_driver_doc_validated": "is_driver_doc_validated",
+    "driver_rating": "rating",
+    "rating_count": "rating_count",
+    "created_at": "created_at",
+    "updated_at": "updated_at"
+  }
+}
