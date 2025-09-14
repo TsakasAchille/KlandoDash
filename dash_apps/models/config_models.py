@@ -129,6 +129,37 @@ class TripDataModel(BaseModel):
     }
 
 
+class TripMapDataModel(BaseModel):
+    """Modèle pour les données de carte d'un trajet"""
+    trip_id: str = Field(..., description="ID du trajet")
+    polyline: Optional[str] = Field(None, description="Données de polyline encodées")
+    departure_coords: List[float] = Field(..., description="Coordonnées de départ [lng, lat]")
+    destination_coords: List[float] = Field(..., description="Coordonnées de destination [lng, lat]")
+    distance_km: Optional[float] = Field(None, description="Distance en kilomètres")
+    estimated_duration: Optional[str] = Field(None, description="Durée estimée au format HH:mm:ss")
+    route_points: Optional[List[List[float]]] = Field(None, description="Points de la route [[lng, lat], ...]")
+    
+    @field_validator('departure_coords', 'destination_coords')
+    @classmethod
+    def validate_coordinates(cls, v):
+        if len(v) != 2:
+            raise ValueError('Les coordonnées doivent contenir exactement 2 valeurs [longitude, latitude]')
+        if not (-180 <= v[0] <= 180):
+            raise ValueError('La longitude doit être entre -180 et 180')
+        if not (-90 <= v[1] <= 90):
+            raise ValueError('La latitude doit être entre -90 et 90')
+        return v
+    
+    @field_validator('route_points')
+    @classmethod
+    def validate_route_points(cls, v):
+        if v is not None:
+            for point in v:
+                if len(point) != 2:
+                    raise ValueError('Chaque point de route doit contenir exactement 2 valeurs [longitude, latitude]')
+        return v
+
+
 class TripDriverDataModel(BaseModel):
     """Modèle Pydantic pour valider les données conducteur depuis l'API"""
     trip_id: str = Field(min_length=10, pattern=r"^TRIP-.*")

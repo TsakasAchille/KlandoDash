@@ -131,6 +131,27 @@ def get_layout():
                 ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
             ]
         )
+    ]),
+    dbc.Row([
+        create_responsive_col(
+            "trip_map_panel",
+            [
+                # Header avec titre et icône
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.I(className="fas fa-map-marked-alt me-2", style={"color": "#17a2b8"}),
+                        html.H5("Carte du trajet", className="mb-0", style={"color": "#333"})
+                    ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #17a2b8"}),
+                    dbc.CardBody([
+                        dcc.Loading(
+                            children=html.Div(id="trip-map-panel"),
+                            type="default"
+                        )
+                    ], style={"padding": "0"})
+                ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
+            ],
+            config_file="trip_map_config.json"
+        )
     ])
 ], fluid=True)
 

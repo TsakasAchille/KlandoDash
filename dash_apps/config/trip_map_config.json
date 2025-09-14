@@ -1,0 +1,62 @@
+{
+  "trip_map": {
+    "cache": {
+      "enabled": true,
+      "ttl_seconds": 600,
+      "key_prefix": "trip_map"
+    },
+    "template_style": {
+      "height": "400px",
+      "width": "100%",
+      "min_height": "350px",
+      "padding": "0px",
+      "background_color": "#ffffff",
+      "border_radius": "8px",
+      "box_shadow": "0 2px 4px rgba(0,0,0,0.1)",
+      "card_height": "380px",
+      "card_width": "100%",
+      "card_min_height": "330px"
+    },
+    "maplibre_config": {
+      "center": [14.6937, -17.4441],
+      "zoom": 10,
+      "style_url": null,
+      "max_zoom": 18,
+      "min_zoom": 8,
+      "pitch": 0,
+      "bearing": 0
+    },
+    "polyline_style": {
+      "line_color": "#007bff",
+      "line_width": 4,
+      "line_opacity": 0.8,
+      "departure_marker": {
+        "color": "#28a745",
+        "size": 12,
+        "icon": "circle"
+      },
+      "destination_marker": {
+        "color": "#dc3545", 
+        "size": 12,
+        "icon": "circle"
+      }
+    },
+    "validation": {
+      "required_inputs": ["trip_id"],
+      "trip_id": {
+        "type": "string",
+        "min_length": 10,
+        "pattern": "^TRIP-.*"
+      }
+    },
+    "api_endpoints": {
+      "polyline_data": "/api/trips/{trip_id}/polyline",
+      "route_details": "/api/trips/{trip_id}/route"
+    },
+    "data_formatting": {
+      "coordinate_precision": 6,
+      "distance_unit": "km",
+      "duration_format": "HH:mm"
+    }
+  }
+}

@@ -13,9 +13,11 @@ from dash_apps.services.redis_cache import redis_cache
 from dash_apps.services.trips_cache_service import TripsCacheService
 from dash_apps.services.trip_details_cache_service import TripDetailsCache
 from dash_apps.services.trip_driver_cache_service import TripDriverCache
+from dash_apps.services.trip_map_cache_service import trip_map_cache
 from dash_apps.layouts.trip_detail_layout import TripDetailLayout
 from dash_apps.utils.callback_logger import CallbackLogger
 from dash_apps.utils.settings import load_json_config, get_jinja_template
+from dash_apps.utils.trip_map_transformer import TripMapTransformer
 
 # Utiliser la factory pour obtenir le repository approprié
 trip_repository = RepositoryFactory.get_trip_repository()
@@ -503,6 +505,8 @@ def render_trip_details_and_stats_panel(selected_trip_id):
     return details_panel, stats_panel
 
 
+
+
 @callback(
     Output("trip-driver-panel", "children"),
     [Input("selected-trip-id", "data")],
@@ -625,3 +629,191 @@ def render_trip_passengers_panel(selected_trip_id):
     
     # Read-Through pattern: le cache service gère tout
     return TripsCacheService.get_trip_passengers_panel(selected_trip_id)
+
+
+@callback(
+    Output("trip-map-panel", "children"),
+    [Input("selected-trip-id", "data")],
+    prevent_initial_call=True
+)
+def render_trip_map_panel(selected_trip_id):
+    """
+    Callback pour afficher le panneau de carte du trajet.
+    Utilise les données de trajet déjà validées et les transforme pour la carte.
+    """
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    debug_trips = True  # Force debug for troubleshooting
+    
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "render_trip_map_panel",
+            {"selected_trip_id": selected_trip_id},
+            status="INFO",
+            extra_info="Loading trip map"
+        )
+    
+    # Si pas d'ID, retourner un panneau vide
+    if not selected_trip_id:
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "render_trip_map_panel", 
+                {"selected_trip_id": "None"}, 
+                status="WARNING", 
+                extra_info="No trip selected"
+            )
+        return html.Div()
+
+    # 1. Récupérer les données de trajet déjà validées (même source que les autres panneaux)
+    trip_data = TripDetailsCache.get_trip_details_data(selected_trip_id)
+    
+    # 2. Si pas de données, retourner un panel d'erreur
+    if not trip_data:
+        error_panel = TripDetailLayout.render_error_panel(
+            "Impossible de récupérer les données du trajet pour la carte."
+        )
+        return error_panel
+    
+    # Debug: Afficher la structure des données
+    if debug_trips:
+        print("====== DEBUG TRIP MAP DATA ======")
+        print(f"Trip ID: {selected_trip_id}")
+        print(f"Trip data keys: {list(trip_data.keys()) if isinstance(trip_data, dict) else 'Not a dict'}")
+        print(f"Trip data type: {type(trip_data)}")
+        if isinstance(trip_data, dict):
+            print(f"Has trip_id: {'trip_id' in trip_data}")
+            print(f"Has departure coords: {'departure_latitude' in trip_data and 'departure_longitude' in trip_data}")
+            print(f"Has destination coords: {'destination_latitude' in trip_data and 'destination_longitude' in trip_data}")
+            print(f"Has polyline: {'polyline' in trip_data}")
+        print("==================================")
+    
+    # 3. Préparer les données de carte directement (comme dans map_callbacks.py)
+    trip_id = trip_data.get('trip_id')
+    
+    # Récupérer la polyline depuis le repository si nécessaire
+    polyline_data = None
+    try:
+        from dash_apps.repositories.repository_factory import RepositoryFactory
+        repo = RepositoryFactory.get_trip_repository()
+        full_trip = repo.get_trip(trip_id)
+        if isinstance(full_trip, dict):
+            polyline_data = full_trip.get('polyline')
+        else:
+            polyline_data = getattr(full_trip, 'polyline', None)
+    except Exception as e:
+        if debug_trips:
+            print(f"Could not fetch polyline: {e}")
+    
+    # Décoder la polyline comme dans map_callbacks.py
+    coordinates = []
+    has_polyline = False
+    
+    if polyline_data:
+        try:
+            import polyline as polyline_lib
+            if isinstance(polyline_data, bytes):
+                polyline_data = polyline_data.decode('utf-8')
+            coords_latlon = polyline_lib.decode(polyline_data)  # [(lat, lon), ...]
+            coordinates = [[lon, lat] for (lat, lon) in coords_latlon]  # Convertir en [lon, lat]
+            has_polyline = True
+            
+            if debug_trips:
+                print(f"Polyline decoded successfully: {len(coordinates)} points")
+        except Exception as e:
+            if debug_trips:
+                print(f"Polyline decode failed: {e}")
+    
+    # Fallback: ligne droite entre Dakar et Pikine
+    if not has_polyline:
+        coordinates = [[14.6937, -17.4441], [14.7167, -17.4667]]  # Dakar -> Pikine
+        if debug_trips:
+            print("Using fallback coordinates: Dakar to Pikine")
+    
+    # Préparer les données pour le template (structure simple)
+    map_data = {
+        'trip_id': trip_id,
+        'departure_name': trip_data.get('departure_location', 'Départ'),
+        'destination_name': trip_data.get('destination_location', 'Arrivée'),
+        'polyline': polyline_data,
+        'departure_latitude': coordinates[0][1] if coordinates else -17.4441,
+        'departure_longitude': coordinates[0][0] if coordinates else 14.6937,
+        'destination_latitude': coordinates[-1][1] if coordinates else -17.4667,
+        'destination_longitude': coordinates[-1][0] if coordinates else 14.7167
+    }
+    
+    # 4. Charger la configuration de la carte
+    config = load_json_config('trip_map_config.json')
+    map_style_config = config.get('trip_map', {}).get('template_style', {})
+    
+    # Paramètres pour l'iframe (conteneur externe)
+    iframe_height = map_style_config.get('height', '400px')
+    iframe_width = map_style_config.get('width', '100%')
+    iframe_min_height = map_style_config.get('min_height', '350px')
+    
+    # Paramètres pour la card interne (template Jinja2)
+    map_card_height = map_style_config.get('card_height', '380px')
+    map_card_width = map_style_config.get('card_width', '100%')
+    map_card_min_height = map_style_config.get('card_min_height', '330px')
+    
+    # Debug pour vérifier les valeurs
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "template_config_debug_map", 
+            {
+                "iframe_height": iframe_height,
+                "iframe_width": iframe_width,
+                "iframe_min_height": iframe_min_height,
+                "card_height": map_card_height,
+                "card_width": map_card_width,
+                "card_min_height": map_card_min_height,
+                "has_polyline": has_polyline,
+                "points_count": len(coordinates)
+            }, 
+            status="INFO", 
+            extra_info="Map template configuration and data summary"
+        )
+    
+    # 5. Préparer les données pour le template
+    # has_polyline et coordinates sont déjà définis ci-dessus
+    
+    # 6. Générer le panneau de carte avec template
+    map_template = get_jinja_template('trip_map_template.jinja2')
+    map_html_content = map_template.render(
+        trip=map_data,
+        has_polyline=has_polyline,
+        coordinates=coordinates,
+        config=config.get('trip_map', {}),
+        layout={
+            'card_height': map_card_height,
+            'card_width': map_card_width,
+            'card_min_height': map_card_min_height
+        }
+    )
+    
+    # 7. Créer le panneau avec iframe
+    map_panel = html.Div([
+        html.Iframe(
+            srcDoc=map_html_content,
+            style={
+                "width": iframe_width,
+                "height": iframe_height,
+                "minHeight": iframe_min_height,
+                "border": "none",
+                "borderRadius": "12px"
+            }
+        )
+    ])
+    
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "render_trip_map_panel",
+            {
+                "selected_trip_id": selected_trip_id[:8],
+                "has_polyline": has_polyline,
+                "coordinates_count": len(coordinates)
+            },
+            status="SUCCESS",
+            extra_info="Trip map panel rendered successfully"
+        )
+        
+    return map_panel
