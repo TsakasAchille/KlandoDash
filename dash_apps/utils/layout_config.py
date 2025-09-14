@@ -23,6 +23,8 @@ def get_panel_layout_config(config_file: str = 'trip_details_config.json') -> Di
             return config.get('trip_driver', {}).get('bootstrap_layout', {})
         elif 'trip_stats_display_config.json' in config_file:
             return config.get('trip_stats', {}).get('dash_layout', {})
+        elif 'trip_details_config.json' in config_file:
+            return config.get('trip_details', {}).get('bootstrap_layout', {})
         else:
             # Par défaut pour trip_details_config.json
             return config.get('trip_details', {}).get('dash_layout', {})

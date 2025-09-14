@@ -5,10 +5,51 @@
       "ttl_seconds": 300,
       "key_prefix": "trip_details"
     },
-    "layout": {
-      "card_height": "350",
-      "card_width": "50%",
+    "bootstrap_layout": {
+      "trip_details_panel": {
+        "width": 6,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      },
+      "trip_stats_panel": {
+        "width": 6,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      }
+    },
+    "details_template_style": {
+      "height": "350px",
+      "width": "700px",
+      "min_height": "300px",
+      "padding": "15px",
+      "background_color": "#ffffff",
+      "border_radius": "8px",
+      "box_shadow": "0 2px 4px rgba(0,0,0,0.1)",
+      "card_height": "350px",
+      "card_width": "580px",
       "card_min_height": "300px"
+    },
+    "stats_template_style": {
+      "height": "450px",
+      "width": "400px",
+      "min_height": "450px",
+      "padding": "15px",
+      "background_color": "#ffffff",
+      "border_radius": "8px",
+      "box_shadow": "0 2px 4px rgba(0,0,0,0.1)",
+      "card_height": "250px",
+      "card_width": "430px",
+      "card_min_height": "200px"
     },
     "dash_layout": {
       "trip_details_panel": {

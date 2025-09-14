@@ -56,34 +56,80 @@ def get_layout():
     dbc.Row([
         create_responsive_col(
             "trip_details_panel",
-            dcc.Loading(
-                children=html.Div(id="trip-details-panel"),
-                type="default"
-            )
+            [
+                # Header avec titre et icône
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.I(className="fas fa-info-circle me-2", style={"color": "#007bff"}),
+                        html.H5("Détails du trajet", className="mb-0", style={"color": "#333"})
+                    ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #007bff"}),
+                    dbc.CardBody([
+                        dcc.Loading(
+                            children=html.Div(id="trip-details-panel"),
+                            type="default"
+                        )
+                    ], style={"padding": "0"})
+                ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
+            ],
+            config_file="trip_details_config.json"
         ),
         create_responsive_col(
             "trip_stats_panel",
-            dcc.Loading(
-                children=html.Div(id="trip-stats-panel"),
-                type="default"
-            )
+            [
+                # Header avec titre et icône
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.I(className="fas fa-chart-bar me-2", style={"color": "#28a745"}),
+                        html.H5("Statistiques", className="mb-0", style={"color": "#333"})
+                    ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #28a745"}),
+                    dbc.CardBody([
+                        dcc.Loading(
+                            children=html.Div(id="trip-stats-panel"),
+                            type="default"
+                        )
+                    ], style={"padding": "0"})
+                ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
+            ],
+            config_file="trip_details_config.json"
         ),
     ]),
     dbc.Row([
         create_responsive_col(
             "trip_driver_panel",
-            dcc.Loading(
-                children=html.Div(id="trip-driver-panel"),
-                type="default"
-            ),
+            [
+                # Header avec titre et icône
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.I(className="fas fa-user-tie me-2", style={"color": "#6f42c1"}),
+                        html.H5("Conducteur", className="mb-0", style={"color": "#333"})
+                    ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #6f42c1"}),
+                    dbc.CardBody([
+                        dcc.Loading(
+                            children=html.Div(id="trip-driver-panel"),
+                            type="default"
+                        )
+                    ], style={"padding": "0"})
+                ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
+            ],
             config_file="trip_driver_config.json"
         ),
         create_responsive_col(
             "trip_passengers_panel",
-            dcc.Loading(
-                children=html.Div(id="trip-passengers-panel"),
-                type="default"
-            )
+            [
+                # Header avec titre et icône
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.I(className="fas fa-users me-2", style={"color": "#fd7e14"}),
+                        html.H5("Passagers", className="mb-0", style={"color": "#333"})
+                    ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #fd7e14"}),
+                    dbc.CardBody([
+                        dcc.Loading(
+                            children=html.Div(id="trip-passengers-panel"),
+                            type="default"
+                        )
+                    ], style={"padding": "0"})
+                ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
+            ]
         )
     ])
 ], fluid=True)

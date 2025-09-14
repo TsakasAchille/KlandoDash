@@ -58,16 +58,15 @@
     "status": "status",
     "created_at": "created_at",
     "updated_at": "updated_at",
-    "start_location": "start_location",
-    "end_location": "end_location",
-    "start_time": "start_time",
-    "end_time": "end_time",
+    "departure_location": "departure_name",
+    "destination_location": "destination_name",
+    "departure_time": "departure_schedule",
     "distance": "distance",
-    "duration": "duration",
-    "price": "price",
+    "passenger_price": "passenger_price",
+    "driver_price": "driver_price",
     "driver_id": "driver_id",
-    "driver_name": "driver_name",
-    "driver_email": "driver_email",
-    "driver_phone": "driver_phone"
+    "seats_published": "seats_published",
+    "seats_available": "seats_available",
+    "seats_booked": "seats_booked"
   }
 }

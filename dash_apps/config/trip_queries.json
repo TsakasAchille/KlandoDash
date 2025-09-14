@@ -1,0 +1,78 @@
+{
+  "queries": {
+    "trip_details": {
+      "description": "Récupère les détails complets d'un trajet",
+      "select": {
+        "base": [
+          "trip_id",
+          "driver_id",
+          "departure_name",
+          "destination_name",
+          "departure_schedule",
+          "status",
+          "distance",
+          "seats_published",
+          "seats_available",
+          "seats_booked",
+          "passenger_price",
+          "driver_price",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "filters": {
+        "default": {
+          "trip_status": ["completed", "in_progress", "cancelled"]
+        }
+      }
+    },
+    "trip_summary": {
+      "description": "Récupère un résumé des informations de trajet",
+      "select": {
+        "base": [
+          "trip_id",
+          "driver_id",
+          "departure_name",
+          "destination_name",
+          "status",
+          "distance",
+          "passenger_price",
+          "created_at"
+        ]
+      }
+    }
+  },
+  "field_mappings": {
+    "id": "trip_id",
+    "pickup": "departure_name",
+    "destination": "destination_name",
+    "schedule": "departure_schedule",
+    "fare": "passenger_price",
+    "driver_fare": "driver_price"
+  },
+  "validation_rules": {
+    "required_fields": [
+      "trip_id",
+      "driver_id",
+      "departure_name",
+      "destination_name",
+      "status"
+    ],
+    "optional_fields": [
+      "departure_schedule",
+      "distance",
+      "seats_published",
+      "seats_available",
+      "seats_booked",
+      "passenger_price",
+      "driver_price",
+      "created_at",
+      "updated_at"
+    ]
+  },
+  "cache_config": {
+    "ttl_seconds": 300,
+    "cache_key_prefix": "trip_details",
+    "enable_cache": true
+  }
+}

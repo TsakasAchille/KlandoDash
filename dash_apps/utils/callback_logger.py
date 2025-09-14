@@ -145,6 +145,44 @@ class CallbackLogger:
         return f"{cls.COLORS['SEPARATOR']}{char * length}{cls.COLORS['RESET']}"
     
     @classmethod
+    def log_data_dict(cls, title: str, data: Dict[str, Any], status: str = "INFO") -> None:
+        """Log a dictionary with formatted display"""
+        with cls._print_lock:
+            # Header
+            print(f"\n{cls.COLORS['HEADER']}📊 {title.upper()}{cls.COLORS['RESET']}")
+            print(cls._create_separator("=", 80))
+            
+            # Data display
+            if not data:
+                print(f"   {cls.COLORS['DIM']}(aucune donnée){cls.COLORS['RESET']}")
+            else:
+                for key, value in data.items():
+                    # Format value based on type
+                    if value is None:
+                        value_str = f"{cls.COLORS['DIM']}None{cls.COLORS['RESET']}"
+                    elif isinstance(value, bool):
+                        value_str = f"{cls.COLORS['SUCCESS'] if value else cls.COLORS['ERROR']}{value}{cls.COLORS['RESET']}"
+                    elif isinstance(value, (int, float)):
+                        value_str = f"{cls.COLORS['VALUE']}{value}{cls.COLORS['RESET']}"
+                    elif isinstance(value, str):
+                        # Truncate long strings
+                        if len(value) > 50:
+                            value_str = f"{cls.COLORS['VALUE']}{value[:47]}...{cls.COLORS['RESET']}"
+                        else:
+                            value_str = f"{cls.COLORS['VALUE']}{value}{cls.COLORS['RESET']}"
+                    else:
+                        value_str = f"{cls.COLORS['VALUE']}{str(value)}{cls.COLORS['RESET']}"
+                    
+                    # Type info
+                    type_str = f"{cls.COLORS['DIM']}({type(value).__name__}){cls.COLORS['RESET']}"
+                    
+                    # Format line
+                    key_colored = f"{cls.COLORS['KEY']}{key:25}{cls.COLORS['RESET']}"
+                    print(f"   {key_colored} = {value_str} {type_str}")
+            
+            print(cls._create_separator("=", 80) + "\n")
+    
+    @classmethod
     def _get_caller_info(cls) -> Dict[str, str]:
         """Get information about the calling function and class"""
         try:

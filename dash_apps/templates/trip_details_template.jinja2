@@ -10,14 +10,15 @@
       background: transparent;
       margin: 0;
       padding: 0;
-      font-size: 20%;
+      font-size: 80%;
     }
     
     .stats-card {
       background: white;
       border-radius: 28px;
       padding: 25px;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       margin-bottom: 20px;
       min-height: {{ layout.card_min_height if layout else '400px' }};
       height: {{ layout.card_height if layout else '400px' }};
@@ -144,7 +145,7 @@
         <div class="stat-row">
           <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
             <span class="stat-label">Départ</span>
-            <span class="stat-value highlight-value">{{ trip.get("departure_name", "-") }}</span>
+            <span class="stat-value highlight-value">{{ trip.get("departure_location", "-") }}</span>
           </div>
         </div>
         
@@ -152,7 +153,7 @@
         <div class="stat-row">
           <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
             <span class="stat-label">Destination</span>
-            <span class="stat-value">{{ trip.get("destination_name", "-") }}</span>
+            <span class="stat-value">{{ trip.get("destination_location", "-") }}</span>
           </div>
         </div>
         
@@ -160,7 +161,7 @@
         <div class="stat-row">
           <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
             <span class="stat-label">Date</span>
-            <span class="stat-value">{{ trip.get("departure_date", "-") }}</span>
+            <span class="stat-value">{{ trip.get("created_at", "-") }}</span>
           </div>
         </div>
         
@@ -168,7 +169,7 @@
         <div class="stat-row">
           <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
             <span class="stat-label">Heure de départ</span>
-            <span class="stat-value">{{ trip.get("departure_schedule", "-") }}</span>
+            <span class="stat-value">{{ trip.get("departure_time", "-") }}</span>
           </div>
         </div>
         

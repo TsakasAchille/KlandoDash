@@ -169,8 +169,19 @@ class TripDriverCache:
                     extra_info="Calling repository.get_by_trip_id"
                 )
             
+            # Gérer l'appel asynchrone selon le contexte
             import asyncio
-            driver_data = asyncio.run(repository.get_by_trip_id(trip_id))
+            try:
+                # Si on est déjà dans une boucle asyncio, utiliser await
+                loop = asyncio.get_running_loop()
+                # On est dans une boucle, créer une tâche
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, repository.get_by_trip_id(trip_id))
+                    driver_data = future.result()
+            except RuntimeError:
+                # Pas de boucle en cours, utiliser asyncio.run normalement
+                driver_data = asyncio.run(repository.get_by_trip_id(trip_id))
             
             if debug_trips:
                 CallbackLogger.log_callback(

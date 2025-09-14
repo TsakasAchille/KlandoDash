@@ -361,7 +361,7 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
             className="text-muted small mb-3"
         )
         return [info_message, table_component]
-"""
+
 @callback(
     [Output("trip-details-panel", "children"),
      Output("trip-stats-panel", "children")],
@@ -401,19 +401,48 @@ def render_trip_details_and_stats_panel(selected_trip_id):
             "Impossible de récupérer les données du trajet."
         )
         return error_panel, error_panel
-    
+    print("____________________________________________________________________________________________________")
+    print("data")
+    print(data)
+    print("____________________________________________________________________________________________________")
     # 3. Charger la configuration complète
     config = load_json_config('trip_details_config.json')
     
-    # 4. Générer le panneau DETAILS
-    details_layout_config = config.get('trip_details', {}).get('layout', {})
-    details_card_height = details_layout_config.get('card_height', '400px')
-    details_card_width = details_layout_config.get('card_width', '100%')
-    details_card_min_height = details_layout_config.get('card_min_height', '300px')
-        
+    # 4. Générer les panneaux avec la nouvelle configuration séparée
+    details_style_config = config.get('trip_details', {}).get('details_template_style', {})
+    
+    # Paramètres pour l'iframe (conteneur externe)
+    iframe_height = details_style_config.get('height', '500px')
+    iframe_width = details_style_config.get('width', '100%')
+    iframe_min_height = details_style_config.get('min_height', '400px')
+    
+    # Paramètres pour la card interne (template Jinja2)
+    details_card_height = details_style_config.get('card_height', '350px')
+    details_card_width = details_style_config.get('card_width', '100%')
+    details_card_min_height = details_style_config.get('card_min_height', '300px')
+    
+    # Debug pour vérifier les valeurs
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "template_config_debug_details", 
+            {
+                "iframe_height": iframe_height,
+                "iframe_width": iframe_width,
+                "iframe_min_height": iframe_min_height,
+                "card_height": details_card_height,
+                "card_width": details_card_width,
+                "card_min_height": details_card_min_height,
+                "full_config": details_style_config
+            }, 
+            status="INFO", 
+            extra_info="Trip details template configuration values (iframe + card)"
+        )
+    
+    # 5. Générer le panneau DETAILS avec template dynamique
     details_template = get_jinja_template('trip_details_template.jinja2')
     details_html_content = details_template.render(
         trip=data,
+        config=config.get('trip_details', {}),
         layout={
             'card_height': details_card_height,
             'card_width': details_card_width,
@@ -425,24 +454,31 @@ def render_trip_details_and_stats_panel(selected_trip_id):
         html.Iframe(
             srcDoc=details_html_content,
             style={
-                "width": details_card_width,
-                "height": details_card_height,
-                "minHeight": details_card_min_height,
+                "width": iframe_width,
+                "height": iframe_height,
+                "minHeight": iframe_min_height,
                 "border": "none",
                 "borderRadius": "12px"
             }
         )
     ])
     
-    # 5. Générer le panneau STATS
-    stats_layout_config = config.get('trip_stats', {}).get('layout', {})
-    stats_card_height = stats_layout_config.get('card_height', '300px')
-    stats_card_width = stats_layout_config.get('card_width', '100%')
-    stats_card_min_height = stats_layout_config.get('card_min_height', '250px')
-        
+    # 6. Générer le panneau STATS avec template dynamique et sa propre configuration
+    stats_style_config = config.get('trip_details', {}).get('stats_template_style', {})
+    
+    # Paramètres spécifiques pour le panneau stats
+    stats_iframe_height = stats_style_config.get('height', '500px')
+    stats_iframe_width = stats_style_config.get('width', '100%')
+    stats_iframe_min_height = stats_style_config.get('min_height', '400px')
+    
+    stats_card_height = stats_style_config.get('card_height', '350px')
+    stats_card_width = stats_style_config.get('card_width', '100%')
+    stats_card_min_height = stats_style_config.get('card_min_height', '300px')
+    
     stats_template = get_jinja_template('trip_stats_template.jinja2')
     stats_html_content = stats_template.render(
         trip=data,
+        config=config.get('trip_details', {}).get('trip_stats', {}),
         layout={
             'card_height': stats_card_height,
             'card_width': stats_card_width,
@@ -454,9 +490,9 @@ def render_trip_details_and_stats_panel(selected_trip_id):
         html.Iframe(
             srcDoc=stats_html_content,
             style={
-                "width": stats_card_width,
-                "height": stats_card_height,
-                "minHeight": stats_card_min_height,
+                "width": stats_iframe_width,
+                "height": stats_iframe_height,
+                "minHeight": stats_iframe_min_height,
                 "border": "none",
                 "borderRadius": "12px"
             }
@@ -465,14 +501,14 @@ def render_trip_details_and_stats_panel(selected_trip_id):
         
     # 6. Retourner les deux panneaux
     return details_panel, stats_panel
-"""
+
+
 @callback(
     Output("trip-driver-panel", "children"),
     [Input("selected-trip-id", "data")],
     prevent_initial_call=True
 )
 def render_trip_driver_panel(selected_trip_id):
-    """Callback séparé pour le rendu du panneau conducteur trajet avec cache HTML"""
     # Vérifier si le debug des trajets est activé
     import os
     debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
@@ -568,7 +604,7 @@ def render_trip_driver_panel(selected_trip_id):
         
     return driver_panel
 
-"""
+
 @callback(
     Output("trip-passengers-panel", "children"),
     [Input("selected-trip-id", "data")],
@@ -589,4 +625,3 @@ def render_trip_passengers_panel(selected_trip_id):
     
     # Read-Through pattern: le cache service gère tout
     return TripsCacheService.get_trip_passengers_panel(selected_trip_id)
-"""

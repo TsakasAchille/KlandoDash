@@ -192,9 +192,31 @@ class TripDetailsCache:
                     extra_info="Fetching details data from API"
                 )
             
-            # 1. Récupérer les données depuis l'API REST
-            from dash_apps.utils.data_schema_rest import get_trip_details_configured
-            data = get_trip_details_configured(trip_id)
+            # 1. Récupérer les données conducteur via le repository
+            from dash_apps.infrastructure.repositories.supabase_trip_repository import SupabaseTripRepository
+            repository = SupabaseTripRepository()
+            
+            if debug_trips:
+                CallbackLogger.log_callback(
+                    "api_get_trip_details",
+                    {"trip_id": trip_id[:8] if trip_id else 'None'},
+                    status="INFO",
+                    extra_info="Calling repository.get_by_trip_id"
+                )
+            
+            # Gérer l'appel asynchrone selon le contexte
+            import asyncio
+            try:
+                # Essayer d'utiliser la boucle existante
+                loop = asyncio.get_running_loop()
+                # Si on est dans une boucle, créer une tâche
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, repository.get_by_trip_id(trip_id))
+                    data = future.result()
+            except RuntimeError:
+                # Pas de boucle en cours, utiliser asyncio.run directement
+                data = asyncio.run(repository.get_by_trip_id(trip_id))
             
             if debug_trips:
                 CallbackLogger.log_callback(
@@ -214,14 +236,92 @@ class TripDetailsCache:
                         "api_get_trip_details",
                         {"trip_id": trip_id[:8] if trip_id else 'None'},
                         status="WARNING",
-                        extra_info="No details data returned from API"
+                        extra_info="No details data returned from repository"
                     )
                 return None
             
-            # 2. Formater les données pour l'affichage
+            # Afficher les données brutes de la DB
+            if debug_trips:
+                CallbackLogger.log_data_dict(
+                    f"Données brutes DB - Trip {trip_id[:8]}",
+                    data
+                )
+            
+            # 2. Validation avec Pydantic
+            from dash_apps.models.config_models import TripDataModel
+            from dash_apps.utils.validation_utils import validate_data
+            
+            if debug_trips:
+                CallbackLogger.log_callback(
+                    "api_get_trip_details",
+                    {"trip_id": trip_id[:8] if trip_id else 'None'},
+                    status="INFO",
+                    extra_info="Starting Pydantic validation"
+                )
+            
+            # Valider les données avec le modèle Pydantic
+            validation_result = validate_data(TripDataModel, data)
+            
+            if not validation_result.success:
+                if debug_trips:
+                    CallbackLogger.log_callback(
+                        "validation_error",
+                        {"trip_id": trip_id[:8] if trip_id else 'None', "errors": validation_result.get_error_summary()},
+                        status="ERROR",
+                        extra_info="Échec de la validation Pydantic"
+                    )
+                return None
+            
+            # Utiliser les données validées (convertir le modèle Pydantic en dict)
+            validated_data = validation_result.data
+            if hasattr(validated_data, 'model_dump'):
+                # Pydantic v2
+                validated_data_dict = validated_data.model_dump()
+            elif hasattr(validated_data, 'dict'):
+                # Pydantic v1
+                validated_data_dict = validated_data.dict()
+            else:
+                # Fallback si ce n'est pas un modèle Pydantic
+                validated_data_dict = dict(validated_data)
+            
+            if debug_trips:
+                CallbackLogger.log_data_dict(
+                    f"Données après validation Pydantic - Trip {trip_id[:8]}",
+                    validated_data_dict
+                )
+                
+                CallbackLogger.log_callback(
+                    "validation_success",
+                    {"trip_id": trip_id[:8] if trip_id else 'None'},
+                    status="SUCCESS",
+                    extra_info="Validation Pydantic réussie"
+                )
+            
+            # 3. Formater les données pour l'affichage
             from dash_apps.utils.trip_details_formatter import TripDetailsFormatter
             formatter = TripDetailsFormatter()
-            formatted_data = formatter.format_for_display(data)
+            formatted_data = formatter.format_for_display(validated_data_dict)
+            
+            # Afficher les données après transformation
+            if debug_trips:
+                CallbackLogger.log_data_dict(
+                    f"Données après transformation Formatter - Trip {trip_id[:8]}",
+                    formatted_data
+                )
+            
+            if debug_trips:
+                CallbackLogger.log_callback(
+                    "formatter_debug",
+                    {
+                        "trip_id": trip_id[:8] if trip_id else 'None',
+                        "formatted_data_type": type(formatted_data).__name__,
+                        "formatted_data_bool": bool(formatted_data),
+                        "is_dict": isinstance(formatted_data, dict),
+                        "fields_count": len(formatted_data) if formatted_data else 0
+                    },
+                    status="INFO",
+                    extra_info="Debug formatter output"
+                )
             
             if formatted_data and isinstance(formatted_data, dict):
                 if debug_trips:
