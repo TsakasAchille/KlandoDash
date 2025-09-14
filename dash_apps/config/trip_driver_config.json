@@ -18,16 +18,16 @@
       }
     },
     "template_style": {
-      "height": "800px",
+      "height": "450px",
       "width": "50%",
-      "min_height": "800px",
+      "min_height": "450px",
       "padding": "15px",
       "background_color": "#ffffff",
       "border_radius": "8px",
       "box_shadow": "0 2px 4px rgba(0,0,0,0.1)",
-      "card_height": "450px",
+      "card_height": "400px",
       "card_width": "50%",
-      "card_min_height": "450px"
+      "card_min_height": "400px"
     },
     "data_formatting": {
       "date_format": "%d/%m/%Y",

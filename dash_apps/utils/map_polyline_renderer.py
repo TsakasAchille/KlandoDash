@@ -316,8 +316,12 @@ class MapPolylineRenderer:
         filtered_trips = []
         
         for trip in trips[:max_trips]:
-            trip_data = self.extract_trip_data(trip)
-            trip_id = trip_data.get('trip_id')
+            # Quick trip_id extraction without full data processing
+            if isinstance(trip, dict):
+                trip_id = trip.get('trip_id')
+            else:
+                trip_id = getattr(trip, 'trip_id', None)
+            
             if trip_id and str(trip_id) in selected_set:
                 filtered_trips.append(trip)
         

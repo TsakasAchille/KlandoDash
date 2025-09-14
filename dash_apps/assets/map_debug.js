@@ -31,10 +31,29 @@ function checkContainers() {
 // Vérifier immédiatement
 checkContainers();
 
-// Observer les changements DOM
+// Observer les changements DOM - optimisé pour éviter le spam
+let observerTimeout = null;
 const observer = new MutationObserver(() => {
-    console.log('🔄 [DIAGNOSTIC] DOM modifié, re-vérification...');
-    checkContainers();
+    // Debounce les vérifications pour éviter le spam
+    if (observerTimeout) {
+        clearTimeout(observerTimeout);
+    }
+    
+    observerTimeout = setTimeout(() => {
+        console.log('🔄 [DIAGNOSTIC] DOM modifié, re-vérification...');
+        const containerCount = checkContainers();
+        
+        // Arrêter l'observation si des containers sont trouvés et initialisés
+        if (containerCount > 0) {
+            const containers = document.querySelectorAll('.maplibre-container');
+            const initializedContainers = Array.from(containers).filter(c => c.__map || c.dataset.mapInited);
+            
+            if (initializedContainers.length > 0) {
+                observer.disconnect();
+                console.log('🔍 [DIAGNOSTIC] Observer arrêté - containers initialisés détectés');
+            }
+        }
+    }, 500); // Debounce de 500ms
 });
 
 observer.observe(document.body, {
@@ -42,18 +61,26 @@ observer.observe(document.body, {
     subtree: true
 });
 
-// Forcer l'initialisation après 2 secondes
+// Forcer l'initialisation après 5 secondes (réduit la fréquence)
 setTimeout(() => {
-    console.log('⏰ [DIAGNOSTIC] Timeout - Forcer initialisation');
+    console.log('⏰ [DIAGNOSTIC] Timeout - Vérification finale des containers');
     const containers = document.querySelectorAll('.maplibre-container');
     
     if (containers.length === 0) {
-        console.error('❌ [DIAGNOSTIC] Aucun container trouvé après 2s');
+        console.error('❌ [DIAGNOSTIC] Aucun container trouvé après 5s');
         return;
     }
     
-    containers.forEach(container => {
-        if (!container.__map && typeof maplibregl !== 'undefined') {
+    // Seulement initialiser si aucune carte n'existe déjà
+    const uninitializedContainers = Array.from(containers).filter(c => !c.__map && !c.dataset.mapInited);
+    
+    if (uninitializedContainers.length === 0) {
+        console.log('✅ [DIAGNOSTIC] Tous les containers sont déjà initialisés');
+        return;
+    }
+    
+    uninitializedContainers.forEach(container => {
+        if (typeof maplibregl !== 'undefined') {
             console.log('🚀 [DIAGNOSTIC] Initialisation forcée pour:', container.id);
             
             try {
@@ -63,6 +90,10 @@ setTimeout(() => {
                     center: [0, 0],
                     zoom: 2
                 });
+                
+                // Marquer le container comme initialisé
+                container.dataset.mapInited = 'true';
+                container.__map = map;
                 
                 map.on('load', () => {
                     console.log('✅ [DIAGNOSTIC] Carte chargée avec succès!');
@@ -77,6 +108,6 @@ setTimeout(() => {
             }
         }
     });
-}, 2000);
+}, 5000); // Augmenté de 2s à 5s
 
 console.log('🔍 [DIAGNOSTIC] Script de diagnostic configuré');

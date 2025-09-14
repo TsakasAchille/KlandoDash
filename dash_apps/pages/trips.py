@@ -152,7 +152,13 @@ def get_layout():
             ],
             config_file="trip_map_config.json"
         )
-    ])
+    ]),
+    # Element bridge pour les données GeoJSON de la carte trips (caché)
+    html.Div(
+        id="trips-maplibre",
+        **{"data-geojson": ""},
+        style={"display": "none"}
+    )
 ], fluid=True)
 
 

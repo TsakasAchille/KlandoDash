@@ -37,10 +37,22 @@ function tryInitMap() {
     // Vérifier si le container est visible et a des dimensions
     const rect = container.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
-        console.log('[MAPLIBRE] Container pas encore dimensionné, retry dans 200ms');
-        setTimeout(tryInitMap, 200);
+        // Éviter les retries infinis - limiter à 5 tentatives max
+        if (!tryInitMap.retryCount) tryInitMap.retryCount = 0;
+        tryInitMap.retryCount++;
+        
+        if (tryInitMap.retryCount <= 5) {
+            console.log('[MAPLIBRE] Container pas encore dimensionné, retry', tryInitMap.retryCount, '/5 dans 500ms');
+            setTimeout(tryInitMap, 500); // Augmenté de 200ms à 500ms
+        } else {
+            console.warn('[MAPLIBRE] Abandon après 5 tentatives - container toujours pas dimensionné');
+            mapInitStarted = false;
+        }
         return;
     }
+    
+    // Réinitialiser le compteur de retry si on arrive ici
+    tryInitMap.retryCount = 0;
     
     // Avoid multiple initializations on same container
     if (mapInstance && mapInstance.getContainer() === container && !mapInstance._removed) {
@@ -126,15 +138,23 @@ function watchForContainer() {
     // initial quick check
     tryInitMap();
     
-    // MutationObserver for robust detection avec surveillance continue
+    // MutationObserver optimisé pour détecter l'ajout du container de carte
     const observer = new MutationObserver(function (mutations) {
+        // Si la carte est déjà initialisée, arrêter l'observation
+        if (mapInstance && !mapInstance._removed) {
+            observer.disconnect();
+            console.log('[MAPLIBRE] Observer déconnecté - carte déjà initialisée');
+            return;
+        }
+        
         let shouldCheck = false;
         mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                 // Vérifier si des noeuds ont été ajoutés qui pourraient contenir notre container
                 mutation.addedNodes.forEach(function(node) {
                     if (node.nodeType === Node.ELEMENT_NODE) {
-                        if (node.id === MAP_CONTAINER_ID || node.querySelector('#' + MAP_CONTAINER_ID)) {
+                        if (node.id === MAP_CONTAINER_ID || 
+                            (node.querySelector && node.querySelector('#' + MAP_CONTAINER_ID))) {
                             shouldCheck = true;
                         }
                     }
@@ -142,7 +162,7 @@ function watchForContainer() {
             }
         });
         
-        if (shouldCheck || document.getElementById(MAP_CONTAINER_ID)) {
+        if (shouldCheck) {
             // Petit délai pour laisser Dash finir le rendu
             setTimeout(tryInitMap, 100);
         }
@@ -154,18 +174,32 @@ function watchForContainer() {
         attributes: false  // Pas besoin de surveiller les attributs
     });
     
-    // Vérification périodique pour les cas où MutationObserver rate quelque chose
+    // Vérification périodique réduite pour les cas où MutationObserver rate quelque chose
+    let periodicCheckCount = 0;
+    const maxPeriodicChecks = 10; // Limiter à 10 vérifications max
+    
     const periodicCheck = setInterval(function() {
+        periodicCheckCount++;
+        
+        // Arrêter après le nombre max de vérifications ou si la carte est initialisée
+        if (periodicCheckCount >= maxPeriodicChecks || (mapInstance && !mapInstance._removed)) {
+            clearInterval(periodicCheck);
+            console.log('[MAPLIBRE] Vérifications périodiques arrêtées après', periodicCheckCount, 'tentatives');
+            return;
+        }
+        
         const container = document.getElementById(MAP_CONTAINER_ID);
-        if (container && (!mapInstance || mapInstance.getContainer() !== container)) {
+        if (container && (!mapInstance || mapInstance.getContainer() !== container || mapInstance._removed)) {
+            console.log('[MAPLIBRE] Vérification périodique #' + periodicCheckCount + ' - tentative d\'initialisation');
             tryInitMap();
         }
-    }, 2000);
+    }, 5000); // Réduit de 2s à 5s pour moins de fréquence
     
-    // Nettoyer les vérifications périodiques après 30 secondes
+    // Nettoyer les vérifications périodiques après 60 secondes (augmenté de 30s)
     setTimeout(function() {
         clearInterval(periodicCheck);
-    }, 30000);
+        console.log('[MAPLIBRE] Timeout des vérifications périodiques après 60s');
+    }, 60000);
 }
 
 // Écouter les changements de page Dash
