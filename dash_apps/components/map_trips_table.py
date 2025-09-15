@@ -15,7 +15,7 @@ def render_map_trips_table(trips, selected_ids=None, active_id=None):
     avec un bouton "Voir trajet" qui renvoie vers /trips?trip_id=<id>.
     """
     selected_ids = set(selected_ids or [])
-    headers = ["", "#", "Départ", "Arrivée", "TripID", "Action"]
+    headers = ["", "#", "Départ", "Arrivée", "Date", "TripID", "Action"]
 
     rows = []
     for i, t in enumerate(trips, start=1):
@@ -24,14 +24,33 @@ def render_map_trips_table(trips, selected_ids=None, active_id=None):
             trip_id = t.get("trip_id", "-") or "-"
             dep_raw = t.get("departure_name", "-") or "-"
             arr_raw = t.get("destination_name", "-") or "-"
+            created_at = t.get("created_at", "-") or "-"
         else:
             trip_id = getattr(t, "trip_id", "-") or "-"
             dep_raw = getattr(t, "departure_name", "-") or "-"
             arr_raw = getattr(t, "destination_name", "-") or "-"
+            created_at = getattr(t, "created_at", "-") or "-"
 
         is_active = (str(trip_id) == str(active_id)) if active_id is not None else False
         dep = _short(dep_raw)
         arr = _short(arr_raw)
+        
+        # Format date
+        try:
+            if hasattr(created_at, 'strftime'):
+                date_str = created_at.strftime("%d/%m/%Y")
+            elif isinstance(created_at, str) and created_at != "-":
+                from datetime import datetime
+                # Try to parse ISO format
+                if 'T' in created_at:
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    date_str = dt.strftime("%d/%m/%Y")
+                else:
+                    date_str = created_at[:10]  # Take first 10 chars if already formatted
+            else:
+                date_str = "-"
+        except Exception:
+            date_str = "-"
         link = dcc.Link(
             dbc.Button("Voir trajet", color="primary", size="sm"),
             href=f"/trips?trip_id={trip_id}",
@@ -50,13 +69,14 @@ def render_map_trips_table(trips, selected_ids=None, active_id=None):
                 html.Td(i),
                 html.Td(dep),
                 html.Td(arr),
+                html.Td(date_str),
                 html.Td(str(trip_id)),
                 html.Td(link),
             ], className=("table-active" if is_active else None))
         )
 
     if not rows:
-        rows = [html.Tr([html.Td("Aucun trajet", colSpan=6)])]
+        rows = [html.Tr([html.Td("Aucun trajet", colSpan=7)])]
 
     table = html.Table(
         [

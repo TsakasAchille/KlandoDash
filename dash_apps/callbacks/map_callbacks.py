@@ -28,12 +28,15 @@ def _get_last_trips(n=5):
     """
     try:
         # Essayer d'abord le cache spécifique à la map
-        trips = MapCacheService.get_cached_trips(int(n or 10))
+        trips = MapCacheService.get_cached_trips(int(n or 5))
         if trips:
             return trips
         
-        # Fallback: TripsCacheService
-        result = TripsCacheService.get_trips_page_result(page_index=0, page_size=int(n or 10), filter_params={})
+        # Fallback: TripsCacheService avec tri par date décroissante
+        filter_params = {
+            "creation_sort": "desc"
+        }
+        result = TripsCacheService.get_trips_page_result(page_index=0, page_size=int(n or 5), filter_params=filter_params)
         trips = result.get("trips", [])
         return trips if isinstance(trips, list) else []
     except Exception as e:
@@ -74,7 +77,7 @@ def _initialize_trips_data():
     """Initialize trips data when module loads"""
     global _TRIPS, _OPTIONS
     try:
-        _TRIPS = _get_last_trips(10)
+        _TRIPS = _get_last_trips(5)
         _OPTIONS = [_trip_to_option(t) for t in _TRIPS]
         print(f"[MAP_CALLBACKS] Initialized {len(_TRIPS)} trips for map page")
     except Exception as e:
@@ -110,15 +113,15 @@ def update_trip_count(inc_clicks, dec_clicks, current_value):
     if not ctx.triggered:
         try:
             settings = MapCacheService.load_map_settings()
-            cached_count = settings.get('trip_count', 10)
+            cached_count = settings.get('trip_count', 5)
             return str(cached_count)
         except Exception:
-            return "10"
+            return "5"
     
     try:
         current = int(current_value)
     except Exception:
-        current = 10
+        current = 5
     
     button_id = ctx.triggered[0]["prop_id"].split(".")[0]
     if button_id == "map-trip-inc":

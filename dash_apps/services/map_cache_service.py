@@ -57,13 +57,13 @@ class MapCacheService:
             data = cache.get('map_settings', session_id=session_id)
             if data and isinstance(data, dict):
                 return {
-                    'trip_count': data.get('trip_count', 10),  # défaut: 10 trajets
+                    'trip_count': data.get('trip_count', 5),  # défaut: 5 trajets
                     'timestamp': data.get('timestamp', time.time())
                 }
-            return {'trip_count': 10, 'timestamp': time.time()}
+            return {'trip_count': 5, 'timestamp': time.time()}
         except Exception as e:
             print(f"[MAP_CACHE] Erreur chargement paramètres: {e}")
-            return {'trip_count': 10, 'timestamp': time.time()}
+            return {'trip_count': 5, 'timestamp': time.time()}
     
     @staticmethod
     def load_selected_trips() -> List[str]:
