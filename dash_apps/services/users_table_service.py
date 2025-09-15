@@ -124,7 +124,7 @@ class UsersTableService:
             
             # 4. Mettre en cache (local_cache + local)
             try:
-                cache.set('users_table', key=cache_key, value=data, ttl=cls.CACHE_TTL)
+                cache.set('users_table', data, ttl=cls.CACHE_TTL, key=cache_key)
                 cls._log_debug(f"Cached users page {page} in local_cache")
             except Exception as e:
                 cls._log_debug(f"Cache set error: {e}")

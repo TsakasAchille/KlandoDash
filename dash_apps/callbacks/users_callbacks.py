@@ -270,7 +270,7 @@ def update_users_table(current_page, refresh_clicks, filters):
         )
         
         users = result.get('users', [])
-        total_count = result.get('total', 0)
+        total_count = result.get('total_count', 0)
         total_pages = result.get('total_pages', 1)
         
         print(f"[USERS][FETCH] page_index={current_page-1} users={len(users)} total={total_count} refresh={refresh_clicks is not None}")
