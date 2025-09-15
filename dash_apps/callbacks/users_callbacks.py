@@ -93,7 +93,7 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_user
     prevent_initial_call=True
 )
 def show_refresh_users_message(n_clicks):
-    log_callback("show_refresh_users_message", {"n_clicks": n_clicks}, {})
+    debug_log_users("show_refresh_users_message", {"n_clicks": n_clicks})
     return dbc.Alert("Données utilisateurs rafraîchies!", color="success", dismissable=True)
 
 
@@ -105,7 +105,7 @@ def show_refresh_users_message(n_clicks):
 )
 def toggle_advanced_filters(n_clicks, is_open):
     """Ouvre ou ferme le panneau des filtres avancés"""
-    log_callback("toggle_advanced_filters", {"n_clicks": n_clicks}, {"is_open": is_open})
+    debug_log_users("toggle_advanced_filters", {"n_clicks": n_clicks, "is_open": is_open})
     if n_clicks:
         return not is_open
     return is_open
@@ -215,12 +215,12 @@ def reset_page_on_filter_change(filters):
      Output("users-gender-filter", "value"),
      Output("users-rating-operator-filter", "value"),
      Output("users-rating-value-filter", "value")],
-    Input("users-clear-filters-btn", "n_clicks"),
+    Input("users-reset-filters-btn", "n_clicks"),
     prevent_initial_call=True
 )
 def clear_all_filters(n_clicks):
     """Efface tous les filtres"""
-    log_callback("clear_all_filters", {"n_clicks": n_clicks}, {})
+    debug_log_users("clear_all_filters", {"n_clicks": n_clicks})
     return ({}, "", None, None, None, "desc", "all", "all", "all", "all", 3)
 
 

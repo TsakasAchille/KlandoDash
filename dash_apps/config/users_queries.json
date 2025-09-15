@@ -52,7 +52,7 @@
       },
       "filters": {
         "text_search": {
-          "fields": ["display_name", "email", "first_name", "name", "phone_number"],
+          "fields": ["uid", "display_name", "email", "first_name", "name", "phone_number"],
           "operator": "ilike"
         },
         "role": {
