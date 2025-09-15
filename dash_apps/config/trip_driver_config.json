@@ -26,7 +26,7 @@
       "border_radius": "8px",
       "box_shadow": "0 2px 4px rgba(0,0,0,0.1)",
       "card_height": "400px",
-      "card_width": "100%",
+      "card_width": "80%",
       "card_min_height": "400px"
     },
     "data_formatting": {

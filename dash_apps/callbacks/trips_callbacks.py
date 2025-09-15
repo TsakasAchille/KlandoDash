@@ -16,6 +16,32 @@ from dash_apps.services.trip_driver_cache_service import TripDriverCache
 from dash_apps.services.trip_map_cache_service import trip_map_cache
 from dash_apps.layouts.trip_detail_layout import TripDetailLayout
 from dash_apps.utils.callback_logger import CallbackLogger
+
+# Callback spécifique pour le bouton vert "Appliquer"
+@callback(
+    Output("trips-active-filters", "children", allow_duplicate=True),
+    Input("trips-apply-filters-btn", "n_clicks"),
+    prevent_initial_call=True
+)
+def test_apply_button(n_clicks):
+    """Test callback pour vérifier si le bouton vert Appliquer fonctionne"""
+    print(f"[GREEN_BUTTON_DEBUG] Bouton vert Appliquer cliqué ! n_clicks={n_clicks}")
+    
+    # Vérifier si le debug des trajets est activé
+    import os
+    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    
+    if debug_trips:
+        CallbackLogger.log_callback(
+            "test_apply_button",
+            {"n_clicks": n_clicks},
+            extra_info="Bouton vert Appliquer cliqué"
+        )
+    
+    return html.Div([
+        html.Span(f"Bouton Appliquer cliqué {n_clicks} fois", 
+                 className="badge bg-success me-2")
+    ])
 from dash_apps.utils.settings import load_json_config, get_jinja_template
 from dash_apps.utils.trip_map_transformer import TripMapTransformer
 
@@ -128,58 +154,58 @@ def toggle_trip_filters_collapse(n_clicks, is_open):
 @callback(
     Output("trips-filter-store", "data", allow_duplicate=True),
     Input("trips-apply-filters-btn", "n_clicks"),
-    [State("trips-search-input", "value"),
-     State("trips-creation-date-filter", "start_date"),
-     State("trips-creation-date-filter", "end_date"),
-     State("trips-single-date-filter", "date"),
-     State("trips-date-filter-type", "value"),
-     State("trips-date-sort-filter", "value"),
-     State("trips-status-filter", "value"),
-     State("trips-has-signalement-filter", "value"),
-     State("trips-filter-store", "data")],
+    State("trips-search-input", "value"),
+    State("trips-date-filter-type", "value"),
+    State("trips-single-date-filter", "date"),
+    State("trips-departure-sort-filter", "value"),
+    State("trips-creation-sort-filter", "value"),
+    State("trips-status-filter", "value"),
+    #State("trips-has-signalement-filter", "value"),
+    #State("trips-filter-store", "data"),
     prevent_initial_call=True
 )
-def update_trip_filters(n_clicks, search_text, date_from, date_to, single_date, date_filter_type, 
-                       date_sort, status, has_signalement, current_filters):
+def update_trip_filters(n_clicks, search_text, date_filter_type, single_date, departure_sort, creation_sort, status):
     """Met à jour les filtres de recherche des trajets"""
-    # Vérifier si le debug des trajets est activé
-    import os
-    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    print(f"[CALLBACK_DEBUG] AVANT TRY - Fonction appelée")
+    print(f"[CALLBACK_DEBUG] Paramètres reçus: n_clicks={n_clicks}")
+    print(f"[CALLBACK_DEBUG] departure_sort={departure_sort}, creation_sort={creation_sort}")
+    print(f"[CALLBACK_DEBUG] date_filter_type={date_filter_type}, single_date={single_date}")
+    print(f"[CALLBACK_DEBUG] status={status}")
     
-    if debug_trips:
-        CallbackLogger.log_callback(
-            "update_trip_filters",
-            {"search_text": search_text, "status": status, "has_signalement": has_signalement},
-            extra_info="Applying filters"
-        )
+    if n_clicks is None:
+        raise PreventUpdate
     
-    # Construction du dictionnaire de filtres - ne pas forcer les valeurs par défaut
-    filters = {}
+    new_filters = {}
     
-    # N'ajouter que les filtres qui ont une valeur explicite
-    if search_text:
-        filters["text"] = search_text
-    if date_from:
-        filters["date_from"] = date_from
-    if date_to:
-        filters["date_to"] = date_to
-    if single_date:
-        filters["single_date"] = single_date
-    if date_filter_type:
-        filters["date_filter_type"] = date_filter_type
-    if date_sort:
-        filters["date_sort"] = date_sort
+    # Filtre de recherche textuelle
+    if search_text and search_text.strip():
+        new_filters["text"] = search_text.strip()
+        print(f"[CALLBACK_DEBUG] Ajouté search_text: {search_text}")
+    
+    # Filtres de date - garder les clés que le repository attend
+    if date_filter_type and single_date:
+        new_filters["date_filter_type"] = date_filter_type
+        new_filters["single_date"] = single_date
+        print(f"[CALLBACK_DEBUG] Ajouté date_filter_type: {date_filter_type}")
+        print(f"[CALLBACK_DEBUG] Ajouté single_date: {single_date}")
+    
+    # Filtre par statut
     if status and status != "all":
-        filters["status"] = status
-    if has_signalement:
-        filters["has_signalement"] = True
+        new_filters["status"] = status
+        print(f"[CALLBACK_DEBUG] Ajouté status: {status}")
     
-    # Ne déclencher une mise à jour que si les filtres ont vraiment changé
-    if filters != current_filters:
-        return filters
+    # Tri par date de départ
+    if departure_sort and departure_sort != "asc":
+        new_filters["departure_sort"] = departure_sort
+        print(f"[CALLBACK_DEBUG] Ajouté departure_sort: {departure_sort}")
     
-    raise PreventUpdate
-
+    # Tri par date de création
+    if creation_sort and creation_sort != "asc":
+        new_filters["creation_sort"] = creation_sort
+        print(f"[CALLBACK_DEBUG] Ajouté creation_sort: {creation_sort}")
+    
+    print(f"[CALLBACK_DEBUG] Filtres construits: {new_filters}")
+    return new_filters
 
 @callback(
     Output("trips-current-page", "data", allow_duplicate=True),
@@ -207,7 +233,8 @@ def reset_trip_page_on_filter_change(filters):
         Output("trips-creation-date-filter", "end_date"),
         Output("trips-single-date-filter", "date"),
         Output("trips-date-filter-type", "value"),
-        Output("trips-date-sort-filter", "value"),
+        Output("trips-departure-sort-filter", "value"),
+        Output("trips-creation-sort-filter", "value"),
         Output("trips-status-filter", "value"),
         Output("trips-has-signalement-filter", "value"),
     ],
@@ -230,7 +257,8 @@ def reset_trip_filters(n_clicks):
         None,            # date range end
         None,            # single date
         "range",        # date filter type
-        "desc",         # date sort
+        "desc",         # departure sort
+        "desc",         # creation sort
         "all",          # status
         False,           # has signalement
     )
@@ -288,7 +316,7 @@ def render_trips_table(current_page, filters, refresh_clicks, selected_trip):
     filter_params = {}
     if filters:
         # Copier tous les filtres valides en une seule passe
-        valid_keys = ["text", "date_from", "date_to", "date_filter_type", "single_date", "date_sort", "has_signalement"]
+        valid_keys = ["text", "date_from", "date_to", "date_filter_type", "single_date", "date_sort", "has_signalement", "departure_sort", "creation_sort"]
         filter_params.update({k: v for k, v in filters.items() if k in valid_keys and v})
         
         # Traitement spécial pour le statut (exclure "all")

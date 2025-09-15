@@ -10,6 +10,7 @@
       background: transparent;
       margin: 0;
       padding: 0;
+      font-size: 80%;
     }
     
     .passengers-card {
@@ -17,8 +18,6 @@
       border-radius: 28px;
       padding: 25px;
       overflow: hidden;
-      max-height: 600px;
-      overflow-y: auto;
     }
     
     .card-header {
@@ -50,48 +49,52 @@
       background: white;
       border-radius: 18px;
       padding: 20px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-    }
-    
-    .passenger-card {
-      background-color:#fafcfe;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       display: flex;
       flex-direction: column;
+      margin-top: 15px;
+    }
+    
+    .passenger-card-inner {
+      padding: 15px;
+      border-radius: 15px;
+      background: #fafcfe;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      margin-bottom: 15px;
+    }
+    
+    .passenger-card-inner:last-child {
+      margin-bottom: 0;
     }
     
     .passenger-header {
       display: flex;
       align-items: center;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 12px;
       margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e9ecef;
     }
     
     .passenger-avatar {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      background-color: #e8f3ff;
+      background-color: #e0f0ff;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 12px;
-      font-size: 18px;
+      margin-right: 15px;
+      font-size: 20px;
+      color: #3366CC;
     }
     
     .passenger-name {
       font-weight: 600;
-      color: #1c2b46;
-      font-size: 16px;
+      font-size: 18px;
+      color: #333;
     }
     
     .passenger-details {
-      list-style: none;
+      list-style-type: none;
       padding: 0;
       margin: 0 0 15px 0;
     }
@@ -99,7 +102,7 @@
     .passenger-detail-item {
       display: flex;
       margin-bottom: 10px;
-      flex-wrap: wrap;
+      align-items: left;
     }
     
     .detail-label {
@@ -127,16 +130,6 @@
       border: 1px solid #e9ecef;
     }
     
-    .confirmed {
-      color: #2563eb;
-      font-weight: 600;
-    }
-    
-    .pending {
-      color: #B00;
-      font-weight: 600;
-    }
-    
     .profile-button {
       margin-top: 15px;
       align-self: flex-end;
@@ -148,10 +141,10 @@
       text-decoration: none;
       display: inline-block;
       transition: background-color 0.2s;
-      border: none;  /* Supprime la bordure du bouton */
-      cursor: pointer;  /* Ajoute le curseur pointer */
-      font-size: 14px;  /* Taille de police consistante */
-      font-family: inherit;  /* Hérite la police du parent */
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: inherit;
     }
     
     .profile-button:hover {
@@ -165,10 +158,14 @@
       font-style: italic;
     }
     
-    /* Responsive */
-    @media (max-width: 767px) {
+    /* Responsive styling */
+    @media (max-width: 768px) {
       .passengers-container {
-        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+      
+      .passenger-card-inner {
+        padding: 10px;
       }
     }
   </style>
@@ -194,7 +191,7 @@
     <div class="passengers-container">
       {% if passengers and passengers|length > 0 %}
         {% for passenger in passengers %}
-          <div class="passenger-card">
+          <div class="passenger-card-inner">
             <div class="passenger-header">
               <div class="passenger-avatar">👤</div>
               <div class="passenger-name">{{ passenger.get("name", "Passager " + loop.index|string) }}</div>
@@ -203,16 +200,16 @@
             <ul class="passenger-details">
               <li class="passenger-detail-item">
                 <span class="detail-label">Email :</span>
-                <span class="detail-value">{{ passenger.get("email", "-") }}</span>
+                <span class="detail-value">{{ passenger.get("email", "N/A") }}</span>
               </li>
               <li class="passenger-detail-item">
                 <span class="detail-label">ID Utilisateur :</span>
-                <span class="detail-value user-id">{{ passenger.get("uid", "-") }}</span>
+                <span class="detail-value user-id">{{ passenger.get("uid", "N/A") }}</span>
               </li>
               {% if passenger.get("role") %}
               <li class="passenger-detail-item">
                 <span class="detail-label">Rôle :</span>
-                <span class="detail-value">{{ passenger.get("role", "-") }}</span>
+                <span class="detail-value">{{ passenger.get("role") }}</span>
               </li>
               {% endif %}
             </ul>

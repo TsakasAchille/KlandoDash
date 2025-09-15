@@ -108,7 +108,7 @@
   "filters": {
     "date_range": {
       "enabled": true,
-      "column": "departure_schedule"
+      "column": "created_at"
     },
     "status": {
       "enabled": true,

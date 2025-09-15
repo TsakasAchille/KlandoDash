@@ -2,9 +2,10 @@
 
 import os
 import dash
-from dash import callback, Input, Output, State, callback_context, no_update, html
+from dash import html, dcc, Input, Output, State, callback, callback_context
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
+import dash.exceptions as de
 from dash_apps.components.users_table import render_custom_users_table
 from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
@@ -240,13 +241,14 @@ def update_active_filters_display(filters):
 
 
 @callback(
-    [Output("main-users-content", "children")],
+    Output("main-users-content", "children"),
     [Input("users-current-page", "data"),
      Input("refresh-users-btn", "n_clicks"),
-     Input("users-filter-store", "data")],
+     Input("users-filter-store", "data"),
+     Input("selected-user-uid", "data")],
     prevent_initial_call=False
 )
-def update_users_table(current_page, refresh_clicks, filters):
+def update_users_table(current_page, refresh_clicks, filters, selected_user):
     """Met à jour le tableau des utilisateurs"""
     debug_log_users(
         "update_users_table",
@@ -281,18 +283,19 @@ def update_users_table(current_page, refresh_clicks, filters):
                 color="info",
                 className="mt-3"
             )
-            return [info_message]
+            return info_message
         
         # Créer le tableau personnalisé
         table_component = render_custom_users_table(
             users_data=users,
             current_page=current_page,
             page_count=total_pages,
-            total_users=total_count
+            total_users=total_count,
+            selected_uid=selected_user
         )
         
         print(f"[TABLE] {len(users)} utilisateurs chargés")
-        return [table_component]
+        return table_component
         
     except Exception as e:
         print(f"[ERROR] Erreur lors de la récupération des utilisateurs: {e}")
@@ -301,7 +304,58 @@ def update_users_table(current_page, refresh_clicks, filters):
             color="danger",
             className="mt-3"
         )
-        return [error_message]
+        return error_message
+
+
+@callback(
+    Output("selected-user-uid", "data", allow_duplicate=True),
+    [Input("users-filter-store", "data")],
+    prevent_initial_call=True
+)
+def auto_select_user_on_filter(filters):
+    """Auto-sélectionne un utilisateur quand le filtre retourne exactement un résultat"""
+    if not filters:
+        raise PreventUpdate
+    
+    debug_log_users(
+        "auto_select_user_on_filter",
+        {"filters_count": len(filters) if filters else 0},
+        "INFO",
+        "Checking for auto-selection"
+    )
+    
+    try:
+        # Récupérer les utilisateurs avec les filtres appliqués
+        result = UsersTableService.get_users_page(
+            page=1,
+            page_size=5,
+            filters=filters
+        )
+        
+        total_count = result.get('total_count', 0)
+        users = result.get('users', [])
+        
+        # Auto-sélection si exactement un utilisateur trouvé
+        if total_count == 1 and len(users) == 1:
+            user_uid = users[0].get('uid')
+            if user_uid:
+                debug_log_users(
+                    "auto_select_user",
+                    {"user_uid": user_uid, "total_count": total_count},
+                    "INFO",
+                    "Auto-selecting single user from filter result"
+                )
+                return user_uid
+    
+    except Exception as e:
+        debug_log_users(
+            "auto_select_user_on_filter",
+            {"error": str(e)},
+            "ERROR",
+            "Error in auto-selection"
+        )
+    
+    raise PreventUpdate
 
 
 @callback(

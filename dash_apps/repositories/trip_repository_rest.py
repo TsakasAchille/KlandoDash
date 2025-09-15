@@ -280,9 +280,23 @@ class TripRepositoryRest(SupabaseRepository):
         sort_column = default_sort.get('column', 'departure_date')
         sort_desc = default_sort.get('direction', 'desc') == 'desc'
         
-        # Override par les filtres utilisateur
-        if filters and filters.get('date_sort'):
-            sort_desc = filters['date_sort'] == 'desc'
+        # Override par les filtres utilisateur - priorité aux filtres spécifiques
+        if filters:
+            # Tri par date de création (priorité haute)
+            if filters.get('creation_sort'):
+                sort_column = 'created_at'
+                sort_desc = filters['creation_sort'] == 'desc'
+                logger.info(f"[SORT_DEBUG] creation_sort filter: {filters['creation_sort']}, column: {sort_column}")
+            # Tri par date de départ (priorité normale)
+            elif filters.get('departure_sort'):
+                sort_column = 'departure_date'
+                sort_desc = filters['departure_sort'] == 'desc'
+                logger.info(f"[SORT_DEBUG] departure_sort filter: {filters['departure_sort']}, column: {sort_column}")
+            # Ancien filtre date_sort pour compatibilité
+            elif filters.get('date_sort'):
+                sort_column = 'departure_date'
+                sort_desc = filters['date_sort'] == 'desc'
+                logger.info(f"[SORT_DEBUG] date_sort filter (legacy): {filters['date_sort']}, column: {sort_column}")
         
         # Mapping des colonnes virtuelles vers les colonnes réelles
         column_mapping = {
@@ -293,6 +307,9 @@ class TripRepositoryRest(SupabaseRepository):
         
         # Appliquer le mapping si nécessaire
         real_column = column_mapping.get(sort_column, sort_column)
+        
+        # Debug logging pour vérifier la configuration finale
+        logger.info(f"[SORT_DEBUG] Final sort config - column: {real_column}, desc: {sort_desc}")
         
         return real_column, sort_desc
     

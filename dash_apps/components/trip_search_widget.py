@@ -90,12 +90,12 @@ def render_trip_search_widget():
                     ], width=12)
                 ], className="mb-3"),
                 
-                # 2. Tri par date de création
+                # 2. Tri par date de départ
                 dbc.Row([
                     dbc.Col([
-                        html.Label("Tri par date de création"),
+                        html.Label("Tri par date de départ"),
                         dcc.Dropdown(
-                            id="trips-date-sort-filter",
+                            id="trips-departure-sort-filter",
                             options=[
                                 {"label": "Plus récent au plus ancien", "value": "desc"},
                                 {"label": "Plus ancien au plus récent", "value": "asc"},
@@ -103,7 +103,19 @@ def render_trip_search_widget():
                             value="desc",
                             clearable=False
                         )
-                    ], width=12)
+                    ], width=6),
+                    dbc.Col([
+                        html.Label("Tri par date de création"),
+                        dcc.Dropdown(
+                            id="trips-creation-sort-filter",
+                            options=[
+                                {"label": "Plus récent au plus ancien", "value": "desc"},
+                                {"label": "Plus ancien au plus récent", "value": "asc"},
+                            ],
+                            value="desc",
+                            clearable=False
+                        )
+                    ], width=6)
                 ], className="mb-3"),
                 
                 # 3. Statut

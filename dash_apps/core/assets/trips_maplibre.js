@@ -131,17 +131,16 @@ function tryInitTripsMap() {
     });
 }
 
-// Observer pour détecter l'ajout du container trips
+// Observer pour détecter l'ajout du container trips - Version renforcée
 function watchForTripsContainer() {
-    // Vérification initiale
+    console.log('[TRIPS_MAP] Démarrage watchForTripsContainer');
+    
+    // Vérification initiale immédiate
     tryInitTripsMap();
     
     const observer = new MutationObserver(function (mutations) {
-        if (tripsMapInstance && !tripsMapInstance._removed) {
-            observer.disconnect();
-            console.log('[TRIPS_MAP] Observer déconnecté - carte déjà initialisée');
-            return;
-        }
+        // Ne pas arrêter l'observer même si une carte existe déjà
+        // car elle peut être supprimée lors des changements de page
         
         let shouldCheck = false;
         mutations.forEach(function(mutation) {
@@ -150,6 +149,7 @@ function watchForTripsContainer() {
                     if (node.nodeType === Node.ELEMENT_NODE) {
                         if (node.id === TRIPS_MAP_CONTAINER_ID || 
                             (node.querySelector && node.querySelector('#' + TRIPS_MAP_CONTAINER_ID))) {
+                            console.log('[TRIPS_MAP] Container détecté via observer');
                             shouldCheck = true;
                         }
                     }
@@ -158,7 +158,10 @@ function watchForTripsContainer() {
         });
         
         if (shouldCheck) {
-            setTimeout(tryInitTripsMap, 100);
+            // Essayer plusieurs fois avec des délais différents
+            setTimeout(tryInitTripsMap, 50);
+            setTimeout(tryInitTripsMap, 200);
+            setTimeout(tryInitTripsMap, 500);
         }
     });
     
@@ -168,30 +171,37 @@ function watchForTripsContainer() {
         attributes: false
     });
     
-    // Vérification périodique limitée
+    // Vérification périodique plus fréquente et plus longue
     let periodicCheckCount = 0;
-    const maxPeriodicChecks = 10;
+    const maxPeriodicChecks = 20; // Augmenté de 10 à 20
     
     const periodicCheck = setInterval(function() {
         periodicCheckCount++;
         
-        if (periodicCheckCount >= maxPeriodicChecks || (tripsMapInstance && !tripsMapInstance._removed)) {
+        const container = document.getElementById(TRIPS_MAP_CONTAINER_ID);
+        const needsInit = container && (!tripsMapInstance || tripsMapInstance._removed || tripsMapInstance.getContainer() !== container);
+        
+        if (periodicCheckCount >= maxPeriodicChecks) {
             clearInterval(periodicCheck);
             console.log('[TRIPS_MAP] Vérifications périodiques arrêtées après', periodicCheckCount, 'tentatives');
             return;
         }
         
-        const container = document.getElementById(TRIPS_MAP_CONTAINER_ID);
-        if (container && (!tripsMapInstance || tripsMapInstance.getContainer() !== container || tripsMapInstance._removed)) {
-            console.log('[TRIPS_MAP] Vérification périodique #' + periodicCheckCount + ' - tentative d\'initialisation');
+        if (needsInit) {
+            console.log('[TRIPS_MAP] Vérification périodique #' + periodicCheckCount + ' - container trouvé, initialisation');
             tryInitTripsMap();
+        } else if (container) {
+            console.log('[TRIPS_MAP] Vérification périodique #' + periodicCheckCount + ' - container existe, carte OK');
+        } else {
+            console.log('[TRIPS_MAP] Vérification périodique #' + periodicCheckCount + ' - pas de container');
         }
-    }, 5000);
+    }, 2000); // Réduit de 5s à 2s
     
+    // Timeout plus long
     setTimeout(function() {
         clearInterval(periodicCheck);
-        console.log('[TRIPS_MAP] Timeout des vérifications périodiques après 60s');
-    }, 60000);
+        console.log('[TRIPS_MAP] Timeout des vérifications périodiques après 120s');
+    }, 120000); // Augmenté de 60s à 120s
 }
 
 // Configuration des layers et événements pour la carte trips
@@ -290,32 +300,67 @@ function setupTripsMapLayersAndEvents(map) {
     });
 }
 
-// Écouter les changements de page Dash
+// Écouter les changements de page Dash - Version améliorée
 document.addEventListener('DOMContentLoaded', function() {
     const dashContainer = document.getElementById('_dash-app-content') || document.body;
+    
+    // Observer plus agressif pour détecter les changements de page
     const pageObserver = new MutationObserver(function(mutations) {
-        let pageChanged = false;
+        let shouldCheckTripsContainer = false;
+        
         mutations.forEach(function(mutation) {
             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                 mutation.addedNodes.forEach(function(node) {
                     if (node.nodeType === Node.ELEMENT_NODE) {
-                        if (node.querySelector && (node.querySelector('[data-dash-is-loading]') || 
-                            node.id === 'page-content' || node.className.includes('page-'))) {
-                            pageChanged = true;
+                        // Détecter spécifiquement le container trips
+                        if (node.id === TRIPS_MAP_CONTAINER_ID || 
+                            (node.querySelector && node.querySelector('#' + TRIPS_MAP_CONTAINER_ID))) {
+                            console.log('[TRIPS_MAP] Container trips détecté dans DOM');
+                            shouldCheckTripsContainer = true;
+                        }
+                        // Détecter les changements de page généraux
+                        else if (node.querySelector && (
+                            node.querySelector('[data-dash-is-loading]') || 
+                            node.id === 'page-content' || 
+                            node.className.includes('page-') ||
+                            node.querySelector('.page-content') ||
+                            node.querySelector('[id*="trips"]')
+                        )) {
+                            console.log('[TRIPS_MAP] Changement de page détecté');
+                            tripsMapInitStarted = false;
+                            shouldCheckTripsContainer = true;
                         }
                     }
                 });
             }
         });
         
-        if (pageChanged) {
-            console.log('[TRIPS_MAP] Changement de page détecté');
-            tripsMapInitStarted = false;
-            setTimeout(watchForTripsContainer, 100);
+        if (shouldCheckTripsContainer) {
+            // Essayer plusieurs fois avec des délais différents
+            setTimeout(watchForTripsContainer, 50);
+            setTimeout(watchForTripsContainer, 200);
+            setTimeout(watchForTripsContainer, 500);
+            setTimeout(watchForTripsContainer, 1000);
         }
     });
     
     pageObserver.observe(dashContainer, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'id']
+    });
+    
+    // Observer spécifique pour le container trips
+    const tripsObserver = new MutationObserver(function(mutations) {
+        const tripsContainer = document.getElementById(TRIPS_MAP_CONTAINER_ID);
+        if (tripsContainer && (!tripsMapInstance || tripsMapInstance._removed || tripsMapInstance.getContainer() !== tripsContainer)) {
+            console.log('[TRIPS_MAP] Container trips spécifiquement détecté, initialisation...');
+            setTimeout(tryInitTripsMap, 100);
+        }
+    });
+    
+    tripsObserver.observe(document.body, {
         childList: true,
         subtree: true
     });
