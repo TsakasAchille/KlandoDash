@@ -303,7 +303,7 @@ class SupportCacheService:
                 print(f"[TICKET_DETAILS][RENDER] Début génération panneau pour {selected_ticket_id[:8] if selected_ticket_id else 'None'}...")
             
             from dash_apps.components.support_tickets import render_ticket_details
-            from dash_apps.components.support_callbacks import load_comments_for_ticket
+            from dash_apps.callbacks.support_callbacks import load_comments_for_ticket
             
             if SupportCacheService._debug_mode:
                 print(f"[TICKET_DETAILS][RENDER] Chargement commentaires...")
