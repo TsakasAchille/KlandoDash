@@ -12,6 +12,7 @@ from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
 from dash_apps.components.user_search_widget import render_search_widget, render_active_filters
+from dash_apps.utils.layout_config import create_responsive_col
 from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.redis_cache import redis_cache
 from dash_apps.services.users_cache_service import UsersCacheService
@@ -21,6 +22,9 @@ from dash_apps.services.user_panels_preloader import UserPanelsPreloader
 
 # Utiliser la factory pour obtenir le repository approprié
 user_repository = RepositoryFactory.get_user_repository()
+
+# Constante pour l'espacement entre les layouts
+ROW_SPACING = "mb-4"
 
 
 # Helper de log standardisé pour tous les callbacks (compatible Python < 3.10)
@@ -217,27 +221,66 @@ def get_layout():
         ], width=12)
     ]),
     dbc.Row([
-        dbc.Col([
-            dcc.Loading(
-                children=html.Div(id="user-details-panel"),
-                type="default"
-            )
-        ], width=6),
-        dbc.Col([
-            dcc.Loading(
-                children=html.Div(id="user-stats-panel"),
-                type="default"
-            )
-        ], width=6)
-    ]),
+        create_responsive_col(
+            "user_details_panel",
+            [
+                # Header avec titre et icône
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.I(className="fas fa-user-circle me-2", style={"color": "#007bff"}),
+                        html.H5("Détails de l'utilisateur", className="mb-0", style={"color": "#333"})
+                    ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #007bff"}),
+                    dbc.CardBody([
+                        dcc.Loading(
+                            children=html.Div(id="user-details-panel"),
+                            type="default"
+                        )
+                    ], style={"padding": "0"})
+                ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
+            ],
+            config_file="user_details_config.json"
+        ),
+        create_responsive_col(
+            "user_stats_panel",
+            [
+                # Header avec titre et icône
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.I(className="fas fa-chart-bar me-2", style={"color": "#28a745"}),
+                        html.H5("Statistiques", className="mb-0", style={"color": "#333"})
+                    ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #28a745"}),
+                    dbc.CardBody([
+                        dcc.Loading(
+                            children=html.Div(id="user-stats-panel"),
+                            type="default"
+                        )
+                    ], style={"padding": "0"})
+                ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
+            ],
+            config_file="user_details_config.json"
+        ),
+    ], className=ROW_SPACING),
     dbc.Row([
-        dbc.Col([
-            dcc.Loading(
-                children=html.Div(id="user-trips-panel"),
-                type="default"
-            )
-        ], width=12)
-    ])
+        create_responsive_col(
+            "user_trips_panel",
+            [
+                # Header avec titre et icône
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.I(className="fas fa-route me-2", style={"color": "#17a2b8"}),
+                        html.H5("Trajets de l'utilisateur", className="mb-0", style={"color": "#333"})
+                    ], style={"background-color": "#f8f9fa", "border-bottom": "2px solid #17a2b8"}),
+                    dbc.CardBody([
+                        dcc.Loading(
+                            children=html.Div(id="user-trips-panel"),
+                            type="default"
+                        )
+                    ], style={"padding": "0"})
+                ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
+            ],
+            config_file="user_details_config.json"
+        ),
+    ], className=ROW_SPACING)
 ], fluid=True)
 
 

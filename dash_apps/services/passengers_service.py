@@ -136,17 +136,8 @@ class PassengersService:
                         user_data = response.data[0]
                         cls._log_debug(f"Found user data for {user_id}: {user_data.get('display_name', 'No name')}")
                         
-                        # Adapter les données pour le modèle Pydantic
-                        user_dict = {
-                            'uid': user_data.get('uid'),
-                            'display_name': user_data.get('display_name', ''),
-                            'email': user_data.get('email', ''),
-                            'phone_number': user_data.get('phone_number', ''),
-                            'rating': user_data.get('rating', 0.0),
-                            'photo_url': user_data.get('photo_url', ''),
-                            'created_at': user_data.get('created_at')
-                        }
-                        user = UserModel(**user_dict)
+                        # Utiliser directement les données de Supabase avec le UserModel
+                        user = UserModel(**user_data)
                         validated_users[user.uid] = user
                         cls._log_debug(f"Validated user {user.uid}: {user.display_name}")
                     else:

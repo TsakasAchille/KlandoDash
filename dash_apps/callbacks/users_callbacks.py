@@ -1,7 +1,8 @@
 """Callbacks pour la page Users"""
 
+import os
 import dash
-from dash import callback, Input, Output, State, callback_context, no_update
+from dash import callback, Input, Output, State, callback_context, no_update, html
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_apps.components.users_table import render_custom_users_table
@@ -9,61 +10,26 @@ from dash_apps.components.user_profile import render_user_profile
 from dash_apps.components.user_stats import render_user_stats
 from dash_apps.components.user_trips import render_user_trips
 from dash_apps.components.user_search_widget import render_search_widget, render_active_filters
-from dash_apps.repositories.repository_factory import RepositoryFactory
-from dash_apps.services.redis_cache import redis_cache
-from dash_apps.services.users_cache_service import UsersCacheService
-from dash_apps.services.user_panels_preloader import UserPanelsPreloader
+from dash_apps.services.users_table_service import UsersTableService
+from dash_apps.services.user_details_cache_service import UserDetailsCache
+from dash_apps.services.user_profile_cache_service import UserProfileCache
+from dash_apps.services.user_trips_service import UserTripsService
+from dash_apps.layouts.user_detail_layout import UserDetailLayout
+from dash_apps.layouts.user_profile_layout import UserProfileLayout
+from dash_apps.utils.settings import load_json_config, get_jinja_template
+from dash_apps.utils.callback_logger import CallbackLogger
 
-# Utiliser la factory pour obtenir le repository approprié
-user_repository = RepositoryFactory.get_user_repository()
-
-# Helper de log standardisé pour tous les callbacks (compatible Python < 3.10)
-def log_callback(name, inputs, states=None):
-    def _short_str(s):
-        try:
-            s = str(s)
-            return f"{s[:4]}…{s[-4:]}" if len(s) > 14 else s
-        except:
-            return str(s)[:20]
-    
-    def _clean_dict(d):
-        if not isinstance(d, dict):
-            return d
-        clean = {}
-        for k, v in d.items():
-            if v in (None, ""):
-                continue
-            if isinstance(v, str) and v == "all":
-                continue
-            if isinstance(v, (int, float, bool)):
-                clean[k] = v
-            else:
-                clean[k] = _short_str(v)
-        return clean
-    
-    try:
-        import json
-        sep = "=" * 74
-        print(f"\n{sep}")
-        print(f"[CB] {name}")
-        print("Inputs:")
-        for k, v in inputs.items():
-            if isinstance(v, dict):
-                v = _clean_dict(v)
-                print(f"  - {k}: {json.dumps(v, ensure_ascii=False)}")
-            else:
-                print(f"  - {k}: {_short_str(v)}")
-        if states:
-            print("States:")
-            for k, v in states.items():
-                if isinstance(v, dict):
-                    v = _clean_dict(v)
-                    print(f"  - {k}: {json.dumps(v, ensure_ascii=False)}")
-                else:
-                    print(f"  - {k}: {_short_str(v)}")
-        print(sep)
-    except Exception:
-        pass
+# Fonction utilitaire pour debug logging unifié
+def debug_log_users(event_name, data=None, status="INFO", extra_info=""):
+    """Log debug pour les callbacks users avec DEBUG_USERS"""
+    debug_users = os.getenv('DEBUG_USERS', 'False').lower() == 'true'
+    if debug_users:
+        CallbackLogger.log_callback(
+            event_name,
+            data or {},
+            status=status,
+            extra_info=extra_info
+        )
 
 
 @callback(
@@ -78,10 +44,11 @@ def log_callback(name, inputs, states=None):
     prevent_initial_call=True
 )
 def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_user, current_filters):
-    log_callback(
+    debug_log_users(
         "get_page_info_on_page_load",
-        {"n_clicks": n_clicks, "url_search": url_search},
-        {"current_page": current_page, "selected_user": selected_user, "current_filters": current_filters}
+        {"n_clicks": n_clicks, "url_search": url_search[:50] if url_search else None, "current_page": current_page},
+        "INFO",
+        "Page load callback triggered"
     )
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
@@ -96,13 +63,17 @@ def get_page_info_on_page_load(n_clicks, url_search, current_page, selected_user
             selected_uid = uid_list[0]
             user_from_url = {"uid": selected_uid}
             
-            # Appliquer automatiquement un filtre de recherche sur l'uid
             # Cela affichera uniquement cet utilisateur et il sera sélectionné automatiquement
             filter_with_uid = {
                 "text": selected_uid  # Utiliser l'uid comme filtre de recherche
             }
             
-            print(f"[URL_SELECTION] Application du filtre pour l'utilisateur: {selected_uid}")
+            debug_log_users(
+                "user_selected_from_url",
+                {"uid": selected_uid[:8] if selected_uid else None},
+                "INFO",
+                "User selected from URL parameter"
+            )
             return 1, user_from_url, filter_with_uid
     # Si refresh a été cliqué
     if triggered_id == "refresh-users-btn" and n_clicks is not None:
@@ -226,7 +197,7 @@ def update_filters(
 )
 def reset_page_on_filter_change(filters):
     """Remet la page à 1 quand les filtres changent"""
-    log_callback("reset_page_on_filter_change", {"filters": filters}, {})
+    CallbackLogger.log_callback("reset_page_on_filter_change", {"filters": filters}, status="INFO", extra_info="Page reset due to filter change")
     return 1
 
 
@@ -257,7 +228,12 @@ def clear_all_filters(n_clicks):
 )
 def update_active_filters_display(filters):
     """Met à jour l'affichage des filtres actifs"""
-    log_callback("update_active_filters_display", {"filters": filters}, {})
+    debug_log_users(
+        "update_active_filters_display",
+        {"filters_count": len(filters) if filters else 0},
+        "INFO",
+        "Updating active filters display"
+    )
     return render_active_filters(filters)
 
 
@@ -270,10 +246,11 @@ def update_active_filters_display(filters):
 )
 def update_users_table(current_page, refresh_clicks, filters):
     """Met à jour le tableau des utilisateurs"""
-    log_callback(
+    debug_log_users(
         "update_users_table",
-        {"current_page": current_page, "refresh_clicks": refresh_clicks, "filters": filters},
-        {}
+        {"current_page": current_page, "refresh_clicks": refresh_clicks, "filters_count": len(filters) if filters else 0},
+        "INFO",
+        "Updating users table"
     )
     
     # Valeurs par défaut
@@ -283,8 +260,8 @@ def update_users_table(current_page, refresh_clicks, filters):
         filters = {}
     
     try:
-        # Récupérer les utilisateurs avec pagination
-        result = user_repository.get_users_paginated(
+        # Récupérer les utilisateurs avec pagination via le nouveau service
+        result = UsersTableService.get_users_page(
             page=current_page,
             page_size=5,
             filters=filters
@@ -303,9 +280,6 @@ def update_users_table(current_page, refresh_clicks, filters):
                 className="mt-3"
             )
             return [info_message]
-        
-        # Précharger les panneaux pour tous les utilisateurs de la page
-        UsersCacheService.preload_user_panels([user.get('uid') for user in users if user.get('uid')])
         
         # Créer le tableau personnalisé
         table_component = render_custom_users_table(
@@ -333,28 +307,123 @@ def update_users_table(current_page, refresh_clicks, filters):
     [Input("selected-user-uid", "data")],
     prevent_initial_call=True
 )
-def update_user_details(selected_user):
+def render_user_details_panel(selected_user):
     """Met à jour le panneau de détails de l'utilisateur sélectionné"""
-    log_callback("update_user_details", {"selected_user": selected_user}, {})
+    debug_log_users(
+        "update_user_details",
+        {"selected_user": str(selected_user)[:8] if selected_user else None},
+        "INFO",
+        "Updating user details panel"
+    )
     
     if not selected_user:
         return "Sélectionnez un utilisateur pour voir ses détails."
     
-    # Extraire l'UID selon le format
-    if isinstance(selected_user, dict):
-        uid_value = selected_user.get('uid')
-    elif isinstance(selected_user, str):
-        uid_value = selected_user
+    # Extract UID from dictionary if needed
+    if isinstance(selected_user, dict) and 'uid' in selected_user:
+        uid_value = selected_user['uid']
     else:
-        uid_value = str(selected_user)
+        uid_value = selected_user
     
     if not uid_value:
         return "UID utilisateur non valide."
     
-    print(f"[USER_DETAILS] Chargement des détails pour l'utilisateur: {uid_value}")
+    debug_log_users(
+        "user_details_load_start",
+        {"uid": str(uid_value)[:8] if uid_value else None},
+        "INFO",
+        "Loading user details"
+    )
     
-    # Utiliser le service de cache pour récupérer le panneau de profil
-    return UsersCacheService.get_user_profile_panel(uid_value)
+    try:
+        # 1. Récupérer les données utilisateur via le cache
+        user_data = UserDetailsCache.get_user_details_data(uid_value)
+        
+        # 2. Vérifier si les données sont disponibles
+        if not user_data:
+            error_panel = UserDetailLayout.render_error_panel(
+                "Impossible de récupérer les données utilisateur."
+            )
+            return error_panel
+        
+        # 3. Charger la configuration complète
+        config = load_json_config('user_details_config.json')
+        
+        # 4. Générer le panneau USER DETAILS avec la nouvelle configuration
+        details_style_config = config.get('user_details', {}).get('template_style', config.get('template_style', {}))
+        
+        # Paramètres pour l'iframe (conteneur externe)
+        iframe_height = details_style_config.get('height', '600px')
+        iframe_width = details_style_config.get('width', '100%')
+        iframe_min_height = details_style_config.get('min_height', '400px')
+        
+        # Paramètres pour la card interne (template Jinja2)
+        details_card_height = details_style_config.get('card_height', '550px')
+        details_card_width = details_style_config.get('card_width', '100%')
+        
+        # Debug pour vérifier les valeurs
+        debug_users = os.getenv('DEBUG_USERS', 'False').lower() == 'true'
+        if debug_users:
+            CallbackLogger.log_callback(
+                "user_details_template_config_debug", 
+                {
+                    "iframe_height": iframe_height,
+                    "iframe_width": iframe_width,
+                    "iframe_min_height": iframe_min_height,
+                    "card_height": details_card_height,
+                    "card_width": details_card_width,
+                    "full_config": details_style_config
+                }, 
+                status="INFO", 
+                extra_info="User details template configuration values (iframe + card)"
+            )
+            
+        # 5. Générer le panneau USER DETAILS avec template dynamique
+        user_template = get_jinja_template('user_profile_template.jinja2')
+        user_html_content = user_template.render(
+            user=user_data,
+            config=config.get('user_details', {}),
+            layout={
+                'card_height': details_card_height,
+                'card_width': details_card_width
+            }
+        )
+        
+        user_panel = html.Div([
+            html.Iframe(
+                srcDoc=user_html_content,
+                style={
+                    "width": iframe_width,
+                    "height": iframe_height,
+                    "minHeight": iframe_min_height,
+                    "border": "none",
+                    "borderRadius": "12px"
+                }
+            )
+        ])
+        
+        if debug_users:
+            CallbackLogger.log_callback(
+                "user_details_panel_generated",
+                {"uid": str(uid_value)[:8] if uid_value else 'None'},
+                status="SUCCESS",
+                extra_info="User details panel generated with Jinja2 template"
+            )
+        
+        return user_panel
+        
+    except Exception as e:
+        debug_log_users(
+            "user_details_load_error",
+            {"uid": str(uid_value)[:8] if uid_value else None, "error": str(e)},
+            "ERROR",
+            "Failed to load user details"
+        )
+        # Retourner un panneau d'erreur simple
+        return html.Div([
+            html.H4("Erreur de chargement", className="text-danger"),
+            html.P(f"Impossible de charger les détails de l'utilisateur: {str(e)}")
+        ], className="alert alert-danger")
 
 
 @callback(
@@ -363,28 +432,119 @@ def update_user_details(selected_user):
     prevent_initial_call=True
 )
 def update_user_stats(selected_user):
-    """Met à jour le panneau de statistiques de l'utilisateur sélectionné"""
-    log_callback("update_user_stats", {"selected_user": selected_user}, {})
+    debug_log_users(
+        "update_user_stats",
+        {"selected_user": str(selected_user)[:8] if selected_user else None},
+        "INFO",
+        "Updating user stats panel"
+    )
     
     if not selected_user:
-        return "Sélectionnez un utilisateur pour voir ses statistiques."
+        return html.Div("Sélectionnez un utilisateur pour voir ses statistiques.", className="text-muted")
     
-    # Extraire l'UID selon le format
-    if isinstance(selected_user, dict):
-        uid_value = selected_user.get('uid')
-    elif isinstance(selected_user, str):
-        uid_value = selected_user
+    # Extract UID from dictionary if needed
+    if isinstance(selected_user, dict) and 'uid' in selected_user:
+        uid_value = selected_user['uid']
     else:
-        uid_value = str(selected_user)
+        uid_value = selected_user
     
     if not uid_value:
-        return "UID utilisateur non valide."
+        return html.Div("UID utilisateur non valide.", className="text-danger")
     
-    print(f"[USER_STATS] Chargement des statistiques pour l'utilisateur: {uid_value}")
+    debug_log_users(
+        "user_stats_load_start",
+        {"uid": str(uid_value)[:8] if uid_value else None},
+        "INFO",
+        "Loading user statistics"
+    )
     
-    # Utiliser le service de cache pour récupérer le panneau de statistiques
-    return UsersCacheService.get_user_stats_panel(uid_value)
-
+    try:
+        # Utiliser le service user details cache comme pour les détails
+        user_data = UserDetailsCache.get_user_details(uid_value)
+        
+        if not user_data:
+            debug_log_users(
+                "user_stats_no_data",
+                {"uid": str(uid_value)[:8] if uid_value else None},
+                "WARNING",
+                "No user data found for stats"
+            )
+            return html.Div("Données utilisateur non trouvées.", className="text-warning")
+        
+        # Charger la configuration pour les stats
+        config = load_json_config('user_stats_config.json')
+        template_config = config.get('template_style', {})
+        
+        # Configuration des dimensions
+        stats_card_height = template_config.get('card_height', '350px')
+        stats_card_width = template_config.get('card_width', '100%')
+        iframe_height = template_config.get('height', '400px')
+        iframe_width = template_config.get('width', '100%')
+        iframe_min_height = template_config.get('min_height', '300px')
+        
+        debug_users = os.getenv('DEBUG_USERS', 'False').lower() == 'true'
+        if debug_users:
+            CallbackLogger.log_callback(
+                "user_stats_template_config_debug",
+                {
+                    "iframe_height": iframe_height,
+                    "iframe_width": iframe_width,
+                    "iframe_min_height": iframe_min_height,
+                    "card_height": stats_card_height,
+                    "card_width": stats_card_width,
+                    "full_config": template_config
+                },
+                status="INFO",
+                extra_info="User stats template configuration values (iframe + card)"
+            )
+        
+        # Générer le HTML avec le template Jinja2
+        template = get_jinja_template('user_stats_template.jinja2')
+        user_html_content = template.render(
+            stats=config.get('stats', {}),
+            config=config.get('user_stats', {}),
+            layout={
+                'card_height': stats_card_height,
+                'card_width': stats_card_width
+            }
+        )
+        
+        user_panel = html.Div([
+            html.Iframe(
+                srcDoc=user_html_content,
+                style={
+                    "width": iframe_width,
+                    "height": iframe_height,
+                    "minHeight": iframe_min_height,
+                    "border": "none",
+                    "borderRadius": "12px"
+                }
+            )
+        ])
+        
+        # debug_users déjà défini plus haut dans la fonction
+        if debug_users:
+            CallbackLogger.log_callback(
+                "user_stats_panel_generated",
+                {"uid": str(uid_value)[:8] if uid_value else 'None'},
+                status="SUCCESS",
+                extra_info="User stats panel generated with Jinja2 template"
+            )
+        
+        return user_panel
+        
+    except Exception as e:
+        debug_log_users(
+            "user_stats_load_error",
+            {"uid": str(uid_value)[:8] if uid_value else None, "error": str(e)},
+            "ERROR",
+            "Failed to load user statistics"
+        )
+        # Retourner un panneau d'erreur simple
+        return html.Div([
+            html.H4("Erreur de chargement", className="text-danger"),
+            html.P(f"Impossible de charger les statistiques de l'utilisateur: {str(e)}")
+        ], className="alert alert-danger")
 
 @callback(
     Output("user-trips-panel", "children"),
@@ -392,24 +552,46 @@ def update_user_stats(selected_user):
     prevent_initial_call=True
 )
 def update_user_trips(selected_user):
-    """Met à jour le panneau de trajets de l'utilisateur sélectionné"""
-    log_callback("update_user_trips", {"selected_user": selected_user}, {})
+    debug_log_users(
+        "update_user_trips",
+        {"selected_user": str(selected_user)[:8] if selected_user else None},
+        "INFO",
+        "Updating user trips panel"
+    )
     
     if not selected_user:
         return "Sélectionnez un utilisateur pour voir ses trajets."
     
-    # Extraire l'UID selon le format
-    if isinstance(selected_user, dict):
-        uid_value = selected_user.get('uid')
-    elif isinstance(selected_user, str):
-        uid_value = selected_user
+    # Extract UID from dictionary if needed
+    if isinstance(selected_user, dict) and 'uid' in selected_user:
+        uid_value = selected_user['uid']
     else:
-        uid_value = str(selected_user)
+        uid_value = selected_user
     
     if not uid_value:
         return "UID utilisateur non valide."
     
-    print(f"[USER_TRIPS] Chargement des trajets pour l'utilisateur: {uid_value}")
+    debug_log_users(
+        "user_trips_load_start",
+        {"uid": str(uid_value)[:8] if uid_value else None},
+        "INFO",
+        "Loading user trips"
+    )
     
-    # Utiliser le service de cache pour récupérer le panneau de trajets
-    return UsersCacheService.get_user_trips_panel(uid_value)
+    try:
+        # Utiliser le nouveau service de trajets utilisateur
+        trips_data = UserTripsService.get_user_trips(uid_value)
+        if trips_data and trips_data.get('trips'):
+            # Utiliser le composant existant pour le rendu
+            return render_user_trips(trips_data['trips'])
+        else:
+            return dbc.Alert("Aucun trajet trouvé pour cet utilisateur.", color="info")
+    except Exception as e:
+        debug_log_users(
+            "user_trips_load_error",
+            {"uid": str(uid_value)[:8] if uid_value else None, "error": str(e)},
+            "ERROR",
+            "Failed to load user trips"
+        )
+        return dbc.Alert(f"Erreur lors du chargement des trajets: {str(e)}", color="danger")
+

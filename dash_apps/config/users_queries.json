@@ -1,0 +1,114 @@
+{
+  "queries": {
+    "users_paginated": {
+      "description": "Récupère les utilisateurs avec pagination",
+      "tables": {
+        "primary": "users"
+      },
+      "select": {
+        "base": [
+          "uid", "display_name", "email", "first_name", "name", 
+          "phone_number", "birth", "photo_url", "bio", "gender", 
+          "rating", "rating_count", "role", "created_at", "updated_at",
+          "is_driver_doc_validated"
+        ]
+      },
+      "order_by": ["created_at DESC"],
+      "pagination": {
+        "enabled": true,
+        "default_page_size": 20,
+        "max_page_size": 100
+      }
+    },
+    "user_by_uid": {
+      "description": "Récupère un utilisateur par son UID",
+      "tables": {
+        "primary": "users"
+      },
+      "where": {
+        "users.uid": "{{uid}}"
+      },
+      "select": {
+        "base": [
+          "uid", "display_name", "email", "first_name", "name", 
+          "phone_number", "birth", "photo_url", "bio", "gender", 
+          "rating", "rating_count", "role", "created_at", "updated_at",
+          "is_driver_doc_validated", "driver_license_url", "id_card_url"
+        ]
+      }
+    },
+    "users_search": {
+      "description": "Recherche d'utilisateurs avec filtres",
+      "tables": {
+        "primary": "users"
+      },
+      "select": {
+        "base": [
+          "uid", "display_name", "email", "first_name", "name", 
+          "phone_number", "birth", "photo_url", "bio", "gender", 
+          "rating", "rating_count", "role", "created_at", "updated_at",
+          "is_driver_doc_validated"
+        ]
+      },
+      "filters": {
+        "text_search": {
+          "fields": ["display_name", "email", "first_name", "name", "phone_number"],
+          "operator": "ilike"
+        },
+        "role": {
+          "field": "role",
+          "operator": "eq"
+        },
+        "gender": {
+          "field": "gender",
+          "operator": "eq"
+        },
+        "date_range": {
+          "field": "created_at",
+          "operators": ["gte", "lte"]
+        }
+      }
+    }
+  },
+  "field_mappings": {
+    "uid": "uid",
+    "display_name": "display_name",
+    "name": "display_name",
+    "email": "email",
+    "first_name": "first_name",
+    "last_name": "name",
+    "phone": "phone_number",
+    "phone_number": "phone_number",
+    "birth": "birth",
+    "birth_date": "birth",
+    "photo": "photo_url",
+    "photo_url": "photo_url",
+    "bio": "bio",
+    "description": "bio",
+    "gender": "gender",
+    "rating": "rating",
+    "rating_count": "rating_count",
+    "role": "role",
+    "user_role": "role",
+    "created_at": "created_at",
+    "updated_at": "updated_at",
+    "is_driver_validated": "is_driver_doc_validated",
+    "driver_license": "driver_license_url",
+    "id_card": "id_card_url"
+  },
+  "role_mappings": {
+    "": "user",
+    "null": "user",
+    "user": "USER",
+    "driver": "DRIVER", 
+    "admin": "ADMIN",
+    "moderator": "MODERATOR"
+  },
+  "gender_mappings": {
+    "": "NOT_SPECIFIED",
+    "null": "NOT_SPECIFIED",
+    "man": "MALE",
+    "woman": "FEMALE",
+    "other": "OTHER"
+  }
+}

@@ -216,28 +216,19 @@
 <body>
   <div class="card-container">
     <div class="profile-card">
-      <div class="card-header">
-        <div class="header-icon" style="overflow: hidden;">
-          {% if user.get('photo_url') %}
-            <img src="{{ user.get('photo_url') }}" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover;">
-          {% else %}
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4281ec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          {% endif %}
-        </div>
-        <h1 class="card-title">Profil Utilisateur</h1>
-      </div>
       
       <div class="details-container">
-        <!-- Nom -->
+        <!-- Nom avec photo -->
         <div class="detail-row">
-          <div class="icon-circle icon-name">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4281ec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
+          <div class="icon-circle icon-name" style="overflow: hidden;">
+            {% if user.get('photo_url') %}
+              <img src="{{ user.get('photo_url') }}" alt="Photo de profil" style="width: 100%; height: 100%; object-fit: cover;">
+            {% else %}
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4281ec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            {% endif %}
           </div>
           <div class="detail-text">
             <div class="detail-label">Nom</div>
@@ -254,16 +245,16 @@
           <div class="detail-text">
             <div class="detail-label">Note</div>
             <div class="detail-value" style="display: flex; align-items: center; gap: 8px;">
-              {% set rating = user.get('rating', 0) %}
-              {% set votes = user.get('rating_count', 0) %}
+              {% set rating = user.get('rating') or 0 %}
+              {% set votes = user.get('rating_count') or 0 %}
               <span>
                 {% for i in range(1,6) %}
-                  {% if rating >= i %}
+                  {% if rating and rating >= i %}
                     <!-- étoile pleine -->
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="#f7b500" stroke="#f7b500" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
                       <polygon points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5 12 2"/>
                     </svg>
-                  {% elif rating > i-1 %}
+                  {% elif rating and rating > i-1 %}
                     <!-- demi-étoile -->
                     <svg width="20" height="20" viewBox="0 0 24 24">
                       <defs>
@@ -283,7 +274,7 @@
                   {% endif %}
                 {% endfor %}
               </span>
-              <span style="color: #888; font-size: 14px;">{{ '%.2f' % rating }}/5&nbsp;&nbsp;  &nbsp;&nbsp;{{ votes }} votes</span>
+              <span style="color: #888; font-size: 14px;">{{ '%.2f' % (rating or 0) }}/5&nbsp;&nbsp;  &nbsp;&nbsp;{{ votes }} votes</span>
             </div>
           </div>
         </div>
@@ -467,29 +458,6 @@
               {% if user.get('id_card_url') %}
                 <a href="{{ user.get('id_card_url')|e }}" class="js-show-url">Voir</a>
               {% else %}-{% endif %}
-            </div>
-          </div>
-        </div>
-        <!-- Photo de profil -->
-        <div class="detail-row">
-          <div class="icon-circle icon-id">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-            </svg>
-          </div>
-          <div class="detail-text">
-            <div class="detail-label">Photo de profil</div>
-            <div class="detail-value">
-              {% if user.get('photo_url') %}
-                <div style="max-width: 250px; margin-top: 10px;">
-                  <img src="{{ user.get('photo_url') }}" alt="Photo de profil" style="width: 100%; border-radius: 8px;">
-                  <div style="margin-top: 8px; font-size: 13px;">
-                    <a href="{{ user.get('photo_url')|e }}" class="js-show-url">Voir en taille réelle</a>
-                  </div>
-                </div>
-              {% else %}
-                -
-              {% endif %}
             </div>
           </div>
         </div>

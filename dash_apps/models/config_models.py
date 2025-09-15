@@ -328,16 +328,17 @@ class UsersJsonQuery(BaseModel):
 
 
 class UserGender(str, Enum):
-    """Genres possibles pour un utilisateur."""
-    MALE = "MALE"
-    FEMALE = "FEMALE"
+    """Genres possibles pour un utilisateur - valeurs originales de la base."""
+    man = "man"
+    woman = "woman"
     OTHER = "OTHER"
     NOT_SPECIFIED = "NOT_SPECIFIED"
 
 
 class UserRole(str, Enum):
-    """Rôles possibles pour un utilisateur."""
-    USER = "USER"
+    """Rôles possibles pour un utilisateur - valeurs originales de la base."""
+    passenger = "passenger"
+    driver = "driver"
     DRIVER = "DRIVER"
     ADMIN = "ADMIN"
     MODERATOR = "MODERATOR"
@@ -357,9 +358,9 @@ class UserModel(BaseModel):
     driver_license_url: Optional[str] = Field(default=None, description="URL du permis de conduire")
     gender: Optional[UserGender] = Field(default=UserGender.NOT_SPECIFIED, description="Genre")
     id_card_url: Optional[str] = Field(default=None, description="URL de la carte d'identité")
-    rating: Optional[float] = Field(default=None, ge=0.0, le=5.0, description="Note moyenne")
-    rating_count: Optional[int] = Field(default=0, ge=0, description="Nombre d'évaluations")
-    role: Optional[UserRole] = Field(default=UserRole.USER, description="Rôle de l'utilisateur")
+    rating: Optional[float] = Field(default=None, description="Note moyenne")
+    rating_count: Optional[int] = Field(default=0, description="Nombre d'évaluations")
+    role: Optional[UserRole] = Field(default=UserRole.passenger, description="Rôle de l'utilisateur")
     updated_at: Optional[datetime] = Field(default=None, description="Date de dernière mise à jour")
     created_at: Optional[datetime] = Field(default=None, description="Date de création")
     is_driver_doc_validated: Optional[bool] = Field(default=False, description="Documents conducteur validés")
@@ -399,8 +400,6 @@ class UserModel(BaseModel):
         """Normalise le genre."""
         if v is None or v == '':
             return UserGender.NOT_SPECIFIED
-        if isinstance(v, str):
-            return v.upper()
         return v
     
     @field_validator('role', mode='before')
@@ -408,9 +407,7 @@ class UserModel(BaseModel):
     def validate_role(cls, v):
         """Normalise le rôle."""
         if v is None or v == '':
-            return UserRole.USER
-        if isinstance(v, str):
-            return v.upper()
+            return UserRole.passenger
         return v
     
     @property
@@ -435,9 +432,15 @@ class UserModel(BaseModel):
     @property
     def rating_display(self) -> str:
         """Retourne l'affichage de la note."""
-        if self.rating is not None and self.rating_count > 0:
+        if self.rating is not None and self.rating_count is not None and self.rating_count > 0:
             return f"{self.rating:.1f}/5 ({self.rating_count} avis)"
         return "Pas encore noté"
+    
+    model_config = {
+        "extra": "allow",  # Permet des champs supplémentaires
+        "str_strip_whitespace": True,
+        "validate_assignment": True
+    }
 
 
 class PassengerInfo(BaseModel):

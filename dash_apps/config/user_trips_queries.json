@@ -1,0 +1,58 @@
+{
+  "queries": {
+    "user_trips": {
+      "select": {
+        "base": [
+          "trip_id",
+          "departure_city",
+          "arrival_city",
+          "departure_date",
+          "departure_time",
+          "price",
+          "seats_published",
+          "seats_available",
+          "driver_uid",
+          "created_at",
+          "status"
+        ]
+      },
+      "filters": {
+        "driver_trips": {
+          "field": "driver_uid",
+          "operator": "eq"
+        },
+        "passenger_trips": {
+          "field": "bookings.user_uid",
+          "operator": "eq",
+          "join": "bookings!inner(user_uid)"
+        }
+      },
+      "order": {
+        "field": "departure_date",
+        "direction": "desc"
+      },
+      "limit": {
+        "default": 10,
+        "max": 50
+      }
+    }
+  },
+  "field_mappings": {
+    "trip_id": "ID Trajet",
+    "departure_city": "Ville de départ",
+    "arrival_city": "Ville d'arrivée",
+    "departure_date": "Date de départ",
+    "departure_time": "Heure de départ",
+    "price": "Prix",
+    "seats_published": "Places publiées",
+    "seats_available": "Places disponibles",
+    "driver_uid": "Conducteur",
+    "status": "Statut"
+  },
+  "status_mappings": {
+    "active": "Actif",
+    "completed": "Terminé",
+    "cancelled": "Annulé",
+    "pending": "En attente"
+  }
+}

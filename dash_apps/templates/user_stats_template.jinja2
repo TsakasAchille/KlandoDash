@@ -159,18 +159,6 @@
 <body>
   <div class="card-container">
     <div class="stats-card">
-      <div class="card-header">
-        <div class="header-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e8b317" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 20v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"></path>
-            <path d="M4 20h16"></path>
-            <path d="M12 2v10"></path>
-            <path d="M12 12l-4-4"></path>
-            <path d="M12 12l4-4"></path>
-          </svg>
-        </div>
-        <h1 class="card-title">Statistiques Utilisateur</h1>
-      </div>
       
       {% if stats.get('db_error', False) %}
       <div class="db-error">

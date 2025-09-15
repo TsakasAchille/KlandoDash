@@ -1,0 +1,21 @@
+{
+  "user_stats": {
+    "enabled": true,
+    "cache_enabled": true,
+    "cache_ttl": 300
+  },
+  "template_style": {
+    "height": "400px",
+    "width": "100%",
+    "card_height": "350px",
+    "card_width": "100%",
+    "min_height": "300px"
+  },
+  "stats": {
+    "total_trips": 0,
+    "driver_trips": 0,
+    "passenger_trips": 0,
+    "total_distance": 0.0,
+    "db_error": false
+  }
+}
