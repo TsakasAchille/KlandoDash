@@ -34,6 +34,12 @@
       "key_pattern": "user_profile:{user_id}",
       "description": "Cache des profils utilisateurs"
     },
+    "user_stats": {
+      "ttl": 300,
+      "max_entries": 500,
+      "key_pattern": "user_stats:{user_id}",
+      "description": "Cache des statistiques utilisateurs"
+    },
     "trips_list": {
       "ttl": 60,
       "max_entries": 20,

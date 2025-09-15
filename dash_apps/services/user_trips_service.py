@@ -157,29 +157,61 @@ class UserTripsService:
             # Utiliser l'API Supabase directement
             from dash_apps.utils.supabase_client import supabase
             
+            all_trips = []
+            
             # Construire la requête selon le type de trajets
             if trip_type == "driver":
                 # Trajets où l'utilisateur est conducteur
-                query = supabase.table('trips').select(select_clause).eq('driver_uid', uid)
+                query = supabase.table('trips').select(select_clause).eq('driver_id', uid)
+                response = query.order('departure_date', desc=True).limit(limit).execute()
+                all_trips = response.data or []
+                
             elif trip_type == "passenger":
                 # Trajets où l'utilisateur est passager (via bookings)
-                query = supabase.table('trips').select(f"{select_clause}, bookings!inner(user_uid)").eq('bookings.user_uid', uid)
+                # 1. Récupérer les trip_ids des bookings de l'utilisateur
+                bookings_response = supabase.table('bookings').select('trip_id').eq('user_id', uid).execute()
+                booking_trip_ids = [b['trip_id'] for b in (bookings_response.data or [])]
+                
+                if booking_trip_ids:
+                    # 2. Récupérer les détails des trajets
+                    query = supabase.table('trips').select(select_clause).in_('trip_id', booking_trip_ids)
+                    response = query.order('departure_date', desc=True).limit(limit).execute()
+                    all_trips = response.data or []
+                
             else:
                 # Tous les trajets (driver + passenger)
-                # Utiliser une requête OR pour les deux cas
-                query = supabase.table('trips').select(select_clause).or_(f'driver_uid.eq.{uid},bookings.user_uid.eq.{uid}')
+                # 1. Trajets conducteur
+                driver_query = supabase.table('trips').select(select_clause).eq('driver_id', uid)
+                driver_response = driver_query.order('departure_date', desc=True).limit(limit).execute()
+                driver_trips = driver_response.data or []
+                
+                # 2. Trajets passager
+                bookings_response = supabase.table('bookings').select('trip_id').eq('user_id', uid).execute()
+                booking_trip_ids = [b['trip_id'] for b in (bookings_response.data or [])]
+                
+                passenger_trips = []
+                if booking_trip_ids:
+                    passenger_query = supabase.table('trips').select(select_clause).in_('trip_id', booking_trip_ids)
+                    passenger_response = passenger_query.order('departure_date', desc=True).limit(limit).execute()
+                    passenger_trips = passenger_response.data or []
+                
+                # 3. Combiner et dédupliquer
+                all_trips_dict = {}
+                for trip in driver_trips + passenger_trips:
+                    trip_id = trip.get('trip_id')
+                    if trip_id:
+                        all_trips_dict[trip_id] = trip
+                
+                all_trips = list(all_trips_dict.values())
+                # Trier par date de départ (plus récent en premier) - gérer les valeurs None
+                all_trips.sort(key=lambda x: x.get('departure_date') or '1900-01-01', reverse=True)
+                all_trips = all_trips[:limit]
             
-            # Limiter le nombre de résultats et ordonner par date
-            query = query.order('departure_date', desc=True).limit(limit)
-            
-            # Exécuter la requête
-            response = query.execute()
-            
-            cls._log_debug(f"Supabase response: {len(response.data) if response.data else 0} trips")
+            cls._log_debug(f"Supabase response: {len(all_trips)} trips")
             
             # Valider et transformer avec Pydantic
             validated_trips = []
-            for trip_data in response.data or []:
+            for trip_data in all_trips:
                 try:
                     trip = TripDataModel(**trip_data)
                     
@@ -197,10 +229,10 @@ class UserTripsService:
                     # Enrichir avec des informations calculées
                     enriched_trip = {
                         **trip_dict,
-                        "is_driver": trip_dict.get("driver_uid") == uid,
-                        "is_passenger": trip_dict.get("driver_uid") != uid,
-                        "departure_datetime": f"{trip_dict.get('departure_date')} {trip_dict.get('departure_time')}",
-                        "route": f"{trip_dict.get('departure_city')} → {trip_dict.get('arrival_city')}",
+                        "is_driver": trip_dict.get("driver_id") == uid,
+                        "is_passenger": trip_dict.get("driver_id") != uid,
+                        "departure_datetime": f"{trip_dict.get('departure_date')} {trip_dict.get('departure_schedule')}",
+                        "route": f"{trip_dict.get('departure_name')} → {trip_dict.get('destination_name')}",
                         "seats_info": f"{trip_dict.get('seats_available', 0)}/{trip_dict.get('seats_published', 0)} places"
                     }
                     

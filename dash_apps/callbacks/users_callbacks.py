@@ -12,6 +12,7 @@ from dash_apps.components.user_trips import render_user_trips
 from dash_apps.components.user_search_widget import render_search_widget, render_active_filters
 from dash_apps.services.users_table_service import UsersTableService
 from dash_apps.services.user_details_cache_service import UserDetailsCache
+from dash_apps.services.user_stats_cache_service import UserStatsCache
 from dash_apps.services.user_profile_cache_service import UserProfileCache
 from dash_apps.services.user_trips_service import UserTripsService
 from dash_apps.layouts.user_detail_layout import UserDetailLayout
@@ -131,7 +132,7 @@ def update_filters(
     n_clicks, search_text, date_from, date_to, date_filter_type, single_date, date_sort, role, driver_validation, gender, rating_operator, rating_value, current_filters
 ):
     """Met à jour les filtres de recherche lorsque l'utilisateur clique sur 'Appliquer'"""
-    log_callback(
+    debug_log_users(
         "update_filters",
         {
             "n_clicks": n_clicks,
@@ -147,7 +148,8 @@ def update_filters(
             "rating_operator": rating_operator,
             "rating_value": rating_value
         },
-        {"current_filters": current_filters}
+        "INFO",
+        "Updating user filters"
     )
     
     if n_clicks is None:
@@ -459,19 +461,19 @@ def update_user_stats(selected_user):
     )
     
     try:
-        # Utiliser le service user details cache comme pour les détails
-        user_data = UserDetailsCache.get_user_details(uid_value)
+        # Get real user statistics from database
+        user_stats = UserStatsCache.get_user_stats(uid_value)
         
-        if not user_data:
+        if user_stats is None:
             debug_log_users(
                 "user_stats_no_data",
                 {"uid": str(uid_value)[:8] if uid_value else None},
                 "WARNING",
-                "No user data found for stats"
+                "No user stats found"
             )
-            return html.Div("Données utilisateur non trouvées.", className="text-warning")
+            return html.Div("Impossible de calculer les statistiques utilisateur.", className="text-warning")
         
-        # Charger la configuration pour les stats
+        # Charger la configuration pour les stats (template style only)
         config = load_json_config('user_stats_config.json')
         template_config = config.get('template_style', {})
         
@@ -485,23 +487,20 @@ def update_user_stats(selected_user):
         debug_users = os.getenv('DEBUG_USERS', 'False').lower() == 'true'
         if debug_users:
             CallbackLogger.log_callback(
-                "user_stats_template_config_debug",
+                "user_stats_real_data_debug",
                 {
-                    "iframe_height": iframe_height,
-                    "iframe_width": iframe_width,
-                    "iframe_min_height": iframe_min_height,
-                    "card_height": stats_card_height,
-                    "card_width": stats_card_width,
-                    "full_config": template_config
+                    "uid": str(uid_value)[:8],
+                    "stats": user_stats,
+                    "template_config": template_config
                 },
                 status="INFO",
-                extra_info="User stats template configuration values (iframe + card)"
+                extra_info="Real user stats loaded from database"
             )
         
-        # Générer le HTML avec le template Jinja2
+        # Générer le HTML avec le template Jinja2 en utilisant les vraies statistiques
         template = get_jinja_template('user_stats_template.jinja2')
         user_html_content = template.render(
-            stats=config.get('stats', {}),
+            stats=user_stats,  # Use real stats from database
             config=config.get('user_stats', {}),
             layout={
                 'card_height': stats_card_height,
@@ -582,8 +581,12 @@ def update_user_trips(selected_user):
         # Utiliser le nouveau service de trajets utilisateur
         trips_data = UserTripsService.get_user_trips(uid_value)
         if trips_data and trips_data.get('trips'):
+            # Convertir les données en DataFrame pour render_user_trips
+            import pandas as pd
+            trips_df = pd.DataFrame(trips_data['trips'])
+            
             # Utiliser le composant existant pour le rendu
-            return render_user_trips(trips_data['trips'])
+            return render_user_trips(user_id=uid_value, data=trips_df)
         else:
             return dbc.Alert("Aucun trajet trouvé pour cet utilisateur.", color="info")
     except Exception as e:
