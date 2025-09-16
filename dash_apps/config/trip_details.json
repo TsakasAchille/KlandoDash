@@ -1,10 +1,10 @@
 {
   "ui": {
     "template_style": {
-      "height": "600px",
+      "height": "569px",
       "width": "100%",
-      "card_height": "550px",
-      "card_width": "100%",
+      "card_height": "500px",
+      "card_width": "90%",
       "min_height": "400px"
     },
     "bootstrap_layout": {

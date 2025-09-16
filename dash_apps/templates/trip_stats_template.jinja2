@@ -101,44 +101,28 @@
 <body>
   <div class="stats-card">
     <div class="stats-container">
-      <!-- Prix par place -->
+      <!-- Prix passager -->
       <div class="stat-row">
-        <span class="stat-label">Prix par place</span>
-        <span class="stat-value highlight-value">
-          {% if trip.get("passenger_price") %}{{ trip.get("passenger_price") }} FCFA{% else %}-{% endif %}
-        </span>
+        <span class="stat-label">Prix passager</span>
+        <span class="stat-value highlight-value">{{ trip.get("passenger_price", "-") }}</span>
       </div>
       
       <!-- Prix conducteur -->
       <div class="stat-row">
         <span class="stat-label">Prix conducteur</span>
-        <span class="stat-value">
-          {% if trip.get("driver_price") %}{{ trip.get("driver_price") }} FCFA{% else %}-{% endif %}
-        </span>
+        <span class="stat-value">{{ trip.get("driver_price", "-") }}</span>
       </div>
       
-      <!-- Nombre de places -->
+      <!-- Places -->
       <div class="stat-row">
-        <span class="stat-label">Nombre de places</span>
-        <span class="stat-value">{{ trip.get("seats_published", "-") }}</span>
+        <span class="stat-label">Places</span>
+        <span class="stat-value">{{ trip.get("seats_info", "-") }}</span>
       </div>
       
-      <!-- Places disponibles -->
+      <!-- Distance -->
       <div class="stat-row">
-        <span class="stat-label">Places disponibles</span>
-        <span class="stat-value">{{ trip.get("seats_available", "-") }}</span>
-      </div>
-      
-      <!-- Réservations -->
-      <div class="stat-row">
-        <span class="stat-label">Réservations</span>
-        <span class="stat-value">{{ trip.get("seats_booked", "-") }}</span>
-      </div>
-      
-      <!-- Statut -->
-      <div class="stat-row">
-        <span class="stat-label">Statut</span>
-        <span class="stat-value">{{ trip.get("status", "-") }}</span>
+        <span class="stat-label">Distance</span>
+        <span class="stat-value">{{ trip.get("distance", "-") }}</span>
       </div>
     </div>
   </div>

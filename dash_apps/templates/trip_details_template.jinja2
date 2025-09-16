@@ -141,11 +141,19 @@
 <body>
   <div class="stats-card">
       <div class="stats-container">
+        <!-- Statut -->
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Statut</span>
+            <span class="stat-value highlight-value">{{ trip.get("status_display", trip.get("status", "-")) }}</span>
+          </div>
+        </div>
+        
         <!-- Départ -->
         <div class="stat-row">
           <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
             <span class="stat-label">Départ</span>
-            <span class="stat-value highlight-value">{{ trip.get("departure_location", "-") }}</span>
+            <span class="stat-value">{{ trip.get("departure_location", "-") }}</span>
           </div>
         </div>
         
@@ -173,29 +181,6 @@
           </div>
         </div>
         
-        <!-- Prix passager -->
-        <div class="stat-row">
-          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
-            <span class="stat-label">Prix passager</span>
-            <span class="stat-value">{{ trip.get("passenger_price", "-") }}</span>
-          </div>
-        </div>
-        
-        <!-- Places -->
-        <div class="stat-row">
-          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
-            <span class="stat-label">Places</span>
-            <span class="stat-value">{{ trip.get("seats_info", "-") }}</span>
-          </div>
-        </div>
-        
-        <!-- Statut -->
-        <div class="stat-row">
-          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
-            <span class="stat-label">Statut</span>
-            <span class="stat-value">{{ trip.get("status_display", trip.get("status", "-")) }}</span>
-          </div>
-        </div>
         
         <!-- Date de création -->
         <div class="stat-row">
