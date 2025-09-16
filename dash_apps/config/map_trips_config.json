@@ -19,9 +19,10 @@
         "seats_available", 
         "passenger_price",
         "distance",
-        "departure_schedule"
+        "departure_schedule",
+        "created_at"
       ],
-      "order_by": "departure_schedule",
+      "order_by": "created_at",
       "order_direction": "DESC"
     },
     "validation": {
