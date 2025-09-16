@@ -6,46 +6,95 @@ let mapInitStarted = false;
 let mapInstance = null; // shared reference
 
 function ensureMapLibreLoaded(callback) {
+    console.log('[MAPLIBRE_DEBUG] Vérification MapLibre, typeof:', typeof maplibregl);
+    console.log('[MAPLIBRE_DEBUG] User Agent:', navigator.userAgent);
+    console.log('[MAPLIBRE_DEBUG] Location:', window.location.href);
+    
     if (typeof maplibregl !== 'undefined') {
+        console.log('[MAPLIBRE_DEBUG] MapLibre déjà disponible');
         callback();
         return;
     }
+    
     const existing = document.querySelector('script[data-maplibre-gl]');
     if (existing) {
+        console.log('[MAPLIBRE_DEBUG] Script MapLibre en cours de chargement');
         existing.addEventListener('load', callback, { once: true });
         return;
     }
+    
+    console.log('[MAPLIBRE_DEBUG] Chargement de MapLibre depuis CDN...');
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';
     script.async = true;
     script.defer = true;
     script.setAttribute('data-maplibre-gl', 'true');
-    script.onload = callback;
-    script.onerror = function () {
-        console.error('[MAPLIBRE] Échec du chargement de maplibre-gl.js');
+    
+    script.onload = function() {
+        console.log('[MAPLIBRE_DEBUG] MapLibre chargé avec succès depuis CDN');
+        callback();
     };
+    
+    script.onerror = function () {
+        console.error('[MAPLIBRE_DEBUG] Échec du chargement de maplibre-gl.js depuis CDN');
+        console.error('[MAPLIBRE_DEBUG] Tentative de fallback...');
+        
+        // Essayer un CDN alternatif
+        const fallbackScript = document.createElement('script');
+        fallbackScript.src = 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js';
+        fallbackScript.onload = function() {
+            console.log('[MAPLIBRE_DEBUG] MapLibre chargé depuis CDN fallback');
+            callback();
+        };
+        fallbackScript.onerror = function() {
+            console.error('[MAPLIBRE_DEBUG] Échec total du chargement MapLibre');
+        };
+        document.head.appendChild(fallbackScript);
+    };
+    
     document.head.appendChild(script);
 }
 
 function tryInitMap() {
+    console.log('[MAPLIBRE_DEBUG] tryInitMap() appelé');
+    
     const container = document.getElementById(MAP_CONTAINER_ID);
     if (!container) {
-        console.log('[MAPLIBRE] Container pas encore disponible');
+        console.log('[MAPLIBRE_DEBUG] Container pas encore disponible');
         return;
     }
     
+    console.log('[MAPLIBRE_DEBUG] Container trouvé:', container.id);
+    
     // Vérifier si le container est visible et a des dimensions
     const rect = container.getBoundingClientRect();
+    console.log('[MAPLIBRE_DEBUG] Dimensions container:', {
+        width: rect.width,
+        height: rect.height,
+        top: rect.top,
+        left: rect.left
+    });
+    
+    // Vérifier les styles CSS
+    const computedStyle = window.getComputedStyle(container);
+    console.log('[MAPLIBRE_DEBUG] Styles container:', {
+        display: computedStyle.display,
+        visibility: computedStyle.visibility,
+        position: computedStyle.position,
+        width: computedStyle.width,
+        height: computedStyle.height
+    });
+    
     if (rect.width === 0 || rect.height === 0) {
         // Éviter les retries infinis - limiter à 5 tentatives max
         if (!tryInitMap.retryCount) tryInitMap.retryCount = 0;
         tryInitMap.retryCount++;
         
         if (tryInitMap.retryCount <= 5) {
-            console.log('[MAPLIBRE] Container pas encore dimensionné, retry', tryInitMap.retryCount, '/5 dans 500ms');
+            console.log('[MAPLIBRE_DEBUG] Container pas encore dimensionné, retry', tryInitMap.retryCount, '/5 dans 500ms');
             setTimeout(tryInitMap, 500); // Augmenté de 200ms à 500ms
         } else {
-            console.warn('[MAPLIBRE] Abandon après 5 tentatives - container toujours pas dimensionné');
+            console.warn('[MAPLIBRE_DEBUG] Abandon après 5 tentatives - container toujours pas dimensionné');
             mapInitStarted = false;
         }
         return;
@@ -53,6 +102,7 @@ function tryInitMap() {
     
     // Réinitialiser le compteur de retry si on arrive ici
     tryInitMap.retryCount = 0;
+    console.log('[MAPLIBRE_DEBUG] Container prêt, dimensions OK');
     
     // Avoid multiple initializations on same container
     if (mapInstance && mapInstance.getContainer() === container && !mapInstance._removed) {
@@ -88,49 +138,233 @@ function tryInitMap() {
     console.log('[MAPLIBRE] Début initialisation carte sur container:', container.id);
     
     ensureMapLibreLoaded(function() {
-        console.log('[MAPLIBRE] Script chargé, création de la carte...');
+        console.log('[MAPLIBRE_DEBUG] Script chargé, création de la carte...');
+        
+        // Vérifier WebGL avant d'initialiser
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        console.log('[MAPLIBRE_DEBUG] WebGL disponible:', !!gl);
+        if (!gl) {
+            console.error('[MAPLIBRE_DEBUG] WebGL non disponible - la carte ne peut pas fonctionner');
+            mapInitStarted = false;
+            return;
+        }
         
         // Vérifier une dernière fois que le container existe toujours
         if (!document.getElementById(MAP_CONTAINER_ID)) {
-            console.warn('[MAPLIBRE] Container disparu pendant le chargement');
+            console.warn('[MAPLIBRE_DEBUG] Container disparu pendant le chargement');
             mapInitStarted = false;
             return;
         }
         
         // Utiliser un style par défaut si pas de data-style-url
         let styleUrl = container.getAttribute('data-style-url');
-        if (!styleUrl) {
+        if (!styleUrl || styleUrl.includes('YOUR_API_KEY')) {
             styleUrl = 'https://demotiles.maplibre.org/style.json';
-            console.log('[MAPLIBRE] Utilisation du style par défaut');
+            console.log('[MAPLIBRE_DEBUG] Utilisation du style par défaut:', styleUrl);
+        } else {
+            console.log('[MAPLIBRE_DEBUG] Style du container:', styleUrl);
         }
+        
+        console.log('[MAPLIBRE_DEBUG] Création de l\'instance MapLibre...');
+        
+        try {
+            mapInstance = new maplibregl.Map({
+                container: MAP_CONTAINER_ID,
+                style: styleUrl,
+                center: [2.3522, 48.8566], // Paris par défaut
+                zoom: 10,
+                preserveDrawingBuffer: true,
+                failIfMajorPerformanceCaveat: false // Accepter même avec performance dégradée
+            });
+            
+            console.log('[MAPLIBRE_DEBUG] Instance MapLibre créée avec succès');
+            
+            mapInstance.on('load', function() {
+                console.log('[MAPLIBRE_DEBUG] Carte chargée avec succès - événement load déclenché');
+                setupTripLayersAndEvents(mapInstance);
+            });
+            
+            mapInstance.on('error', function(e) {
+                console.error('[MAPLIBRE_DEBUG] Erreur carte:', e);
+                console.error('[MAPLIBRE_DEBUG] Détails erreur:', e.error);
+                mapInitStarted = false;
+                
+                // Tentative de fallback avec style minimal
+                if (styleUrl !== 'data:application/json,{"version":8,"sources":{},"layers":[]}') {
+                    console.log('[MAPLIBRE_DEBUG] Tentative avec style minimal...');
+                    setTimeout(function() {
+                        initMapWithFallback();
+                    }, 1000);
+                }
+            });
+            
+            mapInstance.on('styledata', function() {
+                console.log('[MAPLIBRE_DEBUG] Style chargé');
+            });
+            
+            mapInstance.on('sourcedata', function(e) {
+                console.log('[MAPLIBRE_DEBUG] Source data:', e.sourceId, e.isSourceLoaded);
+            });
+            
+            // Forcer un resize après initialisation
+            setTimeout(function() {
+                if (mapInstance && !mapInstance._removed) {
+                    mapInstance.resize();
+                    console.log('[MAPLIBRE_DEBUG] Resize post-initialisation');
+                }
+            }, 500);
+            
+        } catch (error) {
+            console.error('[MAPLIBRE_DEBUG] Erreur lors de la création de l\'instance:', error);
+            mapInitStarted = false;
+            
+            // Fallback avec style minimal
+            setTimeout(function() {
+                initMapWithFallback();
+            }, 1000);
+        }
+        
+    });
+}
+
+// Fonction de fallback avec style minimal
+function initMapWithFallback() {
+    console.log('[MAPLIBRE_DEBUG] Initialisation fallback avec style minimal');
+    
+    const container = document.getElementById(MAP_CONTAINER_ID);
+    if (!container) {
+        console.error('[MAPLIBRE_DEBUG] Container introuvable pour fallback');
+        return;
+    }
+    
+    mapInitStarted = true;
+    
+    try {
+        // Style minimal sans sources externes
+        const minimalStyle = {
+            "version": 8,
+            "sources": {},
+            "layers": [{
+                "id": "background",
+                "type": "background",
+                "paint": {
+                    "background-color": "#f0f0f0"
+                }
+            }]
+        };
         
         mapInstance = new maplibregl.Map({
             container: MAP_CONTAINER_ID,
-            style: styleUrl,
-            center: [2.3522, 48.8566], // Paris par défaut
+            style: minimalStyle,
+            center: [2.3522, 48.8566],
             zoom: 10,
-            preserveDrawingBuffer: true
+            preserveDrawingBuffer: true,
+            failIfMajorPerformanceCaveat: false
         });
         
+        console.log('[MAPLIBRE_DEBUG] Carte fallback créée avec style minimal');
+        
         mapInstance.on('load', function() {
-            console.log('[MAPLIBRE] Carte chargée avec succès');
-            setupTripLayersAndEvents(mapInstance);
+            console.log('[MAPLIBRE_DEBUG] Carte fallback chargée avec succès');
+            // Afficher un message à l'utilisateur
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = `
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                background: rgba(255, 255, 255, 0.9);
+                padding: 10px;
+                border-radius: 5px;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                z-index: 1000;
+                max-width: 300px;
+            `;
+            messageDiv.innerHTML = 'Carte en mode dégradé - Certaines fonctionnalités peuvent être limitées';
+            container.appendChild(messageDiv);
         });
         
         mapInstance.on('error', function(e) {
-            console.error('[MAPLIBRE] Erreur carte:', e);
-            mapInitStarted = false;
+            console.error('[MAPLIBRE_DEBUG] Erreur même en mode fallback:', e);
+            showMapError(container);
         });
         
-        // Forcer un resize après initialisation
-        setTimeout(function() {
-            if (mapInstance && !mapInstance._removed) {
-                mapInstance.resize();
-                console.log('[MAPLIBRE] Resize post-initialisation');
-            }
-        }, 500);
-        
-    });
+    } catch (error) {
+        console.error('[MAPLIBRE_DEBUG] Erreur critique même en fallback:', error);
+        showMapError(container);
+    }
+}
+
+// Afficher un message d'erreur dans le container
+function showMapError(container) {
+    console.log('[MAPLIBRE_DEBUG] Affichage du message d\'erreur');
+    container.innerHTML = `
+        <div style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            color: #6c757d;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        ">
+            <div>
+                <h4>Carte non disponible</h4>
+                <p>Impossible de charger la carte MapLibre.<br>
+                Vérifiez votre connexion internet et rechargez la page.</p>
+                <button onclick="location.reload()" style="
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">Recharger</button>
+            </div>
+        </div>
+    `;
+}
+
+// Diagnostic complet de l'environnement
+function runEnvironmentDiagnostics() {
+    console.log('[MAPLIBRE_DEBUG] === DIAGNOSTIC ENVIRONNEMENT ===');
+    console.log('[MAPLIBRE_DEBUG] User Agent:', navigator.userAgent);
+    console.log('[MAPLIBRE_DEBUG] URL actuelle:', window.location.href);
+    console.log('[MAPLIBRE_DEBUG] Protocole:', window.location.protocol);
+    console.log('[MAPLIBRE_DEBUG] Host:', window.location.host);
+    
+    // Test WebGL
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    console.log('[MAPLIBRE_DEBUG] WebGL supporté:', !!gl);
+    if (gl) {
+        console.log('[MAPLIBRE_DEBUG] WebGL Vendor:', gl.getParameter(gl.VENDOR));
+        console.log('[MAPLIBRE_DEBUG] WebGL Renderer:', gl.getParameter(gl.RENDERER));
+        console.log('[MAPLIBRE_DEBUG] WebGL Version:', gl.getParameter(gl.VERSION));
+    }
+    
+    // Test des ressources réseau
+    console.log('[MAPLIBRE_DEBUG] Test de connectivité...');
+    fetch('https://demotiles.maplibre.org/style.json', { method: 'HEAD' })
+        .then(response => {
+            console.log('[MAPLIBRE_DEBUG] Connectivité MapLibre demo:', response.status);
+        })
+        .catch(error => {
+            console.error('[MAPLIBRE_DEBUG] Erreur connectivité MapLibre demo:', error);
+        });
+    
+    // Vérifier les variables globales
+    console.log('[MAPLIBRE_DEBUG] maplibregl disponible:', typeof maplibregl !== 'undefined');
+    if (typeof maplibregl !== 'undefined') {
+        console.log('[MAPLIBRE_DEBUG] Version MapLibre:', maplibregl.version);
+        console.log('[MAPLIBRE_DEBUG] Supported:', maplibregl.supported());
+    }
+    
+    console.log('[MAPLIBRE_DEBUG] === FIN DIAGNOSTIC ===');
 }
 
 // Observe DOM changes to detect when Dash mounts #maplibre-map
@@ -213,6 +447,11 @@ function handlePageChange() {
 
 // Écouter les événements de navigation Dash
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('[MAPLIBRE_DEBUG] DOM Content Loaded - lancement du diagnostic');
+    
+    // Lancer le diagnostic complet de l'environnement
+    runEnvironmentDiagnostics();
+    
     // Observer les changements dans le conteneur principal de Dash
     const dashContainer = document.getElementById('_dash-app-content') || document.body;
     const pageObserver = new MutationObserver(function(mutations) {

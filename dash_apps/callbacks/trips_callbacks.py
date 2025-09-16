@@ -544,7 +544,6 @@ def render_trip_driver_panel(selected_trip_id):
     # Vérifier si le debug des trajets est activé
     import os
     debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
-    debug_trips = True
 
     print("selected_trip_id", selected_trip_id)
     if debug_trips:
