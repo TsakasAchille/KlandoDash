@@ -98,7 +98,7 @@
     }
   },
   "default_sort": {
-    "column": "departure_date",
+    "column": "created_at",
     "direction": "desc"
   },
   "pagination": {
