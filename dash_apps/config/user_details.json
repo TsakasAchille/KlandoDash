@@ -1,0 +1,197 @@
+{
+  "ui": {
+    "template_style": {
+      "height": "600px",
+      "width": "100%",
+      "card_height": "550px",
+      "card_width": "100%",
+      "min_height": "400px"
+    },
+    "bootstrap_layout": {
+      "user_details_panel": {
+        "width": 6,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      },
+      "user_stats_panel": {
+        "width": 6,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      },
+      "user_trips_panel": {
+        "width": 12,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        }
+      }
+    }
+  },
+  "queries": {
+    "user_details": {
+      "description": "Récupère les détails complets d'un utilisateur",
+      "select": {
+        "base": [
+          "uid",
+          "email",
+          "first_name",
+          "name",
+          "phone_number",
+          "gender",
+          "role",
+          "photo_url",
+          "created_at",
+          "updated_at",
+          "display_name",
+          "birth",
+          "bio",
+          "driver_license_url",
+          "id_card_url",
+          "rating",
+          "rating_count",
+          "is_driver_doc_validated"
+        ]
+      },
+      "filters": {
+        "default": {
+          "is_active": true
+        }
+      }
+    },
+    "field_mappings": {
+      "id": "uid",
+      "firstname": "first_name",
+      "surname": "name",
+      "mail": "email",
+      "telephone": "phone_number",
+      "sex": "gender",
+      "avatar": "photo_url",
+      "user_role": "role",
+      "fullname": "display_name"
+    },
+    "validation_rules": {
+      "required_fields": [
+        "uid",
+        "email",
+        "first_name",
+        "name"
+      ],
+      "optional_fields": [
+        "phone_number",
+        "gender",
+        "role",
+        "photo_url",
+        "created_at",
+        "updated_at",
+        "display_name",
+        "birth",
+        "bio",
+        "driver_license_url",
+        "id_card_url",
+        "rating",
+        "rating_count",
+        "is_driver_doc_validated"
+      ]
+    }
+  },
+  "transformations": {
+    "field_transformations": {
+      "gender": {
+        "type": "enum_to_string",
+        "mappings": {
+          "UserGender.man": "man",
+          "UserGender.woman": "woman", 
+          "UserGender.OTHER": "other",
+          "UserGender.NOT_SPECIFIED": "not_specified"
+        },
+        "display_mappings": {
+          "man": "Homme",
+          "woman": "Femme",
+          "other": "Autre", 
+          "not_specified": "Non spécifié"
+        }
+      },
+      "role": {
+        "type": "enum_to_string",
+        "mappings": {
+          "UserRole.passenger": "passenger",
+          "UserRole.driver": "driver",
+          "UserRole.ADMIN": "admin",
+          "UserRole.MODERATOR": "moderator"
+        },
+        "display_mappings": {
+          "passenger": "Passager",
+          "driver": "Conducteur", 
+          "admin": "Administrateur",
+          "moderator": "Modérateur"
+        }
+      },
+      "dates": {
+        "type": "date_formatting",
+        "fields": ["birth", "created_at", "updated_at"],
+        "format": "%d/%m/%Y"
+      },
+      "phone": {
+        "type": "phone_formatting",
+        "field": "phone_number",
+        "senegal_format": "+221 XX XXX XX XX"
+      },
+      "rating": {
+        "type": "rating_formatting",
+        "field": "rating",
+        "default": "Pas encore noté",
+        "format": "{rating:.1f}/5 ⭐"
+      }
+    },
+    "calculated_fields": {
+      "full_name": {
+        "priority": ["display_name", "first_name + name", "first_name", "name"],
+        "fallback": "Nom non disponible"
+      },
+      "age": {
+        "source": "birth",
+        "type": "age_calculation"
+      },
+      "is_driver": {
+        "source": "role", 
+        "condition": "role in ['driver', 'admin']"
+      },
+      "profile_completion": {
+        "required_fields": ["display_name", "email", "phone_number", "birth", "bio", "photo_url"],
+        "type": "percentage"
+      },
+      "account_age_days": {
+        "source": "created_at",
+        "type": "days_since"
+      }
+    },
+    "boolean_indicators": {
+      "has_photo": "photo_url",
+      "has_bio": "bio",
+      "has_phone": "phone_number", 
+      "has_documents": ["driver_license_url", "id_card_url"]
+    },
+    "default_values": {
+      "bio": "Aucune biographie",
+      "rating_display": "Pas encore noté"
+    }
+  },
+  "cache": {
+    "ttl": 300,
+    "key_prefix": "user_details",
+    "enable_cache": true
+  }
+}

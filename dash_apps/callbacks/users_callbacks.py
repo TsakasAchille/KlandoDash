@@ -403,10 +403,10 @@ def render_user_details_panel(selected_user):
             return error_panel
         
         # 3. Charger la configuration complète
-        config = load_json_config('user_details_config.json')
+        config = load_json_config('user_details.json')
         
         # 4. Générer le panneau USER DETAILS avec la nouvelle configuration
-        details_style_config = config.get('user_details', {}).get('template_style', config.get('template_style', {}))
+        details_style_config = config.get('ui', {}).get('template_style', {})
         
         # Paramètres pour l'iframe (conteneur externe)
         iframe_height = details_style_config.get('height', '600px')

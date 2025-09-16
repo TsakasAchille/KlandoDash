@@ -8,6 +8,7 @@ import os
 from typing import Dict, Any, Optional
 from dash_apps.utils.callback_logger import CallbackLogger
 from dash_apps.utils.supabase_client import supabase
+from dash_apps.utils.settings import load_json_config
 from dash_apps.models.config_models import UserModel
 
 
@@ -77,51 +78,9 @@ class UserDetailsCache:
     
     @staticmethod
     def _load_config() -> Dict[str, Any]:
-        """Charge la configuration JSON pour les requêtes utilisateur"""
+        """Charge la configuration depuis le fichier JSON consolidé"""
         if UserDetailsCache._config_cache is None:
-            config_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), 
-                'config', 
-                'user_queries.json'
-            )
-            try:
-                with open(config_path, 'r', encoding='utf-8') as f:
-                    UserDetailsCache._config_cache = json.load(f)
-                
-                debug_users = os.getenv('DEBUG_USERS', 'False').lower() == 'true'
-                
-                if debug_users:
-                    CallbackLogger.log_callback(
-                        "load_user_details_config",
-                        {"config_path": os.path.basename(config_path)},
-                        status="SUCCESS",
-                        extra_info="User details configuration loaded"
-                    )
-                    
-            except Exception as e:
-                debug_users = os.getenv('DEBUG_USERS', 'False').lower() == 'true'
-                
-                if debug_users:
-                    CallbackLogger.log_callback(
-                        "load_user_details_config",
-                        {"error": str(e)},
-                        status="ERROR",
-                        extra_info="Failed to load user details configuration"
-                    )
-                
-                # Configuration par défaut
-                UserDetailsCache._config_cache = {
-                    "cache": {
-                        "key_prefix": "user_details",
-                        "ttl": 300
-                    },
-                    "validation": {
-                        "uid": {
-                            "required": True,
-                            "min_length": 5
-                        }
-                    }
-                }
+            UserDetailsCache._config_cache = load_json_config('user_details.json')
         
         return UserDetailsCache._config_cache
     

@@ -13,8 +13,9 @@ class UserDetailsFormatter:
     """Formatter pour les données de détails utilisateur"""
     
     def __init__(self):
-        # Une seule configuration pour toutes les transformations
-        self.formatter_config = load_json_config('user_formatter_config.json')
+        # Utiliser la nouvelle configuration consolidée
+        config = load_json_config('user_details.json')
+        self.formatter_config = config.get('transformations', {})
     
     def format_for_display(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """
