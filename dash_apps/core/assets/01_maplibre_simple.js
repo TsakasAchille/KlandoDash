@@ -192,21 +192,26 @@ function tryInitMap() {
             mapInstance.on('error', function(e) {
                 console.error('[MAPLIBRE_DEBUG] Erreur carte:', e);
                 console.error('[MAPLIBRE_DEBUG] Détails erreur:', e.error);
+                console.log('[MAPLIBRE_DEBUG] Style URL actuel:', styleUrl);
                 
                 // Vérifier si c'est une erreur CORS avec le style Klando
-                const isCorsError = e.error && (
-                    e.error.message.includes('Failed to fetch') ||
-                    e.error.message.includes('CORS') ||
-                    e.error.message.includes('Access-Control-Allow-Origin')
-                );
+                const errorMessage = e.error ? e.error.message || e.error.toString() : '';
+                const isCorsError = errorMessage.includes('Failed to fetch') ||
+                    errorMessage.includes('CORS') ||
+                    errorMessage.includes('Access-Control-Allow-Origin') ||
+                    (e.error && e.error.name === 'TypeError' && errorMessage.includes('fetch'));
+                
+                console.log('[MAPLIBRE_DEBUG] Est une erreur CORS:', isCorsError);
+                console.log('[MAPLIBRE_DEBUG] Style Klando:', styleUrl.includes('geo.klando-carpool.com'));
                 
                 if (isCorsError && styleUrl.includes('geo.klando-carpool.com')) {
-                    console.log('[MAPLIBRE_DEBUG] Erreur CORS détectée avec style Klando - basculement vers style par défaut');
+                    console.log('[MAPLIBRE_DEBUG] ✅ CORS détecté avec Klando - basculement vers style par défaut');
                     mapInitStarted = false;
                     
                     // Détruire l'instance actuelle
                     if (mapInstance && !mapInstance._removed) {
                         mapInstance.remove();
+                        mapInstance = null;
                     }
                     
                     // Réessayer avec le style par défaut
@@ -214,6 +219,7 @@ function tryInitMap() {
                         initMapWithDefaultStyle();
                     }, 500);
                 } else {
+                    console.log('[MAPLIBRE_DEBUG] Erreur non-CORS ou style différent - fallback minimal');
                     mapInitStarted = false;
                     // Tentative de fallback avec style minimal pour autres erreurs
                     if (styleUrl !== 'data:application/json,{"version":8,"sources":{},"layers":[]}') {
