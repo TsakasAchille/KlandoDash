@@ -19,21 +19,16 @@ class UserProfileCache:
     def _load_config() -> Dict[str, Any]:
         """Charge la configuration JSON pour les profils utilisateur"""
         if UserProfileCache._config_cache is None:
-            config_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), 
-                'config', 
-                'user_profile_config.json'
-            )
             try:
-                with open(config_path, 'r', encoding='utf-8') as f:
-                    UserProfileCache._config_cache = json.load(f)
+                from dash_apps.utils.settings import load_json_config
+                UserProfileCache._config_cache = load_json_config('user_details.json')
                 
                 debug_users = os.getenv('DEBUG_USERS', 'False').lower() == 'true'
                 
                 if debug_users:
                     CallbackLogger.log_callback(
                         "load_user_profile_config",
-                        {"config_path": os.path.basename(config_path)},
+                        {"config_file": "user_details.json"},
                         status="SUCCESS",
                         extra_info="User profile configuration loaded"
                     )

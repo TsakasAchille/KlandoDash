@@ -248,16 +248,40 @@ class UsersCacheService:
     
     @staticmethod
     def _load_panel_config():
-        """Charge la configuration des panneaux utilisateur depuis le fichier JSON"""
-        import json
-        import os
+        """Charge la configuration des panneaux utilisateur depuis les fichiers consolidés"""
+        from dash_apps.utils.settings import load_json_config
         
-        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'user_panels_config.json')
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            # Charger les configurations consolidées
+            user_details_config = load_json_config('user_details.json')
+            user_stats_config = load_json_config('user_stats.json')
+            user_trips_config = load_json_config('user_trips.json')
+            
+            # Reconstituer la structure attendue par le service legacy
+            consolidated_config = {
+                'profile': {
+                    'cache_key_prefix': 'user_details',
+                    'cache_ttl': user_details_config.get('cache', {}).get('ttl', 300),
+                    'data_fetcher': 'user_details',
+                    'renderer': 'user_details'
+                },
+                'stats': {
+                    'cache_key_prefix': 'user_stats',
+                    'cache_ttl': user_stats_config.get('cache', {}).get('ttl', 300),
+                    'data_fetcher': 'user_stats',
+                    'renderer': 'user_stats'
+                },
+                'trips': {
+                    'cache_key_prefix': 'user_trips',
+                    'cache_ttl': user_trips_config.get('cache', {}).get('ttl', 300),
+                    'data_fetcher': 'user_trips',
+                    'renderer': 'user_trips'
+                }
+            }
+            
+            return consolidated_config
         except Exception as e:
-            print(f"[CONFIG] Erreur chargement user_panels_config.json: {e}")
+            print(f"[CONFIG] Erreur chargement configurations consolidées: {e}")
             return {}
     
     @staticmethod

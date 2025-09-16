@@ -20,7 +20,7 @@ class UserDetailsCache:
     @staticmethod
     def _execute_user_query(uid: str, debug_users: bool = False) -> Optional[Dict[str, Any]]:
         """Exécute une requête utilisateur optimisée avec retry automatique"""
-        # Récupérer les champs configurés depuis user_queries.json
+        # Récupérer les champs configurés depuis user_details.json
         config = UserDetailsCache._load_config()
         query_config = config.get('queries', {}).get('user_details', {})
         json_base_fields = query_config.get('select', {}).get('base', [])

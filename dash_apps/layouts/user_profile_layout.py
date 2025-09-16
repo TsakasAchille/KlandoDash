@@ -15,7 +15,7 @@ class UserProfileLayout:
     def _load_config() -> Dict[str, Any]:
         """Charge la configuration JSON des profils utilisateur"""
         try:
-            config = load_json_config('user_profile_config.json')
+            config = load_json_config('user_details.json')
             print(f"🔧 [CONFIG_DEBUG] Config chargée: {list(config.keys())}")
             if 'user_profile' in config and 'fields' in config['user_profile']:
                 print(f"🔧 [CONFIG_DEBUG] Fields trouvés: {list(config['user_profile']['fields'].keys())}")

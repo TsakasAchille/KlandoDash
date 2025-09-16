@@ -127,10 +127,10 @@ class UserTripsService:
         try:
             # Charger la configuration JSON
             from dash_apps.utils.settings import load_json_config
-            config = load_json_config('user_trips_queries.json')
+            config = load_json_config('user_trips.json')
             
             if not config or 'queries' not in config:
-                cls._log_debug("Configuration user_trips_queries.json manquante")
+                cls._log_debug("Configuration user_trips.json manquante")
                 # Configuration par défaut
                 config = {
                     "queries": {

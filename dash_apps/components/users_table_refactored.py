@@ -1,11 +1,11 @@
 """
 Composant tableau users refactorisé avec le pattern trips.
-Utilise UsersService avec cache, validation Pydantic et configuration JSON.
+Utilise UsersTableService avec cache, validation Pydantic et configuration JSON.
 """
 import dash_bootstrap_components as dbc
 from dash import html, dcc, callback, Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash_apps.services.users_service import UsersService
+from dash_apps.services.users_table_service import UsersTableService
 from dash_apps.utils.callback_logger import CallbackLogger
 import os
 
@@ -198,20 +198,20 @@ def render_users_table_callback(current_page, filter_data, prev_clicks, next_cli
     
     try:
         # Récupérer les données via le service
-        users_summary = UsersService.get_users_summary(
+        users_data = UsersTableService.get_users_page(
             page=page, 
             page_size=page_size, 
             filters=filter_data or {}
         )
         
         # Créer le tableau
-        table_component = create_users_table(users_summary, selected_uid)
+        table_component = create_users_table(users_data, selected_uid)
         
         # Informations de pagination
-        total_count = users_summary.get('total_count', 0)
-        total_pages = users_summary.get('total_pages', 1)
-        has_next = users_summary.get('has_next', False)
-        has_previous = users_summary.get('has_previous', False)
+        total_count = users_data.get('total_count', 0)
+        total_pages = users_data.get('total_pages', 1)
+        has_next = users_data.get('has_next', False)
+        has_previous = users_data.get('has_previous', False)
         
         pagination_info = f"Page {page} sur {total_pages} - {total_count} utilisateur(s) au total"
         

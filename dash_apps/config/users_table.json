@@ -1,4 +1,25 @@
 {
+  "ui": {
+    "template_style": {
+      "height": "600px",
+      "width": "100%",
+      "card_height": "550px",
+      "card_width": "100%",
+      "min_height": "400px"
+    },
+    "pagination": {
+      "default_page_size": 20,
+      "max_page_size": 100,
+      "show_page_info": true,
+      "show_total_count": true
+    },
+    "filters": {
+      "enable_search": true,
+      "enable_role_filter": true,
+      "enable_gender_filter": true,
+      "enable_date_filter": true
+    }
+  },
   "queries": {
     "users_paginated": {
       "description": "Récupère les utilisateurs avec pagination",
@@ -110,5 +131,10 @@
     "man": "MALE",
     "woman": "FEMALE",
     "other": "OTHER"
+  },
+  "cache": {
+    "ttl": 300,
+    "key_prefix": "users_table",
+    "enable_cache": true
   }
 }

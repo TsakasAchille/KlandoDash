@@ -527,9 +527,9 @@ def update_user_stats(selected_user):
             )
             return html.Div("Impossible de calculer les statistiques utilisateur.", className="text-warning")
         
-        # Charger la configuration pour les stats (template style only)
-        config = load_json_config('user_stats_config.json')
-        template_config = config.get('template_style', {})
+        # Charger la configuration consolidée pour les stats
+        config = load_json_config('user_stats.json')
+        template_config = config.get('ui', {}).get('template_style', {})
         
         # Configuration des dimensions
         stats_card_height = template_config.get('card_height', '350px')

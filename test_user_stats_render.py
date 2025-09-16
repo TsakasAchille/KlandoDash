@@ -66,7 +66,7 @@ def test_user_stats_template_render(stats):
         from dash_apps.utils.settings import get_jinja_template, load_json_config
         
         # Charger la configuration
-        config = load_json_config('user_stats_config.json')
+        config = load_json_config('user_stats.json')
         template_config = config.get('template_style', {})
         
         print("📄 Configuration du template chargée:")
