@@ -14,6 +14,7 @@ def create_maplibre_simple():
     
     # Utiliser le style de la config en premier, avec fallback automatique en cas d'erreur CORS
     maplibre_style_url = Config.MAPLIBRE_STYLE_URL or "https://demotiles.maplibre.org/style.json"
+    maplibre_api_key = Config.MAPLIBRE_API_KEY or ""
     
     return html.Div(
         id="maplibre-map",
@@ -21,7 +22,10 @@ def create_maplibre_simple():
             "height": "70vh",
             "width": "100%",
         },
-        **{"data-style-url": maplibre_style_url}
+        **{
+            "data-style-url": maplibre_style_url,
+            "data-api-key": maplibre_api_key
+        }
     )
 
 

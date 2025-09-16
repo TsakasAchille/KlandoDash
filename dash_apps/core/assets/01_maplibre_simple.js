@@ -159,14 +159,21 @@ function tryInitMap() {
         
         // Utiliser un style par défaut si pas de data-style-url
         let styleUrl = container.getAttribute('data-style-url');
-        if (!styleUrl || styleUrl.includes('YOUR_API_KEY')) {
+        if (!styleUrl) {
             styleUrl = 'https://demotiles.maplibre.org/style.json';
             console.log('[MAPLIBRE_DEBUG] Utilisation du style par défaut:', styleUrl);
         } else {
-            console.log('[MAPLIBRE_DEBUG] Style du container:', styleUrl);
-            // Vérifier si c'est un style Klando qui pourrait avoir des problèmes CORS
-            if (styleUrl.includes('geo.klando-carpool.com')) {
-                console.log('[MAPLIBRE_DEBUG] Style Klando détecté - fallback automatique en cas d\'erreur CORS');
+            styleUrl = container.getAttribute('data-style-url');
+            const apiKey = container.getAttribute('data-api-key');
+            
+            // Vérifier si l'URL contient déjà une clé API
+            if (styleUrl.includes('api_key=')) {
+                console.log('[MAPLIBRE_DEBUG] Style URL contient déjà une clé API:', styleUrl.replace(/api_key=[^&]+/, 'api_key=HIDDEN'));
+            } else if (apiKey) {
+                styleUrl = styleUrl + '?api_key=' + apiKey;
+                console.log('[MAPLIBRE_DEBUG] Style du container avec API key depuis env:', styleUrl.replace(apiKey, 'HIDDEN'));
+            } else {
+                console.log('[MAPLIBRE_DEBUG] Style du container sans API key:', styleUrl);
             }
         }
         

@@ -1,0 +1,159 @@
+{
+  "version": 8,
+  "name": "Carpool",
+  "metadata": {
+    "klando-carpool-map-sn-v1.1:version": "1.1",
+    "maputnik:renderer": "mlgljs"
+  },
+  "center": [-17.4678858295192, 14.7163338409406],
+  "zoom": 11,
+  "sources": {
+    "klando-carpool-map-sn-v1.1": {
+      "type": "vector",
+      "tiles": [
+        "https://geo.klando-carpool.com/data/klando-carpool-map-sn-v1.1/{z}/{x}/{y}.pbf?api_key=88d7ac58e4a6cdc97864a73ed82dda2eb173d0229ffa6c41a3fece54f6e0b020"
+      ]
+    },
+    "dynamic": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      }
+    }
+  },
+  "glyphs": "https://geo.klando-carpool.com/fonts/{fontstack}/{range}.pbf?api_key=88d7ac58e4a6cdc97864a73ed82dda2eb173d0229ffa6c41a3fece54f6e0b020",
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "layout": {
+        "visibility": "visible"
+      },
+      "paint": {
+        "background-color": "rgba(37, 70, 95, 1)"
+      }
+    },
+    {
+      "id": "landuse-residential",
+      "type": "fill",
+      "source": "klando-carpool-map-sn-v1.1",
+      "source-layer": "landuse",
+      "filter": [
+        "all",
+        [
+          "==",
+          "$type",
+          "Polygon"
+        ],
+        [
+          "in",
+          "class",
+          "residential",
+          "suburb",
+          "neighbourhood"
+        ]
+      ],
+      "paint": {
+        "fill-color": "rgba(149, 161, 172, 0.28)",
+        "fill-opacity": 0.7
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "klando-carpool-map-sn-v1.1",
+      "source-layer": "water",
+      "filter": [
+        "all",
+        [
+          "==",
+          "$type",
+          "Polygon"
+        ],
+        [
+          "!=",
+          "intermittent",
+          1]
+      ],
+      "paint": {
+        "fill-color": "hsl(205, 56%, 73%)"
+      }
+    },
+    {
+      "id": "road_trunk_primary",
+      "type": "line",
+      "source": "klando-carpool-map-sn-v1.1",
+      "source-layer": "transportation",
+      "filter": [
+        "all",
+        [
+          "==",
+          "$type",
+          "LineString"
+        ],
+        [
+          "in",
+          "class",
+          "trunk",
+          "primary"
+        ]
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "rgba(100, 121, 147, 1)",
+        "line-width": {
+          "base": 1.4,
+          "stops": [
+            [6, 0.5],
+            [20, 30]
+          ]
+        }
+      }
+    },
+    {
+      "id": "place_label_city",
+      "type": "symbol",
+      "source": "klando-carpool-map-sn-v1.1",
+      "source-layer": "place",
+      "minzoom": 4,
+      "maxzoom": 16,
+      "filter": [
+        "all",
+        [
+          "==",
+          "$type",
+          "Point"
+        ],
+        [
+          "==",
+          "class",
+          "city"
+        ]
+      ],
+      "layout": {
+        "text-field": "{name}",
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-max-width": 10,
+        "text-size": {
+          "stops": [
+            [5, 14],
+            [8, 16]
+          ]
+        },
+        "visibility": "visible"
+      },
+      "paint": {
+        "text-color": "rgba(37, 70, 95, 1)",
+        "text-halo-blur": 0,
+        "text-halo-color": "rgba(255, 255, 255, 0.75)",
+        "text-halo-width": 2
+      }
+    }
+  ]
+}
