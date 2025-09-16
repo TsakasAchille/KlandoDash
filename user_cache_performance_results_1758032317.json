@@ -1,0 +1,44 @@
+{
+  "cache_miss_times": [
+    {
+      "uid": "eV8D2Emx",
+      "time_ms": 888.9424800872803,
+      "fields_count": 31
+    },
+    {
+      "uid": "bk17O0BB",
+      "time_ms": 249.76086616516113,
+      "fields_count": 31
+    }
+  ],
+  "cache_hit_times": [
+    {
+      "uid": "eV8D2Emx",
+      "time_ms": 227.53596305847168,
+      "fields_count": 31
+    },
+    {
+      "uid": "bk17O0BB",
+      "time_ms": 242.77186393737793,
+      "fields_count": 31
+    }
+  ],
+  "cache_operations": [
+    {
+      "operation": "write",
+      "time_ms": 0.013113021850585938,
+      "success": true
+    },
+    {
+      "operation": "read",
+      "time_ms": 0.0073909759521484375,
+      "success": true
+    },
+    {
+      "operation": "delete",
+      "time_ms": 0.0040531158447265625,
+      "success": true
+    }
+  ],
+  "errors": []
+}

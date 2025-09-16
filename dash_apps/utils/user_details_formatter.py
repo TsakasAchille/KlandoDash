@@ -13,8 +13,8 @@ class UserDetailsFormatter:
     """Formatter pour les données de détails utilisateur"""
     
     def __init__(self):
-        self.config = load_json_config('user_details_config.json')
-        self.display_config = self.config.get('display_config', {})
+        # Une seule configuration pour toutes les transformations
+        self.formatter_config = load_json_config('user_formatter_config.json')
     
     def format_for_display(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -29,46 +29,55 @@ class UserDetailsFormatter:
         if not raw_data:
             return {}
         
-        formatted_data = {}
+        # 1. Copier tous les champs directement (pas de mappings nécessaires)
+        formatted_data = raw_data.copy()
         
-        # 1. Appliquer les mappings de champs
-        field_mappings = self.display_config.get('field_mappings', {})
-        for display_field, db_field in field_mappings.items():
-            if db_field in raw_data:
-                formatted_data[display_field] = raw_data[db_field]
-        
-        # 2. Copier les champs directs
-        for field, value in raw_data.items():
-            if field not in formatted_data:
-                formatted_data[field] = value
-        
-        # 3. Formater les champs selon leur type
+        # 2. Formater les champs selon leur type
         formatted_data = self._apply_field_formatting(formatted_data)
         
-        # 4. Ajouter les champs calculés
+        # 3. Ajouter les champs calculés
         formatted_data = self._add_calculated_fields(formatted_data, raw_data)
         
-        # 5. Appliquer les transformations spécifiques
+        # 4. Appliquer les transformations spécifiques
         formatted_data = self._apply_transformations(formatted_data)
         
         return formatted_data
     
     def _apply_field_formatting(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Applique le formatage spécifique aux champs"""
+        """Applique le formatage spécifique aux champs selon la configuration JSON"""
         formatted = data.copy()
         
+        # Transformer les énumérations en strings simples
+        transformations = self.formatter_config.get('field_transformations', {})
+        
+        # Gender: UserGender.man -> "man" + "Homme"
+        if 'gender' in transformations:
+            gender_config = transformations['gender']
+            if 'gender' in formatted and formatted['gender']:
+                enum_str = str(formatted['gender'])
+                # Convertir enum vers string simple
+                formatted['gender'] = gender_config['mappings'].get(enum_str, enum_str)
+                # Ajouter version display
+                simple_gender = formatted['gender']
+                formatted['gender_display'] = gender_config['display_mappings'].get(simple_gender, simple_gender)
+        
+        # Role: UserRole.passenger -> "passenger" + "Passager"  
+        if 'role' in transformations:
+            role_config = transformations['role']
+            if 'role' in formatted and formatted['role']:
+                enum_str = str(formatted['role'])
+                # Convertir enum vers string simple
+                formatted['role'] = role_config['mappings'].get(enum_str, enum_str)
+                # Ajouter version display
+                simple_role = formatted['role']
+                formatted['role_display'] = role_config['display_mappings'].get(simple_role, simple_role)
+        
         # Formatage des dates
-        date_fields = ['birth', 'created_at', 'updated_at']
+        date_config = transformations.get('dates', {})
+        date_fields = date_config.get('fields', ['birth', 'created_at', 'updated_at'])
         for field in date_fields:
             if field in formatted and formatted[field]:
                 formatted[field] = self._format_date(formatted[field])
-        
-        # Formatage des énumérations
-        if 'gender' in formatted and formatted['gender']:
-            formatted['gender_display'] = self._format_gender(formatted['gender'])
-        
-        if 'role' in formatted and formatted['role']:
-            formatted['role_display'] = self._format_role(formatted['role'])
         
         # Formatage du téléphone
         if 'phone_number' in formatted and formatted['phone_number']:
@@ -85,12 +94,12 @@ class UserDetailsFormatter:
         result = formatted_data.copy()
         
         # Nom complet
-        first_name = formatted_data.get('first_name', '').strip()
-        name = formatted_data.get('name', '').strip()
+        first_name = str(formatted_data.get('first_name') or '').strip()
+        name = str(formatted_data.get('name') or '').strip()
         if first_name and name:
             result['full_name'] = f"{first_name} {name}"
         elif formatted_data.get('display_name'):
-            result['full_name'] = formatted_data['display_name'].strip()
+            result['full_name'] = str(formatted_data['display_name'] or '').strip()
         else:
             result['full_name'] = "Nom non disponible"
         
@@ -110,7 +119,7 @@ class UserDetailsFormatter:
         
         # Indicateurs booléens pour le template
         result['has_photo'] = bool(formatted_data.get('photo_url'))
-        result['has_bio'] = bool(formatted_data.get('bio', '').strip())
+        result['has_bio'] = bool(str(formatted_data.get('bio') or '').strip())
         result['has_phone'] = bool(formatted_data.get('phone_number'))
         result['has_documents'] = bool(formatted_data.get('driver_license_url') or formatted_data.get('id_card_url'))
         
@@ -122,7 +131,7 @@ class UserDetailsFormatter:
         
         # Nettoyer les chaînes vides
         for key, value in result.items():
-            if isinstance(value, str) and not value.strip():
+            if isinstance(value, str) and not str(value or '').strip():
                 result[key] = None
         
         # Valeurs par défaut pour l'affichage
@@ -219,7 +228,7 @@ class UserDetailsFormatter:
         completed = 0
         
         for field in required_fields:
-            if data.get(field) and str(data[field]).strip():
+            if data.get(field) and str(data[field] or '').strip():
                 completed += 1
         
         return int((completed / len(required_fields)) * 100)

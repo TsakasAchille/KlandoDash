@@ -1,0 +1,82 @@
+{
+  "field_transformations": {
+    "gender": {
+      "type": "enum_to_string",
+      "mappings": {
+        "UserGender.man": "man",
+        "UserGender.woman": "woman", 
+        "UserGender.OTHER": "other",
+        "UserGender.NOT_SPECIFIED": "not_specified"
+      },
+      "display_mappings": {
+        "man": "Homme",
+        "woman": "Femme",
+        "other": "Autre", 
+        "not_specified": "Non spécifié"
+      }
+    },
+    "role": {
+      "type": "enum_to_string",
+      "mappings": {
+        "UserRole.passenger": "passenger",
+        "UserRole.driver": "driver",
+        "UserRole.ADMIN": "admin",
+        "UserRole.MODERATOR": "moderator"
+      },
+      "display_mappings": {
+        "passenger": "Passager",
+        "driver": "Conducteur", 
+        "admin": "Administrateur",
+        "moderator": "Modérateur"
+      }
+    },
+    "dates": {
+      "type": "date_formatting",
+      "fields": ["birth", "created_at", "updated_at"],
+      "format": "%d/%m/%Y"
+    },
+    "phone": {
+      "type": "phone_formatting",
+      "field": "phone_number",
+      "senegal_format": "+221 XX XXX XX XX"
+    },
+    "rating": {
+      "type": "rating_formatting",
+      "field": "rating",
+      "default": "Pas encore noté",
+      "format": "{rating:.1f}/5 ⭐"
+    }
+  },
+  "calculated_fields": {
+    "full_name": {
+      "priority": ["display_name", "first_name + name", "first_name", "name"],
+      "fallback": "Nom non disponible"
+    },
+    "age": {
+      "source": "birth",
+      "type": "age_calculation"
+    },
+    "is_driver": {
+      "source": "role", 
+      "condition": "role in ['driver', 'admin']"
+    },
+    "profile_completion": {
+      "required_fields": ["display_name", "email", "phone_number", "birth", "bio", "photo_url"],
+      "type": "percentage"
+    },
+    "account_age_days": {
+      "source": "created_at",
+      "type": "days_since"
+    }
+  },
+  "boolean_indicators": {
+    "has_photo": "photo_url",
+    "has_bio": "bio",
+    "has_phone": "phone_number", 
+    "has_documents": ["driver_license_url", "id_card_url"]
+  },
+  "default_values": {
+    "bio": "Aucune biographie",
+    "rating_display": "Pas encore noté"
+  }
+}

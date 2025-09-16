@@ -8,7 +8,7 @@ import time
 from typing import Dict, Any, List, Optional
 from dash_apps.utils.callback_logger import CallbackLogger
 from dash_apps.models.config_models import TripDataModel
-from dash_apps.services.redis_cache import redis_cache
+from dash_apps.services.local_cache import cache
 
 
 class UserTripsService:

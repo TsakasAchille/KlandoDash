@@ -16,7 +16,7 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from dash_apps.services.trips_cache_service import TripsCacheService
-from dash_apps.services.redis_cache import redis_cache
+from dash_apps.services.local_cache import cache
 from dash_apps.repositories.repository_factory import RepositoryFactory
 
 class CachePerformanceTester:

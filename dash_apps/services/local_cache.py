@@ -252,3 +252,6 @@ class LocalCache:
 
 # Instance globale du cache local
 local_cache = LocalCache()
+
+# Alias pour compatibilité avec les imports existants
+cache = local_cache

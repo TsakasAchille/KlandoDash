@@ -13,7 +13,7 @@ from dash_apps.components.trip_search_widget import render_trip_search_widget
 from dash_apps.utils.settings import load_json_config
 from dash_apps.utils.layout_config import create_responsive_col
 from dash_apps.repositories.repository_factory import RepositoryFactory
-from dash_apps.services.redis_cache import redis_cache
+from dash_apps.services.local_cache import cache
 from dash_apps.services.trips_cache_service import TripsCacheService
 
 # L'enregistrement se fera dans app_factory après la création de l'app

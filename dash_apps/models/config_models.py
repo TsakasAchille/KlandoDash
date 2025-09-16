@@ -369,28 +369,36 @@ class UserModel(BaseModel):
     @classmethod
     def validate_uid(cls, v):
         """Valide que l'UID n'est pas vide."""
-        if not v or not v.strip():
+        if v is None:
+            raise ValueError("UID ne peut pas être None")
+        if not v or not str(v).strip():
             raise ValueError("UID ne peut pas être vide")
-        return v.strip()
+        return str(v).strip()
     
     @field_validator('email')
     @classmethod
     def validate_email(cls, v):
         """Valide le format de l'email."""
-        if v and v.strip():
+        if v is None:
+            return None
+        if v and str(v).strip():
             # Validation basique d'email
-            if '@' not in v or '.' not in v.split('@')[-1]:
+            v_str = str(v).strip()
+            if '@' not in v_str or '.' not in v_str.split('@')[-1]:
                 raise ValueError("Format d'email invalide")
-            return v.strip().lower()
+            return v_str.lower()
         return None
     
     @field_validator('phone_number')
     @classmethod
     def validate_phone(cls, v):
         """Normalise le numéro de téléphone."""
-        if v and v.strip():
+        if v is None:
+            return None
+        if v and str(v).strip():
             # Supprime les espaces et caractères spéciaux
-            cleaned = ''.join(c for c in v if c.isdigit() or c in '+')
+            v_str = str(v).strip()
+            cleaned = ''.join(c for c in v_str if c.isdigit() or c in '+')
             return cleaned if cleaned else None
         return None
     
@@ -400,6 +408,17 @@ class UserModel(BaseModel):
         """Normalise le genre."""
         if v is None or v == '':
             return UserGender.NOT_SPECIFIED
+        
+        # Convertir string vers énumération
+        if isinstance(v, str):
+            gender_map = {
+                'man': UserGender.man,
+                'woman': UserGender.woman,
+                'OTHER': UserGender.OTHER,
+                'NOT_SPECIFIED': UserGender.NOT_SPECIFIED
+            }
+            return gender_map.get(v, UserGender.NOT_SPECIFIED)
+        
         return v
     
     @field_validator('role', mode='before')
@@ -408,6 +427,18 @@ class UserModel(BaseModel):
         """Normalise le rôle."""
         if v is None or v == '':
             return UserRole.passenger
+        
+        # Convertir string vers énumération
+        if isinstance(v, str):
+            role_map = {
+                'passenger': UserRole.passenger,
+                'driver': UserRole.driver,
+                'DRIVER': UserRole.driver,
+                'ADMIN': UserRole.ADMIN,
+                'MODERATOR': UserRole.MODERATOR
+            }
+            return role_map.get(v, UserRole.passenger)
+        
         return v
     
     @property

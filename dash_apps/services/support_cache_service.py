@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any, List
 from dash import html
 import dash_bootstrap_components as dbc
 from dash_apps.repositories.repository_factory import RepositoryFactory
-from dash_apps.services.redis_cache import redis_cache
+from dash_apps.services.local_cache import cache
 
 # Initialiser le repository de tickets via la factory
 support_ticket_repository = RepositoryFactory.get_support_ticket_repository()
@@ -45,9 +45,9 @@ class SupportCacheService:
         return f"support_tickets:{page_index}:{page_size}:{status_str}:{filter_hash}"
     
     @staticmethod
-    def _get_from_redis_cache(cache_key: str) -> Optional[Dict]:
-        """Récupère les données depuis Redis avec la clé donnée"""
-        return redis_cache.get_json_by_key(cache_key)
+    def _get_from_local_cache(cache_key: str) -> Optional[Dict]:
+        """Récupère les données depuis le cache local avec la clé donnée"""
+        return cache.get('support_tickets', key=cache_key)
     
     @staticmethod
     def _store_in_local_cache(cache_key: str, data: Dict):
@@ -58,19 +58,14 @@ class SupportCacheService:
         SupportCacheService._evict_local_cache_if_needed()
     
     @staticmethod
-    def _store_in_redis_cache(cache_key: str, data: Dict, ttl_seconds: int = 300):
-        """Stocke les données dans Redis avec TTL"""
-        import json
+    def _store_in_cache(cache_key: str, data: Dict, ttl_seconds: int = 300):
+        """Stocke les données dans le cache local avec TTL"""
         try:
-            redis_cache.redis_client.setex(
-                cache_key,
-                ttl_seconds,
-                json.dumps(data, default=str)
-            )
+            cache.set('support_tickets', cache_key, data, ttl=ttl_seconds)
             if SupportCacheService._debug_mode:
-                print(f"[REDIS] Cache support mis à jour: {cache_key} (TTL: {ttl_seconds}s)")
+                print(f"[CACHE] Cache support mis à jour: {cache_key} (TTL: {ttl_seconds}s)")
         except Exception as e:
-            print(f"[REDIS] Erreur stockage cache: {e}")
+            print(f"[CACHE] Erreur stockage cache: {e}")
     
     @staticmethod
     def _is_local_cache_valid(cache_key: str) -> bool:
@@ -133,8 +128,8 @@ class SupportCacheService:
                 cached = SupportCacheService._local_cache[cache_key]
                 return cached
             
-            # Niveau 2: Cache Redis
-            cached_data = SupportCacheService._get_from_redis_cache(cache_key)
+            # Niveau 2: Cache local centralisé
+            cached_data = SupportCacheService._get_from_local_cache(cache_key)
             if cached_data:
                 # Stocker dans le cache local pour les prochains accès
                 SupportCacheService._store_in_local_cache(cache_key, cached_data)
@@ -143,7 +138,7 @@ class SupportCacheService:
                     try:
                         tickets_count = len(cached_data.get("tickets", []))
                         total_count = cached_data.get("total_count", 0)
-                        print(f"[SUPPORT][REDIS HIT] page_index={page_index} tickets={tickets_count} total={total_count}")
+                        print(f"[SUPPORT][CACHE HIT] page_index={page_index} tickets={tickets_count} total={total_count}")
                     except Exception:
                         pass
                 
@@ -180,7 +175,7 @@ class SupportCacheService:
         
         # Mettre à jour tous les niveaux de cache
         SupportCacheService._store_in_local_cache(cache_key, cache_data)
-        SupportCacheService._store_in_redis_cache(cache_key, cache_data, ttl_seconds=300)
+        SupportCacheService._store_in_cache(cache_key, cache_data, ttl_seconds=300)
         
         if SupportCacheService._debug_mode:
             try:
@@ -223,13 +218,13 @@ class SupportCacheService:
                 print(f"[TICKET_DETAILS][HTML CACHE HIT] Panneau récupéré du cache pour {selected_ticket_id[:8] if selected_ticket_id else 'None'}...")
             return cached_panel
         
-        # Redis
+        # Cache local centralisé
         data = None
         try:
-            cached_ticket = redis_cache.get_json_by_key(f"ticket_details:{selected_ticket_id}")
+            cached_ticket = cache.get('support_tickets', key=f"ticket_details:{selected_ticket_id}")
             if cached_ticket:
                 if SupportCacheService._debug_mode:
-                    print(f"[TICKET_DETAILS][REDIS HIT] Détails récupérés pour {selected_ticket_id[:8] if selected_ticket_id else 'None'}...")
+                    print(f"[TICKET_DETAILS][CACHE HIT] Détails récupérés pour {selected_ticket_id[:8] if selected_ticket_id else 'None'}...")
                 data = cached_ticket
         except Exception:
             pass
@@ -279,17 +274,12 @@ class SupportCacheService:
                     
                 # Cache ticket details
                 try:
-                    import json
-                    redis_cache.redis_client.setex(
-                        f"ticket_details:{selected_ticket_id}",
-                        SupportCacheService._profile_ttl_seconds,
-                        json.dumps(data, default=str)
-                    )
+                    cache.set('support_tickets', f"ticket_details:{selected_ticket_id}", data, ttl=SupportCacheService._profile_ttl_seconds)
                     if SupportCacheService._debug_mode:
-                        print(f"[TICKET_DETAILS][REDIS CACHE] Ticket mis en cache Redis")
+                        print(f"[TICKET_DETAILS][CACHE] Ticket mis en cache local")
                 except Exception as cache_error:
                     if SupportCacheService._debug_mode:
-                        print(f"[TICKET_DETAILS][REDIS ERROR] Erreur cache Redis: {cache_error}")
+                        print(f"[TICKET_DETAILS][CACHE ERROR] Erreur cache local: {cache_error}")
             except Exception as e:
                 if SupportCacheService._debug_mode:
                     import traceback

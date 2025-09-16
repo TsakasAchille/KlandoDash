@@ -459,10 +459,8 @@ class PerformanceTester:
     def _test_redis_connection(self):
         """Test de connexion Redis"""
         try:
-            from dash_apps.services.redis_cache import redis_cache
-            # Utiliser ping() pour tester la connexion Redis
-            redis_cache.redis_client.ping()
-            return True
+            # Redis removed - always return False
+            return False
         except Exception as e:
             print(f"❌ Redis indisponible: {str(e)[:100]}...")
             return False

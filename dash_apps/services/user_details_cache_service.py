@@ -17,13 +17,72 @@ class UserDetailsCache:
     _config_cache = None
     
     @staticmethod
+    def _execute_user_query(uid: str, debug_users: bool = False) -> Optional[Dict[str, Any]]:
+        """Exécute une requête utilisateur optimisée avec retry automatique"""
+        # Récupérer les champs configurés depuis user_queries.json
+        config = UserDetailsCache._load_config()
+        query_config = config.get('queries', {}).get('user_details', {})
+        json_base_fields = query_config.get('select', {}).get('base', [])
+        field_mappings = config.get('field_mappings', {})
+        
+        # Utiliser les champs configurés ou tous les champs si pas de config
+        base_fields = json_base_fields if json_base_fields else ["*"]
+        select_clause = ', '.join(base_fields) if base_fields != ["*"] else "*"
+        
+        if debug_users:
+            CallbackLogger.log_callback(
+                "user_query_with_config",
+                {
+                    "uid": uid[:8] if uid else 'None',
+                    "json_fields": json_base_fields,
+                    "select_clause": select_clause,
+                    "field_mappings_count": len(field_mappings)
+                },
+                status="INFO",
+                extra_info="Using JSON config for user query optimization"
+            )
+        
+        # Exécuter la requête avec retry automatique
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            try:
+                response = supabase.table('users').select(select_clause).eq('uid', uid).execute()
+                return response.data[0] if response.data else None
+                
+            except Exception as retry_error:
+                retry_count += 1
+                if debug_users:
+                    CallbackLogger.log_callback(
+                        "user_query_retry",
+                        {
+                            "uid": uid[:8] if uid else 'None',
+                            "retry_attempt": retry_count,
+                            "max_retries": max_retries,
+                            "error": str(retry_error)
+                        },
+                        status="WARNING",
+                        extra_info=f"Retry {retry_count}/{max_retries} after connection error"
+                    )
+                
+                if retry_count >= max_retries:
+                    raise retry_error
+                
+                # Attendre avec backoff progressif
+                import time
+                time.sleep(0.5 * retry_count)
+        
+        return None
+    
+    @staticmethod
     def _load_config() -> Dict[str, Any]:
-        """Charge la configuration JSON pour les détails utilisateur"""
+        """Charge la configuration JSON pour les requêtes utilisateur"""
         if UserDetailsCache._config_cache is None:
             config_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)), 
                 'config', 
-                'user_details_config.json'
+                'user_queries.json'
             )
             try:
                 with open(config_path, 'r', encoding='utf-8') as f:
@@ -83,11 +142,11 @@ class UserDetailsCache:
     @staticmethod
     def _get_cached_data(uid: str) -> Optional[Dict[str, Any]]:
         """Récupère les données depuis le cache local"""
-        from dash_apps.services.local_cache import local_cache as cache
+        from dash_apps.services.local_cache import local_cache
         
         try:
-            cache_key = UserDetailsCache._get_cache_key(uid)
-            cached_data = cache.get('user_details', key=cache_key)
+            # Utiliser la même méthode que pour l'écriture avec uid
+            cached_data = local_cache.get('user_details', uid=uid)
             
             debug_users = os.getenv('DEBUG_USERS', 'False').lower() == 'true'
             
@@ -154,18 +213,10 @@ class UserDetailsCache:
                     extra_info="Fetching user details from database"
                 )
             
-            # Récupérer les données utilisateur directement depuis Supabase
-            response = supabase.table('users').select('*').eq('uid', uid).execute()
-            user_data = response.data[0] if response.data else None
+            # Exécuter la requête optimisée avec configuration JSON
+            user_data = UserDetailsCache._execute_user_query(uid, debug_users)
             
             if not user_data:
-                if debug_users:
-                    CallbackLogger.log_callback(
-                        "user_details_not_found",
-                        {"uid": uid[:8] if uid else 'None'},
-                        status="WARNING",
-                        extra_info="User not found in database"
-                    )
                 return {}
             
             # Afficher les données brutes de la DB

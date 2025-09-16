@@ -14,7 +14,7 @@ from dash_apps.components.user_trips import render_user_trips
 from dash_apps.components.user_search_widget import render_search_widget, render_active_filters
 from dash_apps.utils.layout_config import create_responsive_col
 from dash_apps.repositories.repository_factory import RepositoryFactory
-from dash_apps.services.redis_cache import redis_cache
+from dash_apps.services.local_cache import cache
 from dash_apps.services.users_cache_service import UsersCacheService
 from dash_apps.services.user_panels_preloader import UserPanelsPreloader
 

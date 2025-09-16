@@ -9,7 +9,7 @@ from dash_apps.models.config_models import (
     PassengerInfo, PassengersQueryResult, BookingsJsonQuery, UsersJsonQuery
 )
 from dash_apps.repositories.repository_factory import RepositoryFactory
-from dash_apps.services.redis_cache import redis_cache
+from dash_apps.services.local_cache import cache
 from dash_apps.utils.callback_logger import CallbackLogger
 import os
 
