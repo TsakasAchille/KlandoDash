@@ -164,6 +164,10 @@ function tryInitMap() {
             console.log('[MAPLIBRE_DEBUG] Utilisation du style par défaut:', styleUrl);
         } else {
             console.log('[MAPLIBRE_DEBUG] Style du container:', styleUrl);
+            // Vérifier si c'est un style Klando qui pourrait avoir des problèmes CORS
+            if (styleUrl.includes('geo.klando-carpool.com')) {
+                console.log('[MAPLIBRE_DEBUG] Style Klando détecté - fallback automatique en cas d\'erreur CORS');
+            }
         }
         
         console.log('[MAPLIBRE_DEBUG] Création de l\'instance MapLibre...');
@@ -188,14 +192,36 @@ function tryInitMap() {
             mapInstance.on('error', function(e) {
                 console.error('[MAPLIBRE_DEBUG] Erreur carte:', e);
                 console.error('[MAPLIBRE_DEBUG] Détails erreur:', e.error);
-                mapInitStarted = false;
                 
-                // Tentative de fallback avec style minimal
-                if (styleUrl !== 'data:application/json,{"version":8,"sources":{},"layers":[]}') {
-                    console.log('[MAPLIBRE_DEBUG] Tentative avec style minimal...');
+                // Vérifier si c'est une erreur CORS avec le style Klando
+                const isCorsError = e.error && (
+                    e.error.message.includes('Failed to fetch') ||
+                    e.error.message.includes('CORS') ||
+                    e.error.message.includes('Access-Control-Allow-Origin')
+                );
+                
+                if (isCorsError && styleUrl.includes('geo.klando-carpool.com')) {
+                    console.log('[MAPLIBRE_DEBUG] Erreur CORS détectée avec style Klando - basculement vers style par défaut');
+                    mapInitStarted = false;
+                    
+                    // Détruire l'instance actuelle
+                    if (mapInstance && !mapInstance._removed) {
+                        mapInstance.remove();
+                    }
+                    
+                    // Réessayer avec le style par défaut
                     setTimeout(function() {
-                        initMapWithFallback();
-                    }, 1000);
+                        initMapWithDefaultStyle();
+                    }, 500);
+                } else {
+                    mapInitStarted = false;
+                    // Tentative de fallback avec style minimal pour autres erreurs
+                    if (styleUrl !== 'data:application/json,{"version":8,"sources":{},"layers":[]}') {
+                        console.log('[MAPLIBRE_DEBUG] Tentative avec style minimal...');
+                        setTimeout(function() {
+                            initMapWithFallback();
+                        }, 1000);
+                    }
                 }
             });
             
@@ -226,6 +252,76 @@ function tryInitMap() {
         }
         
     });
+}
+
+// Fonction de fallback avec style par défaut MapLibre
+function initMapWithDefaultStyle() {
+    console.log('[MAPLIBRE_DEBUG] Initialisation avec style par défaut MapLibre (fallback CORS)');
+    
+    const container = document.getElementById(MAP_CONTAINER_ID);
+    if (!container) {
+        console.error('[MAPLIBRE_DEBUG] Container introuvable pour fallback style par défaut');
+        return;
+    }
+    
+    mapInitStarted = true;
+    
+    try {
+        mapInstance = new maplibregl.Map({
+            container: MAP_CONTAINER_ID,
+            style: 'https://demotiles.maplibre.org/style.json', // Style par défaut sans CORS
+            center: [2.3522, 48.8566],
+            zoom: 10,
+            preserveDrawingBuffer: true,
+            failIfMajorPerformanceCaveat: false
+        });
+        
+        console.log('[MAPLIBRE_DEBUG] Carte avec style par défaut créée avec succès');
+        
+        mapInstance.on('load', function() {
+            console.log('[MAPLIBRE_DEBUG] Carte par défaut chargée avec succès');
+            setupTripLayersAndEvents(mapInstance);
+            
+            // Afficher un message à l'utilisateur
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = `
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                background: rgba(33, 150, 243, 0.9);
+                color: white;
+                padding: 10px;
+                border-radius: 5px;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                z-index: 1000;
+                max-width: 300px;
+            `;
+            messageDiv.innerHTML = 'Carte avec style par défaut - Style personnalisé indisponible (CORS)';
+            container.appendChild(messageDiv);
+            
+            // Masquer le message après 5 secondes
+            setTimeout(function() {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
+        });
+        
+        mapInstance.on('error', function(e) {
+            console.error('[MAPLIBRE_DEBUG] Erreur même avec style par défaut:', e);
+            // En dernier recours, utiliser le style minimal
+            setTimeout(function() {
+                initMapWithFallback();
+            }, 1000);
+        });
+        
+    } catch (error) {
+        console.error('[MAPLIBRE_DEBUG] Erreur lors de la création avec style par défaut:', error);
+        setTimeout(function() {
+            initMapWithFallback();
+        }, 1000);
+    }
 }
 
 // Fonction de fallback avec style minimal

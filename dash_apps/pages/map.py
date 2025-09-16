@@ -10,10 +10,11 @@ logger = logging.getLogger(__name__)
 from dash_apps.callbacks import map_callbacks  # noqa: F401
 
 def create_maplibre_simple():
-    """MapLibre simple - container seul avec style Firebase via data-style-url"""
+    """MapLibre simple - container avec style de la config et fallback automatique"""
     
-    # Récupérer l'URL du style depuis la config (avec clé API Firebase)
-    maplibre_style_url = Config.MAPLIBRE_STYLE_URL
+    # Utiliser le style de la config en premier, avec fallback automatique en cas d'erreur CORS
+    maplibre_style_url = Config.MAPLIBRE_STYLE_URL or "https://demotiles.maplibre.org/style.json"
+    
     return html.Div(
         id="maplibre-map",
         style={
