@@ -157,19 +157,59 @@
           </div>
         </div>
         
-        <!-- Date -->
+        <!-- Date de départ -->
         <div class="stat-row">
           <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
-            <span class="stat-label">Date</span>
+            <span class="stat-label">Date de départ</span>
+            <span class="stat-value">{{ trip.get("departure_date_only", "-") }}</span>
+          </div>
+        </div>
+        
+        <!-- Heure de départ -->
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Heure de départ</span>
+            <span class="stat-value">{{ trip.get("departure_time_only", "-") }}</span>
+          </div>
+        </div>
+        
+        <!-- Prix passager -->
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Prix passager</span>
+            <span class="stat-value">{{ trip.get("passenger_price", "-") }}</span>
+          </div>
+        </div>
+        
+        <!-- Places -->
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Places</span>
+            <span class="stat-value">{{ trip.get("seats_info", "-") }}</span>
+          </div>
+        </div>
+        
+        <!-- Statut -->
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Statut</span>
+            <span class="stat-value">{{ trip.get("status_display", trip.get("status", "-")) }}</span>
+          </div>
+        </div>
+        
+        <!-- Date de création -->
+        <div class="stat-row">
+          <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+            <span class="stat-label">Date de création</span>
             <span class="stat-value">{{ trip.get("created_at", "-") }}</span>
           </div>
         </div>
         
-        <!-- Heure -->
+        <!-- Dernière modification -->
         <div class="stat-row">
           <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
-            <span class="stat-label">Heure de départ</span>
-            <span class="stat-value">{{ trip.get("departure_time", "-") }}</span>
+            <span class="stat-label">Dernière modification</span>
+            <span class="stat-value">{{ trip.get("updated_at", "-") }}</span>
           </div>
         </div>
         

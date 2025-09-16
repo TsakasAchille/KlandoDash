@@ -431,15 +431,13 @@ def render_trip_details_and_stats_panel(selected_trip_id):
             "Impossible de récupérer les données du trajet."
         )
         return error_panel, error_panel
-    print("____________________________________________________________________________________________________")
-    print("data")
-    print(data)
-    print("____________________________________________________________________________________________________")
+
+
     # 3. Charger la configuration complète
-    config = load_json_config('trip_details_config.json')
+    config = load_json_config('trip_details.json')
     
     # 4. Générer les panneaux avec la nouvelle configuration séparée
-    details_style_config = config.get('trip_details', {}).get('details_template_style', {})
+    details_style_config = config.get('ui', {}).get('template_style', {})
     
     # Paramètres pour l'iframe (conteneur externe)
     iframe_height = details_style_config.get('height', '500px')
@@ -472,7 +470,7 @@ def render_trip_details_and_stats_panel(selected_trip_id):
     details_template = get_jinja_template('trip_details_template.jinja2')
     details_html_content = details_template.render(
         trip=data,
-        config=config.get('trip_details', {}),
+        config=config.get('display', {}).get('panels', {}).get('trip_info', {}),
         layout={
             'card_height': details_card_height,
             'card_width': details_card_width,

@@ -1,0 +1,278 @@
+{
+  "ui": {
+    "template_style": {
+      "height": "600px",
+      "width": "100%",
+      "card_height": "550px",
+      "card_width": "100%",
+      "min_height": "400px"
+    },
+    "bootstrap_layout": {
+      "trip_info_panel": {
+        "width": 6,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      },
+      "trip_map_panel": {
+        "width": 6,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      },
+      "trip_passengers_panel": {
+        "width": 12,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        }
+      }
+    }
+  },
+  "queries": {
+    "trip_details": {
+      "description": "Récupère les détails complets d'un trajet",
+      "select": {
+        "base": [
+          "trip_id",
+          "status",
+          "created_at",
+          "updated_at",
+          "departure_name",
+          "destination_name",
+          "departure_date",
+          "departure_schedule",
+          "departure_latitude",
+          "departure_longitude",
+          "destination_latitude",
+          "destination_longitude",
+          "distance",
+          "passenger_price",
+          "driver_price",
+          "driver_id",
+          "seats_published",
+          "seats_available",
+          "seats_booked",
+          "polyline",
+          "auto_confirmation",
+          "departure_description",
+          "destination_description"
+        ]
+      },
+      "filters": {
+        "default": {
+          "status": ["PENDING", "CONFIRMED", "IN_PROGRESS", "COMPLETED"]
+        }
+      }
+    },
+    "field_mappings": {
+      "id": "trip_id",
+      "departure_location": "departure_name",
+      "destination_location": "destination_name",
+      "departure_time": "departure_schedule",
+      "price": "passenger_price",
+      "available_seats": "seats_available",
+      "total_seats": "seats_published",
+      "booked_seats": "seats_booked"
+    },
+    "validation_rules": {
+      "required_fields": [
+        "trip_id",
+        "status",
+        "departure_name",
+        "destination_name",
+        "driver_id"
+      ],
+      "optional_fields": [
+        "created_at",
+        "updated_at",
+        "departure_date",
+        "departure_schedule",
+        "departure_latitude",
+        "departure_longitude",
+        "destination_latitude",
+        "destination_longitude",
+        "distance",
+        "passenger_price",
+        "driver_price",
+        "seats_published",
+        "seats_available",
+        "seats_booked",
+        "polyline",
+        "auto_confirmation",
+        "departure_description",
+        "destination_description"
+      ]
+    }
+  },
+  "transformations": {
+    "field_transformations": {
+      "status": {
+        "type": "enum_to_string",
+        "mappings": {
+          "PENDING": "pending",
+          "CONFIRMED": "confirmed",
+          "IN_PROGRESS": "in_progress",
+          "COMPLETED": "completed",
+          "CANCELLED": "cancelled"
+        },
+        "display_mappings": {
+          "pending": "En attente",
+          "confirmed": "Confirmé",
+          "in_progress": "En cours",
+          "completed": "Terminé",
+          "cancelled": "Annulé"
+        }
+      },
+      "dates": {
+        "type": "date_formatting",
+        "fields": ["departure_date", "departure_schedule", "created_at", "updated_at"],
+        "format": "%d/%m/%Y %H:%M"
+      },
+      "price": {
+        "type": "currency_formatting",
+        "fields": ["passenger_price", "driver_price"],
+        "currency": "FCFA",
+        "format": "{price} {currency}"
+      },
+      "distance": {
+        "type": "distance_formatting",
+        "field": "distance",
+        "unit": "km",
+        "format": "{distance:.1f} {unit}"
+      }
+    },
+    "calculated_fields": {
+      "departure_location": {
+        "priority": ["departure_name", "departure_description"],
+        "fallback": "Lieu de départ non spécifié"
+      },
+      "destination_location": {
+        "priority": ["destination_name", "destination_description"],
+        "fallback": "Destination non spécifiée"
+      },
+      "departure_time": {
+        "source": "departure_schedule",
+        "type": "datetime_display",
+        "fallback": "Heure non spécifiée"
+      },
+      "seats_info": {
+        "sources": ["seats_available", "seats_published", "seats_booked"],
+        "type": "seats_calculation",
+        "format": "{available}/{published} places disponibles"
+      },
+      "trip_duration": {
+        "sources": ["departure_schedule", "distance"],
+        "type": "duration_estimation"
+      },
+      "status_class": {
+        "source": "status",
+        "type": "css_class_mapping",
+        "mappings": {
+          "pending": "status-pending",
+          "confirmed": "status-confirmed",
+          "in_progress": "status-progress",
+          "completed": "status-completed",
+          "cancelled": "status-cancelled"
+        }
+      }
+    }
+  },
+  "display": {
+    "panels": {
+      "trip_info": {
+        "title": "Informations du trajet",
+        "fields": [
+          {
+            "key": "departure_location",
+            "label": "Départ",
+            "type": "location",
+            "icon": "fas fa-map-marker-alt"
+          },
+          {
+            "key": "destination_location", 
+            "label": "Destination",
+            "type": "location",
+            "icon": "fas fa-flag-checkered"
+          },
+          {
+            "key": "departure_date_only",
+            "label": "Date de départ",
+            "type": "date",
+            "icon": "fas fa-calendar",
+            "source": "departure_schedule",
+            "format": "date_only"
+          },
+          {
+            "key": "departure_time_only",
+            "label": "Heure de départ",
+            "type": "time",
+            "icon": "fas fa-clock",
+            "source": "departure_schedule",
+            "format": "time_only"
+          },
+          {
+            "key": "passenger_price",
+            "label": "Prix passager",
+            "type": "currency",
+            "icon": "fas fa-money-bill"
+          },
+          {
+            "key": "seats_info",
+            "label": "Places",
+            "type": "seats",
+            "icon": "fas fa-users"
+          },
+          {
+            "key": "status",
+            "label": "Statut",
+            "type": "status",
+            "icon": "fas fa-info-circle"
+          },
+          {
+            "key": "created_at",
+            "label": "Date de création",
+            "type": "datetime",
+            "icon": "fas fa-plus-circle",
+            "format": "date_only"
+          },
+          {
+            "key": "updated_at",
+            "label": "Dernière modification",
+            "type": "datetime",
+            "icon": "fas fa-edit",
+            "format": "date_only"
+          }
+        ]
+      },
+      "trip_map": {
+        "title": "Itinéraire",
+        "type": "map",
+        "config": {
+          "show_polyline": true,
+          "show_markers": true,
+          "auto_fit_bounds": true
+        }
+      }
+    }
+  },
+  "cache": {
+    "ttl_seconds": 300,
+    "invalidation_triggers": [
+      "trip_update",
+      "booking_change",
+      "status_change"
+    ]
+  }
+}

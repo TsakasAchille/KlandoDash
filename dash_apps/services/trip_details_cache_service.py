@@ -5,6 +5,7 @@ import json
 import os
 from typing import Dict, Any, Optional
 from dash_apps.utils.callback_logger import CallbackLogger
+from dash_apps.utils.supabase_client import supabase
 
 
 class TripDetailsCache:
@@ -12,49 +13,72 @@ class TripDetailsCache:
     
     _config_cache = None
     
+    @staticmethod
+    def _execute_trip_query(trip_id: str, debug_trips: bool = False) -> Optional[Dict[str, Any]]:
+        """Exécute une requête trajet optimisée avec retry automatique"""
+        # Récupérer les champs configurés depuis trip_details.json
+        config = TripDetailsCache._load_config()
+        query_config = config.get('queries', {}).get('trip_details', {})
+        json_base_fields = query_config.get('select', {}).get('base', [])
+        field_mappings = config.get('field_mappings', {})
+        
+        # Utiliser les champs configurés ou tous les champs si pas de config
+        base_fields = json_base_fields if json_base_fields else ["*"]
+        select_clause = ', '.join(base_fields) if base_fields != ["*"] else "*"
+        
+        if debug_trips:
+            CallbackLogger.log_callback(
+                "trip_query_with_config",
+                {
+                    "trip_id": trip_id[:8] if trip_id else 'None',
+                    "json_fields": json_base_fields,
+                    "select_clause": select_clause,
+                    "field_mappings_count": len(field_mappings)
+                },
+                status="INFO",
+                extra_info="Using JSON config for trip query optimization"
+            )
+        
+        # Exécuter la requête avec retry automatique
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            try:
+                response = supabase.table('trips').select(select_clause).eq('trip_id', trip_id).execute()
+                return response.data[0] if response.data else None
+                
+            except Exception as retry_error:
+                retry_count += 1
+                if debug_trips:
+                    CallbackLogger.log_callback(
+                        "trip_query_retry",
+                        {
+                            "trip_id": trip_id[:8] if trip_id else 'None',
+                            "retry_attempt": retry_count,
+                            "max_retries": max_retries,
+                            "error": str(retry_error)
+                        },
+                        status="WARNING",
+                        extra_info=f"Retry {retry_count}/{max_retries} after connection error"
+                    )
+                
+                if retry_count >= max_retries:
+                    raise retry_error
+                
+                # Attendre avec backoff progressif
+                import time
+                time.sleep(0.5 * retry_count)
+        
+        return None
     
     @staticmethod
     def _load_config() -> Dict[str, Any]:
         """Charge la configuration JSON pour les détails de trajet (validation différée)"""
         if TripDetailsCache._config_cache is None:
-            config_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), 
-                'config', 
-                'trip_details_config.json'
-            )
-            try:
-                with open(config_path, 'r', encoding='utf-8') as f:
-                    TripDetailsCache._config_cache = json.load(f)
-                
-                # Vérifier si le debug des trajets est activé
-                import os
-                debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
-                
-                from dash_apps.utils.callback_logger import CallbackLogger
-                if debug_trips:
-                    CallbackLogger.log_callback(
-                        "load_trip_config",
-                        {"config_path": os.path.basename(config_path)},
-                        status="SUCCESS",
-                        extra_info="Trip details configuration loaded"
-                    )
-                    
-            except Exception as e:
-                # Vérifier si le debug des trajets est activé
-                import os
-                debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
-                
-                from dash_apps.utils.callback_logger import CallbackLogger
-                if debug_trips:
-                    CallbackLogger.log_callback(
-                        "load_trip_config",
-                        {"config_path": os.path.basename(config_path), "error": str(e)},
-                        status="ERROR",
-                        extra_info="Configuration loading failed"
-                    )
-                TripDetailsCache._config_cache = {}
-        
-        return TripDetailsCache._config_cache.get('trip_details', {})
+            from dash_apps.utils.settings import load_json_config
+            TripDetailsCache._config_cache = load_json_config('trip_details.json')
+        return TripDetailsCache._config_cache
     
     @staticmethod
     def _validate_inputs(trip_id: str) -> Optional[str]:
@@ -183,7 +207,6 @@ class TripDetailsCache:
         debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
         
         try:
-            
             if debug_trips:
                 CallbackLogger.log_callback(
                     "api_get_trip_details",
@@ -192,31 +215,15 @@ class TripDetailsCache:
                     extra_info="Fetching details data from API"
                 )
             
-            # 1. Récupérer les données conducteur via le repository
-            from dash_apps.infrastructure.repositories.supabase_trip_repository import SupabaseTripRepository
-            repository = SupabaseTripRepository()
+            # 1. Récupérer les données du trajet via la fonction interne
+            data = TripDetailsCache._execute_trip_query(trip_id, debug_trips)
             
+            # Afficher les données brutes de la DB
             if debug_trips:
-                CallbackLogger.log_callback(
-                    "api_get_trip_details",
-                    {"trip_id": trip_id[:8] if trip_id else 'None'},
-                    status="INFO",
-                    extra_info="Calling repository.get_by_trip_id"
+                CallbackLogger.log_data_dict(
+                    f"Données brutes DB - Trip {trip_id[:8]}",
+                    data
                 )
-            
-            # Gérer l'appel asynchrone selon le contexte
-            import asyncio
-            try:
-                # Essayer d'utiliser la boucle existante
-                loop = asyncio.get_running_loop()
-                # Si on est dans une boucle, créer une tâche
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(asyncio.run, repository.get_by_trip_id(trip_id))
-                    data = future.result()
-            except RuntimeError:
-                # Pas de boucle en cours, utiliser asyncio.run directement
-                data = asyncio.run(repository.get_by_trip_id(trip_id))
             
             if debug_trips:
                 CallbackLogger.log_callback(
@@ -240,12 +247,7 @@ class TripDetailsCache:
                     )
                 return None
             
-            # Afficher les données brutes de la DB
-            if debug_trips:
-                CallbackLogger.log_data_dict(
-                    f"Données brutes DB - Trip {trip_id[:8]}",
-                    data
-                )
+       
             
             # 2. Validation avec Pydantic
             from dash_apps.models.config_models import TripDataModel
@@ -272,7 +274,7 @@ class TripDetailsCache:
                     )
                 return None
             
-            # Utiliser les données validées (convertir le modèle Pydantic en dict)
+            # Utiliser les données validées
             validated_data = validation_result.data
             if hasattr(validated_data, 'model_dump'):
                 # Pydantic v2
@@ -297,7 +299,7 @@ class TripDetailsCache:
                     extra_info="Validation Pydantic réussie"
                 )
             
-            # 3. Formater les données pour l'affichage
+            # 3. Formater les données validées pour l'affichage
             from dash_apps.utils.trip_details_formatter import TripDetailsFormatter
             formatter = TripDetailsFormatter()
             formatted_data = formatter.format_for_display(validated_data_dict)
