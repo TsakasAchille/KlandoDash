@@ -857,7 +857,8 @@ def render_trip_map_panel(selected_trip_id):
                 "border": "1px solid #dee2e6"
             },
             **{
-                "data-style-url": Config.MAPLIBRE_STYLE_URL or "https://demotiles.maplibre.org/style.json"
+                "data-style-url": Config.MAPLIBRE_STYLE_URL or "https://demotiles.maplibre.org/style.json",
+                "data-api-key": (Config.MAPLIBRE_API_KEY or "").split('#')[0].strip()
             }
         ),
         # Element bridge pour les données GeoJSON (même principe que home-maplibre)

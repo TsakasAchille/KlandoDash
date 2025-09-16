@@ -96,11 +96,22 @@ function tryInitTripsMap() {
         
         // Utiliser le même style que la page d'accueil
         let styleUrl = container.getAttribute('data-style-url');
-        if (!styleUrl || styleUrl.includes('YOUR_API_KEY')) {
+        if (!styleUrl) {
             styleUrl = 'https://demotiles.maplibre.org/style.json';
             console.log('[TRIPS_MAP] Fallback vers demotiles:', styleUrl);
         } else {
-            console.log('[TRIPS_MAP] Style du container:', styleUrl);
+            styleUrl = container.getAttribute('data-style-url');
+            const apiKey = container.getAttribute('data-api-key');
+            
+            // Vérifier si l'URL contient déjà une clé API
+            if (styleUrl.includes('api_key=')) {
+                console.log('[TRIPS_MAP] Style URL contient déjà une clé API:', styleUrl.replace(/api_key=[^&]+/, 'api_key=HIDDEN'));
+            } else if (apiKey) {
+                styleUrl = styleUrl + '?api_key=' + apiKey;
+                console.log('[TRIPS_MAP] Style du container avec API key depuis env:', styleUrl.replace(apiKey, 'HIDDEN'));
+            } else {
+                console.log('[TRIPS_MAP] Style du container sans API key:', styleUrl);
+            }
         }
         
         tripsMapInstance = new maplibregl.Map({
