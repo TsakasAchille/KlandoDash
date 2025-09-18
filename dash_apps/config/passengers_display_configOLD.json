@@ -1,0 +1,31 @@
+{
+  "display_formatting": {
+    "name_fallback": {
+      "fields": ["name", "display_name", "first_name"],
+      "default": "Passager"
+    },
+    "photo": {
+      "fields": ["photo_url", "avatar_url"]
+    },
+    "field_formatting": {
+      "phone_number": {
+        "type": "phone"
+      },
+      "email": {
+        "type": "email"
+      },
+      "name": {
+        "type": "text",
+        "max_length": 50
+      },
+      "display_name": {
+        "type": "text",
+        "max_length": 50
+      },
+      "first_name": {
+        "type": "text",
+        "max_length": 30
+      }
+    }
+  }
+}

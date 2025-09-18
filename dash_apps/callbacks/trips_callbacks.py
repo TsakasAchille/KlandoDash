@@ -645,10 +645,10 @@ def render_trip_passengers_panel(selected_trip_id):
     from dash_apps.layouts.trip_passengers_layout import TripPassengersLayout
     import os
     
-    # Vérifier si le debug des trajets est activé
-    debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
+    # Vérifier si le debug des passagers est activé
+    debug_passengers = os.getenv('DEBUG_TRIP_PASSENGERS', 'False').lower() == 'true'
     
-    if debug_trips:
+    if debug_passengers:
         CallbackLogger.log_callback(
             "render_trip_passengers_panel",
             {"selected_trip_id": selected_trip_id},
@@ -658,7 +658,7 @@ def render_trip_passengers_panel(selected_trip_id):
     
     # Vérifier si un trajet est sélectionné
     if not selected_trip_id:
-        if debug_trips:
+        if debug_passengers:
             CallbackLogger.log_callback(
                 "render_trip_passengers_panel",
                 {"selected_trip_id": selected_trip_id},
@@ -668,28 +668,66 @@ def render_trip_passengers_panel(selected_trip_id):
         return TripPassengersLayout.render_empty_state()
     
     try:
-        # Utiliser le nouveau service pour récupérer les passagers
-        summary = PassengersService.get_passengers_summary(selected_trip_id)
+        # Utiliser le nouveau service de cache pour récupérer les passagers
+        from dash_apps.services.trip_passengers_cache_service import TripPassengersCache
+        passengers_data = TripPassengersCache.get_trip_passengers_data(selected_trip_id)
         
-        if debug_trips:
+        if debug_passengers:
             CallbackLogger.log_callback(
                 "render_trip_passengers_panel",
                 {
-                    "selected_trip_id": selected_trip_id,
-                    "total_passengers": summary.get('total_passengers', 0),
-                    "total_seats": summary.get('total_seats', 0)
+                    "selected_trip_id": selected_trip_id[:8] + "..." if len(selected_trip_id) > 8 else selected_trip_id,
+                    "total_passengers": len(passengers_data) if passengers_data else 0,
+                    "total_seats": sum(p.get('seats', 1) for p in passengers_data) if passengers_data else 0
                 },
                 status="SUCCESS",
                 extra_info="Passengers loaded successfully"
             )
         
-        # Générer le layout avec les données
-        return TripPassengersLayout.render_complete_layout(summary)
+        # Générer le HTML avec le template Jinja2
+        from dash_apps.utils.settings import get_jinja_template
+        template = get_jinja_template('trip_passengers_template.jinja2')
+        
+        # Charger la configuration pour le style
+        from dash_apps.utils.settings import load_json_config
+        config = load_json_config('trip_passengers.json')
+        
+        # Paramètres de style depuis la configuration
+        ui_config = config.get('ui', {}).get('template_style', {})
+        iframe_height = ui_config.get('height', '600px')
+        iframe_width = ui_config.get('width', '100%')
+        card_height = ui_config.get('card_height', '550px')
+        card_width = ui_config.get('card_width', '100%')
+        min_height = ui_config.get('min_height', '400px')
+        
+        # Générer le HTML avec les données
+        html_content = template.render(
+            passengers=passengers_data or [],
+            config=config,
+            layout={
+                'card_height': card_height,
+                'card_width': card_width,
+                'min_height': min_height
+            }
+        )
+        
+        # Créer le composant Dash avec iframe
+        return html.Div([
+            html.Iframe(
+                srcDoc=html_content,
+                style={
+                    'width': iframe_width,
+                    'height': iframe_height,
+                    'border': 'none',
+                    'min-height': min_height
+                }
+            )
+        ])
         
     except Exception as e:
         error_msg = f"Erreur lors du chargement des passagers: {str(e)}"
         
-        if debug_trips:
+        if debug_passengers:
             CallbackLogger.log_callback(
                 "render_trip_passengers_panel",
                 {"selected_trip_id": selected_trip_id, "error": str(e)},

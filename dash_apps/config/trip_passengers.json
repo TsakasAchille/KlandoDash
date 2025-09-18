@@ -1,0 +1,86 @@
+{
+  "ui": {
+    "template_style": {
+      "height": "600px",
+      "width": "100%",
+      "card_height": "550px",
+      "card_width": "100%",
+      "min_height": "400px"
+    },
+    "bootstrap_layout": {
+      "trip_passengers_panel": {
+        "width": 12,
+        "responsive": {
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        }
+      }
+    }
+  },
+  "queries": {
+    "trip_passengers": {
+      "description": "Récupère les passagers d'un trajet via les réservations",
+      "select": {
+        "base": [
+          "trip_id",
+          "user_id",
+          "seats",
+          "status",
+          "created_at",
+          "users!inner(uid, name, display_name, first_name, email, phone_number, photo_url, role)"
+        ]
+      }
+    }
+  },
+  "field_mappings": {
+    "user_id": "user_id",
+    "uid": "users.uid",
+    "name": "users.name",
+    "display_name": "users.display_name",
+    "first_name": "users.first_name",
+    "email": "users.email",
+    "phone_number": "users.phone_number",
+    "photo_url": "users.photo_url",
+    "seats": "seats",
+    "created_at": "created_at"
+  },
+  "cache": {
+    "enabled": true,
+    "ttl_seconds": 300,
+    "key_prefix": "trip_passengers"
+  },
+  "data_source": {
+    "primary": "rest_api",
+    "fallback": "sql",
+    "timeout_seconds": 30
+  },
+  "validation": {
+    "enabled": true,
+    "strict_mode": false,
+    "auto_fix": true
+  },
+  "display_formatting": {
+    "name_fallback": {
+      "fields": ["name", "display_name", "first_name"],
+      "default": "Passager"
+    },
+    "photo": {
+      "fields": ["photo_url", "avatar_url"]
+    },
+    "field_formatting": {
+      "phone_number": {
+        "type": "phone"
+      },
+      "email": {
+        "type": "email"
+      },
+      "name": {
+        "type": "text",
+        "max_length": 50
+      }
+    }
+  }
+}

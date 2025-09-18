@@ -48,6 +48,28 @@ class FieldConfig(BaseModel):
         return v
 
 
+class TripPassengersDataModel(BaseModel):
+    """Modèle de validation pour les données passagers d'un trajet"""
+    trip_id: Optional[str] = None
+    user_id: Optional[str] = None
+    uid: Optional[str] = None
+    name: Optional[str] = None
+    display_name: Optional[str] = None
+    first_name: Optional[str] = None
+    email: Optional[str] = None
+    phone_number: Optional[str] = None
+    seats: Optional[int] = 1
+    booking_status: Optional[str] = None
+    status: Optional[str] = None
+    created_at: Optional[datetime] = None
+    photo_url: Optional[str] = None
+    avatar_url: Optional[str] = None
+    role: Optional[str] = None
+    
+    class Config:
+        extra = "allow"  # Permet des champs supplémentaires
+
+
 class SectionConfig(BaseModel):
     """Configuration d'une section de rendu"""
     title: str = Field(min_length=1)
