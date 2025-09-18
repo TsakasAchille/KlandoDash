@@ -108,8 +108,8 @@ class TripPassengersCache:
                 if source_field in users_data:
                     transformed[target_field] = users_data[source_field]
         
-        # Nettoyer les champs non nécessaires pour les passagers
-        fields_to_remove = ['role', 'booking_status', 'status']
+        # Nettoyer les champs non nécessaires pour les passagers (conserver 'status' de bookings)
+        fields_to_remove = ['role', 'booking_status']
         for field in fields_to_remove:
             transformed.pop(field, None)
         

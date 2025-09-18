@@ -48,7 +48,10 @@ class PassengersDisplayFormatter:
         # 3. Formatage des valeurs
         formatted = self._format_field_values(formatted)
         
-        # 4. Liens contextuels
+        # 4. Statut réservé (booking status) formaté à partir de 'status'
+        formatted['status_display'] = self._get_status_display(formatted)
+        
+        # 5. Liens contextuels
         formatted['profile_link'] = self._get_profile_link(formatted)
         
         return formatted
@@ -139,18 +142,22 @@ class PassengersDisplayFormatter:
             return f"/users?uid={uid}"
         return "/users"
     
-    def _get_booking_status_display(self, data: Dict[str, Any]) -> str:
-        """Retourne le statut de réservation formaté"""
-        status = data.get('booking_status') or data.get('status')
-        
-        status_mapping = {
+    def _get_status_display(self, data: Dict[str, Any]) -> str:
+        """Retourne le statut (bookings.status) formaté en français"""
+        status = data.get('status') or data.get('booking_status')
+        if not status:
+            return 'N/A'
+        mapping = {
             'confirmed': 'Confirmé',
             'pending': 'En attente',
             'cancelled': 'Annulé',
-            'completed': 'Terminé'
+            'canceled': 'Annulé',
+            'completed': 'Terminé',
+            'trip_closed': 'Clôturé',
+            'trip_open': 'Ouvert',
         }
-        
-        if status:
-            return status_mapping.get(status.lower(), status)
-        
-        return 'N/A'
+        try:
+            key = str(status).lower()
+            return mapping.get(key, status)
+        except Exception:
+            return str(status)

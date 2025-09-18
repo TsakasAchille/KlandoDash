@@ -381,6 +381,11 @@
           </div>
           
           <ul class="driver-details">
+            {% set _status = (passenger.status|string).lower() if passenger.status is defined else '' %}
+            <li class="driver-detail-item">
+              <span class="detail-label">Statut</span>
+              <span class="detail-value" style="{{ 'color:#c0392b;font-weight:700' if _status in ['cancelled','canceled'] else '' }}">{{ passenger.status_display or 'N/A' }}</span>
+            </li>
             <li class="driver-detail-item">
               <span class="detail-label">Nom complet</span>
               <span class="detail-value">{{ passenger.display_name or passenger.name or passenger.first_name or 'N/A' }}</span>
