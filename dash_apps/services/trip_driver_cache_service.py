@@ -10,6 +10,7 @@ from dash_apps.infrastructure.repositories.supabase_driver_repository import Sup
 from dash_apps.utils.callback_logger import CallbackLogger
 from dash_apps.utils.validation_utils import validate_data
 from dash_apps.models.config_models import TripDriverDataModel
+from dash_apps.utils.callback_logger import CallbackLogger
 
 class TripDriverCache:
     """Service de cache pour les informations conducteur avec configuration JSON"""
@@ -143,8 +144,8 @@ class TripDriverCache:
     @staticmethod
     def _fetch_driver_data_from_api(trip_id: str) -> Optional[Dict[str, Any]]:
         """Récupère les données conducteur depuis l'API REST avec validation Pydantic"""
+
         try:
-            from dash_apps.utils.callback_logger import CallbackLogger
             
             # Vérifier si le debug des trajets est activé
             import os
@@ -226,11 +227,8 @@ class TripDriverCache:
                         )
                     return None
             
-                # 4. Formater pour l'affichage
-                if hasattr(validation_result.data, 'model_dump'):
-                    validated_data = validation_result.data.model_dump()
-                else:
-                    validated_data = dict(validation_result.data) if validation_result.data else driver_data
+                # 4. Formater pour l'affichage: utiliser directement la sortie du validateur (dict JSON-sérialisable)
+                validated_data = validation_result.data
                     
             except Exception as validation_error:
                 if debug_trips:

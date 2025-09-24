@@ -246,9 +246,9 @@ class TripMapCache:
                     extra_info="Starting Pydantic validation"
                 )
             
-            validated_data = validate_data(map_data, TripMapDataModel, strict=False)
+            result = validate_data(TripMapDataModel, map_data, strict=False)
             
-            if validated_data:
+            if result and result.success:
                 if debug_trips:
                     CallbackLogger.log_callback(
                         "validation_success",
@@ -258,7 +258,7 @@ class TripMapCache:
                     )
                 
                 # Mettre en cache les données validées
-                self._cache_data(trip_id, validated_data)
+                self._cache_data(trip_id, result.data)
                 
                 if debug_trips:
                     CallbackLogger.log_callback(
@@ -268,7 +268,7 @@ class TripMapCache:
                         extra_info="Map data retrieved and validated from API"
                     )
                 
-                return validated_data
+                return result.data
             else:
                 if debug_trips:
                     CallbackLogger.log_callback(

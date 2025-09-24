@@ -6,7 +6,9 @@ import os
 from typing import Dict, Any, Optional
 from dash_apps.utils.callback_logger import CallbackLogger
 from dash_apps.utils.supabase_client import supabase
-
+from dash_apps.models.config_models import TripDataModel
+from dash_apps.utils.validation_utils import validate_data
+from dash_apps.utils.trip_details_formatter import TripDetailsFormatter
 
 class TripDetailsCache:
     """Service de cache pour les détails de trajet avec configuration JSON"""
@@ -20,7 +22,6 @@ class TripDetailsCache:
         config = TripDetailsCache._load_config()
         query_config = config.get('queries', {}).get('trip_details', {})
         json_base_fields = query_config.get('select', {}).get('base', [])
-        field_mappings = config.get('field_mappings', {})
         
         # Utiliser les champs configurés ou tous les champs si pas de config
         base_fields = json_base_fields if json_base_fields else ["*"]
@@ -32,8 +33,7 @@ class TripDetailsCache:
                 {
                     "trip_id": trip_id[:8] if trip_id else 'None',
                     "json_fields": json_base_fields,
-                    "select_clause": select_clause,
-                    "field_mappings_count": len(field_mappings)
+                    "select_clause": select_clause
                 },
                 status="INFO",
                 extra_info="Using JSON config for trip query optimization"
@@ -225,18 +225,6 @@ class TripDetailsCache:
                     data
                 )
             
-            if debug_trips:
-                CallbackLogger.log_callback(
-                    "api_get_trip_details",
-                    {
-                        "trip_id": trip_id[:8] if trip_id else 'None',
-                        "data_received": data is not None,
-                        "data_type": type(data).__name__ if data else "None"
-                    },
-                    status="INFO",
-                    extra_info="API response received"
-                )
-            
             if not data:
                 if debug_trips:
                     CallbackLogger.log_callback(
@@ -250,9 +238,6 @@ class TripDetailsCache:
        
             
             # 2. Validation avec Pydantic
-            from dash_apps.models.config_models import TripDataModel
-            from dash_apps.utils.validation_utils import validate_data
-            
             if debug_trips:
                 CallbackLogger.log_callback(
                     "api_get_trip_details",
@@ -273,18 +258,14 @@ class TripDetailsCache:
                         extra_info="Échec de la validation Pydantic"
                     )
                 return None
+
+            print("Validation Pydantic réussie")
+            print(validation_result.data)
+
             
-            # Utiliser les données validées
-            validated_data = validation_result.data
-            if hasattr(validated_data, 'model_dump'):
-                # Pydantic v2
-                validated_data_dict = validated_data.model_dump()
-            elif hasattr(validated_data, 'dict'):
-                # Pydantic v1
-                validated_data_dict = validated_data.dict()
-            else:
-                # Fallback si ce n'est pas un modèle Pydantic
-                validated_data_dict = dict(validated_data)
+            
+            # Utiliser directement la sortie du validateur (dict JSON-sérialisable)
+            validated_data_dict = validation_result.data
             
             if debug_trips:
                 CallbackLogger.log_data_dict(
@@ -300,7 +281,6 @@ class TripDetailsCache:
                 )
             
             # 3. Formater les données validées pour l'affichage
-            from dash_apps.utils.trip_details_formatter import TripDetailsFormatter
             formatter = TripDetailsFormatter()
             formatted_data = formatter.format_for_display(validated_data_dict)
             
@@ -311,19 +291,6 @@ class TripDetailsCache:
                     formatted_data
                 )
             
-            if debug_trips:
-                CallbackLogger.log_callback(
-                    "formatter_debug",
-                    {
-                        "trip_id": trip_id[:8] if trip_id else 'None',
-                        "formatted_data_type": type(formatted_data).__name__,
-                        "formatted_data_bool": bool(formatted_data),
-                        "is_dict": isinstance(formatted_data, dict),
-                        "fields_count": len(formatted_data) if formatted_data else 0
-                    },
-                    status="INFO",
-                    extra_info="Debug formatter output"
-                )
             
             if formatted_data and isinstance(formatted_data, dict):
                 if debug_trips:

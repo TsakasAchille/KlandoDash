@@ -10,6 +10,7 @@ from dash_apps.utils.callback_logger import CallbackLogger
 from dash_apps.utils.supabase_client import supabase
 from dash_apps.utils.settings import load_json_config
 from dash_apps.models.config_models import UserModel
+from dash_apps.utils.validation_utils import validate_data
 
 
 class UserDetailsCache:
@@ -186,7 +187,6 @@ class UserDetailsCache:
                 )
             
             # 2. Validation avec Pydantic
-            from dash_apps.utils.validation_utils import validate_data
             
             if debug_users:
                 CallbackLogger.log_callback(
@@ -209,17 +209,8 @@ class UserDetailsCache:
                     )
                 return None
             
-            # Utiliser les données validées (convertir le modèle Pydantic en dict)
-            validated_data = validation_result.data
-            if hasattr(validated_data, 'model_dump'):
-                # Pydantic v2
-                validated_data_dict = validated_data.model_dump()
-            elif hasattr(validated_data, 'dict'):
-                # Pydantic v1
-                validated_data_dict = validated_data.dict()
-            else:
-                # Fallback si ce n'est pas un modèle Pydantic
-                validated_data_dict = dict(validated_data)
+            # Utiliser directement la sortie du validateur (dict JSON-sérialisable)
+            validated_data_dict = validation_result.data
             
             if debug_users:
                 CallbackLogger.log_data_dict(

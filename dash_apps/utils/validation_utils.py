@@ -10,9 +10,13 @@ T = TypeVar('T', bound=BaseModel)
 
 
 class ValidationResult:
-    """Wrapper pour les résultats de validation"""
+    """Wrapper pour les résultats de validation
+
+    Remarque: `data` contient un dictionnaire JSON-sérialisable issu du modèle Pydantic
+    (via model_dump(mode="json")) lorsque `success` est True.
+    """
     
-    def __init__(self, success: bool, data: Optional[T] = None, errors: Optional[List[Dict]] = None):
+    def __init__(self, success: bool, data: Optional[Dict[str, Any]] = None, errors: Optional[List[Dict]] = None):
         self.success = success
         self.data = data
         self.errors = errors or []
@@ -53,7 +57,8 @@ def validate_data(
     try:
         from dash_apps.utils.callback_logger import CallbackLogger
         
-        validated = model_class.model_validate(data, strict=strict)
+        # Valider les données avec Pydantic v2
+        validated_model = model_class.model_validate(data, strict=strict)
         
         # Vérifier si le debug des trajets est activé
         import os
@@ -67,7 +72,18 @@ def validate_data(
                 extra_info="Data validation successful"
             )
         
-        return ValidationResult(success=True, data=validated)
+        # Sérialisation JSON-friendly dès la sortie (datetime -> ISO, etc.)
+        if hasattr(validated_model, "model_dump"):
+            validated_dict = validated_model.model_dump(mode="json")
+        else:
+            # Par sécurité (cas imprévu), on tente de convertir en dict
+            try:
+                validated_dict = dict(validated_model)  # type: ignore[arg-type]
+            except Exception:
+                # Dernier recours: renvoyer les données originales
+                validated_dict = data if isinstance(data, dict) else {"value": data}
+
+        return ValidationResult(success=True, data=validated_dict)
     except ValidationError as e:
         errors = [
             {
