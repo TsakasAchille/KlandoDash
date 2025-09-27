@@ -64,7 +64,7 @@
   },
   "display_formatting": {
     "name_fallback": {
-      "fields": ["name", "display_name", "first_name"],
+      "fields": ["display_name", "first_name", "name"],
       "default": "Passager"
     },
     "photo": {

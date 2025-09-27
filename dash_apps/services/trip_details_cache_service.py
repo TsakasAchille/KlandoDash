@@ -10,6 +10,8 @@ from dash_apps.models.config_models import TripDataModel
 from dash_apps.utils.validation_utils import validate_data
 from dash_apps.utils.trip_details_formatter import TripDetailsFormatter
 
+from dash_apps.utils.callback_logger import CallbackLogger
+
 class TripDetailsCache:
     """Service de cache pour les détails de trajet avec configuration JSON"""
     
@@ -80,26 +82,6 @@ class TripDetailsCache:
             TripDetailsCache._config_cache = load_json_config('trip_details.json')
         return TripDetailsCache._config_cache
     
-    @staticmethod
-    def _validate_inputs(trip_id: str) -> Optional[str]:
-        """Valide les inputs selon la configuration JSON"""
-        config = TripDetailsCache._load_config()
-        validation = config.get('validation', {})
-        
-        if not trip_id:
-            return "ERROR: trip_id requis"
-        
-        # Validation du trip_id
-        trip_id_rules = validation.get('trip_id', {})
-        if 'min_length' in trip_id_rules and len(trip_id) < trip_id_rules['min_length']:
-            return f"ERROR: trip_id trop court (min {trip_id_rules['min_length']})"
-        
-        if 'pattern' in trip_id_rules:
-            import re
-            if not re.match(trip_id_rules['pattern'], trip_id):
-                return f"ERROR: trip_id ne respecte pas le pattern {trip_id_rules['pattern']}"
-        
-        return None  # Validation OK
     
     
     @staticmethod
@@ -115,7 +97,6 @@ class TripDetailsCache:
             cache_key = f"trip_details:{trip_id}"
             cached_data = cache.get('trip_details', key=cache_key)
             
-            from dash_apps.utils.callback_logger import CallbackLogger
             
             if cached_data:
                 if debug_trips:

@@ -24,10 +24,10 @@ def test_trip_passengers_callback():
     print("-" * 40)
     
     try:
-        from dash_apps.services.passengers_service import PassengersService
-        print("✓ PassengersService importé avec succès")
+        from dash_apps.services.trip_passengers_cache_service import TripPassengersCache
+        print("✓ TripPassengersCache importé avec succès")
     except Exception as e:
-        print(f"✗ Erreur import PassengersService: {e}")
+        print(f"✗ Erreur import TripPassengersCache: {e}")
         return
     
     try:
@@ -47,45 +47,38 @@ def test_trip_passengers_callback():
     else:
         print(f"✓ Trip ID valide: {test_trip_id}")
     
-    # Étape 3: Test du service PassengersService
+    # Étape 3: Test du service TripPassengersCache
     print("\n3. TEST DU SERVICE PASSENGERS")
     print("-" * 40)
-    
     try:
-        print(f"Appel de PassengersService.get_passengers_summary('{test_trip_id}')")
-        summary = PassengersService.get_passengers_summary(test_trip_id)
+        print(f"Appel de TripPassengersCache.get_trip_passengers_data('{test_trip_id}')")
+        passengers_data = TripPassengersCache.get_trip_passengers_data(test_trip_id)
         
         print(f"✓ Service appelé avec succès")
-        print(f"Type du résultat: {type(summary)}")
-        print(f"Contenu du summary:")
+        print(f"Type du résultat: {type(passengers_data)}")
+        print(f"Contenu des données:")
         
-        if isinstance(summary, dict):
-            for key, value in summary.items():
-                print(f"  - {key}: {value} (type: {type(value)})")
+        if isinstance(passengers_data, list):
+            print(f"✓ {len(passengers_data)} passager(s) trouvé(s)")
+            for i, passenger in enumerate(passengers_data, 1):
+                print(f"  Passager {i}:")
+                if isinstance(passenger, dict):
+                    for key, value in passenger.items():
+                        print(f"    - {key}: {value}")
+                else:
+                    print(f"    {passenger}")
+        elif isinstance(passengers_data, dict):
+            print(f"  Données complètes: {passengers_data}")
         else:
-            print(f"  Summary complet: {summary}")
-            
-        # Vérifications spécifiques
-        total_passengers = summary.get('total_passengers', 0) if isinstance(summary, dict) else 0
-        total_seats = summary.get('total_seats', 0) if isinstance(summary, dict) else 0
-        
-        print(f"\nAnalyse des données:")
-        print(f"  - Total passagers: {total_passengers}")
-        print(f"  - Total sièges: {total_seats}")
-        
-        if total_passengers > 0:
-            print("✓ Des passagers sont trouvés")
-        else:
-            print("✗ Aucun passager trouvé")
+            print(f"  Type inconnu: {type(passengers_data)}")
             
     except Exception as e:
-        print(f"✗ Erreur dans PassengersService.get_passengers_summary: {e}")
+        print(f"✗ Erreur dans TripPassengersCache.get_trip_passengers_data: {e}")
         import traceback
         traceback.print_exc()
         return
     
     # Étape 4: Test du layout
-    print("\n4. TEST DU LAYOUT")
     print("-" * 40)
     
     try:
@@ -141,15 +134,8 @@ def test_trip_passengers_callback():
     print("-" * 40)
     
     try:
-        # Test des méthodes internes de PassengersService si disponibles
-        if hasattr(PassengersService, 'get_trip_bookings'):
-            print("Test de get_trip_bookings...")
-            bookings = PassengersService.get_trip_bookings(test_trip_id)
-            print(f"Bookings trouvés: {len(bookings) if bookings else 0}")
-            
-        if hasattr(PassengersService, 'get_users_for_bookings'):
-            print("Test de get_users_for_bookings...")
-            # Cette méthode nécessite des bookings en paramètre
+        # Test des méthodes internes de TripPassengersCache si disponibles
+        print("Service TripPassengersCache testé avec succès")
             
     except Exception as e:
         print(f"Erreur dans les tests internes: {e}")

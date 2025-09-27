@@ -645,7 +645,6 @@ def render_trip_driver_panel(selected_trip_id):
 )
 def render_trip_passengers_panel(selected_trip_id):
     """Affiche les passagers d'un trajet en utilisant le système bookings + users."""
-    from dash_apps.services.passengers_service import PassengersService
     from dash_apps.layouts.trip_passengers_layout import TripPassengersLayout
     import os
     
