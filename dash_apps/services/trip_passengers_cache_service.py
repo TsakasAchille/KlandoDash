@@ -119,25 +119,39 @@ class TripPassengersCache:
     def _set_cache_data_generic(trip_id: str, data_type: str, data, ttl_seconds: int):
         """Fonction cache générique pour stocker les données passagers"""
         from dash_apps.services.local_cache import local_cache as cache
-        method_name = f"set_trip_{data_type}"
-        if hasattr(cache, method_name):
-            return getattr(cache, method_name)(trip_id, data, ttl_seconds=ttl_seconds)
-        return False
+        
+        try:
+            cache_key = TripPassengersCache._get_cache_key(trip_id)
+            return cache.set(data_type, key=cache_key, value=data, ttl_seconds=ttl_seconds)
+        except Exception as e:
+            debug_passengers = os.getenv('DEBUG_TRIP_PASSENGERS', 'False').lower() == 'true'
+            if debug_passengers:
+                CallbackLogger.log_callback(
+                    "cache_set_passengers_error",
+                    {"trip_id": trip_id[:8] if trip_id else 'None', "error": str(e)},
+                    status="ERROR",
+                    extra_info="Cache storage failed"
+                )
+            return False
     
     @staticmethod
     def _get_cached_data(trip_id: str) -> Optional[List[Dict[str, Any]]]:
         """Récupère les données depuis le cache local"""
+        from dash_apps.services.local_cache import local_cache as cache
+        
+        # Vérifier si le debug des passagers est activé
+        debug_passengers = os.getenv('DEBUG_TRIP_PASSENGERS', 'False').lower() == 'true'
+        
         try:
-            from dash_apps.services.local_cache import local_cache as cache
-            cached_data = cache.get_trip_passengers(trip_id)
-            
-            debug_passengers = os.getenv('DEBUG_TRIP_PASSENGERS', 'False').lower() == 'true'
+            cache_key = TripPassengersCache._get_cache_key(trip_id)
+            cached_data = cache.get('trip_passengers', key=cache_key)
             
             if debug_passengers:
                 CallbackLogger.log_callback(
                     "cache_get_passengers",
                     {
                         "trip_id": trip_id[:8] if trip_id else 'None',
+                        "cache_key": cache_key,
                         "cache_hit": cached_data is not None,
                         "data_type": type(cached_data).__name__ if cached_data else 'None'
                     },
@@ -148,8 +162,6 @@ class TripPassengersCache:
             return cached_data
             
         except Exception as e:
-            debug_passengers = os.getenv('DEBUG_TRIP_PASSENGERS', 'False').lower() == 'true'
-            
             if debug_passengers:
                 CallbackLogger.log_callback(
                     "cache_get_passengers",

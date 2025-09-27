@@ -10,9 +10,13 @@ from dash_apps.components.trips_table_custom import render_custom_trips_table
 from dash_apps.components.trip_search_widget import render_trip_search_widget, render_active_trip_filters
 from dash_apps.repositories.repository_factory import RepositoryFactory
 from dash_apps.services.local_cache import cache
+
+
 from dash_apps.services.trips_cache_service import TripsCacheService
 from dash_apps.services.trip_details_cache_service import TripDetailsCache
 from dash_apps.services.trip_driver_cache_service import TripDriverCache
+from dash_apps.services.trip_passengers_cache_service import TripPassengersCache
+
 from dash_apps.services.trip_map_cache_service import trip_map_cache
 from dash_apps.layouts.trip_detail_layout import TripDetailLayout
 from dash_apps.utils.callback_logger import CallbackLogger
@@ -669,7 +673,6 @@ def render_trip_passengers_panel(selected_trip_id):
     
     try:
         # Utiliser le nouveau service de cache pour récupérer les passagers
-        from dash_apps.services.trip_passengers_cache_service import TripPassengersCache
         passengers_data = TripPassengersCache.get_trip_passengers_data(selected_trip_id)
         
         if debug_passengers:

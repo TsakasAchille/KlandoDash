@@ -231,6 +231,7 @@ class LocalCache:
             }
     
     # Méthodes compatibles avec l'interface Redis existante
+    """
     def get_trip_details(self, trip_id: str) -> Optional[Any]:
         return self.get('trip_details', trip_id=trip_id)
     
@@ -248,7 +249,7 @@ class LocalCache:
     
     def set_trip_passengers(self, trip_id: str, data: Any, ttl_seconds: int = None) -> bool:
         return self.set('trip_passengers', data, trip_id=trip_id, ttl=ttl_seconds)
-
+    """
 
 # Instance globale du cache local
 local_cache = LocalCache()
