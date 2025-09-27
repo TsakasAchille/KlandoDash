@@ -31,6 +31,8 @@ def test_passengers_display_name():
             print(f"first_name: {passenger.get('first_name', 'N/A')}")
             print(f"name: {passenger.get('name', 'N/A')}")
             print(f"email: {passenger.get('email', 'N/A')}")
+            print(f"photo_url: {passenger.get('photo_url', 'N/A')}")
+            print(f"photo_url length: {len(passenger.get('photo_url', '')) if passenger.get('photo_url') else 0}")
     else:
         print("❌ Aucun passager trouvé")
     

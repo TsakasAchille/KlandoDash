@@ -376,8 +376,14 @@
         {% for passenger in passengers %}
         <div class="driver-card-inner">
           <div class="driver-header" style="display: flex; align-items: center; gap: 10px;">
-            <div class="driver-avatar">👤</div>
-            <div class="driver-name">{{ passenger.name or passenger.display_name or passenger.first_name or 'N/A' }}</div>
+            <div class="driver-avatar">
+              {% if passenger.photo_url %}
+                <img src="{{ passenger.photo_url }}" alt="Photo de {{ passenger.display_name or passenger.name or 'Passager' }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+              {% else %}
+                👤
+              {% endif %}
+            </div>
+            <div class="driver-name">{{ passenger.display_name or passenger.first_name or passenger.name or 'N/A' }}</div>
           </div>
           
           <ul class="driver-details">

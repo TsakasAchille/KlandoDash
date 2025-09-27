@@ -42,8 +42,10 @@ class PassengersDisplayFormatter:
         # 1. Nom d'affichage unifié
         formatted['display_name'] = self._get_display_name(formatted)
         
-        # 2. Photo sécurisée
-        formatted['safe_photo_url'] = self._get_safe_photo_url(formatted)
+        # 2. Photo sécurisée - remplacer photo_url directement
+        safe_url = self._get_safe_photo_url(formatted)
+        if safe_url:
+            formatted['photo_url'] = safe_url
         
         # 3. Formatage des valeurs
         formatted = self._format_field_values(formatted)
@@ -71,7 +73,7 @@ class PassengersDisplayFormatter:
     def _get_safe_photo_url(self, data: Dict[str, Any]) -> Optional[str]:
         """Retourne une URL de photo sécurisée ou None"""
         photo_config = self.display_config.get('photo', {})
-        fields = photo_config.get('fields', ['photo_url', 'avatar_url'])
+        fields = photo_config.get('fields', ['photo_url'])
         
         for field in fields:
             url = data.get(field)

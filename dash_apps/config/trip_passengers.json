@@ -68,7 +68,7 @@
       "default": "Passager"
     },
     "photo": {
-      "fields": ["photo_url", "avatar_url"]
+      "fields": ["photo_url"]
     },
     "field_formatting": {
       "phone_number": {

@@ -63,7 +63,6 @@ class TripPassengersDataModel(BaseModel):
     status: Optional[str] = None
     created_at: Optional[datetime] = None
     photo_url: Optional[str] = None
-    avatar_url: Optional[str] = None
     role: Optional[str] = None
     
     class Config:
