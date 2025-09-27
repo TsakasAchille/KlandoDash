@@ -101,10 +101,6 @@ class TripDetailsCache:
         
         return None  # Validation OK
     
-    @staticmethod
-    def _get_cache_key(trip_id: str) -> str:
-        """Génère la clé de cache - utilise directement l'ID avec préfixe fixe"""
-        return f"trip_details:{trip_id}"
     
     @staticmethod
     def _get_cached_data(trip_id: str) -> Optional[Dict[str, Any]]:
@@ -116,7 +112,7 @@ class TripDetailsCache:
         debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
         
         try:
-            cache_key = TripDetailsCache._get_cache_key(trip_id)
+            cache_key = f"trip_details:{trip_id}"
             cached_data = cache.get('trip_details', key=cache_key)
             
             from dash_apps.utils.callback_logger import CallbackLogger
@@ -171,7 +167,7 @@ class TripDetailsCache:
         debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
         
         try:
-            cache_key = TripDetailsCache._get_cache_key(trip_id)
+            cache_key = f"trip_details:{trip_id}"
             ttl = 300  # 5 minutes
             
             cache.set('trip_details', data, ttl=ttl, key=cache_key)
@@ -340,7 +336,7 @@ class TripDetailsCache:
         debug_trips = os.getenv('DEBUG_TRIPS', 'False').lower() == 'true'
         
         try:
-            cache_key = TripDetailsCache._get_cache_key(trip_id)
+            cache_key = f"trip_details:{trip_id}"
             config = TripDetailsCache._load_config()
             cache_config = config.get('cache', {})
             ttl = cache_config.get('ttl', 300)  # 5 minutes par défaut
