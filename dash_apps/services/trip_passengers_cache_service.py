@@ -58,10 +58,6 @@ class TripPassengersCache:
         
         return TripPassengersCache._config_cache
     
-    @staticmethod
-    def _get_cache_key(trip_id: str) -> str:
-        """Génère la clé de cache - utilise directement le trip_id avec préfixe fixe"""
-        return f"trip_passengers:{trip_id}"
     
     @staticmethod
     def _transform_passenger_data(passenger_data: Dict[str, Any], field_mappings: Dict[str, str]) -> Dict[str, Any]:
@@ -121,7 +117,7 @@ class TripPassengersCache:
         from dash_apps.services.local_cache import local_cache as cache
         
         try:
-            cache_key = TripPassengersCache._get_cache_key(trip_id)
+            cache_key = f"trip_passengers:{trip_id}"
             return cache.set(data_type, key=cache_key, value=data, ttl_seconds=ttl_seconds)
         except Exception as e:
             debug_passengers = os.getenv('DEBUG_TRIP_PASSENGERS', 'False').lower() == 'true'
@@ -143,7 +139,7 @@ class TripPassengersCache:
         debug_passengers = os.getenv('DEBUG_TRIP_PASSENGERS', 'False').lower() == 'true'
         
         try:
-            cache_key = TripPassengersCache._get_cache_key(trip_id)
+            cache_key = f"trip_passengers:{trip_id}"
             cached_data = cache.get('trip_passengers', key=cache_key)
             
             if debug_passengers:
