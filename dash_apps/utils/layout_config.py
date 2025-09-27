@@ -5,7 +5,7 @@ Utilitaires pour la gestion des configurations de layout Dash
 from dash_apps.utils.settings import load_json_config
 from typing import Dict, Any, Optional
 
-def get_panel_layout_config(config_file: str = 'trip_details_config.json') -> Dict[str, Any]:
+def get_panel_layout_config(config_file: str = 'trip_details.json') -> Dict[str, Any]:
     """
     Charge la configuration de layout des panneaux depuis un fichier JSON
     
@@ -23,16 +23,16 @@ def get_panel_layout_config(config_file: str = 'trip_details_config.json') -> Di
             return config.get('trip_driver', {}).get('bootstrap_layout', {})
         elif 'trip_stats_display_config.json' in config_file:
             return config.get('trip_stats', {}).get('dash_layout', {})
-        elif 'trip_details_config.json' in config_file:
+        elif 'trip_details.json' in config_file:
             return config.get('trip_details', {}).get('bootstrap_layout', {})
         else:
-            # Par défaut pour trip_details_config.json
+            # Par défaut pour trip_details.json
             return config.get('trip_details', {}).get('dash_layout', {})
     except Exception as e:
         print(f"Erreur lors du chargement de la config layout: {e}")
         return {}
 
-def get_panel_width(panel_name: str, config_file: str = 'trip_details_config.json') -> int:
+def get_panel_width(panel_name: str, config_file: str = 'trip_details.json') -> int:
     """
     Récupère la largeur d'un panneau spécifique
     
@@ -58,7 +58,7 @@ def get_panel_width(panel_name: str, config_file: str = 'trip_details_config.jso
     
     return width
 
-def get_responsive_widths(panel_name: str, config_file: str = 'trip_details_config.json') -> Dict[str, int]:
+def get_responsive_widths(panel_name: str, config_file: str = 'trip_details.json') -> Dict[str, int]:
     """
     Récupère les largeurs responsives d'un panneau
     
@@ -75,7 +75,7 @@ def get_responsive_widths(panel_name: str, config_file: str = 'trip_details_conf
         'xs': 12, 'sm': 12, 'md': 12, 'lg': 12, 'xl': 12
     })
 
-def create_responsive_col(panel_name: str, children, config_file: str = 'trip_details_config.json'):
+def create_responsive_col(panel_name: str, children, config_file: str = 'trip_details.json'):
     """
     Crée une colonne Bootstrap avec largeurs configurables
     

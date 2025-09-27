@@ -149,17 +149,12 @@ class PassengersDisplayFormatter:
         status = data.get('status') or data.get('booking_status')
         if not status:
             return 'N/A'
-        mapping = {
-            'confirmed': 'Confirmé',
-            'pending': 'En attente',
-            'cancelled': 'Annulé',
-            'canceled': 'Annulé',
-            'completed': 'Terminé',
-            'trip_closed': 'Clôturé',
-            'trip_open': 'Ouvert',
-        }
+        
+        # Récupérer le mapping depuis la configuration JSON
+        status_mapping = self.display_config.get('status_mapping', {})
+        
         try:
             key = str(status).lower()
-            return mapping.get(key, status)
+            return status_mapping.get(key, status)
         except Exception:
             return str(status)

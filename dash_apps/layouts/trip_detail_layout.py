@@ -15,7 +15,7 @@ class TripDetailLayout:
     def _load_config() -> Dict[str, Any]:
         """Charge la configuration JSON des détails de trajet"""
         try:
-            config = load_json_config('trip_details_config.json')
+            config = load_json_config('trip_details.json')
             print(f"🔧 [CONFIG_DEBUG] Config chargée: {list(config.keys())}")
             if 'trip_details' in config and 'fields' in config['trip_details']:
                 print(f"🔧 [CONFIG_DEBUG] Fields trouvés: {list(config['trip_details']['fields'].keys())}")

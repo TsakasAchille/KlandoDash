@@ -1,21 +1,27 @@
 {
   "ui": {
+    "panel": {
+      "title": "Passagers",
+      "icon": "fas fa-users",
+      "color": "#fd7e14",
+      "background_color": "#f8f9fa"
+    },
     "template_style": {
       "height": "600px",
-      "width": "100%",
+      "width": "80%",
       "card_height": "550px",
-      "card_width": "100%",
+      "card_width": "80%",
       "min_height": "400px"
     },
     "bootstrap_layout": {
       "trip_passengers_panel": {
-        "width": 12,
+        "width": 10,
         "responsive": {
           "xs": 12,
           "sm": 12,
-          "md": 12,
-          "lg": 12,
-          "xl": 12
+          "md": 10,
+          "lg": 8,
+          "xl": 8
         }
       }
     }
@@ -69,6 +75,16 @@
     },
     "photo": {
       "fields": ["photo_url"]
+    },
+    "status_mapping": {
+      "confirmed": "Confirmé",
+      "pending": "En attente",
+      "cancelled": "Annulé",
+      "canceled": "Annulé",
+      "completed": "Terminé",
+      "trip_closed": "Clôturé",
+      "trip_open": "Ouvert",
+      "archived": "Archivé"
     },
     "field_formatting": {
       "phone_number": {

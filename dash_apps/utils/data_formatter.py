@@ -81,7 +81,7 @@ class DataFormatter:
             
         try:
             # Charger la configuration de formatage
-            config = load_json_config('trip_details_config.json')
+            config = load_json_config('trip_details.json')
             formatting_config = config.get('trip_details', {}).get('data_formatting', {})
             datetime_fields = formatting_config.get('datetime_fields', {})
             

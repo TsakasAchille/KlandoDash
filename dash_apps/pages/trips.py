@@ -74,7 +74,7 @@ def get_layout():
                     ], style={"padding": "0"})
                 ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
             ],
-            config_file="trip_details_config.json"
+            config_file="trip_details.json"
         ),
         create_responsive_col(
             "trip_stats_panel",
@@ -93,7 +93,7 @@ def get_layout():
                     ], style={"padding": "0"})
                 ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
             ],
-            config_file="trip_details_config.json"
+            config_file="trip_details.json"
         ),
     ], className=ROW_SPACING),
     dbc.Row([
@@ -145,7 +145,8 @@ def get_layout():
                         )
                     ], style={"padding": "0"})
                 ], style={"border": "1px solid #dee2e6", "border-radius": "8px"})
-            ]
+            ],
+            config_file="trip_passengers.json"
         )
     ], className=ROW_SPACING),
     # Element bridge pour les données GeoJSON de la carte trips (caché)

@@ -126,33 +126,41 @@
       color: #333;
     }
     
-    .driver-details {
+    .driver-details, .passenger-details {
       list-style-type: none;
       padding: 0;
       margin: 0 0 15px 0;
     }
     
-    /* Match driver rows: horizontal layout */
-    .driver-detail-item {
+    /* Match driver rows: horizontal layout avec séparateurs et backgrounds */
+    .driver-detail-item, .passenger-detail-item {
       display: flex;
-      margin-bottom: 10px;
-      align-items: left;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #eaeef3;
+    }
+    
+    .driver-detail-item:last-child, .passenger-detail-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
     }
     
     .detail-label {
       font-weight: 500;
       color: #666;
-      width: 130px;
-      flex-shrink: 0;
+      font-size: 13px;
+      flex-grow: 1;
     }
     
     .detail-value {
-      font-weight: 400;
-      color: #333;
-      word-break: break-word;
-      max-width: calc(100% - 130px);
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-weight: 600;
+      color: #1c2b46;
+      font-size: 16px;
+      padding: 6px 12px;
+      background: #f0f4f9;
+      border-radius: 12px;
     }
     
     .user-id {

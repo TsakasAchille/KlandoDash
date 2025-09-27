@@ -13,7 +13,7 @@ class TripStatsFormatter:
     """Formatter pour les données de statistiques de trajet"""
     
     def __init__(self):
-        self.config = load_json_config('trip_details_config.json')
+        self.config = load_json_config('trip_details.json')
         self.display_config = load_json_config('trip_stats_display_config.json')
     
     def format_for_display(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:

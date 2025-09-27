@@ -427,7 +427,7 @@ def get_trip_details_configured(trip_id):
         # 1. Charger la configuration via settings.py
         from dash_apps.utils.settings import load_json_config
         
-        config = load_json_config('trip_details_config.json')
+        config = load_json_config('trip_details.json')
         trip_config = config.get('trip_details', {})
         fields_config = trip_config.get('fields', {})
         

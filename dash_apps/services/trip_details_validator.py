@@ -14,7 +14,7 @@ class TripDetailsValidator:
         config_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), 
             'config', 
-            'trip_details_config.json'
+            'trip_details.json'
         )
         
         # Validation avec Pydantic
@@ -32,7 +32,7 @@ class TripDetailsValidator:
         config_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), 
             'config', 
-            'trip_details_config.json'
+            'trip_details.json'
         )
         
         return PydanticSchemaValidator.auto_fix_config(config_path)
