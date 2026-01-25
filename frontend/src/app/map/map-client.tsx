@@ -7,6 +7,7 @@ import { MapFilters } from "@/components/map/map-filters";
 import { RecentTripsTable } from "@/components/map/recent-trips-table";
 import { TripMapPopup } from "@/components/map/trip-map-popup";
 import { TripMapItem, MapFilters as MapFiltersType } from "@/types/trip";
+import { Filter, X } from "lucide-react";
 
 // Import dynamique pour éviter les erreurs SSR avec Leaflet
 const TripMap = dynamic(
@@ -50,6 +51,7 @@ export function MapClient({
   });
   const [hoveredTripId, setHoveredTripId] = useState<string | null>(null);
   const [hiddenTripIds, setHiddenTripIds] = useState<Set<string>>(new Set());
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Toggle visibility d'un trajet
   const handleToggleVisibility = useCallback((tripId: string) => {
@@ -191,7 +193,7 @@ export function MapClient({
       </div>
 
       {/* Colonne droite: Carte */}
-      <div className="lg:col-span-3 relative min-h-[500px]">
+      <div className="lg:col-span-3 relative min-h-[400px]">
         <TripMap
           trips={filteredTrips}
           selectedTrip={selectedTrip}
@@ -205,6 +207,43 @@ export function MapClient({
         {/* Popup détails (overlay sur la carte) */}
         {selectedTrip && (
           <TripMapPopup trip={selectedTrip} onClose={handleClosePopup} />
+        )}
+
+        {/* Bouton filtres mobile */}
+        <button
+          onClick={() => setShowMobileFilters(!showMobileFilters)}
+          className="lg:hidden fixed bottom-4 right-4 z-10 p-3 bg-klando-burgundy text-white rounded-full shadow-lg hover:bg-klando-burgundy/90 transition-colors"
+          aria-label="Filtres"
+        >
+          <Filter className="w-5 h-5" />
+        </button>
+
+        {/* Filtres mobile overlay */}
+        {showMobileFilters && (
+          <div className="lg:hidden fixed inset-0 z-40 flex">
+            <div 
+              className="fixed inset-0 bg-black/50 transition-opacity"
+              onClick={() => setShowMobileFilters(false)}
+            />
+            <div className="fixed top-0 right-0 h-full w-80 bg-klando-dark transform transition-transform">
+              <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white">Filtres</h3>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="p-2 text-white hover:text-klando-gold transition-colors rounded-lg hover:bg-klando-burgundy/20"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto h-full">
+                <MapFilters
+                  filters={filters}
+                  drivers={drivers}
+                  onFilterChange={handleFilterChange}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

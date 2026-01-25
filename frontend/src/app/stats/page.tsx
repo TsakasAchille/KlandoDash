@@ -49,14 +49,17 @@ export default async function StatsPage() {
   const stats = await getDashboardStats();
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <BarChart3 className="w-8 h-8 text-klando-gold" />
-        <h1 className="text-3xl font-bold">Statistiques</h1>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
+          <h1 className="text-2xl sm:text-3xl font-bold">Statistiques</h1>
+        </div>
       </div>
 
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Trajets"
           value={stats.trips.total}
@@ -81,7 +84,7 @@ export default async function StatsPage() {
       </div>
 
       {/* Secondary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Distance totale"
           value={formatDistance(stats.trips.totalDistance)}
@@ -121,14 +124,14 @@ export default async function StatsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
             {stats.trips.byStatus.map(({ status, count }) => (
               <div
                 key={status}
                 className="flex flex-col items-center p-4 rounded-lg bg-secondary"
               >
                 <span
-                  className={`text-2xl font-bold ${
+                  className={`text-xl sm:text-2xl font-bold ${
                     status === "ACTIVE"
                       ? "text-blue-400"
                       : status === "COMPLETED"
@@ -163,12 +166,12 @@ export default async function StatsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/30">
               <p className="text-sm text-muted-foreground mb-1">
                 Total passagers (brut)
               </p>
-              <p className="text-2xl font-bold text-green-400">
+              <p className="text-xl sm:text-2xl font-bold text-green-400">
                 {formatPrice(stats.revenue.totalPassengerPrice)}
               </p>
             </div>
@@ -176,7 +179,7 @@ export default async function StatsPage() {
               <p className="text-sm text-muted-foreground mb-1">
                 Total conducteurs (net)
               </p>
-              <p className="text-2xl font-bold text-blue-400">
+              <p className="text-xl sm:text-2xl font-bold text-blue-400">
                 {formatPrice(stats.revenue.totalDriverPrice)}
               </p>
             </div>
@@ -184,7 +187,7 @@ export default async function StatsPage() {
               <p className="text-sm text-muted-foreground mb-1">
                 Commission Klando
               </p>
-              <p className="text-2xl font-bold text-klando-gold">
+              <p className="text-xl sm:text-2xl font-bold text-klando-gold">
                 {formatPrice(stats.revenue.totalPassengerPrice - stats.revenue.totalDriverPrice)}
               </p>
             </div>

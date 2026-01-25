@@ -27,14 +27,14 @@ export default async function MapPage({ searchParams }: MapPageProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header avec stats */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
-        <h1 className="text-2xl font-bold text-[#EBC33F]">Carte des Trajets</h1>
-        <div className="flex gap-4">
-          <span className="px-3 py-1 text-sm bg-gray-800 rounded-full">
+      {/* Header responsive avec stats */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-b border-gray-800 gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-klando-gold">Carte des Trajets</h1>
+        <div className="flex flex-wrap gap-2 sm:gap-4">
+          <span className="px-3 py-1 text-xs sm:text-sm bg-gray-800 rounded-full">
             {stats.total_trips} trajets
           </span>
-          <span className="px-3 py-1 text-sm bg-blue-500/20 text-blue-400 rounded-full">
+          <span className="px-3 py-1 text-xs sm:text-sm bg-blue-500/20 text-blue-400 rounded-full">
             {stats.active_trips} actifs
           </span>
         </div>
