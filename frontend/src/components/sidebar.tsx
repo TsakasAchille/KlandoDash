@@ -14,7 +14,7 @@ const navItems = [
   { href: "/users", label: "Utilisateurs", icon: Users },
   { href: "/map", label: "Carte", icon: Map },
   { href: "/stats", label: "Statistiques", icon: BarChart3 },
-  { href: "/chats", label: "Messages", icon: MessageSquare },
+  // { href: "/chats", label: "Messages", icon: MessageSquare }, // Temporairement désactivé
 ];
 
 const adminItems = [
