@@ -72,7 +72,44 @@ export interface TripStats {
 }
 
 // Statuts possibles
-export type TripStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+export type TripStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED" | "ARCHIVED";
+
+// Type pour la carte (page Map)
+export interface TripMapItem {
+  trip_id: string;
+  departure_name: string | null;
+  destination_name: string | null;
+  departure_latitude: number | null;
+  departure_longitude: number | null;
+  destination_latitude: number | null;
+  destination_longitude: number | null;
+  polyline: string;
+  status: string | null;
+  departure_schedule: string | null;
+  passenger_price: number | null;
+  seats_available: number | null;
+  seats_published: number | null;
+  distance: number | null;
+  driver: {
+    uid: string;
+    display_name: string | null;
+    photo_url: string | null;
+    rating: number | null;
+  } | null;
+  passengers: Array<{
+    uid: string;
+    display_name: string | null;
+    photo_url: string | null;
+  }>;
+}
+
+// Filtres pour la carte
+export interface MapFilters {
+  status: TripStatus | "ALL";
+  dateFrom: string | null;
+  dateTo: string | null;
+  driverId: string | null;
+}
 
 // Type legacy pour compatibilité avec mock data
 export interface Trip {

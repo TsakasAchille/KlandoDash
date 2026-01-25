@@ -57,6 +57,7 @@ export function UsersPageClient({
         <UserTable
           users={users}
           selectedUserId={selectedUser?.uid || null}
+          initialSelectedId={initialSelectedId}
           onSelectUser={handleSelectUser}
         />
       </div>

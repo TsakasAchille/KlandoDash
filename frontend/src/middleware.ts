@@ -1,0 +1,53 @@
+import { auth } from "@/lib/auth";
+import { NextResponse } from "next/server";
+
+// Routes réservées aux administrateurs
+const ADMIN_ROUTES = ["/admin", "/support"];
+
+export default auth((req) => {
+  const isLoggedIn = !!req.auth;
+  const isLoginPage = req.nextUrl.pathname === "/login";
+  const pathname = req.nextUrl.pathname;
+
+  // Utilisateur connecté sur /login -> rediriger vers /
+  if (isLoggedIn && isLoginPage) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+
+  // Utilisateur non connecté sur page protégée -> rediriger vers /login
+  if (!isLoggedIn && !isLoginPage) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Routes admin: vérifier le rôle
+  const isAdminRoute = ADMIN_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  if (isLoggedIn && isAdminRoute) {
+    const userRole = req.auth?.user?.role;
+    if (userRole !== "admin") {
+      // Rediriger vers l'accueil si pas admin
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+  }
+
+  return NextResponse.next();
+});
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - api/auth (NextAuth endpoints)
+     * - api/webhooks (webhook endpoints)
+     * - api/health (health checks)
+     */
+    "/((?!_next|api/auth|api/webhooks|api/health|favicon.ico).*)",
+  ],
+};

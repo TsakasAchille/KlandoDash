@@ -24,13 +24,22 @@ import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 interface UserTableProps {
   users: UserListItem[];
   selectedUserId: string | null;
+  initialSelectedId?: string | null;
   onSelectUser: (user: UserListItem) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-export function UserTable({ users, selectedUserId, onSelectUser }: UserTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+export function UserTable({ users, selectedUserId, initialSelectedId, onSelectUser }: UserTableProps) {
+  // Calculer la page initiale basée sur l'utilisateur sélectionné
+  const getInitialPage = () => {
+    if (!initialSelectedId) return 1;
+    const index = users.findIndex((u) => u.uid === initialSelectedId);
+    if (index === -1) return 1;
+    return Math.floor(index / ITEMS_PER_PAGE) + 1;
+  };
+
+  const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [roleFilter, setRoleFilter] = useState<string>("all");
 
   // Filter users by role

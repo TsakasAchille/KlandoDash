@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST="{\"app/map/map-client.tsx -> @/components/map/trip-map\":{\"id\":\"app/map/map-client.tsx -> @/components/map/trip-map\",\"files\":[\"static/css/_app-pages-browser_src_components_map_trip-map_tsx.css\",\"static/chunks/_app-pages-browser_src_components_map_trip-map_tsx.js\"]}}"

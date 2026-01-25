@@ -57,6 +57,7 @@ export function TripsPageClient({
         <TripTable
           trips={trips}
           selectedTripId={selectedTrip?.trip_id || null}
+          initialSelectedId={initialSelectedId}
           onSelectTrip={handleSelectTrip}
         />
       </div>

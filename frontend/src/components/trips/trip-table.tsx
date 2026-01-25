@@ -24,6 +24,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 interface TripTableProps {
   trips: Trip[];
   selectedTripId: string | null;
+  initialSelectedId?: string | null;
   onSelectTrip: (trip: Trip) => void;
 }
 
@@ -37,8 +38,16 @@ const statusColors: Record<string, string> = {
 
 const ITEMS_PER_PAGE = 5;
 
-export function TripTable({ trips, selectedTripId, onSelectTrip }: TripTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+export function TripTable({ trips, selectedTripId, initialSelectedId, onSelectTrip }: TripTableProps) {
+  // Calculer la page initiale basée sur le trajet sélectionné
+  const getInitialPage = () => {
+    if (!initialSelectedId) return 1;
+    const index = trips.findIndex((t) => t.trip_id === initialSelectedId);
+    if (index === -1) return 1;
+    return Math.floor(index / ITEMS_PER_PAGE) + 1;
+  };
+
+  const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Filter trips by status

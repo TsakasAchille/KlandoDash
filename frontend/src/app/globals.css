@@ -66,3 +66,44 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Leaflet Map Styles */
+@keyframes polyline-pulse {
+  0%, 100% {
+    stroke-opacity: 1;
+    stroke-width: 6px;
+  }
+  50% {
+    stroke-opacity: 0.5;
+    stroke-width: 10px;
+  }
+}
+
+.polyline-pulse path {
+  animation: polyline-pulse 0.8s ease-in-out 3;
+}
+
+.custom-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Leaflet popup dark theme */
+.leaflet-popup-content-wrapper {
+  background: #081C36;
+  color: white;
+  border-radius: 8px;
+}
+
+.leaflet-popup-tip {
+  background: #081C36;
+}
+
+/* Fix Leaflet z-index avec Shadcn */
+.leaflet-pane {
+  z-index: 1;
+}
+
+.leaflet-control {
+  z-index: 2;
+}
