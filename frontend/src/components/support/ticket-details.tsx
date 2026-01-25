@@ -82,7 +82,7 @@ export function TicketDetails({
           Message original
         </h3>
         <div className="p-4 rounded-lg bg-klando-dark/50 border border-klando-dark">
-          <p className="whitespace-pre-wrap">{ticket.message}</p>
+          <p className="whitespace-pre-wrap text-white">{ticket.message}</p>
         </div>
       </div>
 

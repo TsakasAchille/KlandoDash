@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { Logo } from "@/components/logo";
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -14,7 +15,9 @@ function LoginContent() {
       <div className="w-full max-w-md p-8 space-y-8">
         {/* Logo / Titre */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-klando-gold">KlandoDash</h1>
+          <div className="flex justify-center mb-4">
+            <Logo size="xlarge" />
+          </div>
           <p className="mt-2 text-muted-foreground">
             Tableau de bord administrateur
           </p>

@@ -1,12 +1,11 @@
 {
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/support/page": "app/support/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/api/admin/users/route": "app/api/admin/users/route.js",
-  "/page": "app/page.js",
-  "/users/page": "app/users/page.js",
-  "/stats/page": "app/stats/page.js",
   "/map/page": "app/map/page.js",
+  "/api/trips/[tripId]/passengers/route": "app/api/trips/[tripId]/passengers/route.js",
+  "/users/page": "app/users/page.js",
+  "/api/users/[uid]/trips/route": "app/api/users/[uid]/trips/route.js",
   "/trips/page": "app/trips/page.js",
-  "/login/page": "app/login/page.js"
+  "/stats/page": "app/stats/page.js",
+  "/support/page": "app/support/page.js",
+  "/admin/page": "app/admin/page.js"
 }

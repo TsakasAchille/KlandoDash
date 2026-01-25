@@ -1,11 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Trip } from "@/types/trip";
 import { formatDate, formatDistance, formatPrice } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Users, Banknote, Car, Leaf, ExternalLink } from "lucide-react";
+import { MapPin, Clock, Users, Banknote, Car, Leaf, ExternalLink, Map } from "lucide-react";
+
+// Import dynamique pour éviter les erreurs SSR avec Leaflet
+const TripRouteMap = dynamic(
+  () => import("./trip-route-map").then((mod) => mod.TripRouteMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[300px] rounded-lg bg-secondary/50 flex items-center justify-center">
+        <span className="text-muted-foreground">Chargement de la carte...</span>
+      </div>
+    ),
+  }
+);
 
 interface TripDetailsProps {
   trip: Trip;
@@ -50,7 +64,7 @@ export function TripDetails({ trip }: TripDetailsProps) {
             Itinéraire
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">Départ</p>
@@ -64,6 +78,22 @@ export function TripDetails({ trip }: TripDetailsProps) {
               <p className="text-xs text-muted-foreground">{trip.destination_address}</p>
             </div>
           </div>
+
+          {/* Map */}
+          {trip.trip_polyline ? (
+            <TripRouteMap
+              polylineString={trip.trip_polyline}
+              departureName={trip.departure_city}
+              destinationName={trip.destination_city}
+            />
+          ) : (
+            <div className="w-full h-[200px] rounded-lg bg-secondary/50 flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <Map className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Tracé non disponible</p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -18,14 +18,14 @@ interface MapFiltersProps {
 
 export function MapFilters({ filters, drivers, onFilterChange }: MapFiltersProps) {
   return (
-    <Card className="bg-[#081C36] border-gray-700">
+    <Card className="bg-klando-dark border-gray-700">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm text-[#EBC33F]">Filtres</CardTitle>
+        <CardTitle className="text-sm text-klando-gold">Filtres</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Statut */}
         <div className="space-y-1">
-          <label className="text-xs text-gray-300">Statut</label>
+          <label className="text-xs text-white">Statut</label>
           <Select
             value={filters.status}
             onValueChange={(value) =>
@@ -47,7 +47,7 @@ export function MapFilters({ filters, drivers, onFilterChange }: MapFiltersProps
 
         {/* Conducteur */}
         <div className="space-y-1">
-          <label className="text-xs text-gray-300">Conducteur</label>
+          <label className="text-xs text-white">Conducteur</label>
           <Select
             value={filters.driverId || "ALL"}
             onValueChange={(value) =>
@@ -70,23 +70,23 @@ export function MapFilters({ filters, drivers, onFilterChange }: MapFiltersProps
 
         {/* Date de début */}
         <div className="space-y-1">
-          <label className="text-xs text-gray-300">Date début</label>
+          <label className="text-xs text-white">Date début</label>
           <input
             type="date"
             value={filters.dateFrom || ""}
             onChange={(e) => onFilterChange({ dateFrom: e.target.value || null })}
-            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-[#EBC33F]"
+            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-klando-gold"
           />
         </div>
 
         {/* Date de fin */}
         <div className="space-y-1">
-          <label className="text-xs text-gray-300">Date fin</label>
+          <label className="text-xs text-white">Date fin</label>
           <input
             type="date"
             value={filters.dateTo || ""}
             onChange={(e) => onFilterChange({ dateTo: e.target.value || null })}
-            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-[#EBC33F]"
+            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-klando-gold"
           />
         </div>
       </CardContent>

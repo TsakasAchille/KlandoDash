@@ -42,6 +42,7 @@ export interface SupportComment {
   comment_text: string;
   created_at: string;
   comment_source: CommentSource;
+  admin_name?: string; // Nom de l'admin (pour affichage)
 }
 
 // Detail du ticket avec commentaires (retour de get_ticket_detail)

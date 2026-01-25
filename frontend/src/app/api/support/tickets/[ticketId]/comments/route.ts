@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { addComment } from "@/lib/queries/support";
 
 interface RouteParams {
@@ -8,18 +9,30 @@ interface RouteParams {
 // POST /api/support/tickets/[ticketId]/comments
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    // Vérifier l'authentification
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: "Non autorisé" },
+        { status: 401 }
+      );
+    }
+
+    const userEmail = session.user.email;
+    const userName = session.user.name || userEmail;
+
     const { ticketId } = await params;
     const body = await request.json();
-    const { text, userId = "admin" } = body as { text: string; userId?: string };
+    const { text } = body as { text: string };
 
-    if (!text || text.trim().length < 10) {
+    if (!text || text.trim().length < 3) {
       return NextResponse.json(
-        { error: "Le commentaire doit faire au moins 10 caracteres" },
+        { error: "Le commentaire doit faire au moins 3 caracteres" },
         { status: 400 }
       );
     }
 
-    const result = await addComment(ticketId, userId, text.trim(), "admin");
+    const result = await addComment(ticketId, userEmail, text.trim(), "admin");
 
     if (!result.success) {
       return NextResponse.json(
@@ -28,14 +41,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Retourner le commentaire cree
+    // Retourner le commentaire créé avec les infos de l'admin
     return NextResponse.json({
       comment_id: result.commentId,
       ticket_id: ticketId,
-      user_id: userId,
+      user_id: userEmail,
       comment_text: text.trim(),
       created_at: new Date().toISOString(),
       comment_source: "admin",
+      admin_name: userName,
     });
   } catch (error) {
     console.error("POST /api/support/tickets/[ticketId]/comments error:", error);

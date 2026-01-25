@@ -14,8 +14,8 @@ const TripMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full flex items-center justify-center bg-gray-900 rounded-lg">
-        <div className="text-gray-400">Chargement de la carte...</div>
+      <div className="w-full h-full flex items-center justify-center bg-klando-dark rounded-lg">
+        <div className="text-white">Chargement de la carte...</div>
       </div>
     ),
   }

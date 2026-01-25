@@ -69,6 +69,11 @@ export function CommentThread({ comments, className }: CommentThreadProps) {
                 {COMMENT_SOURCE_LABELS[comment.comment_source as keyof typeof COMMENT_SOURCE_LABELS] ||
                   comment.comment_source}
               </span>
+              {comment.comment_source === "admin" && (comment.admin_name || comment.user_id) && (
+                <span className="text-klando-gold">
+                  — {comment.admin_name || comment.user_id}
+                </span>
+              )}
             </div>
             <span className="text-xs text-muted-foreground">
               {formatCommentDate(comment.created_at)}
@@ -76,7 +81,7 @@ export function CommentThread({ comments, className }: CommentThreadProps) {
           </div>
 
           {/* Content */}
-          <p className="text-sm whitespace-pre-wrap">{comment.comment_text}</p>
+          <p className="text-sm whitespace-pre-wrap text-white">{comment.comment_text}</p>
         </div>
       ))}
     </div>

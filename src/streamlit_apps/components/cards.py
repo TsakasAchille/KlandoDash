@@ -51,7 +51,7 @@ class Cards:
                     padding-bottom: 8px;
                 }
                 .info-content {
-                    color: #D1D5DB;
+                    color: white;
                     font-size: 16px;
                     margin-top: 2px;
                     margin-bottom: 2px;
@@ -68,7 +68,7 @@ class Cards:
                 }
                 .info-card .label {
                     font-weight: 600;
-                    color: #A0A6B0;
+                    color: #E0E0E0;
                     font-size: 9px;
                     margin-right: 8px;
                     text-transform: uppercase;
@@ -82,7 +82,7 @@ class Cards:
                     border-left: 5px solid #7b1f2f;
                 }
                 .metric-label {
-                    color: #BBB;
+                    color: #E0E0E0;
                     margin: 0;
                     font-size: 14px;
                 }

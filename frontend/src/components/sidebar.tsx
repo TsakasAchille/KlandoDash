@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Home, Car, Users, BarChart3, MessageSquare, Map, LifeBuoy, Shield } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
+import { Logo } from "@/components/logo";
 
 const navItems = [
   { href: "/", label: "Accueil", icon: Home },
@@ -28,8 +29,8 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 bg-klando-dark border-r border-border flex flex-col">
-      <div className="p-6 border-b border-border">
-        <h1 className="text-2xl font-bold text-klando-gold">KlandoDash</h1>
+      <div className="p-2 border-b border-border flex justify-center">
+        <Logo size="xlarge" />
       </div>
       <nav className="flex-1 p-4">
         <ul className="space-y-2">

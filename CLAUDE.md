@@ -59,6 +59,7 @@ npx supabase db dump --schema public -f schema.sql
 | `bookings` | Reservations | `id` | 21 |
 | `chats` | Messages | `id` | - |
 | `transactions` | Payments | `id` | - |
+| `dash_authorized_users` | Utilisateurs autorisés dashboard | `email` | ~8 |
 
 ### Key Relations
 ```
@@ -104,23 +105,29 @@ const { data } = await supabase
 ```
 frontend/src/
 ├── app/
-│   ├── layout.tsx          # Root layout + sidebar
+│   ├── layout.tsx          # Root layout + SessionProvider
 │   ├── page.tsx            # Home
+│   ├── login/              # Page de connexion
 │   ├── trips/              # Trips page
 │   ├── users/              # Users page
 │   └── stats/              # Stats dashboard
 ├── components/
-│   ├── sidebar.tsx         # Navigation
+│   ├── sidebar.tsx         # Navigation + UserMenu
+│   ├── user-menu.tsx       # Menu utilisateur (avatar, rôle, déconnexion)
+│   ├── providers.tsx       # SessionProvider wrapper
+│   ├── layout-content.tsx  # Layout conditionnel (avec/sans sidebar)
 │   ├── ui/                 # Shadcn components
 │   ├── trips/              # Trip components
 │   └── users/              # User components
 ├── lib/
+│   ├── auth.ts             # Configuration NextAuth.js
 │   ├── supabase.ts         # Supabase clients
 │   ├── queries/
 │   │   ├── trips.ts        # Trip queries
 │   │   ├── users.ts        # User queries
 │   │   └── stats.ts        # Dashboard stats
 │   └── utils.ts            # formatDate, formatPrice, cn
+├── middleware.ts           # Protection des routes (redirect /login)
 └── types/
     ├── trip.ts             # Trip types
     └── user.ts             # User types
@@ -156,20 +163,52 @@ getTripsWithDriver(limit) // Enriched list with driver info
 | Burgundy | `#7B1F2F` | `--klando-burgundy` | Selected states |
 | Dark | `#081C36` | `--klando-dark` | Backgrounds |
 
+## Authentication (NextAuth.js v5)
+
+Le dashboard utilise NextAuth.js avec Google OAuth. Seuls les utilisateurs présents dans la table `dash_authorized_users` avec `active=true` peuvent accéder.
+
+### Flux d'authentification
+```
+Utilisateur ──► / ──► middleware.ts ──► Non connecté? ──► /login
+                                              │
+                                        Connecté? ──► Accès autorisé
+```
+
+### Table `dash_authorized_users`
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `email` | varchar(255) | Email (PK) |
+| `active` | boolean | Autorisation active |
+| `role` | varchar(50) | `admin` ou `user` |
+| `added_at` | timestamp | Date d'ajout |
+| `added_by` | varchar(255) | Ajouté par |
+
+### Fichiers clés
+- `src/lib/auth.ts` - Configuration NextAuth + callbacks
+- `src/middleware.ts` - Protection des routes
+- `src/app/login/page.tsx` - Page de connexion
+- `src/components/user-menu.tsx` - Menu utilisateur dans la sidebar
+
 ## Environment Variables
 
-### Root `.env.local`
+### Root `.env.local` (symlink vers frontend/)
 ```env
+# Supabase
 SUPABASE_URL=https://zzxeimcchndnrildeefl.supabase.co
 SUPABASE_KEY=<anon_key>
 SUPABASE_SERVICE_KEY=<service_role_key>
-```
-
-### Frontend `frontend/.env.local`
-```env
 NEXT_PUBLIC_SUPABASE_URL=https://zzxeimcchndnrildeefl.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key>
 SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
+
+# NextAuth.js
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<générer avec: openssl rand -base64 32>
+AUTH_SECRET=<même valeur que NEXTAUTH_SECRET>
+
+# Google OAuth (depuis Google Cloud Console)
+GOOGLE_CLIENT_ID=<client_id>
+GOOGLE_CLIENT_SECRET=<client_secret>
 ```
 
 ## Key Conventions
@@ -191,6 +230,11 @@ SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 - [x] Stats page with dashboard metrics
 - [x] Database indexes for performance
 - [x] Dark theme with Klando colors
+- [x] Authentication NextAuth.js v5 + Google OAuth
+- [x] Whitelist utilisateurs via `dash_authorized_users`
+- [x] UserMenu avec avatar, rôle, déconnexion
 
 ### TODO 🚧
 - [ ] Chats page
+- [ ] Routes admin (vérification `role === "admin"`)
+- [ ] Audit log des connexions

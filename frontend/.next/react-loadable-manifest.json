@@ -5,5 +5,12 @@
       "static/css/_app-pages-browser_src_components_map_trip-map_tsx.css",
       "static/chunks/_app-pages-browser_src_components_map_trip-map_tsx.js"
     ]
+  },
+  "components/trips/trip-details.tsx -> ./trip-route-map": {
+    "id": "components/trips/trip-details.tsx -> ./trip-route-map",
+    "files": [
+      "static/css/_app-pages-browser_src_components_trips_trip-route-map_tsx.css",
+      "static/chunks/_app-pages-browser_src_components_trips_trip-route-map_tsx.js"
+    ]
   }
 }

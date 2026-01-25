@@ -6,6 +6,31 @@ import * as polyline from "@mapbox/polyline";
 import "leaflet/dist/leaflet.css";
 import { TripMapItem } from "@/types/trip";
 
+// CSS personnalisé pour les popups Leaflet
+const popupStyles = `
+  .leaflet-popup-content-wrapper {
+    background-color: #081C36 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    border: 1px solid #7B1F2F !important;
+  }
+  .leaflet-popup-content {
+    color: white !important;
+    margin: 8px !important;
+    font-family: system-ui, -apple-system, sans-serif !important;
+  }
+  .leaflet-popup-tip {
+    background-color: #081C36 !important;
+  }
+  .leaflet-popup-close-button {
+    color: white !important;
+    opacity: 0.8 !important;
+  }
+  .leaflet-popup-close-button:hover {
+    opacity: 1 !important;
+  }
+`;
+
 // Palette de couleurs variées pour distinguer les trajets
 const POLYLINE_COLORS = [
   "#3B82F6", // Bleu
@@ -97,6 +122,11 @@ export function TripMap({
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
+    // Injecter les styles CSS pour les popups
+    const styleElement = document.createElement('style');
+    styleElement.textContent = popupStyles;
+    document.head.appendChild(styleElement);
+
     mapRef.current = L.map(mapContainerRef.current, {
       center: [14.6937, -17.4441], // Dakar
       zoom: 7,
@@ -112,6 +142,8 @@ export function TripMap({
     return () => {
       mapRef.current?.remove();
       mapRef.current = null;
+      // Nettoyer les styles CSS
+      document.head.removeChild(styleElement);
     };
   }, []);
 
@@ -156,13 +188,13 @@ export function TripMap({
 
         // Marker départ (vert)
         const startMarker = L.marker(coords[0], { icon: createCustomIcon("#22C55E") })
-          .bindPopup(`<b>Départ:</b> ${trip.departure_name || "N/A"}`)
+          .bindPopup(`<b style="color: #EBC33F;">Départ:</b> ${trip.departure_name || "N/A"}`)
           .addTo(mapRef.current!);
         markersRef.current.push(startMarker);
 
         // Marker arrivée (rouge)
         const endMarker = L.marker(coords[coords.length - 1], { icon: createCustomIcon("#EF4444") })
-          .bindPopup(`<b>Arrivée:</b> ${trip.destination_name || "N/A"}`)
+          .bindPopup(`<b style="color: #EBC33F;">Arrivée:</b> ${trip.destination_name || "N/A"}`)
           .addTo(mapRef.current!);
         markersRef.current.push(endMarker);
       }

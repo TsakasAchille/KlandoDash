@@ -51,10 +51,10 @@ export function RecentTripsTable({
   onShowAll,
 }: RecentTripsTableProps) {
   return (
-    <Card className="bg-[#081C36] border-gray-700 flex-1 overflow-hidden">
+    <Card className="bg-klando-dark border-gray-700 flex-1 overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm text-[#EBC33F]">
+          <CardTitle className="text-sm text-klando-gold">
             10 Derniers Trajets
           </CardTitle>
         </div>
@@ -62,7 +62,7 @@ export function RecentTripsTable({
         <div className="flex gap-2 mt-2">
           <button
             onClick={onShowOnlyLast}
-            className="flex-1 px-2 py-1 text-[10px] bg-[#7B1F2F] hover:bg-[#7B1F2F]/80 text-white rounded transition-colors"
+            className="flex-1 px-2 py-1 text-[10px] bg-klando-burgundy hover:bg-klando-burgundy/80 text-white rounded transition-colors"
           >
             Dernier seul
           </button>
@@ -80,7 +80,7 @@ export function RecentTripsTable({
             <TableBody>
               {trips.length === 0 ? (
                 <TableRow>
-                  <TableCell className="text-center text-gray-400 py-8">
+                  <TableCell className="text-center text-white py-8">
                     Aucun trajet trouvé
                   </TableCell>
                 </TableRow>
@@ -94,7 +94,7 @@ export function RecentTripsTable({
                       key={trip.trip_id}
                       className={cn(
                         "cursor-pointer transition-colors",
-                        selectedTripId === trip.trip_id && "bg-[#7B1F2F]/30",
+                        selectedTripId === trip.trip_id && "bg-klando-burgundy/30",
                         hoveredTripId === trip.trip_id &&
                           selectedTripId !== trip.trip_id &&
                           "bg-gray-800/50",
@@ -114,7 +114,7 @@ export function RecentTripsTable({
                                 e.stopPropagation();
                                 onToggleVisibility(trip.trip_id);
                               }}
-                              className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-[#EBC33F] focus:ring-[#EBC33F] cursor-pointer"
+                              className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-klando-gold focus:ring-klando-gold cursor-pointer"
                             />
                             <div
                               className="w-3 h-3 rounded-full"
@@ -142,10 +142,10 @@ export function RecentTripsTable({
                                 {trip.status || "N/A"}
                               </span>
                             </div>
-                            <div className="text-xs text-gray-300 truncate">
+                            <div className="text-xs text-white truncate">
                               → {trip.destination_name || "N/A"}
                             </div>
-                            <div className="text-[10px] text-gray-400">
+                            <div className="text-[10px] text-gray-300">
                               {formatDate(trip.departure_schedule || "")}
                             </div>
                           </div>

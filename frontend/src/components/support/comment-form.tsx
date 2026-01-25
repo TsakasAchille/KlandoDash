@@ -10,7 +10,7 @@ interface CommentFormProps {
   disabled?: boolean;
 }
 
-const MIN_LENGTH = 10;
+const MIN_LENGTH = 3;
 
 export function CommentForm({ onSubmit, disabled }: CommentFormProps) {
   const [text, setText] = useState("");
