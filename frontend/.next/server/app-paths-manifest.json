@@ -1,11 +1,5 @@
 {
-  "/map/page": "app/map/page.js",
-  "/users/page": "app/users/page.js",
-  "/api/users/[uid]/trips/route": "app/api/users/[uid]/trips/route.js",
-  "/trips/page": "app/trips/page.js",
-  "/api/trips/[tripId]/passengers/route": "app/api/trips/[tripId]/passengers/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/support/page": "app/support/page.js",
-  "/api/support/tickets/[ticketId]/route": "app/api/support/tickets/[ticketId]/route.js",
-  "/admin/page": "app/admin/page.js",
-  "/page": "app/page.js"
+  "/admin/page": "app/admin/page.js"
 }

@@ -36,7 +36,7 @@ export function UserMenu() {
 
         {/* Infos utilisateur */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{name}</p>
+          <p className="text-sm font-medium truncate text-white">{name}</p>
           <p className="text-xs text-muted-foreground truncate">{email}</p>
         </div>
       </div>
@@ -55,10 +55,11 @@ export function UserMenu() {
 
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1 text-xs text-white hover:text-klando-gold transition-colors"
         >
           <LogOut className="w-3 h-3" />
-          Déconnexion
+          <span className="hidden sm:inline">Déconnexion</span>
+          <span className="sm:hidden">Déco</span>
         </button>
       </div>
     </div>

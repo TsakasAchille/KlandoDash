@@ -11,6 +11,25 @@ interface TripRouteMapProps {
   destinationName?: string;
 }
 
+// CSS pour réduire le z-index de la carte (comme trip-map.tsx)
+const mapStyles = `
+  .leaflet-container {
+    z-index: 10 !important;
+  }
+  .leaflet-control-container {
+    z-index: 11 !important;
+  }
+  .leaflet-control {
+    z-index: 12 !important;
+  }
+  .leaflet-control-zoom {
+    z-index: 13 !important;
+  }
+  .leaflet-control-attribution {
+    z-index: 13 !important;
+  }
+`;
+
 // Icône personnalisée pour markers
 const createMarkerIcon = (color: string) =>
   L.divIcon({
@@ -38,6 +57,11 @@ export function TripRouteMap({
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
+    // Injecter les styles CSS pour réduire le z-index
+    const styleElement = document.createElement('style');
+    styleElement.textContent = mapStyles;
+    document.head.appendChild(styleElement);
+
     // Décoder le polyline
     let coordinates: [number, number][] = [];
     try {
@@ -59,9 +83,9 @@ export function TripRouteMap({
       scrollWheelZoom: false,
     });
 
-    // CartoDB dark matter (style sombre)
+    // CartoDB positron (même style que la page map)
     L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
       {
         attribution:
           '&copy; <a href="https://carto.com/">CartoDB</a> &copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
@@ -95,6 +119,10 @@ export function TripRouteMap({
     return () => {
       mapRef.current?.remove();
       mapRef.current = null;
+      // Nettoyer les styles CSS
+      if (styleElement.parentNode) {
+        styleElement.parentNode.removeChild(styleElement);
+      }
     };
   }, [polylineString, departureName, destinationName]);
 
