@@ -21,21 +21,21 @@ export function UserDetails({ user }: UserDetailsProps) {
               <img
                 src={user.photo_url}
                 alt=""
-                className="w-20 h-20 rounded-full object-cover mb-4"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover mb-4"
               />
             ) : (
-              <div className="w-20 h-20 rounded-full bg-klando-burgundy flex items-center justify-center text-white text-2xl font-semibold mb-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-klando-burgundy flex items-center justify-center text-white text-xl sm:text-2xl font-semibold mb-4">
                 {(user.display_name || "?").charAt(0).toUpperCase()}
               </div>
             )}
-            <h2 className="text-xl font-bold">{user.display_name || "Sans nom"}</h2>
-            <p className="text-sm text-muted-foreground">{user.uid}</p>
+            <h2 className="text-lg sm:text-xl font-bold">{user.display_name || "Sans nom"}</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground break-all">{user.uid}</p>
 
             {user.rating && (
               <div className="flex items-center gap-1 mt-2">
-                <Star className="w-5 h-5 fill-klando-gold text-klando-gold" />
-                <span className="font-semibold">{user.rating.toFixed(1)}</span>
-                <span className="text-muted-foreground text-sm">
+                <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-klando-gold text-klando-gold" />
+                <span className="font-semibold text-sm sm:text-base">{user.rating.toFixed(1)}</span>
+                <span className="text-muted-foreground text-xs sm:text-sm">
                   ({user.rating_count || 0} avis)
                 </span>
               </div>
@@ -47,37 +47,41 @@ export function UserDetails({ user }: UserDetailsProps) {
       {/* Info Card */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <User className="w-5 h-5 text-klando-gold" />
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <User className="w-4 h-4 sm:w-5 sm:h-5 text-klando-gold" />
             Informations
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {user.email && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {user.email && (
+              <div className="flex items-center gap-3">
+                <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm truncate break-all">{user.email}</span>
+              </div>
+            )}
+            {user.phone_number && (
+              <div className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm">{user.phone_number}</span>
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {user.created_at && (
+              <div className="flex items-center gap-3">
+                <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm">
+                  Inscrit le {formatDate(user.created_at)}
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-3">
-              <Mail className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm truncate">{user.email}</span>
-            </div>
-          )}
-          {user.phone_number && (
-            <div className="flex items-center gap-3">
-              <Phone className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">{user.phone_number}</span>
-            </div>
-          )}
-          {user.created_at && (
-            <div className="flex items-center gap-3">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <span className="text-sm">
-                Inscrit le {formatDate(user.created_at)}
+                Rôle: <span className="font-medium">{user.role || "user"}</span>
               </span>
             </div>
-          )}
-          <div className="flex items-center gap-3">
-            <Shield className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm">
-              Rôle: <span className="font-medium">{user.role || "user"}</span>
-            </span>
           </div>
         </CardContent>
       </Card>

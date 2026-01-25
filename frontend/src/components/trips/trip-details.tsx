@@ -179,20 +179,25 @@ export function TripDetails({ trip }: TripDetailsProps) {
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-2">Conducteur</p>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-klando-burgundy/20 border border-klando-burgundy/30">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg bg-klando-burgundy/20 border border-klando-burgundy/30 gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-klando-burgundy flex items-center justify-center text-white font-semibold">
+                  <div className="w-10 h-10 rounded-full bg-klando-burgundy flex items-center justify-center text-white font-semibold flex-shrink-0">
                     {trip.driver_name.charAt(0)}
                   </div>
-                  <div>
-                    <p className="font-medium">{trip.driver_name}</p>
-                    <p className="text-xs text-muted-foreground">{trip.driver_id}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{trip.driver_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{trip.driver_id}</p>
                   </div>
                 </div>
-                <Link href={`/users?selected=${trip.driver_id}`}>
-                  <Button variant="outline" size="sm">
+                <Link href={`/users?selected=${trip.driver_id}`} className="w-full sm:w-auto">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full min-h-[44px] sm:min-h-[32px] sm:w-auto"
+                  >
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    Voir profil
+                    <span className="hidden sm:inline">Voir profil</span>
+                    <span className="sm:hidden">Profil</span>
                   </Button>
                 </Link>
               </div>

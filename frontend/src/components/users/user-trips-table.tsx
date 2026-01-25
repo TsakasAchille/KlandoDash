@@ -97,8 +97,13 @@ export function UserTripsTable({ userId }: UserTripsTableProps) {
                     </TableCell>
                     <TableCell className="text-right py-2">
                       <Link href={`/trips?selected=${trip.trip_id}`}>
-                        <Button variant="ghost" size="sm">
-                          <ExternalLink className="w-4 h-4" />
+                        <Button 
+                          variant="ghost" 
+                          className="min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] px-3 sm:px-2"
+                          size="sm"
+                        >
+                          <ExternalLink className="w-4 h-4 sm:w-4 sm:h-4" />
+                          <span className="hidden sm:inline ml-2">Voir</span>
                         </Button>
                       </Link>
                     </TableCell>
@@ -108,24 +113,28 @@ export function UserTripsTable({ userId }: UserTripsTableProps) {
             </Table>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
                 <Button
                   variant="outline"
+                  className="min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px]"
                   size="sm"
                   onClick={() => setPage((p) => p - 1)}
                   disabled={page === 1}
                 >
                   <ChevronLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-2">Précédent</span>
                 </Button>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground text-center">
                   {page} / {totalPages}
                 </span>
                 <Button
                   variant="outline"
+                  className="min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px]"
                   size="sm"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page >= totalPages}
                 >
+                  <span className="hidden sm:inline mr-2">Suivant</span>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>

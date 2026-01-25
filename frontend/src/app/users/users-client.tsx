@@ -51,28 +51,53 @@ export function UsersPageClient({
   }, [initialSelectedId]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Table - 2/3 width on large screens */}
-      <div className="lg:col-span-2">
-        <UserTable
-          users={users}
-          selectedUserId={selectedUser?.uid || null}
-          initialSelectedId={initialSelectedId}
-          onSelectUser={handleSelectUser}
-        />
-      </div>
+    <div className="space-y-4 lg:space-y-6">
+      {/* Mobile: Layout vertical */}
+      <div className="lg:hidden space-y-4">
+        {/* Tableau mobile - Full width */}
+        <div className="w-full">
+          <UserTable
+            users={users}
+            selectedUserId={selectedUser?.uid || null}
+            initialSelectedId={initialSelectedId}
+            onSelectUser={handleSelectUser}
+          />
+        </div>
 
-      {/* Details - 1/3 width on large screens */}
-      <div className="lg:col-span-1">
-        {selectedUser ? (
-          <UserDetails user={selectedUser} />
-        ) : (
-          <div className="flex items-center justify-center h-64 rounded-lg border border-dashed border-border">
-            <p className="text-muted-foreground">
-              Sélectionnez un utilisateur
-            </p>
+        {/* Détails mobile - Full width */}
+        {selectedUser && (
+          <div className="w-full">
+            <UserDetails user={selectedUser} />
           </div>
         )}
+      </div>
+
+      {/* Desktop: Layout côte à côte */}
+      <div className="hidden lg:block">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Table - 2/3 width on large screens */}
+          <div className="lg:col-span-2">
+            <UserTable
+              users={users}
+              selectedUserId={selectedUser?.uid || null}
+              initialSelectedId={initialSelectedId}
+              onSelectUser={handleSelectUser}
+            />
+          </div>
+
+          {/* Details - 1/3 width on large screens */}
+          <div className="lg:col-span-1">
+            {selectedUser ? (
+              <UserDetails user={selectedUser} />
+            ) : (
+              <div className="flex items-center justify-center h-64 rounded-lg border border-dashed border-border">
+                <p className="text-muted-foreground text-center px-4">
+                  Sélectionnez un utilisateur
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

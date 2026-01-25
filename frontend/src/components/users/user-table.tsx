@@ -67,10 +67,10 @@ export function UserTable({ users, selectedUserId, initialSelectedId, onSelectUs
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex items-center gap-4">
+      {/* Filtres responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <Select value={roleFilter} onValueChange={handleFilterChange}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Rôle" />
           </SelectTrigger>
           <SelectContent>
@@ -87,17 +87,17 @@ export function UserTable({ users, selectedUserId, initialSelectedId, onSelectUs
         </span>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border bg-card">
+      {/* Tableau responsive */}
+      <div className="rounded-lg border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-klando-dark hover:bg-klando-dark">
-              <TableHead className="text-klando-gold">Utilisateur</TableHead>
-              <TableHead className="text-klando-gold">Email</TableHead>
-              <TableHead className="text-klando-gold">Téléphone</TableHead>
-              <TableHead className="text-klando-gold">Note</TableHead>
-              <TableHead className="text-klando-gold">Rôle</TableHead>
-              <TableHead className="text-klando-gold">Inscrit le</TableHead>
+              <TableHead className="text-klando-gold min-w-[100px]">Utilisateur</TableHead>
+              <TableHead className="text-klando-gold min-w-[120px] hidden sm:table-cell">Email</TableHead>
+              <TableHead className="text-klando-gold min-w-[100px] hidden md:table-cell">Téléphone</TableHead>
+              <TableHead className="text-klando-gold min-w-[80px]">Note</TableHead>
+              <TableHead className="text-klando-gold min-w-[80px]">Rôle</TableHead>
+              <TableHead className="text-klando-gold min-w-[100px] hidden lg:table-cell">Inscrit le</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -122,35 +122,41 @@ export function UserTable({ users, selectedUserId, initialSelectedId, onSelectUs
                         <img
                           src={user.photo_url}
                           alt=""
-                          className="w-8 h-8 rounded-full object-cover"
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-klando-burgundy flex items-center justify-center text-white text-sm font-semibold">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-klando-burgundy flex items-center justify-center text-white text-sm sm:font-semibold">
                           {(user.display_name || "?").charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="font-medium truncate max-w-[150px]">
-                        {user.display_name || "Sans nom"}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <span className="font-medium truncate text-sm sm:text-base">
+                          {user.display_name || "Sans nom"}
+                        </span>
+                        {/* Email visible uniquement sur mobile dans la même cellule */}
+                        <span className="text-xs sm:hidden text-muted-foreground block truncate">
+                          {user.email || "-"}
+                        </span>
+                      </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm truncate max-w-[180px]">
+                  <TableCell className="hidden sm:table-cell text-sm truncate max-w-[180px]">
                     {user.email || "-"}
                   </TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell className="hidden md:table-cell text-sm">
                     {user.phone_number || "-"}
                   </TableCell>
                   <TableCell>
                     {user.rating ? (
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 fill-klando-gold text-klando-gold" />
-                        <span>{user.rating.toFixed(1)}</span>
+                        <span className="text-sm">{user.rating.toFixed(1)}</span>
                         <span className="text-muted-foreground text-xs">
                           ({user.rating_count || 0})
                         </span>
                       </div>
                     ) : (
-                      <span className="text-muted-foreground">-</span>
+                      <span className="text-muted-foreground text-sm">-</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -165,7 +171,7 @@ export function UserTable({ users, selectedUserId, initialSelectedId, onSelectUs
                       {user.role || "user"}
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                     {user.created_at ? formatDate(user.created_at) : "-"}
                   </TableCell>
                 </TableRow>
@@ -175,9 +181,9 @@ export function UserTable({ users, selectedUserId, initialSelectedId, onSelectUs
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination responsive */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <span className="text-sm text-muted-foreground">
             Page {currentPage} sur {totalPages}
           </span>
