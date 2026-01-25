@@ -96,65 +96,73 @@ export function TripTable({ trips, selectedTripId, initialSelectedId, onSelectTr
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-klando-dark hover:bg-klando-dark">
-              <TableHead className="text-klando-gold">Trajet</TableHead>
-              <TableHead className="text-klando-gold">Distance</TableHead>
-              <TableHead className="text-klando-gold">Date</TableHead>
-              <TableHead className="text-klando-gold">Places</TableHead>
-              <TableHead className="text-klando-gold">Statut</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedTrips.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                  Aucun trajet trouvé
-                </TableCell>
+      <div className="rounded-lg border bg-card overflow-x-auto lg:overflow-visible">
+        <div className="min-w-[500px] lg:min-w-0"> {/* Largeur minimale seulement sur mobile */}
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-klando-dark hover:bg-klando-dark">
+                <TableHead className="text-klando-gold">Trajet</TableHead>
+                <TableHead className="text-klando-gold">Distance</TableHead>
+                <TableHead className="text-klando-gold">Date</TableHead>
+                <TableHead className="text-klando-gold">Places</TableHead>
+                <TableHead className="text-klando-gold">Statut</TableHead>
               </TableRow>
-            ) : (
-              paginatedTrips.map((trip) => (
-                <TableRow
-                  key={trip.trip_id}
-                  data-trip-id={trip.trip_id}
-                  data-state={selectedTripId === trip.trip_id ? "selected" : undefined}
-                  className="cursor-pointer transition-all"
-                  onClick={() => onSelectTrip(trip)}
-                >
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium truncate max-w-[150px]">
-                        {trip.departure_city}
-                      </span>
-                      <span className="text-muted-foreground text-xs truncate max-w-[150px]">
-                        → {trip.destination_city}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{formatDistance(trip.trip_distance)}</TableCell>
-                  <TableCell className="text-sm">
-                    {formatDate(trip.departure_schedule)}
-                  </TableCell>
-                  <TableCell>
-                    {trip.passengers.length}/{trip.total_seats}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        "px-2 py-1 rounded-full text-xs font-medium",
-                        statusColors[trip.status] || "bg-gray-500/20 text-gray-400"
-                      )}
-                    >
-                      {trip.status}
-                    </span>
+            </TableHeader>
+            <TableBody>
+              {paginatedTrips.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    Aucun trajet trouvé
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                paginatedTrips.map((trip) => (
+                  <TableRow
+                    key={trip.trip_id}
+                    data-trip-id={trip.trip_id}
+                    data-state={selectedTripId === trip.trip_id ? "selected" : undefined}
+                    className="cursor-pointer transition-all"
+                    onClick={() => onSelectTrip(trip)}
+                  >
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium truncate hidden sm:block">
+                          {trip.departure_city}
+                        </span>
+                        <span className="font-medium truncate sm:hidden">
+                          {trip.departure_city.length > 8 ? trip.departure_city.slice(0, 8) + "..." : trip.departure_city}
+                        </span>
+                        <span className="text-muted-foreground text-xs truncate hidden sm:block">
+                          → {trip.destination_city}
+                        </span>
+                        <span className="text-muted-foreground text-xs truncate sm:hidden">
+                          → {trip.destination_city.length > 8 ? trip.destination_city.slice(0, 8) + "..." : trip.destination_city}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatDistance(trip.trip_distance)}</TableCell>
+                    <TableCell className="text-sm">
+                      {formatDate(trip.departure_schedule)}
+                    </TableCell>
+                    <TableCell>
+                      {trip.passengers.length}/{trip.total_seats}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={cn(
+                          "px-2 py-1 rounded-full text-xs font-medium",
+                          statusColors[trip.status] || "bg-gray-500/20 text-gray-400"
+                        )}
+                      >
+                        {trip.status}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination */}
