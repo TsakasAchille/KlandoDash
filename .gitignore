@@ -9,8 +9,8 @@ develop-eggs/
 dist/
 downloads/
 eggs/
-.eggs/
-lib/
+.eggs
+# lib/  # Remplacé par exception pour frontend/lib
 lib64/
 parts/
 sdist/
@@ -52,3 +52,6 @@ src/keys/klando-d3cb3-firebase-adminsdk-*.json
 node_modules/
 src/resources/keys/
 .next/
+
+# Exception: autoriser le lib/ du frontend
+!frontend/src/lib/

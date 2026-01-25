@@ -27,18 +27,18 @@
 
 ```env
 # Google OAuth
-GOOGLE_CLIENT_ID=408348201393-l89c5ig25cvg8p98crsd5d307e71fgs8.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+GOOGLE_CLIENT_ID=VOTRE_CLIENT_ID
+GOOGLE_CLIENT_SECRET=VOTRE_CLIENT_SECRET
 
 # Emails autorisés (hardcodés)
-AUTHORIZED_EMAILS=achille.tsakas@klando-sn.com,contact@klando-sn.com
+AUTHORIZED_EMAILS=admin@example.com,user@example.com
 
 # Admin credentials (fallback)
 ADMIN_USERNAME=admin
-APP_PASSWORD=KLANDO2K25
+APP_PASSWORD=VOTRE_MOT_DE_PASSE
 
 # Session
-SECRET_KEY=ywMg8XdPC5IZ72HlJQEfKai0rFpL3vTsjOWG49xzbUquSAeVBD
+SECRET_KEY=VOTRE_SECRET_KEY
 ```
 
 ### Table `dash_authorized_users` (existante)
@@ -132,16 +132,16 @@ npm install next-auth@beta
 
 # NextAuth
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=ywMg8XdPC5IZ72HlJQEfKai0rFpL3vTsjOWG49xzbUquSAeVBD
+NEXTAUTH_SECRET=VOTRE_NEXTAUTH_SECRET
 
-# Google OAuth (réutiliser les existants)
-GOOGLE_CLIENT_ID=408348201393-l89c5ig25cvg8p98crsd5d307e71fgs8.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+# Google OAuth
+GOOGLE_CLIENT_ID=VOTRE_CLIENT_ID
+GOOGLE_CLIENT_SECRET=VOTRE_CLIENT_SECRET
 
-# Supabase (existants)
-NEXT_PUBLIC_SUPABASE_URL=https://zzxeimcchndnrildeefl.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=VOTRE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=VOTRE_SERVICE_ROLE_KEY
 ```
 
 ### 3.4 Structure des fichiers
@@ -653,16 +653,16 @@ export default function LoginPage() {
 
 # NextAuth
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=ywMg8XdPC5IZ72HlJQEfKai0rFpL3vTsjOWG49xzbUquSAeVBD
+NEXTAUTH_SECRET=VOTRE_NEXTAUTH_SECRET
 
 # Google OAuth
-GOOGLE_CLIENT_ID=408348201393-l89c5ig25cvg8p98crsd5d307e71fgs8.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+GOOGLE_CLIENT_ID=VOTRE_CLIENT_ID
+GOOGLE_CLIENT_SECRET=VOTRE_CLIENT_SECRET
 
 # Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://zzxeimcchndnrildeefl.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
+NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=VOTRE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=VOTRE_SERVICE_ROLE_KEY
 ```
 
 ---
