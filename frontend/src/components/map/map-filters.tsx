@@ -32,7 +32,7 @@ export function MapFilters({ filters, drivers, onFilterChange }: MapFiltersProps
               onFilterChange({ status: value as MapFiltersType["status"] })
             }
           >
-            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+            <SelectTrigger className="bg-gray-800 border-gray-600 text-white h-10 min-h-[44px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-600">
@@ -54,10 +54,10 @@ export function MapFilters({ filters, drivers, onFilterChange }: MapFiltersProps
               onFilterChange({ driverId: value === "ALL" ? null : value })
             }
           >
-            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+            <SelectTrigger className="bg-gray-800 border-gray-600 text-white h-10 min-h-[44px]">
               <SelectValue placeholder="Tous les conducteurs" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-600">
+            <SelectContent className="bg-gray-800 border-gray-600 max-h-60">
               <SelectItem value="ALL">Tous</SelectItem>
               {drivers.map((d) => (
                 <SelectItem key={d.uid} value={d.uid}>
@@ -68,26 +68,39 @@ export function MapFilters({ filters, drivers, onFilterChange }: MapFiltersProps
           </Select>
         </div>
 
-        {/* Date de début */}
-        <div className="space-y-1">
-          <label className="text-xs text-white">Date début</label>
-          <input
-            type="date"
-            value={filters.dateFrom || ""}
-            onChange={(e) => onFilterChange({ dateFrom: e.target.value || null })}
-            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-klando-gold"
-          />
+        {/* Dates - responsive layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Date de début */}
+          <div className="space-y-1">
+            <label className="text-xs text-white">Date début</label>
+            <input
+              type="date"
+              value={filters.dateFrom || ""}
+              onChange={(e) => onFilterChange({ dateFrom: e.target.value || null })}
+              className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-klando-gold h-10 min-h-[44px]"
+            />
+          </div>
+
+          {/* Date de fin */}
+          <div className="space-y-1">
+            <label className="text-xs text-white">Date fin</label>
+            <input
+              type="date"
+              value={filters.dateTo || ""}
+              onChange={(e) => onFilterChange({ dateTo: e.target.value || null })}
+              className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-klando-gold h-10 min-h-[44px]"
+            />
+          </div>
         </div>
 
-        {/* Date de fin */}
-        <div className="space-y-1">
-          <label className="text-xs text-white">Date fin</label>
-          <input
-            type="date"
-            value={filters.dateTo || ""}
-            onChange={(e) => onFilterChange({ dateTo: e.target.value || null })}
-            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-klando-gold"
-          />
+        {/* Boutons d'action - responsive */}
+        <div className="flex flex-col sm:flex-row gap-2 pt-2">
+          <button
+            onClick={() => onFilterChange({ status: "ALL", driverId: null, dateFrom: null, dateTo: null })}
+            className="flex-1 px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors h-10 min-h-[44px]"
+          >
+            Réinitialiser
+          </button>
         </div>
       </CardContent>
     </Card>

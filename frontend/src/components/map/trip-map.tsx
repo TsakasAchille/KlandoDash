@@ -6,7 +6,7 @@ import * as polyline from "@mapbox/polyline";
 import "leaflet/dist/leaflet.css";
 import { TripMapItem } from "@/types/trip";
 
-// CSS personnalisé pour les popups Leaflet
+// CSS personnalisé pour les popups Leaflet et z-index
 const popupStyles = `
   .leaflet-popup-content-wrapper {
     background-color: #081C36 !important;
@@ -28,6 +28,23 @@ const popupStyles = `
   }
   .leaflet-popup-close-button:hover {
     opacity: 1 !important;
+  }
+  
+  /* Réduire le z-index de la carte et de ses contrôles */
+  .leaflet-container {
+    z-index: 10 !important;
+  }
+  .leaflet-control-container {
+    z-index: 11 !important;
+  }
+  .leaflet-control {
+    z-index: 12 !important;
+  }
+  .leaflet-control-zoom {
+    z-index: 13 !important;
+  }
+  .leaflet-control-attribution {
+    z-index: 13 !important;
   }
 `;
 

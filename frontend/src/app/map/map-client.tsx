@@ -171,14 +171,9 @@ export function MapClient({
   );
 
   return (
-    <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 min-h-0">
-      {/* Colonne gauche: Filtres + Tableau */}
-      <div className="lg:col-span-1 flex flex-col gap-4 min-h-0">
-        <MapFilters
-          filters={filters}
-          drivers={drivers}
-          onFilterChange={handleFilterChange}
-        />
+    <div className="flex-1 flex flex-col gap-4 p-4 min-h-0">
+      {/* Tableau des trajets - toujours visible */}
+      <div className="w-full">
         <RecentTripsTable
           trips={recentTrips}
           selectedTripId={selectedTrip?.trip_id}
@@ -192,8 +187,8 @@ export function MapClient({
         />
       </div>
 
-      {/* Colonne droite: Carte */}
-      <div className="lg:col-span-3 relative min-h-[400px]">
+      {/* Carte - en dessous du tableau */}
+      <div className="flex-1 relative min-h-[400px]">
         <TripMap
           trips={filteredTrips}
           selectedTrip={selectedTrip}
@@ -209,10 +204,19 @@ export function MapClient({
           <TripMapPopup trip={selectedTrip} onClose={handleClosePopup} />
         )}
 
+        {/* Filtres - toujours visibles sur desktop, overlay sur mobile */}
+        <div className="hidden lg:block">
+          <MapFilters
+            filters={filters}
+            drivers={drivers}
+            onFilterChange={handleFilterChange}
+          />
+        </div>
+
         {/* Bouton filtres mobile */}
         <button
           onClick={() => setShowMobileFilters(!showMobileFilters)}
-          className="lg:hidden fixed bottom-4 right-4 z-10 p-3 bg-klando-burgundy text-white rounded-full shadow-lg hover:bg-klando-burgundy/90 transition-colors"
+          className="lg:hidden fixed bottom-4 right-4 z-[1000] p-3 bg-klando-burgundy text-white rounded-full shadow-lg hover:bg-klando-burgundy/90 transition-colors"
           aria-label="Filtres"
         >
           <Filter className="w-5 h-5" />
@@ -220,12 +224,12 @@ export function MapClient({
 
         {/* Filtres mobile overlay */}
         {showMobileFilters && (
-          <div className="lg:hidden fixed inset-0 z-40 flex">
+          <div className="lg:hidden fixed inset-0 z-[2000] flex">
             <div 
               className="fixed inset-0 bg-black/50 transition-opacity"
               onClick={() => setShowMobileFilters(false)}
             />
-            <div className="fixed top-0 right-0 h-full w-80 bg-klando-dark transform transition-transform">
+            <div className="fixed top-0 right-0 h-full w-80 bg-klando-dark transform transition-transform z-[2001]">
               <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-white">Filtres</h3>
                 <button
