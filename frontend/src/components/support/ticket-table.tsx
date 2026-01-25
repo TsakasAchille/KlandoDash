@@ -100,79 +100,83 @@ export function TicketTable({
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-klando-dark hover:bg-klando-dark">
-              <TableHead className="text-klando-gold">Sujet</TableHead>
-              <TableHead className="text-klando-gold">Utilisateur</TableHead>
-              <TableHead className="text-klando-gold">Statut</TableHead>
-              <TableHead className="text-klando-gold">Date</TableHead>
-              <TableHead className="text-klando-gold text-center">
-                <MessageSquare className="w-4 h-4 inline" />
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedTickets.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center text-muted-foreground py-8"
-                >
-                  Aucun ticket trouve
-                </TableCell>
+      <div className="rounded-lg border bg-card overflow-x-auto">
+        <div className="min-w-[600px]"> {/* Largeur minimale pour éviter le crop */}
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-klando-dark hover:bg-klando-dark">
+                <TableHead className="text-klando-gold min-w-[200px]">Sujet</TableHead>
+                <TableHead className="text-klando-gold min-w-[150px]">Utilisateur</TableHead>
+                <TableHead className="text-klando-gold min-w-[100px]">Statut</TableHead>
+                <TableHead className="text-klando-gold min-w-[120px]">Date</TableHead>
+                <TableHead className="text-klando-gold text-center min-w-[60px]">
+                  <MessageSquare className="w-4 h-4 inline" />
+                </TableHead>
               </TableRow>
-            ) : (
-              paginatedTickets.map((ticket) => (
-                <TableRow
-                  key={ticket.ticket_id}
-                  data-ticket-id={ticket.ticket_id}
-                  data-state={
-                    selectedTicketId === ticket.ticket_id
-                      ? "selected"
-                      : undefined
-                  }
-                  className={cn(
-                    "cursor-pointer transition-all",
-                    selectedTicketId === ticket.ticket_id &&
-                      "bg-klando-burgundy/20"
-                  )}
-                  onClick={() => onSelectTicket(ticket)}
-                >
-                  <TableCell>
-                    <span className="font-medium">
-                      {truncateSubject(ticket.subject)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-                        <User className="w-3 h-3 text-muted-foreground" />
-                      </div>
-                      <span className="text-sm truncate max-w-[120px]">
-                        {ticket.user_display_name || "Anonyme"}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <TicketStatusBadge status={ticket.status as TicketStatus} />
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatRelativeDate(ticket.created_at)}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {ticket.comment_count > 0 && (
-                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-klando-gold/20 text-klando-gold rounded-full">
-                        {ticket.comment_count}
-                      </span>
-                    )}
+            </TableHeader>
+            <TableBody>
+              {paginatedTickets.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    Aucun ticket trouve
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                paginatedTickets.map((ticket) => (
+                  <TableRow
+                    key={ticket.ticket_id}
+                    data-ticket-id={ticket.ticket_id}
+                    data-state={
+                      selectedTicketId === ticket.ticket_id
+                        ? "selected"
+                        : undefined
+                    }
+                    className={cn(
+                      "cursor-pointer transition-all",
+                      selectedTicketId === ticket.ticket_id &&
+                        "bg-klando-burgundy/20"
+                    )}
+                    onClick={() => onSelectTicket(ticket)}
+                  >
+                    <TableCell className="min-w-[200px]">
+                      <span className="font-medium block">
+                        {truncateSubject(ticket.subject)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="min-w-[150px]">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                          <User className="w-3 h-3 text-muted-foreground" />
+                        </div>
+                        <span className="text-sm truncate">
+                          {ticket.user_display_name || "Anonyme"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="min-w-[100px]">
+                      <TicketStatusBadge status={ticket.status as TicketStatus} />
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground min-w-[120px]">
+                      <span className="block">
+                        {formatRelativeDate(ticket.created_at)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center min-w-[60px]">
+                      {ticket.comment_count > 0 && (
+                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-klando-gold/20 text-klando-gold rounded-full">
+                          {ticket.comment_count}
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination */}
