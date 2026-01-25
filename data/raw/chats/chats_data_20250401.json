@@ -1,0 +1,374 @@
+{
+  "Jej9ZRk5pdFZzffDPNZX_2Zo07qmgs3RgKW8S5GS4ezzTPk42_2klQ8xW0LGXt5CVXVrq1oSTsnlg1": {
+    "data": {
+      "last_message_time": "2024-12-31T16:28:38.755000+00:00",
+      "trip_reference": "trips/Jej9ZRk5pdFZzffDPNZX",
+      "last_message_seen_by": [
+        "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+        "users/2Zo07qmgs3RgKW8S5GS4ezzTPk42"
+      ],
+      "user_b": "users/2Zo07qmgs3RgKW8S5GS4ezzTPk42",
+      "user_a": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1"
+    },
+    "messages": [
+      {
+        "id": "1D3YetJq58BJ8kCIIPmj",
+        "data": {
+          "audio_duration": 1100,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737805442344.m4a?alt=media&token=7fcd9442-b15f-4d2b-9aad-691e59a8731a",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T11:44:02.969000+00:00"
+        }
+      },
+      {
+        "id": "1e2EeqdU6PMgZSyqJDHf",
+        "data": {
+          "message": "Random message #2025-01-22 15:43:51.461040",
+          "user": "users/2Zo07qmgs3RgKW8S5GS4ezzTPk42",
+          "timestamp": "2025-01-22T15:43:51.461000+00:00"
+        }
+      },
+      {
+        "id": "1iS3CS9RRjSGO6zUaios",
+        "data": {
+          "message": "4",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T11:05:20.193000+00:00"
+        }
+      },
+      {
+        "id": "3jsovQSLNwoh40RNQK12",
+        "data": {
+          "audio_duration": 3150,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737802731102.m4a?alt=media&token=52983085-0a84-4576-852c-853215afbcda",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T10:58:51.911000+00:00"
+        }
+      },
+      {
+        "id": "7izKjWtBUXJmCrdct2xe",
+        "data": {
+          "message": "2",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T11:05:14.927000+00:00"
+        }
+      },
+      {
+        "id": "8BcPj0KqGUUBDoG5424P",
+        "data": {
+          "message": "Random message #2025-01-22 11:05:35.952624",
+          "user": "users/2Zo07qmgs3RgKW8S5GS4ezzTPk42",
+          "timestamp": "2025-01-22T11:05:35.952000+00:00"
+        }
+      },
+      {
+        "id": "8U0NkwcaIIw9QWMCVHCJ",
+        "data": {
+          "audio_duration": 1700,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737556621180.m4a?alt=media&token=bd350279-4170-43a2-86e9-2c2d86e0b9be",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T14:37:01.869000+00:00"
+        }
+      },
+      {
+        "id": "DRClgZwXDyZhxJlHa5OQ",
+        "data": {
+          "audio_duration": 2650,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737560380510.m4a?alt=media&token=6feddbb6-1766-4d23-952b-eb2b63ce52dc",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:39:41.385000+00:00"
+        }
+      },
+      {
+        "id": "Ek3RNiN6JV4O03av4gf4",
+        "data": {
+          "message": "szefsdv",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:43:09.601000+00:00"
+        }
+      },
+      {
+        "id": "EwTlPKurppEBVbSOlF3r",
+        "data": {
+          "audio_duration": 2250,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737559507754.m4a?alt=media&token=da28ea8e-1f1a-4eb3-aeb3-bcd60a66aa23",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:25:08.856000+00:00"
+        }
+      },
+      {
+        "id": "IbJ8GtfpoEXJUJJgxxnN",
+        "data": {
+          "audio_duration": 1050,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737807232405.m4a?alt=media&token=9b19b6f3-f712-4055-bc2c-49a9019a73e1",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T12:13:53.154000+00:00"
+        }
+      },
+      {
+        "id": "Jc0jYitNfVjsLNu52OBY",
+        "data": {
+          "audio_duration": 1300,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737803419210.m4a?alt=media&token=185a89d0-7443-4cb4-946f-5ab0070dfd62",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T11:10:19.856000+00:00"
+        }
+      },
+      {
+        "id": "NL79w3FcEIYLoOmdU1Wa",
+        "data": {
+          "message": "Iuyt",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T10:51:41.488000+00:00"
+        }
+      },
+      {
+        "id": "S9Mkc8aDnIkng6QMAYMk",
+        "data": {
+          "audio_duration": 1750,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737805435064.m4a?alt=media&token=ec3af6b6-8766-4556-a2ff-55f1e684805e",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T11:43:55.950000+00:00"
+        }
+      },
+      {
+        "id": "TpmkAx3cwiIXQXMLdtTq",
+        "data": {
+          "audio_duration": 1850,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737803413999.m4a?alt=media&token=f6006425-4365-4ba2-9424-ef1eea79a9a7",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T11:10:14.805000+00:00"
+        }
+      },
+      {
+        "id": "UW4t5SR0Xkyas2LDL1qV",
+        "data": {
+          "message": "Random message #2025-01-22 11:05:22.275022",
+          "user": "users/2Zo07qmgs3RgKW8S5GS4ezzTPk42",
+          "timestamp": "2025-01-22T11:05:22.275000+00:00"
+        }
+      },
+      {
+        "id": "VayWg8fmirwwqHRG152X",
+        "data": {
+          "audio_duration": 1850,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737559590321.m4a?alt=media&token=0376f4f1-6604-4a06-acd3-dd312b09f850",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:26:31.087000+00:00"
+        }
+      },
+      {
+        "id": "YSLnCXvkMFItYoUFZXjC",
+        "data": {
+          "audio_duration": 1800,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737560279230.m4a?alt=media&token=034d1156-79b1-4767-ae4a-13872d75f908",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:37:59.937000+00:00"
+        }
+      },
+      {
+        "id": "bFQC9Bta6AfIZAhrpM9S",
+        "data": {
+          "audio_duration": 1000,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737807227725.m4a?alt=media&token=72d3a911-0c68-4081-9fd7-91e4478104cb",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T12:13:48.341000+00:00"
+        }
+      },
+      {
+        "id": "bLscIBTSqTcbDW487Coh",
+        "data": {
+          "audio_duration": 1500,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737559517354.m4a?alt=media&token=c6e5306e-b1f1-45f3-8367-040be98e190d",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:25:18.089000+00:00"
+        }
+      },
+      {
+        "id": "beGwJkeeWx3E5UAYzVwW",
+        "data": {
+          "message": "Random message #2025-01-22 15:43:53.970125",
+          "user": "users/2Zo07qmgs3RgKW8S5GS4ezzTPk42",
+          "timestamp": "2025-01-22T15:43:53.970000+00:00"
+        }
+      },
+      {
+        "id": "c03tZLbb2nC1MgpUhSE2",
+        "data": {
+          "audio_duration": 1050,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737807223793.m4a?alt=media&token=d41728ab-a11a-4fe1-b368-c2f31067d4ae",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T12:13:44.419000+00:00"
+        }
+      },
+      {
+        "id": "doRtkit4vWaL2Sr2U6LK",
+        "data": {
+          "message": "5",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T11:05:32.258000+00:00"
+        }
+      },
+      {
+        "id": "etZPvreIeGf1ydm0ILaO",
+        "data": {
+          "message": "======= Test audio message =======",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T13:03:50.923000+00:00"
+        }
+      },
+      {
+        "id": "iIJqKRsYh0BVy3EYzHza",
+        "data": {
+          "audio_duration": 1600,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737802755055.m4a?alt=media&token=d69034ed-b4a4-4df1-9a7e-d78d9bcf2476",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T10:59:15.708000+00:00"
+        }
+      },
+      {
+        "id": "kqxrdsRK5Eq4uRd0H2tn",
+        "data": {
+          "audio_duration": 4400,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737555771660.m4a?alt=media&token=b7554299-6304-4066-bcbb-dcac966b952d",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T14:22:52.386000+00:00"
+        }
+      },
+      {
+        "id": "lY7hWfzRb2yQwt6yPxXg",
+        "data": {
+          "message": "Tgghh",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T11:39:55.527000+00:00"
+        }
+      },
+      {
+        "id": "oGnhwVAn4snKCJ31rH7A",
+        "data": {
+          "message": "1",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T11:05:11.450000+00:00"
+        }
+      },
+      {
+        "id": "oSWKxzoM9BPkSZrWr4Db",
+        "data": {
+          "message": "dvsdvsdv",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:37:01.055000+00:00"
+        }
+      },
+      {
+        "id": "qDR6NEUWgnaMzSl0V1om",
+        "data": {
+          "audio_duration": 10750,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737560572997.m4a?alt=media&token=14098ae8-f4f1-4277-b01e-a09f87e4c7a8",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:43:05.004000+00:00"
+        }
+      },
+      {
+        "id": "qHyEjRNYDHPGLsaIHK0h",
+        "data": {
+          "audio_duration": 1900,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737560230882.m4a?alt=media&token=4894ee62-64cf-42b6-b1c8-1dddacf2d399",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:37:11.659000+00:00"
+        }
+      },
+      {
+        "id": "tQxD4WLNfdmuTGdxF2kU",
+        "data": {
+          "message": "3",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T11:05:17.685000+00:00"
+        }
+      },
+      {
+        "id": "tuWvLZBvDAX5bECWkf5E",
+        "data": {
+          "message": "toto",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:09:16.180000+00:00"
+        }
+      },
+      {
+        "id": "tz0R4HDZyETDi0uqNrm5",
+        "data": {
+          "audio_duration": 1800,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737560362826.m4a?alt=media&token=9b046738-8933-41ca-8211-cbab26fdedba",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:39:23.797000+00:00"
+        }
+      },
+      {
+        "id": "vSuLotxQ0FR35yS7mZPU",
+        "data": {
+          "audio_duration": 1600,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737559526948.m4a?alt=media&token=e070be35-05f7-461d-8f25-41d62ecbdd9a",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-22T15:25:27.706000+00:00"
+        }
+      },
+      {
+        "id": "wwaN1WGuAvN1BzuujT7J",
+        "data": {
+          "audio_duration": 1850,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737802763958.m4a?alt=media&token=004f671c-06df-46d1-aeee-8766e87710f5",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T10:59:24.586000+00:00"
+        }
+      },
+      {
+        "id": "y9O3SOW3ZierZO9aazjv",
+        "data": {
+          "audio_duration": 2500,
+          "audio_url": "https://firebasestorage.googleapis.com/v0/b/klando-d3cb3.firebasestorage.app/o/users%2F2klQ8xW0LGXt5CVXVrq1oSTsnlg1%2Faudio_messages%2Faudio_test_1737803299115.m4a?alt=media&token=4597dce6-076d-4a62-8eee-744ce577d1d4",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-01-25T11:08:19.873000+00:00"
+        }
+      }
+    ],
+    "updated_at": "2025-04-01T17:45:03.689175"
+  },
+  "test_trip_1738956570183_2klQ8xW0LGXt5CVXVrq1oSTsnlg1_2Zo07qmgs3RgKW8S5GS4ezzTPk42": {
+    "data": {
+      "last_message_time": "2025-02-07T19:31:48.195000+00:00",
+      "trip_reference": "trips/test_trip_1738956570183",
+      "last_message_seen_by": [
+        "users/2Zo07qmgs3RgKW8S5GS4ezzTPk42",
+        "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1"
+      ],
+      "user_b": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+      "user_a": "users/2Zo07qmgs3RgKW8S5GS4ezzTPk42"
+    },
+    "messages": [
+      {
+        "id": "BVOKhhZ4Nhz7bz7kjS5u",
+        "data": {
+          "message": "Combien de valises dispo?",
+          "user": "users/2Zo07qmgs3RgKW8S5GS4ezzTPk42",
+          "timestamp": "2025-02-07T19:31:48.358000+00:00"
+        }
+      },
+      {
+        "id": "bcW20NLgrvCzkaaCj3hM",
+        "data": {
+          "message": "3 mais pas trop grande.",
+          "user": "users/2Zo07qmgs3RgKW8S5GS4ezzTPk42",
+          "timestamp": "2025-02-07T19:52:47.844000+00:00"
+        }
+      },
+      {
+        "id": "tEVVykRVjLisOyXxRbhs",
+        "data": {
+          "message": "3 valises max",
+          "user": "users/2klQ8xW0LGXt5CVXVrq1oSTsnlg1",
+          "timestamp": "2025-02-07T19:53:22.572000+00:00"
+        }
+      }
+    ],
+    "updated_at": "2025-04-01T17:45:03.689209"
+  }
+}

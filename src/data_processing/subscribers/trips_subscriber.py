@@ -12,7 +12,6 @@ from src.core.settings import FIREBASE_CONFIG, OUTPUT_DIRS, ensure_dir
 
 # Charger les variables d'environnement depuis le fichier .env
 load_dotenv()
-
 class TripsSubscriber   :
     def __init__(self):
         """

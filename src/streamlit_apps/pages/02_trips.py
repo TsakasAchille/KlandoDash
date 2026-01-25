@@ -28,9 +28,7 @@ users_trips_linker = UsersTripsLinker()
 trips_app = TripsApp()
 users_app = UserView()
 
-# Créer les onglets pour la navigation
-
-
+# Charger les données d'utilisateurs
 users_df = users_app.get_data()
 
 if users_df is None:
@@ -39,6 +37,7 @@ else:
     st.session_state["user_df"] = users_df
 
 
+# Charger les données de trajets
 trips_df = trips_app.get_data()
 
 if trips_df is None:
@@ -46,106 +45,69 @@ if trips_df is None:
 else:
     st.session_state["trip_df"] = trips_df
 
+# Créer les onglets pour la navigation
+tab1, tab2 = st.tabs(["Trajets", "Détails du trajet"])
 
-col1, col2 = st.columns([1,2])
-
-with col1:
+# Premier onglet : liste des trajets
+with tab1:
     st.write("Veuillez sélectionner un trajet dans le tableau.")
+    
+    # Afficher le tableau des trajets
+    selected_df = trips_app.display_trips_table(trips_df)
+    
+    # Vérifier s'il y a une sélection valide
+    has_selection = False
+    if isinstance(selected_df, list):
+        has_selection = len(selected_df) > 0
+    elif isinstance(selected_df, pd.DataFrame):
+        has_selection = not selected_df.empty
+    else:
+        has_selection = selected_df is not None
+    
+    # Stockage de la sélection
+    if has_selection:
+        # Stocker la sélection dans la session state
+        st.session_state["selected_trip_id"] = selected_df[0]['trip_id'] if isinstance(selected_df, list) else selected_df.iloc[0]['trip_id']
 
-with col2:
-    st.write("")
-
-trip_container = st.expander("Informations sur le trajet", expanded=True)
-passengers_container = st.expander("Passagers", expanded=True)
-user_container = st.expander("Utilisateurs", expanded=True)
-
-
-
-#-------------------TRIPS-------------------
-with trip_container:
-    col1, col2 = st.columns([1,2])
-
-    with col1:
-
-        #------------TABLE----------------
-
-        selected_df = trips_app.display_trips_table(trips_df)
-
-        # Vérifier s'il y a une sélection valide
-        has_selection = False
-        if isinstance(selected_df, list):
-            has_selection = len(selected_df) > 0
-        elif isinstance(selected_df, pd.DataFrame):
-            has_selection = not selected_df.empty
-        else:
-            has_selection = selected_df is not None
-
-        #Stockage de la sélection
-        if has_selection:
-            # Stocker la sélection dans la session state
-            #st.session_state["selected_trip"] = selected_df[0] if isinstance(selected_df, list) else selected_df.iloc[0]
-            st.session_state["selected_trip_id"] = selected_df[0]['trip_id'] if isinstance(selected_df, list) else selected_df.iloc[0]['trip_id']
-
-
-        if "selected_trip_id" in st.session_state:
-            #selected_trip = st.session_state["selected_trip"]
-            selected_trip_id = st.session_state["selected_trip_id"]
-
-            # Récupérer le trajet correspondant
-            selected_trip = trips_df[trips_df['trip_id'] == selected_trip_id].iloc[0]
-
-
+# Deuxième onglet : détails du trajet sélectionné
+with tab2:
+    if "selected_trip_id" in st.session_state:
+        selected_trip_id = st.session_state["selected_trip_id"]
+        
+        # Récupérer le trajet correspondant
+        selected_trip = trips_df[trips_df['trip_id'] == selected_trip_id].iloc[0]
+        
+        # Créer des expanders pour organiser l'information
+        trip_container = st.expander("Informations sur le trajet", expanded=True)
+        passengers_container = st.expander("Passagers", expanded=True)
+        
+        # Afficher les informations du trajet
+        with trip_container:
+            col1, col2 = st.columns([1, 2])
+            
+            with col1:
+                # Route information
+                trips_app.display_route_info(selected_trip)
+                
+                # Financial information
+                trips_app.display_financial_info(selected_trip)
+                
+                # Seat occupation information
+                trips_app.display_seat_occupation_info(selected_trip)
+                
             with col2:
-                TopContainer = st.container()
-                BottomContainer = st.container()
-
-                with TopContainer:
-                    col1, col2 = st.columns([1,2])
-
-                    with col1:
-
-                        #------------Route----------------
-                        trips_app.display_route_info(selected_trip)
-
-                        #------------Financial----------------
-                        trips_app.display_financial_info(selected_trip)
-
-                        #------------Seat Occupation----------------
-                        trips_app.display_seat_occupation_info(selected_trip)
-
-                    with col2:
-                    
-                        #------------Time Date----------------
-                        trips_app.display_time_metrics(selected_trip)
-
-                        #------------MAP----------------
-                        trips_app.display_map(trips_df, selected_trip)
+                # Time and date metrics
+                trips_app.display_time_metrics(selected_trip)
                 
-                        #------------Distance----------------                
-                        trips_app.display_all_metrics(selected_trip)
-
-
+                # Map display
+                trips_app.display_map(trips_df, selected_trip)
                 
-                with BottomContainer:
-                        pass
-                        #------------People----------------     
-                        # TODO:Better linking, using dataframe not get data for user info           
-                        #trips_app.display_people_info(selected_trip)
-                       
-        else:
-            st.write("Veuillez sélectionner un trajet")         
-                    
-
-if "selected_trip_id" in st.session_state:
-            #selected_trip = st.session_state["selected_trip"]
-            selected_trip_id = st.session_state["selected_trip_id"]
-
-            # Récupérer le trajet correspondant
-            selected_trip = trips_df[trips_df['trip_id'] == selected_trip_id].iloc[0]
-
-#-------------------PEOPLE-------------------
-
-            with passengers_container:
-            # TODO:Better linking, using dataframe not get data for user info  
-            #          
-                trips_app.display_people_info(selected_trip)
+                # Distance and other metrics
+                trips_app.display_all_metrics(selected_trip)
+        
+        # Afficher les informations sur les passagers
+        with passengers_container:
+            trips_app.display_people_info(selected_trip)
+            
+    else:
+        st.write("Veuillez sélectionner un trajet dans l'onglet 'Trajets'")
