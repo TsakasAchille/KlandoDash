@@ -39,6 +39,7 @@ declare module "@auth/core/jwt" {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  trustHost: true, // 🔥 Ajout pour Render
 
   providers: [
     Google({
