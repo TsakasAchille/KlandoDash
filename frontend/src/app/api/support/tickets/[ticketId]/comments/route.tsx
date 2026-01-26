@@ -34,7 +34,7 @@ async function sendMentionNotifications(
 
     const resend = new Resend(process.env.RESEND_API_KEY); // Revert to simple initialization
     
-    const mentionRegex = /@(\w+)/g;
+    const mentionRegex = /@([\w.]+)/g; // Capture lettres, chiffres, underscore et points
     const mentionedIds = Array.from(commentText.matchAll(mentionRegex), match => match[1]);
     console.log("Mentioned IDs:", mentionedIds);
 
@@ -50,9 +50,13 @@ async function sendMentionNotifications(
     console.log("Fetched dash_authorized_users:", users);
     if (userError) throw userError;
 
-    const usersToNotify = users.filter(user => 
-      mentionedIds.includes(user.display_name?.replace(/\s+/g, '') || '')
-    );
+    const usersToNotify = users.filter(user => {
+      // Match par display_name (sans espaces) ou par préfixe email (avant @)
+      const displayNameMatch = user.display_name?.replace(/\s+/g, '') || '';
+      const emailPrefix = user.email.split('@')[0]; // achille.tsakas@klando-sn.com -> achille.tsakas
+
+      return mentionedIds.includes(displayNameMatch) || mentionedIds.includes(emailPrefix);
+    });
     console.log("Users to notify:", usersToNotify);
     
     if (usersToNotify.length === 0) return;

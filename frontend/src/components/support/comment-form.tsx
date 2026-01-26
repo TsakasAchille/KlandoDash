@@ -17,6 +17,7 @@ import {
   PopoverAnchor, // Import PopoverAnchor
 } from "@/components/ui/popover";
 import { Send, Loader2 } from "lucide-react";
+import { toast } from "sonner"; // Import toast
 
 interface CommentFormProps {
   onSubmit: (text: string) => Promise<void>;
@@ -109,8 +110,10 @@ export function CommentForm({ onSubmit, disabled }: CommentFormProps) {
     try {
       await onSubmit(text.trim());
       setText("");
+      toast.success("Commentaire et notification envoyés !"); // Show success toast
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'envoi");
+      toast.error("Échec de l'envoi du commentaire ou de la notification."); // Show error toast
     } finally {
       setIsSubmitting(false);
     }

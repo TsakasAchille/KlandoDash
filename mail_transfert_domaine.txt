@@ -1,0 +1,35 @@
+Mail à envoyer à l'associé
+
+Objet : Urgent - Transfert domaine klando-sn.com pour débloquer le projet
+
+Salut [Nom de l'associé],
+
+J'ai besoin de ton aide pour débloquer KlandoDash. On est bloqués sur Wix et ça nous empêche d'envoyer des emails professionnels.
+
+Le problème :
+Wix bloque complètement les transferts vers des services comme Cloudflare. 
+Wix ne supporte pas les records MX sur sous-domaines et bloque le changement de nameservers.
+Cela nous bloque pour le Dash, Render, IA, et d'autres services qui nécessitent des configurations DNS avancées.
+
+La solution :
+Transférer klando-sn.com vers Namecheap (coût : ~$10). Namecheap supporte les MX et on pourra configurer tout ce qu'on veut immédiatement.
+
+Pourquoi tu dois le faire :
+1. C'est plus logique : En tant que CEO, le domaine devrait être à ton nom
+2. C'est urgent : Ça nous débloque pour le déploiement final
+3. C'est simple : Je t'ai déjà débloqué le domaine et obtenu le code EPP
+
+Étapes :
+1. Crée un compte sur https://www.namecheap.com/
+2. Va sur "Domain Transfer" 
+3. Entre "klando-sn.com" et le code EPP que je t'enverrai
+4. Paye ~$10
+
+Une fois transféré (5-7 jours), tu me donnes l'accès et je configure Le Dash et Site en 10 minutes.
+
+Important : Wix reste 100% actif pendant tout le transfert. Pas d'interruption, le site continue de fonctionner normalement.
+
+Ça nous permettra d'envoyer des emails pro et de finaliser le déploiement.
+
+Merci,
+[Achille]
