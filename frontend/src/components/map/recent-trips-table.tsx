@@ -143,8 +143,8 @@ export function RecentTripsTable({
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-xs text-gray-300">
-                                <span>{trip.available_seats} places</span>
-                                <span className="font-semibold text-klando-gold">{trip.price ? `${trip.price} FCFA` : 'N/A'}</span>
+                                <span>{trip.seats_available} places</span>
+                                <span className="font-semibold text-klando-gold">{trip.passenger_price ? `${trip.passenger_price} FCFA` : 'N/A'}</span>
                             </div>
                             <div className="text-[10px] text-gray-300 pt-1">
                                 {formatDate(trip.departure_schedule || "")}
