@@ -22,6 +22,7 @@ import {
   X,
   Trash2,
   Loader2,
+  LifeBuoy,
 } from "lucide-react";
 
 interface Props {
@@ -35,7 +36,7 @@ export function AdminPageClient({ users: initialUsers }: Props) {
   const [loading, setLoading] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<"admin" | "user">("user");
+  const [newRole, setNewRole] = useState<"admin" | "user" | "support">("user");
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("fr-FR", {
@@ -47,24 +48,25 @@ export function AdminPageClient({ users: initialUsers }: Props) {
     });
   };
 
-  const handleToggleRole = async (email: string, currentRole: string) => {
+  const handleUpdateRole = async (email: string, newRoleValue: string) => {
     if (email === session?.user?.email) {
       alert("Vous ne pouvez pas modifier votre propre rôle");
       return;
     }
 
     setLoading(email);
-    const newRole = currentRole === "admin" ? "user" : "admin";
 
     const res = await fetch("/api/admin/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, action: "role", role: newRole }),
+      body: JSON.stringify({ email, action: "role", role: newRoleValue }),
     });
 
     if (res.ok) {
       setUsers((prev) =>
-        prev.map((u) => (u.email === email ? { ...u, role: newRole } : u))
+        prev.map((u) =>
+          u.email === email ? { ...u, role: newRoleValue } : u
+        )
       );
     }
     setLoading(null);
@@ -175,10 +177,11 @@ export function AdminPageClient({ users: initialUsers }: Props) {
           />
           <select
             value={newRole}
-            onChange={(e) => setNewRole(e.target.value as "admin" | "user")}
+            onChange={(e) => setNewRole(e.target.value as "admin" | "user" | "support")}
             className="px-3 py-2 rounded-md bg-background border border-border"
           >
             <option value="user">Utilisateur</option>
+            <option value="support">Support</option>
             <option value="admin">Administrateur</option>
           </select>
           <Button
@@ -238,15 +241,23 @@ export function AdminPageClient({ users: initialUsers }: Props) {
                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
                       user.role === "admin"
                         ? "bg-klando-gold/20 text-klando-gold"
+                        : user.role === "support"
+                        ? "bg-blue-500/20 text-blue-400"
                         : "bg-secondary text-muted-foreground"
                     }`}
                   >
                     {user.role === "admin" ? (
                       <Shield className="w-3 h-3" />
+                    ) : user.role === "support" ? (
+                      <LifeBuoy className="w-3 h-3" />
                     ) : (
                       <User className="w-3 h-3" />
                     )}
-                    {user.role === "admin" ? "Admin" : "User"}
+                    {user.role === "admin"
+                      ? "Admin"
+                      : user.role === "support"
+                      ? "Support"
+                      : "User"}
                   </span>
                 </TableCell>
                 <TableCell>
@@ -276,29 +287,23 @@ export function AdminPageClient({ users: initialUsers }: Props) {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    {/* Toggle role */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleRole(user.email, user.role)}
+                    {/* Select role */}
+                    <select
+                      value={user.role}
+                      onChange={(e) =>
+                        handleUpdateRole(user.email, e.target.value)
+                      }
                       disabled={
                         loading === user.email ||
                         user.email === session?.user?.email
                       }
-                      title={
-                        user.role === "admin"
-                          ? "Rétrograder en User"
-                          : "Promouvoir en Admin"
-                      }
+                      className="px-2 py-1 rounded-md bg-background border border-border text-xs"
+                      title="Changer le rôle"
                     >
-                      {loading === user.email ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : user.role === "admin" ? (
-                        <User className="w-4 h-4" />
-                      ) : (
-                        <Shield className="w-4 h-4" />
-                      )}
-                    </Button>
+                      <option value="user">User</option>
+                      <option value="support">Support</option>
+                      <option value="admin">Admin</option>
+                    </select>
 
                     {/* Toggle active */}
                     <Button

@@ -13,12 +13,13 @@ const navItems = [
   { href: "/trips", label: "Trajets", icon: Car },
   { href: "/users", label: "Utilisateurs", icon: Users },
   { href: "/map", label: "Carte", icon: Map },
-  { href: "/stats", label: "Statistiques", icon: BarChart3 },
   // { href: "/chats", label: "Messages", icon: MessageSquare }, // Temporairement désactivé
 ];
 
+const supportItems = [{ href: "/support", label: "Support", icon: LifeBuoy }];
+
 const adminItems = [
-  { href: "/support", label: "Support", icon: LifeBuoy },
+  { href: "/stats", label: "Statistiques", icon: BarChart3 },
   { href: "/admin", label: "Administration", icon: Shield },
 ];
 
@@ -30,7 +31,7 @@ interface SidebarProps {
 export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "admin";
+  const userRole = session?.user?.role;
 
   const handleLinkClick = () => {
     if (isMobile && onClose) {
@@ -82,39 +83,77 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             );
           })}
 
-          {/* Section Admin - visible uniquement pour les admins */}
-          {isAdmin && (
+          {/* --- Section Support / Admin --- */}
+          {(userRole === "admin" || userRole === "support") && (
             <>
               <li className={cn("pt-4 pb-2", isMobile && "pt-6 pb-3")}>
-                <span className={cn(
-                  "px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider",
-                  isMobile && "text-sm px-4"
-                )}>
-                  Admin
+                <span
+                  className={cn(
+                    "px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider",
+                    isMobile && "text-sm px-4"
+                  )}
+                >
+                  {userRole === "admin" ? "Administration" : "Support"}
                 </span>
               </li>
-              {adminItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={handleLinkClick}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                        isActive
-                          ? "bg-klando-burgundy text-white"
-                          : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                        isMobile ? "text-base py-4" : "text-sm py-3"
-                      )}
-                    >
-                      <Icon className={cn("w-5 h-5", isMobile && "w-6 h-6")} />
-                      <span className={cn(isMobile && "text-lg")}>{item.label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
+
+              {/* Liens pour le rôle Support (et Admin) */}
+              {userRole &&
+                supportItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={handleLinkClick}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                          isActive
+                            ? "bg-klando-burgundy text-white"
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                          isMobile ? "text-base py-4" : "text-sm py-3"
+                        )}
+                      >
+                        <Icon
+                          className={cn("w-5 h-5", isMobile && "w-6 h-6")}
+                        />
+                        <span className={cn(isMobile && "text-lg")}>
+                          {item.label}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+
+              {/* Liens supplémentaires pour le rôle Admin */}
+              {userRole === "admin" &&
+                adminItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={handleLinkClick}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                          isActive
+                            ? "bg-klando-burgundy text-white"
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                          isMobile ? "text-base py-4" : "text-sm py-3"
+                        )}
+                      >
+                        <Icon
+                          className={cn("w-5 h-5", isMobile && "w-6 h-6")}
+                        />
+                        <span className={cn(isMobile && "text-lg")}>
+                          {item.label}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
             </>
           )}
         </ul>

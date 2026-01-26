@@ -21,15 +21,26 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Routes admin: vérifier le rôle
-  const isAdminRoute = ADMIN_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
-
-  if (isLoggedIn && isAdminRoute) {
+  // Logique de contrôle d'accès par rôle
+  if (isLoggedIn) {
     const userRole = req.auth?.user?.role;
-    if (userRole !== "admin") {
-      // Rediriger vers l'accueil si pas admin
+
+    // Seuls les admins peuvent accéder à /admin
+    if (pathname.startsWith("/admin") && userRole !== "admin") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    // Le rôle 'support' ne peut pas accéder à /stats (et 'user' non plus)
+    if (pathname.startsWith("/stats") && userRole !== "admin") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    // 'user' ne peut pas accéder à /support
+    if (
+      pathname.startsWith("/support") &&
+      userRole !== "admin" &&
+      userRole !== "support"
+    ) {
       return NextResponse.redirect(new URL("/", req.url));
     }
   }
