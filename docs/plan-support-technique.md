@@ -1,3 +1,7 @@
+> **STATUT ACTUEL : IMPLÉMENTÉ**
+> Ce document est le plan initial pour l'implémentation de la page Support Technique.
+> Le module de support est maintenant opérationnel. Pour une documentation à jour sur son architecture et son fonctionnement, veuillez consulter le fichier `docs/support-module-architecture.md`.
+
 # Plan d'Intégration - Page Support Technique
 
 > **Date:** 2025-01-25

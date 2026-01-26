@@ -52,6 +52,7 @@ src/keys/klando-d3cb3-firebase-adminsdk-*.json
 node_modules/
 src/resources/keys/
 .next/
+frontend/.next/trace
 
 # Exception: autoriser le lib/ du frontend
 !frontend/src/lib/

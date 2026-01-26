@@ -4,11 +4,11 @@
 
 KlandoDash is the administration dashboard for Klando, a carpooling service in Senegal. This full-stack project is built with a modern tech stack, providing a comprehensive interface for managing trips, users, and support tickets.
 
-- **Frontend**: The frontend is a Next.js 14 application, utilizing the App Router for page management. The user interface is built with Shadcn/ui and styled with TailwindCSS, creating a responsive and modern design. Key frontend dependencies include `leaflet` for map visualizations, `recharts` for statistical charts, and `@tanstack/react-table` for data tables.
+- **Frontend**: The frontend is a Next.js 14 application, utilizing the App Router for page management. The user interface is built with Shadcn/ui and styled with TailwindCSS, creating a responsive and modern design. Key frontend dependencies include `leaflet` for map visualizations, `recharts` for statistical charts, and `@tanstack/react-table` for data tables. Mutations (like updating ticket status) are now handled using **Next.js Server Actions** for a more direct server interaction.
 
 - **Backend & Database**: The project leverages Supabase, a Backend-as-a-Service (BaaS) platform, which provides a PostgreSQL database, authentication, and auto-generated APIs. The database schema includes core tables for `trips`, `users`, `bookings`, and `support_tickets`. The `database/schema.sql` file defines the complete database structure, including tables, relationships, and indexes.
 
-- **Authentication**: User authentication is handled by NextAuth.js (v5), with Google OAuth as the primary authentication provider. Access to the dashboard is restricted to authorized users listed in the `dash_authorized_users` table in the Supabase database.
+- **Authentication**: User authentication is handled by NextAuth.js (v5), with Google OAuth as the primary authentication provider. Access to the dashboard is restricted to authorized users listed in the `dash_authorized_users` table in the Supabase database. These records are now enriched with `display_name` and `avatar_url` directly from the Google profile during login via a NextAuth `signIn` callback.
 
 - **Data Flow**: The frontend communicates with the Supabase backend through the `@supabase/supabase-js` client library. Data fetching is performed on the server-side using React Server Components, with dedicated query functions in `frontend/src/lib/queries/`. These functions are optimized to fetch only the required data, ensuring efficient data retrieval.
 
@@ -132,35 +132,6 @@ graph TD
     J --> A
 ```
 
-### Available Queries (`frontend/src/lib/queries/`)
-- `trips.ts`: `getTrips`, `getTripById`, `getTripsStats`, `getTripsWithDriver`, `getPassengersForTrip`
-- `users.ts`: `getUsers`, `getUserById`, `getUsersStats`, `getDriversList`
-
-## Theme Colors (Klando)
-
-The dashboard uses a custom color palette defined in `tailwind.config.ts`.
-
-| Name | Hex | CSS Variable | Usage |
-|------|-----|--------------|-------|
-| Gold | `#EBC33F` | `--klando-gold` | Primary accents, links, titles |
-| Burgundy | `#7B1F2F` | `--klando-burgundy` | Backgrounds, selected states |
-| Dark Blue | `#081C36` | `--klando-dark` | Text, primary backgrounds |
-
-## Authentication (NextAuth.js v5)
-
-The dashboard uses NextAuth.js with Google OAuth. Access is restricted to users listed in the `dash_authorized_users` table with `active=true`.
-
-### Authentication Flow
-```mermaid
-graph TD
-    A[User accesses protected route] --> B(middleware.ts)
-    B -- Not authenticated --> C[Redirect to /login]
-    B -- Authenticated & Authorized --> D[Access granted]
-    C -- User logs in with Google --> E(NextAuth.js handles OAuth)
-    E -- User authorized in dash_authorized_users --> D
-    E -- User not authorized --> F[Access denied]
-```
-
 ### Table `dash_authorized_users`
 | Column | Type | Description |
 |--------|------|-------------|
@@ -169,6 +140,8 @@ graph TD
 | `role` | varchar(50) | User's role (`admin`, `user`, etc.) |
 | `added_at` | timestamp | Date user was added |
 | `added_by` | varchar(255) | Admin email who added this user |
+| `display_name` | text | User's display name from OAuth provider |
+| `avatar_url` | text | User's avatar URL from OAuth provider |
 
 ### Key Authentication Files
 - `frontend/src/lib/auth.ts`: NextAuth.js configuration, callbacks.
@@ -196,6 +169,24 @@ GOOGLE_CLIENT_ID=<your-google-client-id>
 GOOGLE_CLIENT_SECRET=<your-google-client-secret>
 ```
 
+## Available Queries (`frontend/src/lib/queries/`)
+- `trips.ts`: `getTrips`, `getTripById`, `getTripsStats`, `getTripsWithDriver`, `getPassengersForTrip`
+- `users.ts`: `getUsers`, `getUserById`, `getUsersStats`, `getDriversList`
+- `support.ts`: `getTicketsWithUser`, `getTicketDetail`, `updateTicketStatus`, `addComment`
+
+## Theme Colors (Klando)
+
+The dashboard uses a custom color palette defined in `tailwind.config.ts`.
+
+| Name | Hex | CSS Variable | Usage |
+|------|-----|--------------|-------|
+| Gold | `#EBC33F` | `--klando-gold` | Primary accents, links, titles |
+| Burgundy | `#7B1F2F` | `--klando-burgundy` | Backgrounds, selected states |
+| Dark Blue | `#081C36` | `--klando-dark` | Text, primary backgrounds |
+| Light Blue | `#1B3A5F` | `--klando-blue-light` | Comment bubbles |
+| Secondary Dark | `#102A4C` | `--klando-dark-s` | Comment bubbles |
+| Grizzly Grey | `#A0AEC0` | `--klando-grizzly` | Text |
+
 ## Key Conventions
 
 - **Language**: French for UI text, comments, and documentation.
@@ -219,6 +210,8 @@ GOOGLE_CLIENT_SECRET=<your-google-client-secret>
 - [x] User whitelisting via `dash_authorized_users` table.
 - [x] UserMenu with avatar, role, and logout.
 - [x] Basic admin API for user management (`/api/admin/users`).
+- [x] Support tickets module with chat-like interface for comments.
+- [x] Ability to change support ticket status via Server Actions.
 
 ### TODO 🚧
 - [ ] Implement a Chats page for inter-user communication.
