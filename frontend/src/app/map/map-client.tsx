@@ -52,6 +52,7 @@ export function MapClient({
   const [hoveredTripId, setHoveredTripId] = useState<string | null>(null);
   const [hiddenTripIds, setHiddenTripIds] = useState<Set<string>>(new Set());
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [hasBeenManuallyClosed, setHasBeenManuallyClosed] = useState(false);
 
   // Toggle visibility d'un trajet
   const handleToggleVisibility = useCallback((tripId: string) => {
@@ -145,6 +146,7 @@ export function MapClient({
   // Fermeture popup
   const handleClosePopup = useCallback(() => {
     setSelectedTrip(null);
+    setHasBeenManuallyClosed(true);
     const url = new URL(window.location.href);
     url.searchParams.delete("selected");
     router.replace(url.pathname + url.search, { scroll: false });
@@ -172,15 +174,41 @@ export function MapClient({
 
   // Sélectionner le premier trajet par défaut si aucun n'est sélectionné
   useEffect(() => {
-    if (!initialSelectedTrip && filteredTrips.length > 0 && !selectedTrip) {
+    if (
+      !initialSelectedTrip &&
+      filteredTrips.length > 0 &&
+      !selectedTrip &&
+      !hasBeenManuallyClosed
+    ) {
       handleSelectTrip(filteredTrips[0]);
     }
-  }, [filteredTrips, initialSelectedTrip, selectedTrip, handleSelectTrip]);
+  }, [
+    filteredTrips,
+    initialSelectedTrip,
+    selectedTrip,
+    handleSelectTrip,
+    hasBeenManuallyClosed,
+  ]);
 
   return (
-    <div className="flex-1 flex flex-col gap-4 p-4 min-h-0">
-      {/* Carte - en haut */}
-      <div className="flex-1 relative min-h-[400px]">
+    <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 min-h-0">
+      {/* Tableau des trajets - à gauche */}
+      <div className="w-full md:w-[350px] lg:w-[400px] xl:w-[450px] flex flex-col">
+        <RecentTripsTable
+          trips={recentTrips}
+          selectedTripId={selectedTrip?.trip_id}
+          hoveredTripId={hoveredTripId}
+          hiddenTripIds={hiddenTripIds}
+          onSelectTrip={handleSelectTrip}
+          onHoverTrip={setHoveredTripId}
+          onToggleVisibility={handleToggleVisibility}
+          onShowOnlyLast={handleShowOnlyLast}
+          onShowAll={handleShowAll}
+        />
+      </div>
+
+      {/* Carte - à droite */}
+      <div className="flex-1 relative min-h-[400px] md:min-h-0 rounded-lg overflow-hidden">
         <TripMap
           trips={filteredTrips}
           selectedTrip={selectedTrip}
@@ -196,19 +224,12 @@ export function MapClient({
           <TripMapPopup trip={selectedTrip} onClose={handleClosePopup} />
         )}
 
-        {/* Bouton filtres desktop - positionné sur la carte à droite */}
-        <button
-          onClick={() => setShowMobileFilters(!showMobileFilters)}
-          className="fixed top-20 right-4 z-[1000] p-3 bg-klando-burgundy text-white rounded-full shadow-lg hover:bg-klando-burgundy/90 transition-colors"
-          aria-label="Filtres"
-        >
-          <Filter className="w-5 h-5" />
-        </button>
+
 
         {/* Filtres overlay - desktop et mobile */}
         {showMobileFilters && (
           <div className="fixed inset-0 z-[2000] flex">
-            <div 
+            <div
               className="fixed inset-0 bg-black/50 transition-opacity"
               onClick={() => setShowMobileFilters(false)}
             />
@@ -232,21 +253,6 @@ export function MapClient({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Tableau des trajets - en dessous de la carte */}
-      <div className="w-full">
-        <RecentTripsTable
-          trips={recentTrips}
-          selectedTripId={selectedTrip?.trip_id}
-          hoveredTripId={hoveredTripId}
-          hiddenTripIds={hiddenTripIds}
-          onSelectTrip={handleSelectTrip}
-          onHoverTrip={setHoveredTripId}
-          onToggleVisibility={handleToggleVisibility}
-          onShowOnlyLast={handleShowOnlyLast}
-          onShowAll={handleShowAll}
-        />
       </div>
     </div>
   );

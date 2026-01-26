@@ -54,28 +54,28 @@ export function RecentTripsTable({
     <Card className="bg-klando-dark border-gray-700 flex-1 overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm text-klando-gold">
+          <CardTitle className="text-lg font-bold text-white">
             10 Derniers Trajets
           </CardTitle>
         </div>
         {/* Boutons d'action */}
-        <div className="flex gap-2 mt-2">
+        <div className="flex flex-col gap-2 mt-2">
           <button
             onClick={onShowOnlyLast}
-            className="flex-1 px-2 py-1 text-[10px] bg-klando-burgundy hover:bg-klando-burgundy/80 text-white rounded transition-colors"
+            className="flex-1 px-1 py-0.5 text-[10px] bg-klando-burgundy hover:bg-klando-burgundy/80 text-white rounded transition-colors"
           >
             Dernier seul
           </button>
           <button
             onClick={onShowAll}
-            className="flex-1 px-2 py-1 text-[10px] bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+            className="flex-1 px-1 py-0.5 text-[10px] bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
           >
             Tous
           </button>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="max-h-[400px] overflow-y-auto">
+      <CardContent className="p-0 flex-1 flex flex-col">
+        <div className="flex-1 overflow-y-auto">
           <Table>
             <TableBody>
               {trips.length === 0 ? (
@@ -129,8 +129,8 @@ export function RecentTripsTable({
                             onClick={() => onSelectTrip(trip)}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-medium text-white truncate max-w-[100px]">
-                                {trip.departure_name || "N/A"}
+                              <span className="text-xs font-medium text-white truncate">
+                                {trip.driver?.display_name || 'N/A'}
                               </span>
                               <span
                                 className={cn(
@@ -142,11 +142,12 @@ export function RecentTripsTable({
                                 {trip.status || "N/A"}
                               </span>
                             </div>
-                            <div className="text-xs text-white truncate">
-                              → {trip.destination_name || "N/A"}
+                            <div className="flex items-center justify-between text-xs text-gray-300">
+                                <span>{trip.available_seats} places</span>
+                                <span className="font-semibold text-klando-gold">{trip.price ? `${trip.price} FCFA` : 'N/A'}</span>
                             </div>
-                            <div className="text-[10px] text-gray-300">
-                              {formatDate(trip.departure_schedule || "")}
+                            <div className="text-[10px] text-gray-300 pt-1">
+                                {formatDate(trip.departure_schedule || "")}
                             </div>
                           </div>
                         </div>

@@ -24,7 +24,7 @@ interface TripMapPopupProps {
 
 export function TripMapPopup({ trip, onClose }: TripMapPopupProps) {
   return (
-    <Card className="absolute top-4 right-4 w-80 z-[1000] bg-klando-dark border-gray-700 shadow-xl">
+    <Card className="absolute top-4 right-4 w-80 z-[1001] bg-klando-dark border-gray-700 shadow-xl">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg text-klando-gold">

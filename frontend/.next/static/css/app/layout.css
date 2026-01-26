@@ -659,6 +659,9 @@ video {
 .z-\[2001\] {
   z-index: 2001;
 }
+.z-\[1001\] {
+  z-index: 1001;
+}
 .-mx-1 {
   margin-left: -0.25rem;
   margin-right: -0.25rem;
@@ -1371,6 +1374,10 @@ video {
   padding-top: 2rem;
   padding-bottom: 2rem;
 }
+.px-1 {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
 .pb-2 {
   padding-bottom: 0.5rem;
 }
@@ -1406,6 +1413,9 @@ video {
 }
 .pt-6 {
   padding-top: 1.5rem;
+}
+.pt-1 {
+  padding-top: 0.25rem;
 }
 .text-left {
   text-align: left;
@@ -2153,6 +2163,18 @@ video {
     display: table-cell;
   }
 
+  .md\:min-h-0 {
+    min-height: 0px;
+  }
+
+  .md\:w-\[450px\] {
+    width: 450px;
+  }
+
+  .md\:w-\[350px\] {
+    width: 350px;
+  }
+
   .md\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2163,6 +2185,10 @@ video {
 
   .md\:grid-cols-5 {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .md\:flex-row {
+    flex-direction: row;
   }
 
   .md\:text-sm {
@@ -2206,6 +2232,14 @@ video {
     height: fit-content;
   }
 
+  .lg\:w-\[500px\] {
+    width: 500px;
+  }
+
+  .lg\:w-\[400px\] {
+    width: 400px;
+  }
+
   .lg\:min-w-0 {
     min-width: 0px;
   }
@@ -2230,6 +2264,17 @@ video {
 
   .lg\:overflow-visible {
     overflow: visible;
+  }
+}
+
+@media (min-width: 1280px) {
+
+  .xl\:w-\[550px\] {
+    width: 550px;
+  }
+
+  .xl\:w-\[450px\] {
+    width: 450px;
   }
 }
 
