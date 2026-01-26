@@ -1,8 +1,6 @@
 {
-  "/support/page": "app/support/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/support/tickets/[ticketId]/route": "app/api/support/tickets/[ticketId]/route.js",
-  "/page": "app/page.js",
-  "/api/support/tickets/[ticketId]/comments/route": "app/api/support/tickets/[ticketId]/comments/route.js",
-  "/login/page": "app/login/page.js"
+  "/support/page": "app/support/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/api/support/tickets/[ticketId]/route": "app/api/support/tickets/[ticketId]/route.js"
 }

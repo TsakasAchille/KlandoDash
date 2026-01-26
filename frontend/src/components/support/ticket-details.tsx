@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { TicketDetail, TicketStatus, SupportComment } from "@/types/support";
+import type { TicketDetail, TicketStatus } from "@/types/support";
 import { CONTACT_PREFERENCE_LABELS } from "@/types/support";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -20,19 +20,16 @@ import {
 import { TicketStatusBadge } from "./ticket-status-badge";
 import { CommentThread } from "./comment-thread";
 import { CommentForm } from "./comment-form";
+import { updateTicketStatusAction } from "@/app/support/actions";
 
 interface TicketDetailsProps {
   ticket: TicketDetail;
-  onStatusChange: (status: TicketStatus) => Promise<void>;
   onAddComment: (text: string) => Promise<void>;
-  isUpdating?: boolean;
 }
 
 export function TicketDetails({
   ticket,
-  onStatusChange,
   onAddComment,
-  isUpdating,
 }: TicketDetailsProps) {
   const [changingStatus, setChangingStatus] = useState<TicketStatus | null>(null);
 
@@ -49,7 +46,13 @@ export function TicketDetails({
 
     setChangingStatus(newStatus);
     try {
-      await onStatusChange(newStatus);
+      const result = await updateTicketStatusAction(ticket.ticket_id, newStatus);
+      if (!result.success) {
+        // Optionnel : Gérer l'erreur avec un state ou une notification
+        console.error(result.error);
+        alert(`Erreur: ${result.error}`);
+      }
+      // La revalidation se fait côté serveur, pas besoin de router.refresh()
     } finally {
       setChangingStatus(null);
     }
@@ -133,7 +136,7 @@ export function TicketDetails({
               variant="outline"
               size="sm"
               onClick={() => handleStatusChange("CLOSED")}
-              disabled={isUpdating || changingStatus !== null}
+              disabled={changingStatus !== null}
               className="border-green-500/30 text-green-400 hover:bg-green-500/10"
             >
               {changingStatus === "CLOSED" ? (
@@ -149,7 +152,7 @@ export function TicketDetails({
               variant="outline"
               size="sm"
               onClick={() => handleStatusChange("PENDING")}
-              disabled={isUpdating || changingStatus !== null}
+              disabled={changingStatus !== null}
               className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
             >
               {changingStatus === "PENDING" ? (
@@ -165,7 +168,7 @@ export function TicketDetails({
               variant="outline"
               size="sm"
               onClick={() => handleStatusChange("OPEN")}
-              disabled={isUpdating || changingStatus !== null}
+              disabled={changingStatus !== null}
               className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
             >
               {changingStatus === "OPEN" ? (
@@ -187,7 +190,7 @@ export function TicketDetails({
           Commentaires ({ticket.comments?.length || 0})
         </h3>
         <CommentThread comments={ticket.comments || []} />
-        <CommentForm onSubmit={onAddComment} disabled={isUpdating} />
+        <CommentForm onSubmit={onAddComment} disabled={changingStatus !== null} />
       </div>
     </div>
   );

@@ -78,34 +78,6 @@ export function SupportPageClient({
     }
   };
 
-  // Changer le status du ticket
-  const handleStatusChange = async (newStatus: TicketStatus) => {
-    if (!selectedTicketId || !selectedTicket) return;
-
-    try {
-      const response = await fetch(`/api/support/tickets/${selectedTicketId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Erreur lors de la mise a jour");
-      }
-
-      // Optimistic update
-      setSelectedTicket((prev) =>
-        prev ? { ...prev, status: newStatus } : null
-      );
-
-      // Refresh la page pour mettre a jour la liste
-      router.refresh();
-    } catch (err) {
-      throw err;
-    }
-  };
-
   // Ajouter un commentaire
   const handleAddComment = async (text: string) => {
     if (!selectedTicketId) return;
@@ -164,7 +136,6 @@ export function SupportPageClient({
           ) : selectedTicket ? (
             <TicketDetails
               ticket={selectedTicket}
-              onStatusChange={handleStatusChange}
               onAddComment={handleAddComment}
             />
           ) : (
