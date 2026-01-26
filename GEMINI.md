@@ -12,45 +12,217 @@ KlandoDash is the administration dashboard for Klando, a carpooling service in S
 
 - **Data Flow**: The frontend communicates with the Supabase backend through the `@supabase/supabase-js` client library. Data fetching is performed on the server-side using React Server Components, with dedicated query functions in `frontend/src/lib/queries/`. These functions are optimized to fetch only the required data, ensuring efficient data retrieval.
 
-## Building and Running the Project
+## Project Structure
 
-To get the KlandoDash application up and running, follow these steps:
+```
+KlandoDash/
+├── frontend/          # Next.js 14 + Shadcn/ui
+│   ├── src/app/      # Pages (App Router)
+│   ├── src/components/ # Reusable UI components
+│   ├── src/lib/      # Supabase client + queries, auth utilities
+│   ├── src/types/    # TypeScript type definitions
+│   ├── .env.example  # Example environment variables
+│   └── package.json  # Frontend dependencies and scripts
+├── database/          # SQL schemas, migrations, queries
+│   ├── schema.sql    # Full database schema dump
+│   ├── tables.md     # Tables documentation
+│   └── migrations/   # SQL migration files
+├── .env.local         # Local environment variables (symlinked to frontend/.env.local)
+├── package.json       # Root project dependencies (if any)
+└── README.md          # General project README
+```
 
-1.  **Install Dependencies**: Navigate to the `frontend` directory and install the necessary npm packages.
+## Commands
 
-    ```bash
-    cd frontend
-    npm install
-    ```
+### Frontend (Next.js)
+```bash
+cd frontend
+npm install      # Install dependencies
+npm run dev      # Start development server on http://localhost:3000
+npm run build    # Create production build
+npm run start    # Start production server
+npm run lint     # Run ESLint for code quality
+```
 
-2.  **Configure Environment Variables**: Create a `.env.local` file in the root of the project and add the required environment variables for Supabase and NextAuth. A symbolic link to this file should be created in the `frontend` directory.
+### Database (Supabase CLI)
+```bash
+# Link your local Supabase project to a remote one (replace with your project ref)
+npx supabase link --project-ref your-supabase-project-ref
 
-    ```bash
-    # Create the .env.local file in the root directory
-    touch .env.local
+# Push local migrations to your Supabase project
+npx supabase db push
 
-    # Add your environment variables to .env.local
-    # (see .env.example for required variables)
+# Dump the current database schema to a file
+npx supabase db dump --schema public -f database/schema.sql
+```
 
-    # Create a symbolic link in the frontend directory
-    ln -sf ../.env.local frontend/.env.local
-    ```
+## Database (Supabase)
 
-3.  **Run the Development Server**: Start the Next.js development server.
+**Platform**: Supabase (PostgreSQL)
 
-    ```bash
-    cd frontend
-    npm run dev
-    ```
+### Main Tables
+| Table | Description | PK |
+|-------|-------------|----|
+| `users` | User profiles | `uid` |
+| `trips` | Trip listings | `trip_id` |
+| `bookings` | Trip reservations by users | `id` |
+| `support_tickets` | User support tickets | `ticket_id` |
+| `dash_authorized_users` | Authorized dashboard users | `email` |
 
-    The application will be accessible at `http://localhost:3000`.
+### Key Relations
+```mermaid
+erDiagram
+    users ||--o{ trips : "driver_id FK"
+    users ||--o{ bookings : "user_id FK"
+    trips ||--o{ bookings : "trip_id FK"
+    users ||--o{ dash_authorized_users : "email FK"
+    users ||--o{ support_tickets : "user_id FK"
+```
 
-## Development Conventions
+### Query Best Practices
+- **Avoid `SELECT *`**: Always specify columns to fetch only necessary data.
+- **Utilize Indexes**: Ensure relevant columns are indexed for efficient filtering and sorting.
+- **Leverage Joins**: Use Supabase's foreign table relationships for efficient data retrieval across tables (e.g., `driver:users!fk_driver`).
 
-- **Code Style**: The project follows standard TypeScript and React conventions. Code is formatted according to the rules defined in the ESLint configuration (`.eslintrc.json`).
+## Frontend Architecture (Next.js 14)
 
-- **Data Fetching**: Data is fetched using the Supabase client. For server-side rendering, `createServerClient()` from `frontend/src/lib/supabase.ts` is used. Queries are organized in the `frontend/src/lib/queries` directory.
+### Structure (`frontend/src/`)
+```
+frontend/src/
+├── app/                  # App Router pages and layouts
+│   ├── layout.tsx        # Root layout, SessionProvider
+│   ├── page.tsx          # Home page
+│   ├── api/              # API Routes (serverless functions)
+│   │   └── admin/        # Admin-specific API routes
+│   │       └── users/    # API for user management
+│   ├── login/            # Login page and layout
+│   ├── trips/            # Trips page and client components
+│   ├── users/            # Users page and client components
+│   └── stats/            # Statistics dashboard page
+├── components/           # Reusable UI components
+│   ├── ui/               # Shadcn/ui components
+│   ├── sidebar.tsx       # Main navigation sidebar
+│   ├── user-menu.tsx     # User profile menu (avatar, role, logout)
+│   └── providers.tsx     # Context providers (e.g., NextAuth SessionProvider)
+├── lib/                  # Utility functions and configurations
+│   ├── auth.ts           # NextAuth.js configuration
+│   ├── supabase.ts       # Supabase client initialization
+│   ├── queries/          # Data fetching functions for specific entities
+│   │   ├── trips.ts      # Trip-related data queries
+│   │   └── users.ts      # User-related data queries
+│   └── utils.ts          # General utility functions (formatters, class mergers)
+├── middleware.ts         # Authentication middleware for route protection
+└── types/                # TypeScript global type definitions
+    ├── trip.ts           # Trip data structures
+    └── user.ts           # User data structures
+```
 
-- **Type Safety**: The project uses TypeScript for type safety. Type definitions for database tables and API responses are located in the `frontend/src/types` directory.
+### Data Flow Example (Trips Page)
+```mermaid
+graph TD
+    A[User requests /trips] --> B(Next.js Server Component: frontend/src/app/trips/page.tsx)
+    B --> C{Call getTripsWithDriver & getTripsStats}
+    C --> D[Supabase (trips, users tables)]
+    D --> E{Data received}
+    E --> F(Data transformed to Trip[] and TripDetail)
+    F --> G(Passes props to Client Component: frontend/src/app/trips/trips-client.tsx)
+    G --> H(TripTable: displays list of Trip)
+    G --> I(TripDetails: displays selected TripDetail)
+    H -- User selects a trip --> J{Update URL: /trips?selected=TRIP_ID}
+    J --> A
+```
 
-- **UI Components**: The UI is built using Shadcn/ui components, which are highly customizable and accessible. Custom components are located in the `frontend/src/components` directory.
+### Available Queries (`frontend/src/lib/queries/`)
+- `trips.ts`: `getTrips`, `getTripById`, `getTripsStats`, `getTripsWithDriver`, `getPassengersForTrip`
+- `users.ts`: `getUsers`, `getUserById`, `getUsersStats`, `getDriversList`
+
+## Theme Colors (Klando)
+
+The dashboard uses a custom color palette defined in `tailwind.config.ts`.
+
+| Name | Hex | CSS Variable | Usage |
+|------|-----|--------------|-------|
+| Gold | `#EBC33F` | `--klando-gold` | Primary accents, links, titles |
+| Burgundy | `#7B1F2F` | `--klando-burgundy` | Backgrounds, selected states |
+| Dark Blue | `#081C36` | `--klando-dark` | Text, primary backgrounds |
+
+## Authentication (NextAuth.js v5)
+
+The dashboard uses NextAuth.js with Google OAuth. Access is restricted to users listed in the `dash_authorized_users` table with `active=true`.
+
+### Authentication Flow
+```mermaid
+graph TD
+    A[User accesses protected route] --> B(middleware.ts)
+    B -- Not authenticated --> C[Redirect to /login]
+    B -- Authenticated & Authorized --> D[Access granted]
+    C -- User logs in with Google --> E(NextAuth.js handles OAuth)
+    E -- User authorized in dash_authorized_users --> D
+    E -- User not authorized --> F[Access denied]
+```
+
+### Table `dash_authorized_users`
+| Column | Type | Description |
+|--------|------|-------------|
+| `email` | varchar(255) | User's email (Primary Key) |
+| `active` | boolean | Is user currently authorized? |
+| `role` | varchar(50) | User's role (`admin`, `user`, etc.) |
+| `added_at` | timestamp | Date user was added |
+| `added_by` | varchar(255) | Admin email who added this user |
+
+### Key Authentication Files
+- `frontend/src/lib/auth.ts`: NextAuth.js configuration, callbacks.
+- `frontend/src/middleware.ts`: Route protection and redirection.
+- `frontend/src/app/login/page.tsx`: Login user interface.
+- `frontend/src/components/user-menu.tsx`: User session display and logout functionality.
+
+## Environment Variables
+
+The project requires a `.env.local` file in the root directory (symlinked to `frontend/.env.local`).
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key> # Used for admin operations
+
+# NextAuth.js Configuration
+NEXTAUTH_URL=http://localhost:3000 # Base URL of your application
+NEXTAUTH_SECRET=<32-char-base64-string> # Generate with: openssl rand -base64 32
+AUTH_SECRET=<same-as-NEXTAUTH_SECRET> # NextAuth v5 specific
+
+# Google OAuth Credentials (from Google Cloud Console)
+GOOGLE_CLIENT_ID=<your-google-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+```
+
+## Key Conventions
+
+- **Language**: French for UI text, comments, and documentation.
+- **Currency**: XOF (West African CFA franc).
+- **Distances**: Kilometers.
+- **Dates**: French locale (`DD/MM/YYYY HH:mm`).
+- **Row Level Security (RLS)**: Generally disabled for the admin dashboard (uses `service_role` key for direct access).
+- **Status Values**: Uppercase (`ACTIVE`, `COMPLETED`, `ARCHIVED`, `CANCELLED`, `PENDING`).
+
+## Current Status
+
+### Done ✅
+- [x] Next.js frontend setup with Shadcn/ui.
+- [x] Supabase integration with optimized queries.
+- [x] Trips page with list, details, deep linking, passenger profiles.
+- [x] Users page with list, details, deep linking.
+- [x] Stats page with dashboard metrics.
+- [x] Database indexes for performance.
+- [x] Dark theme with Klando colors.
+- [x] Authentication using NextAuth.js v5 + Google OAuth.
+- [x] User whitelisting via `dash_authorized_users` table.
+- [x] UserMenu with avatar, role, and logout.
+- [x] Basic admin API for user management (`/api/admin/users`).
+
+### TODO 🚧
+- [ ] Implement a Chats page for inter-user communication.
+- [ ] Develop more robust admin routes and permissions beyond basic user management.
+- [ ] Implement an audit log for user connections and significant actions.
+- [ ] Add comprehensive testing for all new features and bug fixes.
+- [ ] Implement data export functionality for various tables.
