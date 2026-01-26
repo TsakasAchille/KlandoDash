@@ -104,6 +104,27 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
   RETURN QUERY
+  WITH ticket_comments AS (
+    SELECT
+      c.ticket_id,
+      jsonb_agg(
+        jsonb_build_object(
+          'comment_id', c.comment_id,
+          'comment_text', c.comment_text,
+          'created_at', c.created_at,
+          'comment_source', c.comment_source,
+          'user_id', c.user_id,
+          -- Always get info from the admin user table
+          'user_display_name', admin_user.display_name,
+          'user_avatar_url', admin_user.avatar_url
+        ) ORDER BY c.created_at ASC
+      ) as comments_json
+    FROM support_comments c
+    -- EVERY comment is from an admin, so we just do this one join
+    LEFT JOIN dash_authorized_users admin_user ON c.user_id = admin_user.email
+    WHERE c.ticket_id = p_ticket_id
+    GROUP BY c.ticket_id
+  )
   SELECT
     t.ticket_id,
     t.subject,
@@ -114,26 +135,15 @@ BEGIN
     t.mail,
     t.created_at,
     t.updated_at,
-    u.uid,
-    u.display_name,
-    u.photo_url,
-    COALESCE(
-      jsonb_agg(
-        jsonb_build_object(
-          'comment_id', c.comment_id,
-          'comment_text', c.comment_text,
-          'created_at', c.created_at,
-          'comment_source', c.comment_source,
-          'user_id', c.user_id
-        ) ORDER BY c.created_at ASC
-      ) FILTER (WHERE c.comment_id IS NOT NULL),
-      '[]'::jsonb
-    ) as comments
+    u_ticket.uid,
+    u_ticket.display_name, -- Ticket creator name
+    u_ticket.photo_url,    -- Ticket creator avatar
+    COALESCE(tc.comments_json, '[]'::jsonb)
   FROM support_tickets t
-  LEFT JOIN users u ON t.user_id = u.uid
-  LEFT JOIN support_comments c ON t.ticket_id = c.ticket_id
-  WHERE t.ticket_id = p_ticket_id
-  GROUP BY t.ticket_id, u.uid, u.display_name, u.photo_url;
+  -- Join to get the TICKET CREATOR's info (the app user)
+  LEFT JOIN users u_ticket ON t.user_id = u_ticket.uid
+  LEFT JOIN ticket_comments tc ON t.ticket_id = tc.ticket_id
+  WHERE t.ticket_id = p_ticket_id;
 END;
 $$ LANGUAGE plpgsql;
 

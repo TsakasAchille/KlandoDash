@@ -39,12 +39,16 @@ const config: Config = {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
-  			klando: {
-  				gold: '#EBC33F',
-  				burgundy: '#7B1F2F',
-  				dark: '#081C36'
-  			},
-  			popover: {
+  			          			klando: {
+  			  				gold: '#EBC33F',
+  			  				burgundy: '#7B1F2F',
+  			  				dark: '#081C36',
+  			          blue: {
+  			            light: '#1B3A5F',
+  			          },
+  			          dark_s: '#102A4C',
+  			          grizzly: '#A0AEC0',
+  			  			},  			popover: {
   				DEFAULT: 'hsl(var(--popover))',
   				foreground: 'hsl(var(--popover-foreground))'
   			},

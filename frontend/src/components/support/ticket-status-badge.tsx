@@ -1,4 +1,3 @@
-"use client";
 
 import { cn } from "@/lib/utils";
 import type { TicketStatus } from "@/types/support";
@@ -23,6 +22,7 @@ export function TicketStatusBadge({ status, className }: TicketStatusBadgeProps)
         statusColors[status] || "bg-gray-500/20 text-gray-400 border-gray-500/30",
         className
       )}
+      
     >
       {TICKET_STATUS_LABELS[status] || status}
     </span>

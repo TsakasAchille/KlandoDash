@@ -70,6 +70,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // Attache le rôle pour le jwt callback
       user.role = data.role;
+
+      // NEW: Enrichir la table dash_authorized_users avec le nom et l'image
+      if (user.name && user.image) {
+        await getSupabaseAdmin()
+          .from("dash_authorized_users")
+          .update({
+            display_name: user.name,
+            avatar_url: user.image,
+          })
+          .eq("email", user.email);
+      }
       return true;
     },
 

@@ -1,25 +1,76 @@
 "use client";
 
 import type { SupportComment } from "@/types/support";
-import { COMMENT_SOURCE_LABELS } from "@/types/support";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { User, Bot, Shield } from "lucide-react";
+import { User, Shield } from "lucide-react";
+import Image from "next/image";
 
-interface CommentThreadProps {
-  comments: SupportComment[];
+// =======================================
+// Avatar Component
+// =======================================
+
+interface AvatarProps {
+  src: string | null | undefined;
+  fallback: string;
   className?: string;
 }
 
-export function CommentThread({ comments, className }: CommentThreadProps) {
-  if (comments.length === 0) {
-    return (
-      <div className={cn("text-center text-muted-foreground py-4", className)}>
-        Aucun commentaire
-      </div>
-    );
-  }
+function Avatar({ src, fallback, className }: AvatarProps) {
+  const getInitials = (name: string) => {
+    if (!name) return "?";
+    const names = name.split(" ");
+    if (names.length > 1) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  return (
+    <div
+      className={cn(
+        "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted",
+        className
+      )}
+    >
+      {src ? (
+        <Image
+          src={src}
+          alt={fallback}
+          width={40}
+          height={40}
+          className="rounded-full object-cover"
+        />
+      ) : (
+        <span className="font-semibold text-klando-grizzly">
+          {getInitials(fallback)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// =======================================
+// CommentBubble Component
+// =======================================
+
+interface CommentBubbleProps {
+  comment: SupportComment;
+  isCurrentUserAdmin: boolean;
+}
+
+function CommentBubble({ comment, isCurrentUserAdmin }: CommentBubbleProps) {
+  const {
+    comment_text,
+    created_at,
+    comment_source,
+    user_display_name,
+    user_avatar_url,
+  } = comment;
+
+  const isAdmin = comment_source === "admin";
+  const alignRight = isAdmin;
 
   const formatCommentDate = (date: string) => {
     try {
@@ -29,60 +80,69 @@ export function CommentThread({ comments, className }: CommentThreadProps) {
     }
   };
 
-  const getSourceIcon = (source: string) => {
-    switch (source) {
-      case "admin":
-        return <Shield className="w-3 h-3" />;
-      case "system":
-        return <Bot className="w-3 h-3" />;
-      default:
-        return <User className="w-3 h-3" />;
-    }
-  };
+  return (
+    <div className={cn("flex items-start gap-3", alignRight && "flex-row-reverse")}>
+      <Avatar
+        src={user_avatar_url}
+        fallback={user_display_name || "???"}
+        className="mt-1"
+      />
+      <div
+        className={cn(
+          "max-w-xs lg:max-w-md rounded-lg p-3",
+          alignRight
+            ? "bg-klando-blue-light"
+            : "bg-klando-dark-s"
+        )}
+      >
+        <div className="flex items-center gap-2 mb-1">
+          {isAdmin && <Shield className="w-4 h-4 text-klando-gold" />}
+          <p className="font-semibold text-white">
+            {user_display_name || "Utilisateur"}
+          </p>
+          <span className="text-xs text-muted-foreground">
+            {formatCommentDate(created_at)}
+          </span>
+        </div>
+        <p className="text-sm whitespace-pre-wrap text-white">
+          {comment_text}
+        </p>
+      </div>
+    </div>
+  );
+}
 
-  const getSourceColor = (source: string) => {
-    switch (source) {
-      case "admin":
-        return "bg-klando-burgundy/20 border-klando-burgundy/30";
-      case "system":
-        return "bg-gray-500/20 border-gray-500/30";
-      default:
-        return "bg-klando-dark border-klando-dark/50";
-    }
-  };
+
+// =======================================
+// Main CommentThread Component
+// =======================================
+
+interface CommentThreadProps {
+  comments: SupportComment[];
+  className?: string;
+}
+
+export function CommentThread({ comments, className }: CommentThreadProps) {
+  if (!comments || comments.length === 0) {
+    return (
+      <div className={cn("text-center text-muted-foreground py-4", className)}>
+        Aucun commentaire pour le moment.
+      </div>
+    );
+  }
+  
+  // NOTE: This is a placeholder for a real check.
+  // In a real app, you would get the current user's role from the session.
+  const isCurrentUserAdmin = true;
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("space-y-4", className)}>
       {comments.map((comment) => (
-        <div
+        <CommentBubble
           key={comment.comment_id}
-          className={cn(
-            "rounded-lg border p-3",
-            getSourceColor(comment.comment_source)
-          )}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {getSourceIcon(comment.comment_source)}
-              <span className="font-medium">
-                {COMMENT_SOURCE_LABELS[comment.comment_source as keyof typeof COMMENT_SOURCE_LABELS] ||
-                  comment.comment_source}
-              </span>
-              {comment.comment_source === "admin" && (comment.admin_name || comment.user_id) && (
-                <span className="text-klando-gold">
-                  — {comment.admin_name || comment.user_id}
-                </span>
-              )}
-            </div>
-            <span className="text-xs text-muted-foreground">
-              {formatCommentDate(comment.created_at)}
-            </span>
-          </div>
-
-          {/* Content */}
-          <p className="text-sm whitespace-pre-wrap text-white">{comment.comment_text}</p>
-        </div>
+          comment={comment}
+          isCurrentUserAdmin={isCurrentUserAdmin}
+        />
       ))}
     </div>
   );
