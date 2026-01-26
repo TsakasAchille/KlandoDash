@@ -80,6 +80,27 @@ function CommentBubble({ comment, isCurrentUserAdmin }: CommentBubbleProps) {
     }
   };
 
+  // Helper component to parse and style mentions
+  const ParsedComment = ({ text }: { text: string }) => {
+    const mentionRegex = /@(\w+)/g;
+    const parts = text.split(mentionRegex);
+
+    return (
+      <p className="text-sm whitespace-pre-wrap text-white">
+        {parts.map((part, index) => {
+          if (index % 2 === 1) { // Every odd part is a captured group (the mention)
+            return (
+              <strong key={index} className="font-semibold text-klando-gold">
+                @{part}
+              </strong>
+            );
+          }
+          return part;
+        })}
+      </p>
+    );
+  };
+
   return (
     <div className={cn("flex items-start gap-3", alignRight && "flex-row-reverse")}>
       <Avatar
@@ -104,9 +125,7 @@ function CommentBubble({ comment, isCurrentUserAdmin }: CommentBubbleProps) {
             {formatCommentDate(created_at)}
           </span>
         </div>
-        <p className="text-sm whitespace-pre-wrap text-white">
-          {comment_text}
-        </p>
+        <ParsedComment text={comment_text} />
       </div>
     </div>
   );

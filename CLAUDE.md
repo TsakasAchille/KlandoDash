@@ -60,6 +60,8 @@ npx supabase db dump --schema public -f schema.sql
 | `chats` | Messages | `id` | - |
 | `transactions` | Payments | `id` | - |
 | `dash_authorized_users` | Utilisateurs autorisés dashboard | `email` | ~8 |
+| `support_tickets` | Tickets de support | `ticket_id` | - |
+| `support_comments` | Commentaires sur tickets | `comment_id` | - |
 
 ### Key Relations
 ```
@@ -107,10 +109,15 @@ frontend/src/
 ├── app/
 │   ├── layout.tsx          # Root layout + SessionProvider
 │   ├── page.tsx            # Home
+│   ├── api/                # API Routes
+│   │   ├── admin/users/    # User management API
+│   │   ├── mention-users/  # Autocomplete mentions
+│   │   └── support/        # Ticket comments API
 │   ├── login/              # Page de connexion
 │   ├── trips/              # Trips page
 │   ├── users/              # Users page
-│   └── stats/              # Stats dashboard
+│   ├── stats/              # Stats dashboard
+│   └── support/            # Support tickets
 ├── components/
 │   ├── sidebar.tsx         # Navigation + UserMenu
 │   ├── user-menu.tsx       # Menu utilisateur (avatar, rôle, déconnexion)
@@ -118,14 +125,17 @@ frontend/src/
 │   ├── layout-content.tsx  # Layout conditionnel (avec/sans sidebar)
 │   ├── ui/                 # Shadcn components
 │   ├── trips/              # Trip components
-│   └── users/              # User components
+│   ├── users/              # User components
+│   ├── support/            # Support ticket components
+│   └── emails/             # React Email templates (Resend)
 ├── lib/
 │   ├── auth.ts             # Configuration NextAuth.js
 │   ├── supabase.ts         # Supabase clients
 │   ├── queries/
 │   │   ├── trips.ts        # Trip queries
 │   │   ├── users.ts        # User queries
-│   │   └── stats.ts        # Dashboard stats
+│   │   ├── stats.ts        # Dashboard stats
+│   │   └── support.ts      # Support ticket queries
 │   └── utils.ts            # formatDate, formatPrice, cn
 ├── middleware.ts           # Protection des routes (redirect /login)
 └── types/
@@ -147,12 +157,26 @@ Client Component (trips-client.tsx)
     └── TripDetails (display)
 ```
 
-### Available Queries (`lib/queries/trips.ts`)
+### Available Queries (`lib/queries/`)
 ```typescript
-getTrips(options)        // List with minimal columns
-getTripById(tripId)      // Detail with driver join
-getTripsStats()          // Aggregated stats
+// trips.ts
+getTrips(options)         // List with minimal columns
+getTripById(tripId)       // Detail with driver join
+getTripsStats()           // Aggregated stats
 getTripsWithDriver(limit) // Enriched list with driver info
+getPassengersForTrip(id)  // Passengers for a trip
+
+// users.ts
+getUsers(options)         // List with pagination
+getUserById(uid)          // Detail with stats
+getUsersStats()           // Aggregated stats
+getDriversList()          // List of drivers
+
+// support.ts
+getTicketsWithUser()      // List with user info
+getTicketDetail(id)       // Detail with comments
+updateTicketStatus(id, s) // Server Action
+addComment(id, email, t)  // Add comment to ticket
 ```
 
 ## Theme Colors (Klando)
@@ -162,6 +186,9 @@ getTripsWithDriver(limit) // Enriched list with driver info
 | Gold | `#EBC33F` | `--klando-gold` | Primary accents, titles |
 | Burgundy | `#7B1F2F` | `--klando-burgundy` | Selected states |
 | Dark | `#081C36` | `--klando-dark` | Backgrounds |
+| Light Blue | `#1B3A5F` | `--klando-blue-light` | Comment bubbles |
+| Secondary Dark | `#102A4C` | `--klando-dark-s` | Comment bubbles |
+| Grizzly Grey | `#A0AEC0` | `--klando-grizzly` | Text muted |
 
 ## Authentication (NextAuth.js v5)
 
@@ -179,9 +206,11 @@ Utilisateur ──► / ──► middleware.ts ──► Non connecté? ──�
 |---------|------|-------------|
 | `email` | varchar(255) | Email (PK) |
 | `active` | boolean | Autorisation active |
-| `role` | varchar(50) | `admin` ou `user` |
+| `role` | varchar(50) | `admin`, `support` ou `user` |
 | `added_at` | timestamp | Date d'ajout |
 | `added_by` | varchar(255) | Ajouté par |
+| `display_name` | text | Nom depuis OAuth provider |
+| `avatar_url` | text | Avatar depuis OAuth provider |
 
 ### Fichiers clés
 - `src/lib/auth.ts` - Configuration NextAuth + callbacks
@@ -209,6 +238,10 @@ AUTH_SECRET=<même valeur que NEXTAUTH_SECRET>
 # Google OAuth (depuis Google Cloud Console)
 GOOGLE_CLIENT_ID=<client_id>
 GOOGLE_CLIENT_SECRET=<client_secret>
+
+# Resend (emails)
+RESEND_API_KEY=<api_key>
+RESEND_FROM_EMAIL=KlandoDash <onboarding@resend.dev>  # Dev: resend.dev, Prod: no-reply@klando-sn.com
 ```
 
 ## Key Conventions
@@ -219,22 +252,31 @@ GOOGLE_CLIENT_SECRET=<client_secret>
 - **Dates**: French locale (`DD/MM/YYYY HH:mm`)
 - **RLS**: Disabled for admin dashboard (uses service_role key)
 - **Status values**: UPPERCASE (`ACTIVE`, `COMPLETED`, `ARCHIVED`, `CANCELLED`, `PENDING`)
+- **User roles**: `admin` (full access), `support` (support page only), `user` (read-only)
 
 ## Current Status
 
 ### Done ✅
 - [x] Next.js frontend setup with Shadcn/ui
 - [x] Supabase integration with optimized queries
-- [x] Trips page with list, details, pagination (5/page), status filter
-- [x] Users page with list, details, pagination (10/page), role filter
+- [x] Trips page with list, details, deep linking, passenger profiles
+- [x] Users page with list, details, deep linking
 - [x] Stats page with dashboard metrics
 - [x] Database indexes for performance
 - [x] Dark theme with Klando colors
 - [x] Authentication NextAuth.js v5 + Google OAuth
 - [x] Whitelist utilisateurs via `dash_authorized_users`
 - [x] UserMenu avec avatar, rôle, déconnexion
+- [x] Basic admin API pour user management (`/api/admin/users`)
+- [x] Support tickets module avec interface chat
+- [x] Changement de statut ticket via Server Actions
+- [x] Mentions (@user) dans les commentaires
+- [x] Notifications email via Resend (mentions)
+- [x] Rôle `support` avec accès restreint
 
 ### TODO 🚧
-- [ ] Chats page
-- [ ] Routes admin (vérification `role === "admin"`)
-- [ ] Audit log des connexions
+- [ ] Chats page (communication inter-utilisateurs)
+- [ ] Routes admin avancées et permissions
+- [ ] Audit log des connexions et actions
+- [ ] Tests automatisés
+- [ ] Export de données

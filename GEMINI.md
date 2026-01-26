@@ -1,5 +1,15 @@
 # KlandoDash Project Summary
 
+Failed to send mention notifications: TypeError: render$1 is not a function
+    at render (webpack-internal:///(rsc)/./node_modules/resend/dist/index.mjs:87:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Emails.create (webpack-internal:///(rsc)/./node_modules/resend/dist/index.mjs:549:37)
+    at async sendMentionNotifications (webpack-internal:///(rsc)/./src/app/api/support/tickets/[ticketId]/comments/route.ts:59:13)
+POST /api/support/tickets/db1939d7-139d-4e69-aeab-d691d1a7fa83/comments 200 in 3907ms
+Failed to send mention notifications: TypeError: (0 , _react_email_render__WEBPACK_IMPORTED_MODULE_6__.renderAsync) is not a function
+    at sendMentionNotifications (webpack-internal:///(rsc)/./src/app/api/support/tickets/[ticketId]/comments/route.ts:59:101)
+    at process.processTicksAndReje
+
 ## Project Overview
 
 KlandoDash is the administration dashboard for Klando, a carpooling service in Senegal. This full-stack project is built with a modern tech stack, providing a comprehensive interface for managing trips, users, and support tickets.
