@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Trip } from "@/types/trip";
+import { TripDetail } from "@/types/trip";
 import { formatDate, formatDistance, formatPrice } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ const TripRouteMap = dynamic(
 );
 
 interface TripDetailsProps {
-  trip: Trip;
+  trip: TripDetail;
 }
 
 function MetricCard({
@@ -49,10 +49,12 @@ function MetricCard({
 
 export function TripDetails({ trip }: TripDetailsProps) {
   const occupationRate = Math.round(
-    (trip.passengers.length / trip.total_seats) * 100
+    (trip.passengers.length / (trip.seats_published || 1)) * 100
   );
-  const fuelEstimate = (trip.trip_distance * 0.07).toFixed(1);
-  const co2Saved = (trip.trip_distance * 0.12 * trip.passengers.length).toFixed(1);
+  const fuelEstimate = ((trip.distance || 0) * 0.07).toFixed(1);
+  const co2Saved = ((trip.distance || 0) * 0.12 * trip.passengers.length).toFixed(
+    1
+  );
 
   return (
     <div className="space-y-6">
@@ -68,23 +70,23 @@ export function TripDetails({ trip }: TripDetailsProps) {
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">Départ</p>
-              <p className="font-semibold text-green-400">{trip.departure_city}</p>
-              <p className="text-xs text-muted-foreground">{trip.departure_address}</p>
+              <p className="font-semibold text-green-400">{trip.departure_name}</p>
+              <p className="text-xs text-muted-foreground">{trip.departure_description}</p>
             </div>
             <div className="text-2xl text-klando-gold">→</div>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">Arrivée</p>
-              <p className="font-semibold text-red-400">{trip.destination_city}</p>
-              <p className="text-xs text-muted-foreground">{trip.destination_address}</p>
+              <p className="font-semibold text-red-400">{trip.destination_name}</p>
+              <p className="text-xs text-muted-foreground">{trip.destination_description}</p>
             </div>
           </div>
 
           {/* Map */}
-          {trip.trip_polyline ? (
+          {trip.polyline ? (
             <TripRouteMap
-              polylineString={trip.trip_polyline}
-              departureName={trip.departure_city}
-              destinationName={trip.destination_city}
+              polylineString={trip.polyline}
+              departureName={trip.departure_name || ""}
+              destinationName={trip.destination_name || ""}
             />
           ) : (
             <div className="w-full h-[200px] rounded-lg bg-secondary/50 flex items-center justify-center">
@@ -102,22 +104,22 @@ export function TripDetails({ trip }: TripDetailsProps) {
         <MetricCard
           icon={Car}
           label="Distance"
-          value={formatDistance(trip.trip_distance)}
+          value={formatDistance(trip.distance || 0)}
         />
         <MetricCard
           icon={Clock}
           label="Départ"
-          value={formatDate(trip.departure_schedule)}
+          value={formatDate(trip.departure_schedule || "")}
         />
         <MetricCard
           icon={Users}
           label="Occupation"
-          value={`${trip.passengers.length}/${trip.total_seats} (${occupationRate}%)`}
+          value={`${trip.passengers.length}/${trip.seats_published} (${occupationRate}%)`}
         />
         <MetricCard
           icon={Banknote}
           label="Prix/place"
-          value={formatPrice(trip.price_per_seat)}
+          value={formatPrice(trip.passenger_price || 0)}
           color="text-green-400"
         />
       </div>
@@ -154,13 +156,13 @@ export function TripDetails({ trip }: TripDetailsProps) {
             <div className="flex justify-between">
               <span className="text-muted-foreground">Revenu conducteur</span>
               <span className="font-semibold">
-                {formatPrice(trip.viator_income || 0)}
+                {formatPrice(trip.driver_price || 0)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total trajet</span>
               <span className="font-semibold text-klando-gold">
-                {formatPrice(trip.price_per_seat * trip.passengers.length)}
+                {formatPrice((trip.passenger_price || 0) * trip.passengers.length)}
               </span>
             </div>
           </CardContent>
@@ -182,24 +184,26 @@ export function TripDetails({ trip }: TripDetailsProps) {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg bg-klando-burgundy/20 border border-klando-burgundy/30 gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-klando-burgundy flex items-center justify-center text-white font-semibold flex-shrink-0">
-                    {trip.driver_name.charAt(0)}
+                    {(trip.driver_name || "C").charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{trip.driver_name}</p>
                     <p className="text-xs text-muted-foreground truncate">{trip.driver_id}</p>
                   </div>
                 </div>
-                <Link href={`/users?selected=${trip.driver_id}`} className="w-full sm:w-auto">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full min-h-[44px] sm:min-h-[32px] sm:w-auto"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Voir profil</span>
-                    <span className="sm:hidden">Profil</span>
-                  </Button>
-                </Link>
+                {trip.driver_id && (
+                  <Link href={`/users?selected=${trip.driver_id}`} className="w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full min-h-[44px] sm:min-h-[32px] sm:w-auto"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      <span className="hidden sm:inline">Voir profil</span>
+                      <span className="sm:hidden">Profil</span>
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
             <div>
@@ -207,13 +211,15 @@ export function TripDetails({ trip }: TripDetailsProps) {
                 Passagers ({trip.passengers.length})
               </p>
               <div className="flex flex-wrap gap-2">
-                {trip.passengers.map((passengerId) => (
-                  <span
-                    key={passengerId}
-                    className="px-3 py-1 rounded-full bg-secondary text-sm"
+                {trip.passengers.map((passenger) => (
+                  <Link
+                    key={passenger.uid}
+                    href={`/users?selected=${passenger.uid}`}
                   >
-                    {passengerId}
-                  </span>
+                    <Button variant="outline" size="sm">
+                      {passenger.display_name || passenger.uid}
+                    </Button>
+                  </Link>
                 ))}
                 {trip.passengers.length === 0 && (
                   <span className="text-muted-foreground text-sm">

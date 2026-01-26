@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 // Supabase admin client
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
 // Vérifie que l'utilisateur est admin

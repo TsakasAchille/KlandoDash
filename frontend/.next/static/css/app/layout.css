@@ -620,9 +620,6 @@ video {
 .inset-0 {
   inset: 0px;
 }
-.bottom-4 {
-  bottom: 1rem;
-}
 .left-0 {
   left: 0px;
 }
@@ -640,6 +637,9 @@ video {
 }
 .top-0 {
   top: 0px;
+}
+.top-20 {
+  top: 5rem;
 }
 .top-4 {
   top: 1rem;
@@ -879,8 +879,23 @@ video {
 .min-w-\[120px\] {
   min-width: 120px;
 }
+.min-w-\[150px\] {
+  min-width: 150px;
+}
+.min-w-\[200px\] {
+  min-width: 200px;
+}
 .min-w-\[44px\] {
   min-width: 44px;
+}
+.min-w-\[500px\] {
+  min-width: 500px;
+}
+.min-w-\[600px\] {
+  min-width: 600px;
+}
+.min-w-\[60px\] {
+  min-width: 60px;
 }
 .min-w-\[80px\] {
   min-width: 80px;
@@ -893,12 +908,6 @@ video {
 }
 .max-w-\[100px\] {
   max-width: 100px;
-}
-.max-w-\[120px\] {
-  max-width: 120px;
-}
-.max-w-\[150px\] {
-  max-width: 150px;
 }
 .max-w-\[180px\] {
   max-width: 180px;
@@ -1722,6 +1731,11 @@ video {
   color: hsl(var(--muted-foreground));
 }
 
+.hover\:border-klando-burgundy:hover {
+  --tw-border-opacity: 1;
+  border-color: rgb(123 31 47 / var(--tw-border-opacity, 1));
+}
+
 .hover\:bg-accent:hover {
   background-color: hsl(var(--accent));
 }
@@ -1744,11 +1758,6 @@ video {
   background-color: rgb(75 85 99 / var(--tw-bg-opacity, 1));
 }
 
-.hover\:bg-gray-700:hover {
-  --tw-bg-opacity: 1;
-  background-color: rgb(55 65 81 / var(--tw-bg-opacity, 1));
-}
-
 .hover\:bg-green-500\/10:hover {
   background-color: rgb(34 197 94 / 0.1);
 }
@@ -1756,6 +1765,11 @@ video {
 .hover\:bg-green-700:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(21 128 61 / var(--tw-bg-opacity, 1));
+}
+
+.hover\:bg-klando-burgundy:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(123 31 47 / var(--tw-bg-opacity, 1));
 }
 
 .hover\:bg-klando-burgundy\/20:hover {
@@ -1987,6 +2001,10 @@ video {
 
 @media (min-width: 640px) {
 
+  .sm\:block {
+    display: block;
+  }
+
   .sm\:inline {
     display: inline;
   }
@@ -2188,6 +2206,10 @@ video {
     height: fit-content;
   }
 
+  .lg\:min-w-0 {
+    min-width: 0px;
+  }
+
   .lg\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2204,6 +2226,10 @@ video {
     --tw-space-y-reverse: 0;
     margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
     margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
+  }
+
+  .lg\:overflow-visible {
+    overflow: visible;
   }
 }
 

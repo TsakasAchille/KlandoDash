@@ -1,4 +1,4 @@
-import { getUsers, getUsersStats } from "@/lib/queries/users";
+import { getUsers, getUserById, getUsersStats } from "@/lib/queries/users";
 import { UsersPageClient } from "./users-client";
 import { Users } from "lucide-react";
 
@@ -11,15 +11,11 @@ interface Props {
 export default async function UsersPage({ searchParams }: Props) {
   const { selected } = await searchParams;
 
-  const [users, stats] = await Promise.all([
+  const [users, stats, initialSelectedUser] = await Promise.all([
     getUsers(100),
     getUsersStats(),
+    selected ? getUserById(selected) : null,
   ]);
-
-  // Find selected user from the list (avoid extra query)
-  const initialSelectedUser = selected
-    ? users.find((u) => u.uid === selected) || null
-    : null;
 
   return (
     <div className="space-y-4 sm:space-y-6">

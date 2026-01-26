@@ -107,7 +107,7 @@ export function TripMapPopup({ trip, onClose }: TripMapPopupProps) {
                 </div>
               </div>
               <Link href={`/users?selected=${trip.driver.uid}`}>
-                <Button variant="outline" size="sm" className="text-xs border-gray-600 text-white hover:bg-gray-700">
+                <Button variant="outline" size="sm" className="text-xs border-gray-600 text-black hover:bg-klando-burgundy hover:border-klando-burgundy hover:text-white">
                   <User className="w-3 h-3 mr-1" />
                   Profil
                 </Button>

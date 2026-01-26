@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Trip } from "@/types/trip";
+import { Trip, TripDetail } from "@/types/trip";
 import { TripTable } from "@/components/trips/trip-table";
 import { TripDetails } from "@/components/trips/trip-details";
 
 interface TripsPageClientProps {
   trips: Trip[];
   initialSelectedId: string | null;
-  initialSelectedTrip: Trip | null;
+  initialSelectedTripDetail: TripDetail | null;
 }
 
 // Abstraction pour scroll (future-proof pour virtualisation)
@@ -28,15 +28,15 @@ function scrollToRow(id: string, prefix: string = "trip") {
 export function TripsPageClient({
   trips,
   initialSelectedId,
-  initialSelectedTrip,
+  initialSelectedTripDetail,
 }: TripsPageClientProps) {
   const router = useRouter();
-  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(initialSelectedTrip);
+  const [detailedTrip, setDetailedTrip] = useState<TripDetail | null>(initialSelectedTripDetail);
 
   // Sync URL on selection change (replace pour éviter pollution historique)
   const handleSelectTrip = useCallback(
     (trip: Trip) => {
-      setSelectedTrip(trip);
+      // Just navigate, the page will re-render with the new selected trip
       router.replace(`/trips?selected=${trip.trip_id}`, { scroll: false });
     },
     [router]
@@ -49,14 +49,18 @@ export function TripsPageClient({
       setTimeout(() => scrollToRow(initialSelectedId, "trip"), 100);
     }
   }, [initialSelectedId]);
+  
+  useEffect(() => {
+    setDetailedTrip(initialSelectedTripDetail);
+  }, [initialSelectedTripDetail]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Table - 1/3 width on large screens */}
-      <div className="lg:col-span-1">
+      <div className="lg:col-span-1 min-w-0"> {/* min-w-0 pour permettre le scroll */}
         <TripTable
           trips={trips}
-          selectedTripId={selectedTrip?.trip_id || null}
+          selectedTripId={detailedTrip?.trip_id || null}
           initialSelectedId={initialSelectedId}
           onSelectTrip={handleSelectTrip}
         />
@@ -64,8 +68,8 @@ export function TripsPageClient({
 
       {/* Details - 2/3 width on large screens */}
       <div className="lg:col-span-2">
-        {selectedTrip ? (
-          <TripDetails trip={selectedTrip} />
+        {detailedTrip ? (
+          <TripDetails trip={detailedTrip} />
         ) : (
           <div className="flex items-center justify-center h-64 rounded-lg border border-dashed border-border">
             <p className="text-muted-foreground">
@@ -77,3 +81,4 @@ export function TripsPageClient({
     </div>
   );
 }
+

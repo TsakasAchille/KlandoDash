@@ -8,8 +8,8 @@ import { UserDetails } from "@/components/users/user-details";
 
 interface UsersPageClientProps {
   users: UserListItem[];
-  initialSelectedId: string | null;
-  initialSelectedUser: UserListItem | null;
+  initialSelectedId?: string | null;
+  initialSelectedUser?: UserListItem | null;
 }
 
 // Abstraction pour scroll (future-proof pour virtualisation)
@@ -31,7 +31,14 @@ export function UsersPageClient({
   initialSelectedUser,
 }: UsersPageClientProps) {
   const router = useRouter();
-  const [selectedUser, setSelectedUser] = useState<UserListItem | null>(initialSelectedUser);
+  const [selectedUser, setSelectedUser] = useState<UserListItem | null>(
+    initialSelectedUser || null
+  );
+
+  const displayUsers =
+    initialSelectedUser && !users.some((u) => u.uid === initialSelectedUser.uid)
+      ? [initialSelectedUser, ...users]
+      : users;
 
   // Sync URL on selection change (replace pour éviter pollution historique)
   const handleSelectUser = useCallback(
@@ -57,7 +64,7 @@ export function UsersPageClient({
         {/* Tableau mobile - Full width */}
         <div className="w-full">
           <UserTable
-            users={users}
+            users={displayUsers}
             selectedUserId={selectedUser?.uid || null}
             initialSelectedId={initialSelectedId}
             onSelectUser={handleSelectUser}
@@ -78,7 +85,7 @@ export function UsersPageClient({
           {/* Table - 2/3 width on large screens */}
           <div className="lg:col-span-2">
             <UserTable
-              users={users}
+              users={displayUsers}
               selectedUserId={selectedUser?.uid || null}
               initialSelectedId={initialSelectedId}
               onSelectUser={handleSelectUser}
@@ -102,3 +109,4 @@ export function UsersPageClient({
     </div>
   );
 }
+

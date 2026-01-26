@@ -170,24 +170,16 @@ export function MapClient({
     [router]
   );
 
+  // Sélectionner le premier trajet par défaut si aucun n'est sélectionné
+  useEffect(() => {
+    if (!initialSelectedTrip && filteredTrips.length > 0 && !selectedTrip) {
+      handleSelectTrip(filteredTrips[0]);
+    }
+  }, [filteredTrips, initialSelectedTrip, selectedTrip, handleSelectTrip]);
+
   return (
     <div className="flex-1 flex flex-col gap-4 p-4 min-h-0">
-      {/* Tableau des trajets - toujours visible */}
-      <div className="w-full">
-        <RecentTripsTable
-          trips={recentTrips}
-          selectedTripId={selectedTrip?.trip_id}
-          hoveredTripId={hoveredTripId}
-          hiddenTripIds={hiddenTripIds}
-          onSelectTrip={handleSelectTrip}
-          onHoverTrip={setHoveredTripId}
-          onToggleVisibility={handleToggleVisibility}
-          onShowOnlyLast={handleShowOnlyLast}
-          onShowAll={handleShowAll}
-        />
-      </div>
-
-      {/* Carte - en dessous du tableau */}
+      {/* Carte - en haut */}
       <div className="flex-1 relative min-h-[400px]">
         <TripMap
           trips={filteredTrips}
@@ -204,27 +196,18 @@ export function MapClient({
           <TripMapPopup trip={selectedTrip} onClose={handleClosePopup} />
         )}
 
-        {/* Filtres - toujours visibles sur desktop, overlay sur mobile */}
-        <div className="hidden lg:block">
-          <MapFilters
-            filters={filters}
-            drivers={drivers}
-            onFilterChange={handleFilterChange}
-          />
-        </div>
-
-        {/* Bouton filtres mobile */}
+        {/* Bouton filtres desktop - positionné sur la carte à droite */}
         <button
           onClick={() => setShowMobileFilters(!showMobileFilters)}
-          className="lg:hidden fixed bottom-4 right-4 z-[1000] p-3 bg-klando-burgundy text-white rounded-full shadow-lg hover:bg-klando-burgundy/90 transition-colors"
+          className="fixed top-20 right-4 z-[1000] p-3 bg-klando-burgundy text-white rounded-full shadow-lg hover:bg-klando-burgundy/90 transition-colors"
           aria-label="Filtres"
         >
           <Filter className="w-5 h-5" />
         </button>
 
-        {/* Filtres mobile overlay */}
+        {/* Filtres overlay - desktop et mobile */}
         {showMobileFilters && (
-          <div className="lg:hidden fixed inset-0 z-[2000] flex">
+          <div className="fixed inset-0 z-[2000] flex">
             <div 
               className="fixed inset-0 bg-black/50 transition-opacity"
               onClick={() => setShowMobileFilters(false)}
@@ -249,6 +232,21 @@ export function MapClient({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Tableau des trajets - en dessous de la carte */}
+      <div className="w-full">
+        <RecentTripsTable
+          trips={recentTrips}
+          selectedTripId={selectedTrip?.trip_id}
+          hoveredTripId={hoveredTripId}
+          hiddenTripIds={hiddenTripIds}
+          onSelectTrip={handleSelectTrip}
+          onHoverTrip={setHoveredTripId}
+          onToggleVisibility={handleToggleVisibility}
+          onShowOnlyLast={handleShowOnlyLast}
+          onShowAll={handleShowAll}
+        />
       </div>
     </div>
   );

@@ -55,7 +55,8 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
 
   const { data, error } = await supabase
     .from("trips")
-    .select(`
+    .select(
+      `
       trip_id,
       departure_name,
       departure_description,
@@ -85,8 +86,16 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
         rating,
         rating_count,
         is_driver_doc_validated
+      ),
+      bookings (
+        user:users (
+          uid,
+          display_name,
+          photo_url
+        )
       )
-    `)
+    `
+    )
     .eq("trip_id", tripId)
     .single();
 
@@ -95,7 +104,7 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
     return null;
   }
 
-  // Flatten driver data (Supabase may return as array or object)
+  // Flatten driver data
   type DriverData = {
     uid: string;
     display_name: string | null;
@@ -109,6 +118,22 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
   const driver: DriverData | null = Array.isArray(rawDriver)
     ? (rawDriver[0] as DriverData | undefined) || null
     : (rawDriver as DriverData | null);
+
+  // Extract and flatten passenger data
+  type PassengerData = {
+    uid: string;
+    display_name: string | null;
+    photo_url: string | null;
+  };
+  const passengers = (data.bookings || [])
+    .map((b: any) => {
+      const rawUser = b.user;
+      if (!rawUser) return null;
+      return Array.isArray(rawUser)
+        ? (rawUser[0] as PassengerData | undefined) || null
+        : (rawUser as PassengerData | null);
+    })
+    .filter((p): p is PassengerData => p !== null);
 
   return {
     trip_id: data.trip_id,
@@ -138,7 +163,8 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
     driver_rating: driver?.rating || null,
     driver_rating_count: driver?.rating_count || null,
     driver_verified: driver?.is_driver_doc_validated || null,
-  } as TripDetail;
+    passengers: passengers,
+  };
 }
 
 /**

@@ -60,6 +60,12 @@ export interface TripDetail extends TripListItem {
   driver_rating: number | null;
   driver_rating_count: number | null;
   driver_verified: boolean | null;
+  // Passengers info (joined from bookings)
+  passengers: Array<{
+    uid: string;
+    display_name: string | null;
+    photo_url: string | null;
+  }>;
 }
 
 // Type pour les stats dashboard
@@ -153,7 +159,7 @@ export function toTrip(detail: TripDetail): Trip {
     price_per_seat: detail.passenger_price || 0,
     available_seats: detail.seats_available || 0,
     total_seats: detail.seats_published || 0,
-    passengers: Array(detail.seats_booked || 0).fill("passenger"), // Mock array from seats_booked count
+    passengers: detail.passengers ? detail.passengers.map((p) => p.uid) : [], // Utiliser les vrais IDs passagers
     driver_id: detail.driver_id || "",
     driver_name: detail.driver_name || "",
     status: detail.status || "",

@@ -1,5 +1,8 @@
 {
+  "/users/page": "app/users/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/support/page": "app/support/page.js",
-  "/admin/page": "app/admin/page.js"
+  "/api/users/[uid]/trips/route": "app/api/users/[uid]/trips/route.js",
+  "/trips/page": "app/trips/page.js",
+  "/map/page": "app/map/page.js",
+  "/api/trips/[tripId]/passengers/route": "app/api/trips/[tripId]/passengers/route.js"
 }

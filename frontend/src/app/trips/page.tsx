@@ -19,9 +19,8 @@ export default async function TripsPage({ searchParams }: Props) {
     selected ? getTripById(selected) : null,
   ]);
 
-  // Convert to legacy Trip format for compatibility with existing components
+  // Convert to legacy Trip format for compatibility with table component
   const trips = tripsData.map(toTrip);
-  const initialSelectedTrip = selectedTripData ? toTrip(selectedTripData) : null;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -52,7 +51,7 @@ export default async function TripsPage({ searchParams }: Props) {
       <TripsPageClient
         trips={trips}
         initialSelectedId={selected || null}
-        initialSelectedTrip={initialSelectedTrip}
+        initialSelectedTripDetail={selectedTripData}
       />
     </div>
   );
