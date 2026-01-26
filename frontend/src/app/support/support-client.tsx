@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type {
   SupportTicketWithUser,
@@ -32,6 +32,12 @@ export function SupportPageClient({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Mettre à jour l'état local quand les props initiales changent
+  useEffect(() => {
+    setSelectedTicketId(initialSelectedId);
+    setSelectedTicket(initialSelectedTicket);
+  }, [initialSelectedId, initialSelectedTicket]);
 
   // Mettre a jour l'URL quand on selectionne un ticket
   const updateUrl = useCallback(
