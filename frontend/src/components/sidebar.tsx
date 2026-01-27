@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { Home, Car, Users, BarChart3, MessageSquare, Map, LifeBuoy, Shield, X } from "lucide-react";
+import { Home, Car, Users, BarChart3, MessageSquare, Map, LifeBuoy, Shield, X, Banknote } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
 
@@ -19,6 +19,7 @@ const navItems = [
 const supportItems = [{ href: "/support", label: "Support", icon: LifeBuoy }];
 
 const adminItems = [
+  { href: "/transactions", label: "Transactions", icon: Banknote },
   { href: "/stats", label: "Statistiques", icon: BarChart3 },
   { href: "/admin", label: "Administration", icon: Shield },
 ];

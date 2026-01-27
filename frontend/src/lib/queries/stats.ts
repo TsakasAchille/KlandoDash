@@ -1,4 +1,6 @@
 import { createServerClient } from "../supabase";
+import { getCashDirection } from "@/types/transaction";
+import type { CashFlowStats, RevenueStats } from "@/types/transaction";
 
 export interface DashboardStats {
   trips: {
@@ -15,32 +17,50 @@ export interface DashboardStats {
   bookings: {
     total: number;
   };
-  revenue: {
-    totalPassengerPrice: number;
-    totalDriverPrice: number;
-    avgTripPrice: number;
+  transactions: {
+    total: number;
+    totalAmount: number;
+    byStatus: { status: string; count: number }[];
+    byType: { type: string; count: number }[];
   };
+  revenue: RevenueStats;
+  cashFlow: CashFlowStats;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = createServerClient();
 
-  // Fetch trips data
-  const { data: trips } = await supabase
-    .from("trips")
-    .select("status, distance, seats_booked, passenger_price, driver_price");
+  // Fetch all data in parallel
+  const [
+    { data: trips },
+    { data: users },
+    { count: bookingsCount },
+    { data: transactions },
+    { data: bookingsWithTxn },
+  ] = await Promise.all([
+    supabase
+      .from("trips")
+      .select("status, distance, seats_booked, passenger_price, driver_price"),
+    supabase
+      .from("users")
+      .select("uid, is_driver_doc_validated, created_at"),
+    supabase
+      .from("bookings")
+      .select("*", { count: "exact", head: true }),
+    supabase
+      .from("transactions")
+      .select("id, amount, status, type, code_service"),
+    supabase
+      .from("bookings")
+      .select(`
+        id,
+        transaction:transactions!transaction_id (id, amount, status),
+        trip:trips!trip_id (driver_price)
+      `)
+      .not("transaction_id", "is", null),
+  ]);
 
-  // Fetch users data
-  const { data: users } = await supabase
-    .from("users")
-    .select("uid, is_driver_doc_validated, created_at");
-
-  // Fetch bookings count
-  const { count: bookingsCount } = await supabase
-    .from("bookings")
-    .select("*", { count: "exact", head: true });
-
-  // Process trips
+  // --- Process trips ---
   type TripRow = {
     status: string | null;
     distance: number | null;
@@ -50,7 +70,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   };
   const tripsData = (trips || []) as TripRow[];
 
-  // Count by status
   const statusCounts: Record<string, number> = {};
   tripsData.forEach((t: TripRow) => {
     const status = t.status || "UNKNOWN";
@@ -61,7 +80,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     count,
   }));
 
-  // Process users
+  // --- Process users ---
   type UserRow = {
     uid: string;
     is_driver_doc_validated: boolean | null;
@@ -74,6 +93,60 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     if (!u.created_at) return false;
     return new Date(u.created_at) >= monthStart;
   }).length;
+
+  // --- Process transactions ---
+  type TxnRow = {
+    id: string;
+    amount: number | null;
+    status: string | null;
+    type: string | null;
+    code_service: string | null;
+  };
+  const txnData = (transactions || []) as TxnRow[];
+
+  const txnStatusCounts: Record<string, number> = {};
+  const txnTypeCounts: Record<string, number> = {};
+  let txnTotalAmount = 0;
+
+  for (const t of txnData) {
+    if (t.status) txnStatusCounts[t.status] = (txnStatusCounts[t.status] || 0) + 1;
+    if (t.type) txnTypeCounts[t.type] = (txnTypeCounts[t.type] || 0) + 1;
+    txnTotalAmount += t.amount ?? 0;
+  }
+
+  // --- Cash flow (uniquement SUCCESS) ---
+  let totalIn = 0;
+  let totalOut = 0;
+  let countIn = 0;
+  let countOut = 0;
+
+  for (const t of txnData) {
+    if (t.status !== "SUCCESS") continue;
+    const dir = getCashDirection(t.code_service);
+    const amount = t.amount ?? 0;
+    if (dir === "CASH_OUT") {
+      totalIn += amount;
+      countIn++;
+    } else if (dir === "CASH_IN") {
+      totalOut += amount;
+      countOut++;
+    }
+  }
+
+  // --- Revenue (marge Klando via bookings) ---
+  let totalPassengerPaid = 0;
+  let totalDriverPrice = 0;
+  let revenueCount = 0;
+
+  for (const row of bookingsWithTxn ?? []) {
+    const txn = row.transaction as unknown as { id: string; amount: number | null; status: string | null } | null;
+    const trip = row.trip as unknown as { driver_price: number | null } | null;
+
+    if (!txn || txn.status !== "SUCCESS") continue;
+    totalPassengerPaid += txn.amount ?? 0;
+    totalDriverPrice += trip?.driver_price ?? 0;
+    revenueCount++;
+  }
 
   return {
     trips: {
@@ -90,12 +163,24 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     bookings: {
       total: bookingsCount || 0,
     },
+    transactions: {
+      total: txnData.length,
+      totalAmount: txnTotalAmount,
+      byStatus: Object.entries(txnStatusCounts).map(([status, count]) => ({ status, count })),
+      byType: Object.entries(txnTypeCounts).map(([type, count]) => ({ type, count })),
+    },
     revenue: {
-      totalPassengerPrice: tripsData.reduce((sum: number, t: TripRow) => sum + (t.passenger_price || 0), 0),
-      totalDriverPrice: tripsData.reduce((sum: number, t: TripRow) => sum + (t.driver_price || 0), 0),
-      avgTripPrice: tripsData.length > 0
-        ? Math.round(tripsData.reduce((sum: number, t: TripRow) => sum + (t.passenger_price || 0), 0) / tripsData.length)
-        : 0,
+      totalPassengerPaid,
+      totalDriverPrice,
+      klandoMargin: totalPassengerPaid - totalDriverPrice,
+      transactionCount: revenueCount,
+    },
+    cashFlow: {
+      totalIn,
+      totalOut,
+      solde: totalIn - totalOut,
+      countIn,
+      countOut,
     },
   };
 }

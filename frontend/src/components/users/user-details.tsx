@@ -1,16 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { UserListItem } from "@/types/user";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, Mail, Phone, Calendar, Shield, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Star, Mail, Phone, Calendar, Shield, User, Car, Banknote } from "lucide-react";
 import { UserTripsTable } from "./user-trips-table";
+import { UserTransactionsTable } from "./user-transactions-table";
 
 interface UserDetailsProps {
   user: UserListItem;
 }
 
+type TabValue = "trips" | "transactions";
+
 export function UserDetails({ user }: UserDetailsProps) {
+  const [activeTab, setActiveTab] = useState<TabValue>("trips");
+
   return (
     <div className="space-y-4">
       {/* Profile Card */}
@@ -86,8 +93,40 @@ export function UserDetails({ user }: UserDetailsProps) {
         </CardContent>
       </Card>
 
-      {/* Trips Card */}
-      <UserTripsTable userId={user.uid} />
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <Button
+          variant={activeTab === "trips" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setActiveTab("trips")}
+          className={cn(
+            "flex items-center gap-2",
+            activeTab === "trips" && "bg-klando-burgundy hover:bg-klando-burgundy/90"
+          )}
+        >
+          <Car className="w-4 h-4" />
+          Trajets
+        </Button>
+        <Button
+          variant={activeTab === "transactions" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setActiveTab("transactions")}
+          className={cn(
+            "flex items-center gap-2",
+            activeTab === "transactions" && "bg-klando-burgundy hover:bg-klando-burgundy/90"
+          )}
+        >
+          <Banknote className="w-4 h-4" />
+          Transactions
+        </Button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "trips" ? (
+        <UserTripsTable userId={user.uid} />
+      ) : (
+        <UserTransactionsTable userId={user.uid} />
+      )}
     </div>
   );
 }

@@ -58,7 +58,7 @@ npx supabase db dump --schema public -f schema.sql
 | `trips` | Trip listings | `trip_id` | 37 |
 | `bookings` | Reservations | `id` | 21 |
 | `chats` | Messages | `id` | - |
-| `transactions` | Payments | `id` | - |
+| `transactions` | Payments (synced from Firebase) | `id` | ~57 |
 | `dash_authorized_users` | Utilisateurs autorisés dashboard | `email` | ~8 |
 | `support_tickets` | Tickets de support | `ticket_id` | - |
 | `support_comments` | Commentaires sur tickets | `comment_id` | - |
@@ -69,7 +69,41 @@ users ──< trips (driver_id → uid)
 users ──< bookings (user_id → uid)
 trips ──< bookings (trip_id)
 trips ──< chats (trip_id)
+bookings ──< transactions (bookings.transaction_id → transactions.id)
+users ──< transactions (user_id → uid) [no FK, joined manually]
 ```
+
+### Table `transactions` (synced from Firebase via Intech)
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `id` | text (PK) | ID transaction |
+| `user_id` | text | ID utilisateur (= users.uid, pas de FK) |
+| `intech_transaction_id` | text | ID Intech |
+| `amount` | integer | Montant en XOF |
+| `status` | text | SUCCESS, PENDING, FAILED, REFUNDED, CANCELLED |
+| `type` | text | TRIP_PAYMENT, DRIVER_PAYMENT, REFUND |
+| `code_service` | text | Contient CASH_IN ou CASH_OUT |
+| `phone` | text | Numéro du client |
+| `msg` | text | Message Intech |
+| `created_at` | timestamp | Date création |
+| `updated_at` | timestamp | Date mise à jour |
+
+### Logique métier transactions
+- **Marge Klando** = `transactions.amount` - `trips.driver_price` (via bookings.transaction_id) — inclut 15% TVA
+- **Cash flow** (logique Intech inversée) :
+  - `XXXXX_CASH_IN` dans `code_service` → argent qui **SORT** pour Klando
+  - `XXXXX_CASH_OUT` dans `code_service` → argent qui **RENTRE** pour Klando
+- **Stats** : agrégations uniquement sur `status = 'SUCCESS'`
+- **Pas de FK** entre `transactions.user_id` et `users.uid` → joins manuels (2 requêtes séparées)
+- **`users` table** : la colonne téléphone s'appelle `phone_number` (pas `phone`)
+
+### Indexes (transactions)
+- `idx_transactions_user_id` - Filter by user
+- `idx_transactions_status` - Filter by status
+- `idx_transactions_created_at` - Sort by date DESC
+- `idx_transactions_type` - Filter by type
+- `idx_transactions_user_created` - Combined user + date
+- `idx_transactions_status_created` - Combined status + date
 
 ### Indexes (trips)
 - `idx_trips_status` - Filter by status
@@ -112,11 +146,13 @@ frontend/src/
 │   ├── api/                # API Routes
 │   │   ├── admin/users/    # User management API
 │   │   ├── mention-users/  # Autocomplete mentions
-│   │   └── support/        # Ticket comments API
+│   │   ├── support/        # Ticket comments API
+│   │   └── users/[uid]/    # User trips & transactions API
 │   ├── login/              # Page de connexion
 │   ├── trips/              # Trips page
 │   ├── users/              # Users page
-│   ├── stats/              # Stats dashboard
+│   ├── transactions/       # Transactions page
+│   ├── stats/              # Stats dashboard (+ cash flow + revenus)
 │   └── support/            # Support tickets
 ├── components/
 │   ├── sidebar.tsx         # Navigation + UserMenu
@@ -125,7 +161,8 @@ frontend/src/
 │   ├── layout-content.tsx  # Layout conditionnel (avec/sans sidebar)
 │   ├── ui/                 # Shadcn components
 │   ├── trips/              # Trip components
-│   ├── users/              # User components
+│   ├── users/              # User components (+ transactions tab)
+│   ├── transactions/       # Transaction components
 │   ├── support/            # Support ticket components
 │   └── emails/             # React Email templates (Resend)
 ├── lib/
@@ -134,12 +171,14 @@ frontend/src/
 │   ├── queries/
 │   │   ├── trips.ts        # Trip queries
 │   │   ├── users.ts        # User queries
-│   │   ├── stats.ts        # Dashboard stats
+│   │   ├── transactions.ts # Transaction queries + cash flow + revenue
+│   │   ├── stats.ts        # Dashboard stats (+ transactions + cash flow)
 │   │   └── support.ts      # Support ticket queries
 │   └── utils.ts            # formatDate, formatPrice, cn
 ├── middleware.ts           # Protection des routes (redirect /login)
 └── types/
     ├── trip.ts             # Trip types
+    ├── transaction.ts      # Transaction types + cash flow + revenue
     └── user.ts             # User types
 ```
 
@@ -171,6 +210,15 @@ getUsers(options)         // List with pagination
 getUserById(uid)          // Detail with stats
 getUsersStats()           // Aggregated stats
 getDriversList()          // List of drivers
+
+// transactions.ts
+getTransactions(options)       // List with filters (status, type, userId)
+getTransactionsWithUser(limit) // List with user info (manual join, no FK)
+getTransactionById(id)         // Detail with user + booking + trip
+getTransactionsStats()         // Aggregated stats
+getCashFlowStats({ from?, to? })  // Cash in/out (SUCCESS only)
+getRevenueStats({ from?, to? })   // Klando margin via bookings
+getTransactionsForUser(userId)    // User transaction history
 
 // support.ts
 getTicketsWithUser()      // List with user info
@@ -273,9 +321,14 @@ RESEND_FROM_EMAIL=KlandoDash <onboarding@resend.dev>  # Dev: resend.dev, Prod: n
 - [x] Mentions (@user) dans les commentaires
 - [x] Notifications email via Resend (mentions)
 - [x] Rôle `support` avec accès restreint
+- [x] Transactions page avec liste, détails, deep linking, cash flow
+- [x] Intégration transactions dans page users (onglets Trajets/Transactions)
+- [x] Stats : cash flow (entrées/sorties/solde), revenus réels (marge Klando), distribution transactions
+- [x] Indexes et RLS pour table transactions
 
 ### TODO 🚧
 - [ ] Chats page (communication inter-utilisateurs)
+- [ ] Export CSV transactions (compta)
 - [ ] Routes admin avancées et permissions
 - [ ] Audit log des connexions et actions
 - [ ] Tests automatisés
