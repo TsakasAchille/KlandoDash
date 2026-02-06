@@ -2,6 +2,7 @@ import { getTransactionsWithUser, getTransactionById, getTransactionsStats, getC
 import { TransactionsPageClient } from "./transactions-client";
 import { Banknote } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { RefreshButton } from "@/components/refresh-button";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
           <Banknote className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
           <h1 className="text-2xl sm:text-3xl font-bold">Transactions</h1>
         </div>
+        <RefreshButton />
       </div>
 
       {/* Stats badges */}

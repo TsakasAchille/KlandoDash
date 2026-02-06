@@ -1,6 +1,7 @@
 import { getUsers, getUserById, getUsersStats } from "@/lib/queries/users";
 import { UsersPageClient } from "./users-client";
 import { Users } from "lucide-react";
+import { RefreshButton } from "@/components/refresh-button";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function UsersPage({ searchParams }: Props) {
           <Users className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
           <h1 className="text-2xl sm:text-3xl font-bold">Utilisateurs</h1>
         </div>
+        <RefreshButton />
       </div>
 
       {/* Stats responsive */}

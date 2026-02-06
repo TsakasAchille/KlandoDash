@@ -10,6 +10,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export function createServerClient() {
   return createClient(
     supabaseUrl,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey
+    process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey,
+    {
+      global: {
+        fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }),
+      },
+    }
   );
 }

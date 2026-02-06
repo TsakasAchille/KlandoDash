@@ -2,6 +2,7 @@ import { getTripsWithDriver, getTripById, getTripsStats } from "@/lib/queries/tr
 import { toTrip } from "@/types/trip";
 import { TripsPageClient } from "./trips-client";
 import { Car } from "lucide-react";
+import { RefreshButton } from "@/components/refresh-button";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,7 @@ export default async function TripsPage({ searchParams }: Props) {
           <Car className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
           <h1 className="text-2xl sm:text-3xl font-bold">Trajets</h1>
         </div>
+        <RefreshButton />
       </div>
 
       {/* Stats responsive */}

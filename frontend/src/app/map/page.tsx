@@ -1,5 +1,6 @@
 import { getTripsForMap, getTripsStats, getDriversList } from "@/lib/queries/trips";
 import { MapClient } from "./map-client";
+import { RefreshButton } from "@/components/refresh-button";
 
 interface MapPageProps {
   searchParams: Promise<{
@@ -29,7 +30,10 @@ export default async function MapPage({ searchParams }: MapPageProps) {
     <div className="flex flex-col h-full">
       {/* Header responsive avec stats */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-b border-gray-800 gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-klando-gold">Carte des Trajets</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-klando-gold">Carte des Trajets</h1>
+          <RefreshButton />
+        </div>
         <div className="flex flex-wrap gap-2 sm:gap-4">
           <span className="px-3 py-1 text-xs sm:text-sm bg-black-800 rounded-full">
             {stats.total_trips} trajets

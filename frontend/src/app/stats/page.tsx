@@ -14,6 +14,7 @@ import {
   ArrowUpRight,
   TrendingUp,
 } from "lucide-react";
+import { RefreshButton } from "@/components/refresh-button";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,7 @@ export default async function StatsPage() {
           <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
           <h1 className="text-2xl sm:text-3xl font-bold">Statistiques</h1>
         </div>
+        <RefreshButton />
       </div>
 
       {/* Main Stats Grid */}

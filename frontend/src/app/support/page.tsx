@@ -5,6 +5,7 @@ import {
 } from "@/lib/queries/support";
 import { SupportPageClient } from "./support-client";
 import { LifeBuoy, CircleDot, Clock, CheckCircle } from "lucide-react";
+import { RefreshButton } from "@/components/refresh-button";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,7 @@ export default async function SupportPage({ searchParams }: Props) {
           <LifeBuoy className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
           <h1 className="text-2xl sm:text-3xl font-bold">Support Technique</h1>
         </div>
+        <RefreshButton />
       </div>
 
       {/* Stats responsive */}
