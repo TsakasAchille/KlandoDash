@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 interface TripTableProps {
   trips: Trip[];
@@ -49,12 +50,21 @@ export function TripTable({ trips, selectedTripId, initialSelectedId, onSelectTr
 
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Filter trips by status
+  // Filter trips by status and search term
   const filteredTrips = useMemo(() => {
-    if (statusFilter === "all") return trips;
-    return trips.filter((trip) => trip.status === statusFilter);
-  }, [trips, statusFilter]);
+    return trips.filter((trip) => {
+      const matchesStatus = statusFilter === "all" || trip.status === statusFilter;
+      const term = searchTerm.toLowerCase();
+      const matchesSearch = 
+        (trip.departure_city?.toLowerCase() || "").includes(term) ||
+        (trip.destination_city?.toLowerCase() || "").includes(term) ||
+        (trip.trip_id?.toLowerCase() || "").includes(term);
+      
+      return matchesStatus && matchesSearch;
+    });
+  }, [trips, statusFilter, searchTerm]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredTrips.length / ITEMS_PER_PAGE);
@@ -73,26 +83,42 @@ export function TripTable({ trips, selectedTripId, initialSelectedId, onSelectTr
     setCurrentPage(1);
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex items-center gap-4">
-        <Select value={statusFilter} onValueChange={handleFilterChange}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
-            {statuses.map((status) => (
-              <SelectItem key={status} value={status}>
-                {status}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span className="text-sm text-muted-foreground">
-          {filteredTrips.length} trajet{filteredTrips.length > 1 ? "s" : ""}
-        </span>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher une ville ou ID..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="pl-9 w-full"
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <Select value={statusFilter} onValueChange={handleFilterChange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les statuts</SelectItem>
+              {statuses.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {filteredTrips.length} trajet{filteredTrips.length > 1 ? "s" : ""}
+          </span>
+        </div>
       </div>
 
       {/* Table */}
@@ -102,8 +128,8 @@ export function TripTable({ trips, selectedTripId, initialSelectedId, onSelectTr
             <TableHeader>
               <TableRow className="bg-klando-dark hover:bg-klando-dark">
                 <TableHead className="text-klando-gold">Trajet</TableHead>
-                <TableHead className="text-klando-gold">Distance</TableHead>
-                <TableHead className="text-klando-gold">Date</TableHead>
+                <TableHead className="text-klando-gold hidden sm:table-cell">Distance</TableHead>
+                <TableHead className="text-klando-gold hidden md:table-cell">Date</TableHead>
                 <TableHead className="text-klando-gold">Places</TableHead>
                 <TableHead className="text-klando-gold">Statut</TableHead>
               </TableRow>
@@ -125,32 +151,38 @@ export function TripTable({ trips, selectedTripId, initialSelectedId, onSelectTr
                     onClick={() => onSelectTrip(trip)}
                   >
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium truncate hidden sm:block">
-                          {trip.departure_city}
-                        </span>
-                        <span className="font-medium truncate sm:hidden">
-                          {trip.departure_city.length > 8 ? trip.departure_city.slice(0, 8) + "..." : trip.departure_city}
-                        </span>
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-1 sm:block">
+                          <span className="font-medium truncate block sm:inline">
+                            {trip.departure_city}
+                          </span>
+                          <span className="text-muted-foreground text-xs sm:hidden">→</span>
+                          <span className="text-muted-foreground text-xs truncate block sm:hidden">
+                            {trip.destination_city}
+                          </span>
+                        </div>
                         <span className="text-muted-foreground text-xs truncate hidden sm:block">
                           → {trip.destination_city}
                         </span>
-                        <span className="text-muted-foreground text-xs truncate sm:hidden">
-                          → {trip.destination_city.length > 8 ? trip.destination_city.slice(0, 8) + "..." : trip.destination_city}
+                        {/* Date visible seulement sur mobile ici */}
+                        <span className="text-[10px] text-muted-foreground md:hidden mt-0.5">
+                          {formatDate(trip.departure_schedule)}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>{formatDistance(trip.trip_distance)}</TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="hidden sm:table-cell text-sm">
+                      {formatDistance(trip.trip_distance)}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-sm">
                       {formatDate(trip.departure_schedule)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-sm">
                       {trip.passengers.length}/{trip.total_seats}
                     </TableCell>
                     <TableCell>
                       <span
                         className={cn(
-                          "px-2 py-1 rounded-full text-xs font-medium",
+                          "px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap",
                           statusColors[trip.status] || "bg-gray-500/20 text-gray-400"
                         )}
                       >

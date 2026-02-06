@@ -18,7 +18,9 @@ export async function getUsers(limit = 100): Promise<UserListItem[]> {
       rating,
       rating_count,
       role,
-      created_at
+      created_at,
+      is_driver_doc_validated,
+      bio
     `)
     .order("created_at", { ascending: false })
     .limit(limit);

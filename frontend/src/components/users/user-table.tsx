@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, ChevronRight, Star, Search } from "lucide-react";
 
 interface UserTableProps {
   users: UserListItem[];
@@ -41,12 +42,19 @@ export function UserTable({ users, selectedUserId, initialSelectedId, onSelectUs
 
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Filter users by role
+  // Filter users by role and search term
   const filteredUsers = useMemo(() => {
-    if (roleFilter === "all") return users;
-    return users.filter((user) => user.role === roleFilter);
-  }, [users, roleFilter]);
+    return users.filter((user) => {
+      const matchesRole = roleFilter === "all" || user.role === roleFilter;
+      const matchesSearch = 
+        (user.display_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (user.email?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+      
+      return matchesRole && matchesSearch;
+    });
+  }, [users, roleFilter, searchTerm]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
@@ -65,26 +73,42 @@ export function UserTable({ users, selectedUserId, initialSelectedId, onSelectUs
     setCurrentPage(1);
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="space-y-4">
       {/* Filtres responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <Select value={roleFilter} onValueChange={handleFilterChange}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Rôle" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les rôles</SelectItem>
-            {roles.map((role) => (
-              <SelectItem key={role} value={role!}>
-                {role}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span className="text-sm text-muted-foreground">
-          {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? "s" : ""}
-        </span>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un nom ou email..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="pl-9 w-full"
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <Select value={roleFilter} onValueChange={handleFilterChange}>
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Rôle" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les rôles</SelectItem>
+              {roles.map((role) => (
+                <SelectItem key={role} value={role!}>
+                  {role}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? "s" : ""}
+          </span>
+        </div>
       </div>
 
       {/* Tableau responsive */}

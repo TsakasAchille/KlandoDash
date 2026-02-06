@@ -120,82 +120,85 @@ export function TransactionTable({
       <div className="rounded-lg border bg-card overflow-x-auto lg:overflow-visible">
         <div className="min-w-[500px] lg:min-w-0">
           <Table>
-            <TableHeader>
-              <TableRow className="bg-klando-dark hover:bg-klando-dark">
-                <TableHead className="text-klando-gold w-8"></TableHead>
-                <TableHead className="text-klando-gold">Utilisateur</TableHead>
-                <TableHead className="text-klando-gold">Montant</TableHead>
-                <TableHead className="text-klando-gold">Type</TableHead>
-                <TableHead className="text-klando-gold">Statut</TableHead>
-                <TableHead className="text-klando-gold">Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedTransactions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    Aucune transaction trouvée
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedTransactions.map((txn) => {
-                  const direction = getCashDirection(txn.code_service);
-                  return (
-                    <TableRow
-                      key={txn.id}
-                      data-transaction-id={txn.id}
-                      data-state={selectedTransactionId === txn.id ? "selected" : undefined}
-                      className="cursor-pointer transition-all"
-                      onClick={() => onSelectTransaction(txn)}
-                    >
-                      <TableCell className="w-8">
-                        {direction === "CASH_OUT" ? (
-                          <ArrowDownLeft className="w-4 h-4 text-green-400" />
-                        ) : direction === "CASH_IN" ? (
-                          <ArrowUpRight className="w-4 h-4 text-red-400" />
-                        ) : (
-                          <span className="w-4 h-4 inline-block" />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium truncate max-w-[120px]">
-                            {txn.user?.display_name || "Inconnu"}
-                          </span>
-                          <span className="text-muted-foreground text-xs truncate max-w-[120px]">
-                            {txn.phone || "-"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className={cn(
-                        "font-semibold",
-                        direction === "CASH_OUT" ? "text-green-400" : direction === "CASH_IN" ? "text-red-400" : ""
-                      )}>
-                        {direction === "CASH_OUT" ? "+" : direction === "CASH_IN" ? "-" : ""}
-                        {formatPrice(txn.amount ?? 0)}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs">{txn.type || "-"}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={cn(
-                            "px-2 py-1 rounded-full text-xs font-medium",
-                            statusColors[txn.status || ""] || "bg-gray-500/20 text-gray-400"
+                        <TableHeader>
+                          <TableRow className="bg-klando-dark hover:bg-klando-dark">
+                            <TableHead className="text-klando-gold w-8"></TableHead>
+                            <TableHead className="text-klando-gold">Utilisateur</TableHead>
+                            <TableHead className="text-klando-gold">Montant</TableHead>
+                            <TableHead className="text-klando-gold hidden sm:table-cell">Type</TableHead>
+                            <TableHead className="text-klando-gold">Statut</TableHead>
+                            <TableHead className="text-klando-gold hidden md:table-cell">Date</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedTransactions.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                Aucune transaction trouvée
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            paginatedTransactions.map((txn) => {
+                              const direction = getCashDirection(txn.code_service);
+                              return (
+                                <TableRow
+                                  key={txn.id}
+                                  data-transaction-id={txn.id}
+                                  data-state={selectedTransactionId === txn.id ? "selected" : undefined}
+                                  className="cursor-pointer transition-all"
+                                  onClick={() => onSelectTransaction(txn)}
+                                >
+                                  <TableCell className="w-8 px-2 sm:px-4">
+                                    {direction === "CASH_OUT" ? (
+                                      <ArrowDownLeft className="w-4 h-4 text-green-400" />
+                                    ) : direction === "CASH_IN" ? (
+                                      <ArrowUpRight className="w-4 h-4 text-red-400" />
+                                    ) : (
+                                      <span className="w-4 h-4 inline-block" />
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="px-2 sm:px-4">
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="font-medium truncate max-w-[100px] sm:max-w-[150px]">
+                                        {txn.user?.display_name || "Inconnu"}
+                                      </span>
+                                      <span className="text-muted-foreground text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-[150px]">
+                                        {txn.phone || "-"}
+                                      </span>
+                                      {/* Date visible seulement sur mobile ici */}
+                                      <span className="text-[10px] text-muted-foreground md:hidden mt-0.5">
+                                        {txn.created_at ? formatDate(txn.created_at) : "-"}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className={cn(
+                                    "font-semibold text-sm sm:text-base px-2 sm:px-4",
+                                    direction === "CASH_OUT" ? "text-green-400" : direction === "CASH_IN" ? "text-red-400" : ""
+                                  )}>
+                                    {direction === "CASH_OUT" ? "+" : direction === "CASH_IN" ? "-" : ""}
+                                    {formatPrice(txn.amount ?? 0)}
+                                  </TableCell>
+                                  <TableCell className="hidden sm:table-cell">
+                                    <span className="text-xs">{txn.type || "-"}</span>
+                                  </TableCell>
+                                  <TableCell className="px-2 sm:px-4">
+                                    <span
+                                      className={cn(
+                                        "px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap",
+                                        statusColors[txn.status || ""] || "bg-gray-500/20 text-gray-400"
+                                      )}
+                                    >
+                                      {txn.status || "-"}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="hidden md:table-cell text-sm">
+                                    {txn.created_at ? formatDate(txn.created_at) : "-"}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
                           )}
-                        >
-                          {txn.status || "-"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {txn.created_at ? formatDate(txn.created_at) : "-"}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+                        </TableBody>          </Table>
         </div>
       </div>
 

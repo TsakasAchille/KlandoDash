@@ -9,6 +9,8 @@ export interface UserListItem {
   rating_count: number | null;
   role: string | null;
   created_at: string | null;
+  is_driver_doc_validated?: boolean | null;
+  bio?: string | null;
 }
 
 // Type détaillé avec stats
