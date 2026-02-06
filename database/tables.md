@@ -162,7 +162,10 @@ Utilisateurs autorisés à accéder au dashboard admin.
 |---------|------|-------------|
 | `email` | varchar(255) | **PK** - Email |
 | `active` | boolean | Actif |
-| `role` | varchar(50) | admin, user |
+| `role` | varchar(50) | admin, user, support |
+| `display_name` | text | Nom affiché (depuis Google) |
+| `avatar_url` | text | URL photo (depuis Google) |
+| `added_at` | timestamp | Date d'ajout |
 | `added_by` | varchar(255) | Ajouté par |
 | `notes` | text | Notes |
 

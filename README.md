@@ -54,13 +54,15 @@ Ouvrir http://localhost:3000
 
 ## Authentification
 
-Seuls les utilisateurs presents dans la table `dash_authorized_users` (Supabase) avec `active=true` peuvent acceder au dashboard.
+Seuls les utilisateurs presents dans la table `dash_authorized_users` (Supabase) avec `active=true` peuvent acceder au dashboard. Les profils sont automatiquement enrichis lors de la premiere connexion Google.
 
 | Colonne | Description |
 |---------|-------------|
 | `email` | Email Google (PK) |
 | `active` | Autorisation active |
-| `role` | `admin` ou `user` |
+| `role` | `admin`, `support` ou `user` |
+| `display_name` | Nom complet recupere de Google |
+| `avatar_url` | Photo de profil recuperee de Google |
 
 ## Structure
 
@@ -80,7 +82,8 @@ KlandoDash/
 - `/` - Accueil
 - `/trips` - Gestion des trajets
 - `/users` - Gestion des utilisateurs
-- `/map` - Carte des trajets
-- `/stats` - Statistiques
-- `/support` - Tickets support
+- `/map` - Carte des trajets (temps reel)
+- `/transactions` - Flux financier & revenus
+- `/stats` - Statistiques & KPI
+- `/support` - Tickets support & mentions
 - `/login` - Connexion Google OAuth

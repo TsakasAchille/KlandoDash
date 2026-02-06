@@ -1,24 +1,14 @@
 # KlandoDash Project Summary
 
-Failed to send mention notifications: TypeError: render$1 is not a function
-    at render (webpack-internal:///(rsc)/./node_modules/resend/dist/index.mjs:87:9)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async Emails.create (webpack-internal:///(rsc)/./node_modules/resend/dist/index.mjs:549:37)
-    at async sendMentionNotifications (webpack-internal:///(rsc)/./src/app/api/support/tickets/[ticketId]/comments/route.ts:59:13)
-POST /api/support/tickets/db1939d7-139d-4e69-aeab-d691d1a7fa83/comments 200 in 3907ms
-Failed to send mention notifications: TypeError: (0 , _react_email_render__WEBPACK_IMPORTED_MODULE_6__.renderAsync) is not a function
-    at sendMentionNotifications (webpack-internal:///(rsc)/./src/app/api/support/tickets/[ticketId]/comments/route.ts:59:101)
-    at process.processTicksAndReje
-
 ## Project Overview
 
-KlandoDash is the administration dashboard for Klando, a carpooling service in Senegal. This full-stack project is built with a modern tech stack, providing a comprehensive interface for managing trips, users, and support tickets.
+KlandoDash is the administration dashboard for Klando, a carpooling service in Senegal. This full-stack project is built with a modern tech stack, providing a comprehensive interface for managing trips, users, support tickets, and financial transactions.
 
 - **Frontend**: The frontend is a Next.js 14 application, utilizing the App Router for page management. The user interface is built with Shadcn/ui and styled with TailwindCSS, creating a responsive and modern design. Key frontend dependencies include `leaflet` for map visualizations, `recharts` for statistical charts, and `@tanstack/react-table` for data tables. Mutations (like updating ticket status) are now handled using **Next.js Server Actions** for a more direct server interaction.
 
-- **Backend & Database**: The project leverages Supabase, a Backend-as-a-Service (BaaS) platform, which provides a PostgreSQL database, authentication, and auto-generated APIs. The database schema includes core tables for `trips`, `users`, `bookings`, and `support_tickets`. The `database/schema.sql` file defines the complete database structure, including tables, relationships, and indexes.
+- **Backend & Database**: The project leverages Supabase, a Backend-as-a-Service (BaaS) platform, which provides a PostgreSQL database, authentication, and auto-generated APIs. The database schema includes core tables for `trips`, `users`, `bookings`, `support_tickets`, and `transactions`. The `database/schema.sql` file defines the complete database structure, including tables, relationships, and indexes.
 
-- **Authentication**: User authentication is handled by NextAuth.js (v5), with Google OAuth as the primary authentication provider. Access to the dashboard is restricted to authorized users listed in the `dash_authorized_users` table in the Supabase database. These records are now enriched with `display_name` and `avatar_url` directly from the Google profile during login via a NextAuth `signIn` callback.
+- **Authentication**: User authentication is handled by NextAuth.js (v5), with Google OAuth as the primary authentication provider. Access to the dashboard is restricted to authorized users listed in the `dash_authorized_users` table in the Supabase database. These records are now enriched with `display_name` and `avatar_url` directly from the Google profile during login via a NextAuth `signIn` callback. Role-based access control is implemented, including `admin` and `support` roles.
 
 - **Data Flow**: The frontend communicates with the Supabase backend through the `@supabase/supabase-js` client library. Data fetching is performed on the server-side using React Server Components, with dedicated query functions in `frontend/src/lib/queries/`. These functions are optimized to fetch only the required data, ensuring efficient data retrieval.
 
@@ -28,6 +18,9 @@ KlandoDash is the administration dashboard for Klando, a carpooling service in S
 KlandoDash/
 ├── frontend/          # Next.js 14 + Shadcn/ui
 │   ├── src/app/      # Pages (App Router)
+│   │   ├── transactions/ # Transactions module
+│   │   ├── map/          # Real-time trips map
+│   │   └── ...
 │   ├── src/components/ # Reusable UI components
 │   ├── src/lib/      # Supabase client + queries, auth utilities
 │   ├── src/types/    # TypeScript type definitions
@@ -77,6 +70,7 @@ npx supabase db dump --schema public -f database/schema.sql
 | `trips` | Trip listings | `trip_id` |
 | `bookings` | Trip reservations by users | `id` |
 | `support_tickets` | User support tickets | `ticket_id` |
+| `transactions` | Financial transactions (Integrapay) | `id` |
 | `dash_authorized_users` | Authorized dashboard users | `email` |
 
 ### Key Relations
@@ -87,6 +81,8 @@ erDiagram
     trips ||--o{ bookings : "trip_id FK"
     users ||--o{ dash_authorized_users : "email FK"
     users ||--o{ support_tickets : "user_id FK"
+    users ||--o{ transactions : "user_id FK"
+    bookings ||--o? transactions : "transaction_id FK"
 ```
 
 ### Query Best Practices
@@ -108,23 +104,29 @@ frontend/src/
 │   ├── login/            # Login page and layout
 │   ├── trips/            # Trips page and client components
 │   ├── users/            # Users page and client components
-│   └── stats/            # Statistics dashboard page
+│   ├── stats/            # Statistics dashboard page
+│   ├── transactions/     # Transactions management page
+│   └── map/              # Real-time trips visualization map
 ├── components/           # Reusable UI components
 │   ├── ui/               # Shadcn/ui components
 │   ├── sidebar.tsx       # Main navigation sidebar
 │   ├── user-menu.tsx     # User profile menu (avatar, role, logout)
+│   ├── refresh-button.tsx # Global manual refresh component
 │   └── providers.tsx     # Context providers (e.g., NextAuth SessionProvider)
 ├── lib/                  # Utility functions and configurations
 │   ├── auth.ts           # NextAuth.js configuration
 │   ├── supabase.ts       # Supabase client initialization
 │   ├── queries/          # Data fetching functions for specific entities
 │   │   ├── trips.ts      # Trip-related data queries
-│   │   └── users.ts      # User-related data queries
+│   │   ├── users.ts      # User-related data queries
+│   │   ├── transactions.ts # Transaction-related data queries
+│   │   └── stats.ts      # Dashboard metrics queries
 │   └── utils.ts          # General utility functions (formatters, class mergers)
-├── middleware.ts         # Authentication middleware for route protection
+├── middleware.ts         # Authentication middleware for route protection (RBAC)
 └── types/                # TypeScript global type definitions
     ├── trip.ts           # Trip data structures
-    └── user.ts           # User data structures
+    ├── user.ts           # User data structures
+    └── transaction.ts    # Transaction data structures
 ```
 
 ### Data Flow Example (Trips Page)
@@ -180,9 +182,10 @@ GOOGLE_CLIENT_SECRET=<your-google-client-secret>
 ```
 
 ## Available Queries (`frontend/src/lib/queries/`)
-- `trips.ts`: `getTrips`, `getTripById`, `getTripsStats`, `getTripsWithDriver`, `getPassengersForTrip`
+- `trips.ts`: `getTrips`, `getTripById`, `getTripsStats`, `getTripsWithDriver`, `getPassengersForTrip`, `getTripsForMap`, `getDriversList`
 - `users.ts`: `getUsers`, `getUserById`, `getUsersStats`, `getDriversList`
 - `support.ts`: `getTicketsWithUser`, `getTicketDetail`, `updateTicketStatus`, `addComment`
+- `transactions.ts`: `getTransactions`, `getTransactionById`, `getCashFlowStats`, `getRevenueStats`, `getTransactionsForUser`
 
 ## Theme Colors (Klando)
 
@@ -214,16 +217,22 @@ The dashboard uses a custom color palette defined in `tailwind.config.ts`.
 - [x] Trips page with list, details, deep linking, passenger profiles.
 - [x] Users page with list, details, deep linking.
 - [x] Stats page with dashboard metrics.
+- [x] Transactions module with cash flow and revenue tracking.
+- [x] Map page for real-time trip visualization.
 - [x] Database indexes for performance.
 - [x] Dark theme with Klando colors.
 - [x] Authentication using NextAuth.js v5 + Google OAuth.
 - [x] User whitelisting via `dash_authorized_users` table.
+- [x] Role-based access control (Admin, Support).
 - [x] UserMenu with avatar, role, and logout.
+- [x] Refresh button for manual data revalidation.
 - [x] Basic admin API for user management (`/api/admin/users`).
 - [x] Support tickets module with chat-like interface for comments.
 - [x] Ability to change support ticket status via Server Actions.
+- [x] Mention/Tag system in support comments (emails via Resend).
 
 ### TODO 🚧
+- [ ] Fix mention notification email rendering (known issue with `render` in App Router).
 - [ ] Implement a Chats page for inter-user communication.
 - [ ] Develop more robust admin routes and permissions beyond basic user management.
 - [ ] Implement an audit log for user connections and significant actions.

@@ -153,14 +153,17 @@ frontend/src/
 │   ├── users/              # Users page
 │   ├── transactions/       # Transactions page
 │   ├── stats/              # Stats dashboard (+ cash flow + revenus)
+│   ├── map/                # Real-time trips visualization map
 │   └── support/            # Support tickets
 ├── components/
 │   ├── sidebar.tsx         # Navigation + UserMenu
 │   ├── user-menu.tsx       # Menu utilisateur (avatar, rôle, déconnexion)
+│   ├── refresh-button.tsx  # Global manual refresh component
 │   ├── providers.tsx       # SessionProvider wrapper
 │   ├── layout-content.tsx  # Layout conditionnel (avec/sans sidebar)
 │   ├── ui/                 # Shadcn components
 │   ├── trips/              # Trip components
+│   ├── map/                # Map components (filters, popups)
 │   ├── users/              # User components (+ transactions tab)
 │   ├── transactions/       # Transaction components
 │   ├── support/            # Support ticket components
@@ -169,7 +172,7 @@ frontend/src/
 │   ├── auth.ts             # Configuration NextAuth.js
 │   ├── supabase.ts         # Supabase clients
 │   ├── queries/
-│   │   ├── trips.ts        # Trip queries
+│   │   ├── trips.ts        # Trip queries (+ getTripsForMap)
 │   │   ├── users.ts        # User queries
 │   │   ├── transactions.ts # Transaction queries + cash flow + revenue
 │   │   ├── stats.ts        # Dashboard stats (+ transactions + cash flow)
@@ -204,6 +207,7 @@ getTripById(tripId)       // Detail with driver join
 getTripsStats()           // Aggregated stats
 getTripsWithDriver(limit) // Enriched list with driver info
 getPassengersForTrip(id)  // Passengers for a trip
+getTripsForMap(limit)     // Geo-data for trips map
 
 // users.ts
 getUsers(options)         // List with pagination
@@ -322,6 +326,7 @@ RESEND_FROM_EMAIL=KlandoDash <onboarding@resend.dev>  # Dev: resend.dev, Prod: n
 - [x] Notifications email via Resend (mentions)
 - [x] Rôle `support` avec accès restreint
 - [x] Transactions page avec liste, détails, deep linking, cash flow
+- [x] Map page avec visualisation des trajets en temps réel
 - [x] Intégration transactions dans page users (onglets Trajets/Transactions)
 - [x] Stats : cash flow (entrées/sorties/solde), revenus réels (marge Klando), distribution transactions
 - [x] Indexes et RLS pour table transactions
