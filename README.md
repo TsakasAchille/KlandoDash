@@ -79,11 +79,18 @@ KlandoDash/
 
 ## Pages
 
-- `/` - Accueil
-- `/trips` - Gestion des trajets
-- `/users` - Gestion des utilisateurs
-- `/map` - Carte des trajets (temps reel)
-- `/transactions` - Flux financier & revenus
-- `/stats` - Statistiques & KPI
-- `/support` - Tickets support & mentions
+- `/` - Accueil (KPI globaux)
+- `/trips` - Gestion des trajets (Filtres, Recherche, Détails)
+- `/users` - Gestion des utilisateurs (Recherche, Bio, Profil vérifié)
+- `/map` - Carte des trajets (Temps réel, Filtres conducteurs)
+- `/transactions` - Flux financier & revenus (Marge Klando, Cash Flow)
+- `/stats` - Statistiques & KPI financiers
+- `/support` - Tickets support & système de mentions @user
 - `/login` - Connexion Google OAuth
+
+## Fonctionnalités Clés
+
+- **Filtres Avancés** : Recherche par nom, email, ville ou ID sur les tableaux principaux.
+- **Expérience Fluide** : Transition entre les pages avec **Skeleton Loading**.
+- **Responsive Design** : Interface optimisée pour mobile et tablettes.
+- **Sécurité** : Accès restreint par liste blanche et rôles (Admin / Support).

@@ -161,7 +161,7 @@ frontend/src/
 │   ├── refresh-button.tsx  # Global manual refresh component
 │   ├── providers.tsx       # SessionProvider wrapper
 │   ├── layout-content.tsx  # Layout conditionnel (avec/sans sidebar)
-│   ├── ui/                 # Shadcn components
+│   ├── ui/                 # Shadcn components (+ skeleton.tsx)
 │   ├── trips/              # Trip components
 │   ├── map/                # Map components (filters, popups)
 │   ├── users/              # User components (+ transactions tab)
@@ -329,6 +329,10 @@ RESEND_FROM_EMAIL=KlandoDash <onboarding@resend.dev>  # Dev: resend.dev, Prod: n
 - [x] Map page avec visualisation des trajets en temps réel
 - [x] Intégration transactions dans page users (onglets Trajets/Transactions)
 - [x] Stats : cash flow (entrées/sorties/solde), revenus réels (marge Klando), distribution transactions
+- [x] Global Skeleton Loading pour les transitions de pages
+- [x] Filtres de recherche (UserTable, TripTable)
+- [x] Tableaux responsifs optimisés pour mobile
+- [x] Fiche utilisateur avec indicateurs circulaires et biographie
 - [x] Indexes et RLS pour table transactions
 
 ### TODO 🚧

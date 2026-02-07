@@ -1,6 +1,9 @@
 import { createServerClient } from "../supabase";
 import { getCashDirection } from "@/types/transaction";
-import type { CashFlowStats, RevenueStats } from "@/types/transaction";
+import type { CashFlowStats, RevenueStats, TransactionWithUser } from "@/types/transaction";
+import type { Trip } from "@/types/trip";
+import type { SupportTicketWithUser } from "@/types/support";
+import type { UserListItem } from "@/types/user";
 
 export interface DashboardStats {
   trips: {
@@ -25,6 +28,86 @@ export interface DashboardStats {
   };
   revenue: RevenueStats;
   cashFlow: CashFlowStats;
+}
+
+export interface HomeSummary extends DashboardStats {
+  recentTrips: Trip[];
+  recentTransactions: TransactionWithUser[];
+  recentTickets: SupportTicketWithUser[];
+  recentUsers: UserListItem[];
+}
+
+/**
+ * Récupère les stats globales et les dernières activités pour la page d'accueil
+ */
+export async function getHomeSummary(): Promise<HomeSummary> {
+  const stats = await getDashboardStats();
+  const supabase = createServerClient();
+
+  // Fetch recent activities in parallel
+  const [
+    { data: recentTripsData },
+    { data: recentTxnsData },
+    { data: recentTicketsData },
+    { data: recentUsersData },
+  ] = await Promise.all([
+    // Derniers trajets
+    supabase
+      .from("trips")
+      .select(`
+        trip_id, departure_name, destination_name, departure_schedule,
+        status, seats_available, passenger_price, total_seats:seats_published,
+        driver:users!driver_id (display_name, photo_url)
+      `)
+      .order("created_at", { ascending: false })
+      .limit(5),
+
+    // Dernières transactions
+    supabase
+      .from("transactions")
+      .select(`
+        id, amount, status, type, code_service, phone, created_at,
+        user:users!user_id (display_name, photo_url)
+      `)
+      .order("created_at", { ascending: false })
+      .limit(5),
+
+    // Derniers tickets support
+    supabase.rpc("get_tickets_with_user", {
+      p_status: null,
+      p_limit: 5,
+      p_offset: 0,
+    }),
+
+    // Derniers utilisateurs
+    supabase
+      .from("users")
+      .select("uid, display_name, email, photo_url, role, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
+
+  // Transformer les trajets pour correspondre au type Trip
+  const recentTrips = (recentTripsData || []).map((t: any) => ({
+    trip_id: t.trip_id,
+    departure_city: t.departure_name?.split(",")[0] || "N/A",
+    destination_city: t.destination_name?.split(",")[0] || "N/A",
+    departure_schedule: t.departure_schedule,
+    status: t.status,
+    trip_distance: 0,
+    passengers: [], // On ne charge pas les passagers pour le résumé
+    total_seats: t.total_seats || 0,
+    driver_name: t.driver?.display_name || "N/A",
+    driver_photo: t.driver?.photo_url || null,
+  })) as unknown as Trip[];
+
+  return {
+    ...stats,
+    recentTrips,
+    recentTransactions: (recentTxnsData || []) as unknown as TransactionWithUser[],
+    recentTickets: (recentTicketsData || []) as SupportTicketWithUser[],
+    recentUsers: (recentUsersData || []) as UserListItem[],
+  };
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {

@@ -226,6 +226,10 @@ The dashboard uses a custom color palette defined in `tailwind.config.ts`.
 - [x] Role-based access control (Admin, Support).
 - [x] UserMenu with avatar, role, and logout.
 - [x] Refresh button for manual data revalidation.
+- [x] Global Skeleton Loading for smooth page transitions.
+- [x] Responsive tables with optimized mobile display.
+- [x] Search filters for users (name/email) and trips (city/ID).
+- [x] Redesigned User Details with circular indicators and bio.
 - [x] Basic admin API for user management (`/api/admin/users`).
 - [x] Support tickets module with chat-like interface for comments.
 - [x] Ability to change support ticket status via Server Actions.
