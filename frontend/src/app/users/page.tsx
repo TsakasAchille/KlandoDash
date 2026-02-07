@@ -1,7 +1,8 @@
 import { getUsers, getUserById, getUsersStats } from "@/lib/queries/users";
 import { UsersPageClient } from "./users-client";
-import { Users } from "lucide-react";
+import { Users, ShieldCheck, Star } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
+import { MiniStatCard } from "@/components/mini-stat-card";
 
 export const dynamic = "force-dynamic";
 
@@ -19,30 +20,41 @@ export default async function UsersPage({ searchParams }: Props) {
   ]);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Users className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
-          <h1 className="text-2xl sm:text-3xl font-bold">Utilisateurs</h1>
+    <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/40 pb-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tight uppercase flex items-center gap-3">
+            <Users className="w-8 h-8 text-klando-gold" />
+            Utilisateurs
+          </h1>
+          <p className="text-sm text-muted-foreground font-medium">
+            Annuaire et gestion des membres Klando
+          </p>
         </div>
         <RefreshButton />
       </div>
 
-      {/* Stats responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="px-3 py-1 rounded-full bg-secondary">
-            <span className="text-muted-foreground text-xs sm:text-sm">Total:</span>{" "}
-            <span className="font-semibold text-xs sm:text-sm">{stats.total_users}</span>
-          </div>
-          <div className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs sm:text-sm">
-            Conducteurs vérifiés: {stats.verified_drivers}
-          </div>
-          <div className="px-3 py-1 rounded-full bg-klando-gold/20 text-klando-gold text-xs sm:text-sm">
-            Note moy: {stats.avg_rating.toFixed(1)}★
-          </div>
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MiniStatCard 
+          title="Total" 
+          value={stats.total_users} 
+          icon={Users} 
+          color="purple" 
+        />
+        <MiniStatCard 
+          title="Vérifiés" 
+          value={stats.verified_drivers} 
+          icon={ShieldCheck} 
+          color="green" 
+        />
+        <MiniStatCard 
+          title="Note Moyenne" 
+          value={stats.avg_rating.toFixed(1)} 
+          icon={Star} 
+          color="gold" 
+        />
       </div>
 
       {/* Contenu principal */}

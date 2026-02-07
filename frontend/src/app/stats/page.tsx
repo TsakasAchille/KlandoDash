@@ -15,145 +15,79 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
+import { MiniStatCard } from "@/components/mini-stat-card";
 
 export const dynamic = "force-dynamic";
-
-function StatCard({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  color = "text-klando-gold",
-}: {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  color?: string;
-}) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <Icon className={`w-5 h-5 ${color}`} />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {subtitle && (
-          <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 export default async function StatsPage() {
   const stats = await getDashboardStats();
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
-          <h1 className="text-2xl sm:text-3xl font-bold">Statistiques</h1>
+    <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/40 pb-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tight uppercase flex items-center gap-3">
+            <BarChart3 className="w-8 h-8 text-klando-gold" />
+            Statistiques
+          </h1>
+          <p className="text-sm text-muted-foreground font-medium">
+            Analyse globale et performance de la plateforme
+          </p>
         </div>
         <RefreshButton />
       </div>
 
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Trajets"
-          value={stats.trips.total}
-          icon={Car}
-        />
-        <StatCard
-          title="Total Utilisateurs"
-          value={stats.users.total}
-          icon={Users}
-        />
-        <StatCard
-          title="Réservations"
-          value={stats.bookings.total}
-          icon={Ticket}
-        />
-        <StatCard
-          title="Transactions"
-          value={stats.transactions.total}
-          icon={Banknote}
-          color="text-green-400"
-        />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MiniStatCard title="Trajets" value={stats.trips.total} icon={Car} color="blue" />
+        <MiniStatCard title="Utilisateurs" value={stats.users.total} icon={Users} color="purple" />
+        <MiniStatCard title="Réservations" value={stats.bookings.total} icon={Ticket} color="gold" />
+        <MiniStatCard title="Transactions" value={stats.transactions.total} icon={Banknote} color="green" />
       </div>
 
       {/* Secondary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Distance totale"
-          value={formatDistance(stats.trips.totalDistance)}
-          subtitle="Tous trajets confondus"
-          icon={MapPin}
-          color="text-blue-400"
-        />
-        <StatCard
-          title="Places réservées"
-          value={stats.trips.totalSeatsBooked}
-          subtitle="Total passagers transportés"
-          icon={Users}
-          color="text-purple-400"
-        />
-        <StatCard
-          title="Conducteurs vérifiés"
-          value={stats.users.verifiedDrivers}
-          subtitle={`${stats.users.total > 0 ? Math.round((stats.users.verifiedDrivers / stats.users.total) * 100) : 0}% des utilisateurs`}
-          icon={UserCheck}
-          color="text-green-400"
-        />
-        <StatCard
-          title="Nouveaux ce mois"
-          value={stats.users.newThisMonth}
-          subtitle="Inscriptions récentes"
-          icon={CalendarPlus}
-          color="text-orange-400"
-        />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MiniStatCard title="Distance" value={formatDistance(stats.trips.totalDistance)} icon={MapPin} color="blue" />
+        <MiniStatCard title="Passagers" value={stats.trips.totalSeatsBooked} icon={Users} color="purple" />
+        <MiniStatCard title="Vérifiés" value={stats.users.verifiedDrivers} icon={UserCheck} color="green" />
+        <MiniStatCard title="Nouveaux" value={stats.users.newThisMonth} icon={CalendarPlus} color="red" />
       </div>
 
       {/* Status Distribution */}
-      <Card>
+      <Card className="rounded-2xl border-none shadow-sm bg-card/50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Car className="w-5 h-5 text-klando-gold" />
-            Répartition des trajets par statut
+          <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
+            <Car className="w-4 h-4 text-klando-gold" />
+            Répartition des trajets
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {stats.trips.byStatus.map(({ status, count }) => (
               <div
                 key={status}
-                className="flex flex-col items-center p-4 rounded-lg bg-secondary"
+                className="flex flex-col items-center p-4 rounded-xl bg-secondary/50 border border-border/50"
               >
                 <span
-                  className={`text-xl sm:text-2xl font-bold ${
+                  className={`text-2xl font-black ${
                     status === "ACTIVE"
-                      ? "text-blue-400"
+                      ? "text-blue-500"
                       : status === "COMPLETED"
-                      ? "text-green-400"
+                      ? "text-green-500"
                       : status === "ARCHIVED"
                       ? "text-gray-400"
                       : status === "CANCELLED"
-                      ? "text-red-400"
-                      : "text-yellow-400"
+                      ? "text-red-500"
+                      : "text-yellow-500"
                   }`}
                 >
                   {count}
                 </span>
-                <span className="text-sm text-muted-foreground mt-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">
                   {status}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground/60">
                   {stats.trips.total > 0 ? Math.round((count / stats.trips.total) * 100) : 0}%
                 </span>
               </div>
@@ -163,42 +97,42 @@ export default async function StatsPage() {
       </Card>
 
       {/* Cash Flow */}
-      <Card>
+      <Card className="rounded-2xl border-none shadow-sm bg-card/50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-klando-gold" />
-            Cash Flow (transactions SUCCESS)
+          <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
+            <TrendingUp className="w-4 h-4 text-klando-gold" />
+            Cash Flow (Transactions SUCCESS)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-            <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/30">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-6 rounded-2xl bg-green-500/5 border border-green-500/20">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <ArrowDownLeft className="w-5 h-5 text-green-400" />
-                <p className="text-sm text-muted-foreground">Entrées</p>
+                <ArrowDownLeft className="w-5 h-5 text-green-500" />
+                <p className="text-xs font-bold text-green-600 uppercase tracking-widest">Entrées</p>
               </div>
-              <p className="text-xl sm:text-2xl font-bold text-green-400">
+              <p className="text-3xl font-black text-green-500 tracking-tight">
                 {formatPrice(stats.cashFlow.totalIn)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] text-green-600/60 font-medium mt-1">
                 {stats.cashFlow.countIn} transactions
               </p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+            <div className="text-center p-6 rounded-2xl bg-red-500/5 border border-red-500/20">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <ArrowUpRight className="w-5 h-5 text-red-400" />
-                <p className="text-sm text-muted-foreground">Sorties</p>
+                <ArrowUpRight className="w-5 h-5 text-red-500" />
+                <p className="text-xs font-bold text-red-600 uppercase tracking-widest">Sorties</p>
               </div>
-              <p className="text-xl sm:text-2xl font-bold text-red-400">
+              <p className="text-3xl font-black text-red-500 tracking-tight">
                 {formatPrice(stats.cashFlow.totalOut)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] text-red-600/60 font-medium mt-1">
                 {stats.cashFlow.countOut} transactions
               </p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-klando-gold/10 border border-klando-gold/30">
-              <p className="text-sm text-muted-foreground mb-2">Solde</p>
-              <p className={`text-xl sm:text-2xl font-bold ${stats.cashFlow.solde >= 0 ? "text-green-400" : "text-red-400"}`}>
+            <div className="text-center p-6 rounded-2xl bg-klando-gold/5 border border-klando-gold/20">
+              <p className="text-xs font-bold text-klando-gold/80 uppercase tracking-widest mb-2">Solde Net</p>
+              <p className={`text-3xl font-black tracking-tight ${stats.cashFlow.solde >= 0 ? "text-green-500" : "text-red-500"}`}>
                 {stats.cashFlow.solde >= 0 ? "+" : ""}{formatPrice(stats.cashFlow.solde)}
               </p>
             </div>
@@ -206,99 +140,57 @@ export default async function StatsPage() {
         </CardContent>
       </Card>
 
-      {/* Revenue Stats (from bookings with transactions) */}
-      <Card>
+      {/* Revenue Stats */}
+      <Card className="rounded-2xl border-none shadow-sm bg-card/50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Banknote className="w-5 h-5 text-klando-gold" />
-            Revenus (réservations avec paiement)
+          <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
+            <Banknote className="w-4 h-4 text-klando-gold" />
+            Revenus (Réservations payées)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6">
-            <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/30">
-              <p className="text-sm text-muted-foreground mb-1">
-                Payé par passagers
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="text-center p-4 rounded-xl bg-green-500/5 border border-green-500/10">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                Passagers (Payé)
               </p>
-              <p className="text-xl sm:text-2xl font-bold text-green-400">
+              <p className="text-xl font-black text-green-500">
                 {formatPrice(stats.revenue.totalPassengerPaid)}
               </p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-              <p className="text-sm text-muted-foreground mb-1">
-                Reversé conducteurs
+            <div className="text-center p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                Conducteurs (Reversé)
               </p>
-              <p className="text-xl sm:text-2xl font-bold text-blue-400">
+              <p className="text-xl font-black text-blue-500">
                 {formatPrice(stats.revenue.totalDriverPrice)}
               </p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-klando-gold/10 border border-klando-gold/30">
-              <p className="text-sm text-muted-foreground mb-1">
+            <div className="text-center p-4 rounded-xl bg-klando-gold/10 border border-klando-gold/30">
+              <p className="text-[10px] font-bold text-klando-gold uppercase tracking-wider mb-1">
                 Marge Klando
               </p>
-              <p className="text-xl sm:text-2xl font-bold text-klando-gold">
+              <p className="text-2xl font-black text-klando-gold">
                 {formatPrice(stats.revenue.klandoMargin)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                inclut 15% TVA
+              <p className="text-[9px] text-klando-gold/60 mt-1 font-medium">
+                TVA 15% incluse
               </p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-secondary">
-              <p className="text-sm text-muted-foreground mb-1">
-                Transactions
+            <div className="text-center p-4 rounded-xl bg-secondary/50 border border-border/50">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                Volume
               </p>
-              <p className="text-xl sm:text-2xl font-bold">
+              <p className="text-xl font-black">
                 {stats.revenue.transactionCount}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                bookings avec paiement
+              <p className="text-[9px] text-muted-foreground mt-1">
+                réservations
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Transaction Status Distribution */}
-      {stats.transactions.byStatus.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Banknote className="w-5 h-5 text-klando-gold" />
-              Répartition des transactions par statut
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {stats.transactions.byStatus.map(({ status, count }) => (
-                <div
-                  key={status}
-                  className="flex flex-col items-center p-4 rounded-lg bg-secondary"
-                >
-                  <span
-                    className={`text-xl sm:text-2xl font-bold ${
-                      status === "SUCCESS"
-                        ? "text-green-400"
-                        : status === "PENDING"
-                        ? "text-yellow-400"
-                        : status === "FAILED"
-                        ? "text-red-400"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                  <span className="text-sm text-muted-foreground mt-1">
-                    {status}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {stats.transactions.total > 0 ? Math.round((count / stats.transactions.total) * 100) : 0}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

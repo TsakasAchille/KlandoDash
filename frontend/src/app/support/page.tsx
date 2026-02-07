@@ -4,8 +4,9 @@ import {
   getSupportStats,
 } from "@/lib/queries/support";
 import { SupportPageClient } from "./support-client";
-import { LifeBuoy, CircleDot, Clock, CheckCircle } from "lucide-react";
+import { LifeBuoy, CircleDot, Clock, CheckCircle, Ticket } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
+import { MiniStatCard } from "@/components/mini-stat-card";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,6 @@ interface Props {
 export default async function SupportPage({ searchParams }: Props) {
   const { selected } = await searchParams;
 
-  // Pre-fetch selected ticket if ID in URL
   const [tickets, stats, selectedTicketData] = await Promise.all([
     getTicketsWithUser({ limit: 100 }),
     getSupportStats(),
@@ -24,39 +24,49 @@ export default async function SupportPage({ searchParams }: Props) {
   ]);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <LifeBuoy className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
-          <h1 className="text-2xl sm:text-3xl font-bold">Support Technique</h1>
+    <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/40 pb-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tight uppercase flex items-center gap-3">
+            <LifeBuoy className="w-8 h-8 text-klando-gold" />
+            Support
+          </h1>
+          <p className="text-sm text-muted-foreground font-medium">
+            Gestion des tickets et assistance utilisateurs
+          </p>
         </div>
         <RefreshButton />
       </div>
 
-      {/* Stats responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="px-3 py-1 rounded-full bg-secondary flex items-center gap-2">
-            <span className="text-muted-foreground text-xs sm:text-sm">Total:</span>
-            <span className="font-semibold text-xs sm:text-sm">{stats.total}</span>
-          </div>
-          <div className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 flex items-center gap-2">
-            <CircleDot className="w-3 h-3" />
-            <span className="text-xs sm:text-sm">Ouverts: {stats.open}</span>
-          </div>
-          <div className="px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center gap-2">
-            <Clock className="w-3 h-3" />
-            <span className="text-xs sm:text-sm">En attente: {stats.pending}</span>
-          </div>
-          <div className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 flex items-center gap-2">
-            <CheckCircle className="w-3 h-3" />
-            <span className="text-xs sm:text-sm">Fermés: {stats.closed}</span>
-          </div>
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MiniStatCard 
+          title="Total" 
+          value={stats.total} 
+          icon={Ticket} 
+          color="purple" 
+        />
+        <MiniStatCard 
+          title="Ouverts" 
+          value={stats.open} 
+          icon={CircleDot} 
+          color="red" 
+        />
+        <MiniStatCard 
+          title="En attente" 
+          value={stats.pending} 
+          icon={Clock} 
+          color="gold" 
+        />
+        <MiniStatCard 
+          title="Fermés" 
+          value={stats.closed} 
+          icon={CheckCircle} 
+          color="green" 
+        />
       </div>
 
-      {/* Content */}
       <SupportPageClient
         tickets={tickets}
         initialSelectedId={selected || null}

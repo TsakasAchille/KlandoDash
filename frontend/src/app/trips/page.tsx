@@ -1,8 +1,9 @@
 import { getTripsWithDriver, getTripById, getTripsStats } from "@/lib/queries/trips";
 import { toTrip } from "@/types/trip";
 import { TripsPageClient } from "./trips-client";
-import { Car } from "lucide-react";
+import { Car, CheckCircle2, Play } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
+import { MiniStatCard } from "@/components/mini-stat-card";
 
 export const dynamic = "force-dynamic";
 
@@ -24,30 +25,41 @@ export default async function TripsPage({ searchParams }: Props) {
   const trips = tripsData.map(toTrip);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Car className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
-          <h1 className="text-2xl sm:text-3xl font-bold">Trajets</h1>
+    <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/40 pb-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tight uppercase flex items-center gap-3">
+            <Car className="w-8 h-8 text-klando-gold" />
+            Trajets
+          </h1>
+          <p className="text-sm text-muted-foreground font-medium">
+            Gestion et suivi des trajets en temps réel
+          </p>
         </div>
         <RefreshButton />
       </div>
 
-      {/* Stats responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="px-3 py-1 rounded-full bg-secondary">
-            <span className="text-muted-foreground text-xs sm:text-sm">Total:</span>{" "}
-            <span className="font-semibold text-xs sm:text-sm">{stats.total_trips}</span>
-          </div>
-          <div className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs sm:text-sm">
-            Actifs: {stats.active_trips}
-          </div>
-          <div className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs sm:text-sm">
-            Complétés: {stats.completed_trips}
-          </div>
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MiniStatCard 
+          title="Total" 
+          value={stats.total_trips} 
+          icon={Car} 
+          color="gold" 
+        />
+        <MiniStatCard 
+          title="Actifs" 
+          value={stats.active_trips} 
+          icon={Play} 
+          color="blue" 
+        />
+        <MiniStatCard 
+          title="Terminés" 
+          value={stats.completed_trips} 
+          icon={CheckCircle2} 
+          color="green" 
+        />
       </div>
 
       <TripsPageClient

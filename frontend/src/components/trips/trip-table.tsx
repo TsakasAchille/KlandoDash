@@ -122,22 +122,22 @@ export function TripTable({ trips, selectedTripId, initialSelectedId, onSelectTr
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border bg-card overflow-x-auto lg:overflow-visible">
+      <div className="rounded-2xl border border-border/40 bg-card overflow-x-auto lg:overflow-visible shadow-sm">
         <div className="min-w-[500px] lg:min-w-0"> {/* Largeur minimale seulement sur mobile */}
           <Table>
             <TableHeader>
-              <TableRow className="bg-klando-dark hover:bg-klando-dark">
-                <TableHead className="text-klando-gold">Trajet</TableHead>
-                <TableHead className="text-klando-gold hidden sm:table-cell">Distance</TableHead>
-                <TableHead className="text-klando-gold hidden md:table-cell">Date</TableHead>
-                <TableHead className="text-klando-gold">Places</TableHead>
-                <TableHead className="text-klando-gold">Statut</TableHead>
+              <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border/40">
+                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[10px]">Trajet</TableHead>
+                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[10px] hidden sm:table-cell">Distance</TableHead>
+                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[10px] hidden md:table-cell">Date</TableHead>
+                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[10px]">Places</TableHead>
+                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[10px]">Statut</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedTrips.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                     Aucun trajet trouvé
                   </TableCell>
                 </TableRow>
@@ -147,43 +147,45 @@ export function TripTable({ trips, selectedTripId, initialSelectedId, onSelectTr
                     key={trip.trip_id}
                     data-trip-id={trip.trip_id}
                     data-state={selectedTripId === trip.trip_id ? "selected" : undefined}
-                    className="cursor-pointer transition-all"
+                    className="cursor-pointer transition-all duration-200 hover:bg-secondary/30 border-b border-border/20 last:border-0"
                     onClick={() => onSelectTrip(trip)}
                   >
-                    <TableCell>
+                    <TableCell className="py-4">
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-1 sm:block">
-                          <span className="font-medium truncate block sm:inline">
+                          <span className="font-black text-sm truncate block sm:inline uppercase tracking-tight">
                             {trip.departure_city}
                           </span>
-                          <span className="text-muted-foreground text-xs sm:hidden">→</span>
-                          <span className="text-muted-foreground text-xs truncate block sm:hidden">
+                          <span className="text-klando-gold text-xs sm:hidden font-bold mx-1">→</span>
+                          <span className="text-muted-foreground text-[11px] truncate block sm:hidden font-medium">
                             {trip.destination_city}
                           </span>
                         </div>
-                        <span className="text-muted-foreground text-xs truncate hidden sm:block">
+                        <span className="text-muted-foreground text-[11px] truncate hidden sm:block font-medium">
                           → {trip.destination_city}
                         </span>
                         {/* Date visible seulement sur mobile ici */}
-                        <span className="text-[10px] text-muted-foreground md:hidden mt-0.5">
+                        <span className="text-[10px] text-muted-foreground/60 md:hidden mt-1 font-mono">
                           {formatDate(trip.departure_schedule)}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell text-sm">
+                    <TableCell className="hidden sm:table-cell text-sm font-bold">
                       {formatDistance(trip.trip_distance)}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm">
+                    <TableCell className="hidden md:table-cell text-xs font-mono text-muted-foreground">
                       {formatDate(trip.departure_schedule)}
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {trip.passengers.length}/{trip.total_seats}
+                    <TableCell className="text-sm font-black">
+                      <span className="text-klando-gold">{trip.passengers.length}</span>
+                      <span className="text-muted-foreground mx-0.5">/</span>
+                      <span>{trip.total_seats}</span>
                     </TableCell>
                     <TableCell>
                       <span
                         className={cn(
-                          "px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap",
-                          statusColors[trip.status] || "bg-gray-500/20 text-gray-400"
+                          "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap",
+                          statusColors[trip.status] || "bg-gray-500/10 text-gray-400"
                         )}
                       >
                         {trip.status}

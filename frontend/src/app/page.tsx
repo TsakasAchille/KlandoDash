@@ -37,37 +37,38 @@ function KPICard({
   description?: string;
 }) {
   const themes = {
-    blue: "text-blue-500 bg-blue-500",
-    purple: "text-purple-500 bg-purple-500",
-    red: "text-red-500 bg-red-500",
-    green: "text-green-500 bg-green-500",
+    blue: "text-blue-500 bg-blue-500/10 border-blue-500/20",
+    purple: "text-purple-500 bg-purple-500/10 border-purple-500/20",
+    red: "text-red-500 bg-red-500/10 border-red-500/20",
+    green: "text-green-500 bg-green-500/10 border-green-500/20",
   };
 
   return (
     <Link href={href} className="block group">
-      <Card className="h-full border-none shadow-sm hover:shadow-md transition-all duration-300 bg-card overflow-hidden relative group">
+      <Card className="h-full border-none shadow-sm hover:shadow-xl transition-all duration-500 bg-card/80 backdrop-blur-md overflow-hidden relative">
+        {/* Glow Effect - No sharp edges */}
         <div className={cn(
-          "absolute -top-6 -right-6 w-32 h-32 rounded-full opacity-[0.08] transition-transform duration-700 group-hover:scale-150 z-0",
+          "absolute -top-12 -right-12 w-40 h-40 blur-3xl opacity-[0.15] transition-all duration-1000 group-hover:opacity-30 group-hover:scale-150 z-0",
           themes[color].split(' ')[1]
         )} />
         
         <CardContent className="pt-6 relative z-10">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{title}</p>
-              <h3 className="text-3xl font-black group-hover:text-klando-gold transition-colors">{value}</h3>
-              {description && <p className="text-[10px] text-muted-foreground font-medium">{description}</p>}
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{title}</p>
+              <h3 className="text-3xl font-black tracking-tighter group-hover:text-klando-gold transition-colors">{value}</h3>
+              {description && <p className="text-[10px] text-muted-foreground font-semibold italic">{description}</p>}
             </div>
+            {/* Floating Icon Box */}
             <div className={cn(
-              "p-3 rounded-2xl shadow-sm border border-white/5",
-              themes[color].split(' ')[1],
-              "bg-opacity-10"
+              "p-3.5 rounded-2xl border transition-all duration-500 group-hover:rotate-12 group-hover:shadow-lg",
+              themes[color]
             )}>
-              <Icon className={cn("w-5 h-5", themes[color].split(' ')[0])} />
+              <Icon className="w-6 h-6" />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-[9px] font-black text-klando-gold opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-            GÉRER <ArrowRight className="ml-1 w-3 h-3" />
+          <div className="mt-6 flex items-center text-[10px] font-black text-klando-gold opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+            GÉRER LE MODULE <ArrowRight className="ml-1.5 w-3 h-3" />
           </div>
         </CardContent>
       </Card>
@@ -82,20 +83,20 @@ export default async function Home() {
   const activeTrips = summary.trips.byStatus.find(s => s.status === 'ACTIVE')?.count || 0;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10 pb-10 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto space-y-12 pb-16 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-700">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/40 pb-6">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-black tracking-tight uppercase">Dashboard</h1>
-          <p className="text-sm text-muted-foreground font-medium italic">
-            Bonjour, <span className="text-klando-gold not-italic font-bold">{session?.user?.name?.split(' ')[0] || 'Admin'}</span>.
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border/40 pb-8">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-black tracking-tight uppercase bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">Tableau de Bord</h1>
+          <p className="text-sm text-muted-foreground font-medium">
+            Bonjour, <span className="text-klando-gold font-bold text-base ml-1">{session?.user?.name?.split(' ')[0] || 'Admin'}</span>. Ravi de vous revoir.
           </p>
         </div>
         <RefreshButton />
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPICard 
           title="Trajets Live" 
           value={activeTrips} 
@@ -118,7 +119,7 @@ export default async function Home() {
           icon={AlertCircle} 
           color="red"
           href="/support"
-          description="Tickets à traiter"
+          description="Tickets ouverts"
         />
         <KPICard 
           title="Marge Brute" 
@@ -126,43 +127,54 @@ export default async function Home() {
           icon={TrendingUp} 
           color="green"
           href="/stats"
-          description="Total cumulé"
+          description="Trajets payés"
         />
       </div>
 
-      {/* Main Activity: Trips only for a cleaner look */}
-      <div className="space-y-4">
-        <h2 className="text-sm font-black flex items-center gap-2 uppercase tracking-widest text-muted-foreground/80">
-          <Clock className="w-4 h-4 text-klando-gold" />
-          Derniers Trajets
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Main Activity */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-black flex items-center gap-2 uppercase tracking-widest">
+            <Clock className="w-5 h-5 text-klando-gold" />
+            Trajets Récents
+          </h2>
+          <Link href="/trips" className="text-[10px] font-black hover:text-klando-gold transition-colors tracking-widest text-muted-foreground underline underline-offset-4">TOUT VOIR</Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {summary.recentTrips.map((trip) => (
             <Link key={trip.trip_id} href={`/trips?selected=${trip.trip_id}`}>
-              <div className="p-5 rounded-2xl bg-card border border-border/50 hover:border-klando-gold/50 transition-all group h-full flex flex-col justify-between shadow-sm">
+              <div className="p-5 rounded-2xl bg-card border border-border/40 hover:border-klando-gold/40 transition-all duration-300 group h-full flex flex-col justify-between shadow-sm hover:shadow-md">
                 <div>
                   <div className="flex justify-between items-start mb-4">
                     <span className={cn(
-                      "text-[9px] font-black px-2 py-0.5 rounded-full",
-                      trip.status === 'ACTIVE' ? 'bg-blue-500/10 text-blue-500' : 'bg-gray-500/10 text-gray-500'
+                      "text-[9px] font-black px-2.5 py-1 rounded-lg",
+                      trip.status === 'ACTIVE' ? 'bg-blue-500/10 text-blue-500' : 'bg-secondary text-muted-foreground'
                     )}>
                       {trip.status}
                     </span>
-                    <p className="text-[9px] font-mono text-muted-foreground">#{trip.trip_id.slice(-6)}</p>
+                    <p className="text-[9px] font-mono text-muted-foreground/60 tracking-tighter">#{trip.trip_id.slice(-6)}</p>
                   </div>
-                  <div className="flex items-center gap-3 mb-5">
+                  <div className="flex items-center gap-3 mb-6">
                     <div className="flex flex-col flex-1 min-w-0">
-                      <p className="font-bold text-sm truncate uppercase tracking-tight">{trip.departure_city}</p>
-                      <p className="text-xs text-muted-foreground truncate italic">{trip.destination_city}</p>
+                      <p className="font-black text-sm truncate uppercase tracking-tight">{trip.departure_city}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="w-1 h-1 rounded-full bg-klando-gold" />
+                        <p className="text-[11px] text-muted-foreground truncate font-medium">{trip.destination_city}</p>
+                      </div>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-klando-gold transition-colors" />
+                    <div className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ArrowRight className="w-4 h-4 text-klando-gold" />
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 pt-3 border-t border-border/40">
-                  <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                <div className="flex items-center gap-2.5 pt-4 border-t border-border/30">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-secondary to-secondary/30 flex items-center justify-center text-[11px] font-black border border-border/50 text-klando-gold">
                     {trip.driver_name.charAt(0)}
                   </div>
-                  <p className="text-[10px] font-bold text-muted-foreground/80">{trip.driver_name}</p>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black text-foreground truncate">{trip.driver_name}</p>
+                    <p className="text-[8px] text-muted-foreground font-bold tracking-widest uppercase">Conducteur</p>
+                  </div>
                 </div>
               </div>
             </Link>
@@ -170,35 +182,48 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* Row 2: Users (Full Width List) */}
-      <div className="space-y-4 pt-4">
-        <h2 className="text-sm font-black flex items-center gap-2 uppercase tracking-widest text-muted-foreground/80">
-          <UserPlus className="w-4 h-4 text-purple-500" />
+      {/* New Members - Table Style UI Improvement */}
+      <div className="space-y-6 pt-4">
+        <h2 className="text-lg font-black flex items-center gap-2 uppercase tracking-widest">
+          <UserPlus className="w-5 h-5 text-purple-500" />
           Nouveaux Membres
         </h2>
-        <div className="bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm">
-          <div className="divide-y divide-border/40">
+        <div className="bg-card rounded-3xl border border-border/40 overflow-hidden shadow-sm">
+          <div className="divide-y divide-border/20">
             {summary.recentUsers.map((user) => (
-              <Link key={user.uid} href={`/users?selected=${user.uid}`} className="block hover:bg-secondary/30 transition-colors p-4 px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-5">
-                    <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden flex-shrink-0 flex items-center justify-center border border-border/50 shadow-inner">
-                      {user.photo_url ? (
-                        <img src={user.photo_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-sm font-bold text-klando-gold">{(user.display_name || '?').charAt(0)}</span>
-                      )}
+              <Link key={user.uid} href={`/users?selected=${user.uid}`} className="block hover:bg-secondary/20 transition-all duration-300 group">
+                <div className="flex items-center justify-between p-5 px-8">
+                  <div className="flex items-center gap-6">
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-secondary to-card overflow-hidden flex-shrink-0 flex items-center justify-center border border-border/50 group-hover:border-klando-gold/50 transition-colors shadow-inner">
+                        {user.photo_url ? (
+                          <img src={user.photo_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-lg font-black text-klando-gold">{(user.display_name || '?').charAt(0)}</span>
+                        )}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-card rounded-full" />
                     </div>
                     <div>
-                      <p className="font-bold text-sm leading-none uppercase tracking-tight">{user.display_name || 'Sans nom'}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1.5">{user.email}</p>
+                      <p className="font-black text-sm uppercase tracking-tight group-hover:text-klando-gold transition-colors">{user.display_name || 'Sans nom'}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1 font-medium">{user.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <span className="text-[10px] font-black uppercase tracking-widest bg-secondary px-4 py-1.5 rounded-full text-muted-foreground border border-border/20">
-                      {user.role}
-                    </span>
-                    <ArrowRight className="w-4 h-4 text-muted-foreground/30" />
+                  
+                  <div className="hidden md:flex items-center gap-12">
+                    <div className="text-right space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Rôle</p>
+                      <span className="text-[10px] font-black uppercase bg-secondary px-3 py-1 rounded-lg border border-border/50">
+                        {user.role}
+                      </span>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Inscription</p>
+                      <p className="text-[11px] font-bold">{user.created_at ? formatDate(user.created_at) : '-'}</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-secondary/50 flex items-center justify-center group-hover:bg-klando-gold group-hover:text-white transition-all">
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
               </Link>
