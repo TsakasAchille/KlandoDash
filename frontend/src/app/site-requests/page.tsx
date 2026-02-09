@@ -1,4 +1,4 @@
-import { getSiteTripRequests, getSiteTripRequestsStats } from "@/lib/queries/site-requests";
+import { getSiteTripRequests, getSiteTripRequestsStats, getPublicPendingTrips, getPublicCompletedTrips } from "@/lib/queries/site-requests";
 import { SiteRequestsClient } from "./site-requests-client";
 import { LayoutGrid, CircleDot, Clock, CheckCircle, Globe } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
@@ -8,9 +8,11 @@ import { SiteRequestsInfo } from "@/components/site-requests/site-requests-info"
 export const dynamic = "force-dynamic";
 
 export default async function SiteRequestsPage() {
-  const [requests, stats] = await Promise.all([
+  const [requests, stats, publicPending, publicCompleted] = await Promise.all([
     getSiteTripRequests({ limit: 100 }),
     getSiteTripRequestsStats(),
+    getPublicPendingTrips(),
+    getPublicCompletedTrips(),
   ]);
 
   return (
@@ -58,7 +60,11 @@ export default async function SiteRequestsPage() {
         />
       </div>
 
-      <SiteRequestsClient initialRequests={requests} />
+      <SiteRequestsClient 
+        initialRequests={requests} 
+        publicPending={publicPending}
+        publicCompleted={publicCompleted}
+      />
     </div>
   );
 }

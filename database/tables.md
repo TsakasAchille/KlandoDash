@@ -1,6 +1,6 @@
 # Tables Supabase - Klando
 
-> Dernière mise à jour: 2026-01-25
+> Dernière mise à jour: 2026-02-09
 > Projet: `zzxeimcchndnrildeefl` (West EU - Paris)
 
 ## Statistiques actuelles
@@ -160,14 +160,14 @@ Demandes d'intentions de voyage collectées via le site vitrine.
 
 | Colonne | Type | Description |
 |---------|------|-------------|
-| `id` | uuid | **PK** |
+| `id` | uuid | **PK** - `gen_random_uuid()` |
 | `origin_city` | text | Ville de départ |
 | `destination_city` | text | Ville d'arrivée |
 | `desired_date` | timestamptz | Date souhaitée |
 | `contact_info` | text | Email ou Téléphone |
-| `status` | text | NEW, REVIEWED, CONTACTED, IGNORED |
+| `status` | text | `NEW`, `REVIEWED`, `CONTACTED`, `IGNORED` |
 | `created_at` | timestamptz | Date création |
-| `notes` | text | Notes internes dashboard |
+| `notes` | text | Notes internes pour les admins |
 
 **Index créés:**
 - `idx_site_trip_requests_status`
@@ -178,15 +178,25 @@ Demandes d'intentions de voyage collectées via le site vitrine.
 ## Vues SQL
 
 ### `public_pending_trips`
-Vue sécurisée pour l'affichage des trajets disponibles sur le site vitrine (masque les données sensibles).
+Vue sécurisée pour l'affichage des trajets `PENDING` disponibles sur le site vitrine.
 
 | Colonne | Type | Source | Description |
 |---------|------|--------|-------------|
-| `id` | text | `trip_id` | ID du trajet |
-| `departure_city` | text | `departure_name` | Ville départ |
-| `arrival_city` | text | `destination_name` | Ville arrivée |
-| `departure_time` | timestamptz | `departure_schedule` | Heure départ |
-| `seats_available` | bigint | `seats_available` | Places dispo |
+| `id` | text | `trips.trip_id` | ID du trajet |
+| `departure_city` | text | `trips.departure_name` | Ville départ |
+| `arrival_city` | text | `trips.destination_name` | Ville arrivée |
+| `departure_time` | timestamptz | `trips.departure_schedule` | Heure départ |
+| `seats_available` | bigint | `trips.seats_available` | Places dispo |
+
+### `public_completed_trips`
+Vue sécurisée pour l'affichage des 10 derniers trajets `COMPLETED` (preuve sociale).
+
+| Colonne | Type | Source | Description |
+|---------|------|--------|-------------|
+| `id` | text | `trips.trip_id` | ID du trajet |
+| `departure_city` | text | `trips.departure_name` | Ville départ |
+| `arrival_city` | text | `trips.destination_name` | Ville arrivée |
+| `departure_time` | timestamptz | `trips.departure_schedule` | Heure départ |
 
 ---
 
