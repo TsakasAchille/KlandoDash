@@ -16,12 +16,15 @@ export interface DashboardStats {
     total: number;
     verifiedDrivers: number;
     newThisMonth: number;
-    demographics: {
-      gender: { label: string; count: number }[];
-      age: { label: string; count: number }[];
-    };
-  };
-  bookings: {
+          demographics: {
+            gender: { label: string; count: number }[];
+            age: { label: string; count: number }[];
+          };
+          typicalProfile: {
+            gender: string;
+            ageGroup: string;
+          };
+        };  bookings: {
     total: number;
   };
   transactions: {
@@ -294,6 +297,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         gender: Object.entries(genderCounts).map(([label, count]) => ({ label, count })),
         age: Object.entries(ageGroups).map(([label, count]) => ({ label, count })),
       },
+      typicalProfile: {
+        gender: Object.entries(genderCounts).reduce((a, b) => a[1] > b[1] ? a : b)[0],
+        ageGroup: Object.entries(ageGroups).filter(([l]) => l !== "Inconnu").reduce((a, b) => a[1] > b[1] ? a : b)[0]
+      }
     },
     bookings: {
       total: bookingsCount || 0,

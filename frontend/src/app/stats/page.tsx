@@ -4,6 +4,7 @@ import { formatPrice, formatDistance } from "@/lib/utils";
 import {
   BarChart3,
   Users,
+  User,
   Car,
   Banknote,
   MapPin,
@@ -55,7 +56,36 @@ export default async function StatsPage() {
       </div>
 
       {/* User Persona Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Buyer Persona Summary */}
+        <Card className="rounded-2xl border-none shadow-sm bg-klando-gold/10 border border-klando-gold/20 flex flex-col justify-center">
+          <CardHeader className="text-center">
+            <CardTitle className="font-black uppercase text-sm tracking-widest text-klando-gold">
+              Profil Type (Buyer Persona)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center text-center space-y-4">
+            <div className="w-20 h-20 rounded-full bg-klando-gold/20 flex items-center justify-center border-2 border-klando-gold/30">
+              {stats.users.typicalProfile.gender === "Homme" ? (
+                <User className="w-10 h-10 text-klando-gold" />
+              ) : (
+                <Users className="w-10 h-10 text-klando-gold" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-klando-dark uppercase">
+                {stats.users.typicalProfile.gender === "Homme" ? "Le Jeune Actif" : "La Jeune Active"}
+              </h3>
+              <p className="text-xs font-medium text-muted-foreground mt-1">
+                Majorité: <span className="text-klando-dark">{stats.users.typicalProfile.gender}</span>, tranche <span className="text-klando-dark">{stats.users.typicalProfile.ageGroup} ans</span>
+              </p>
+            </div>
+            <p className="text-[10px] leading-relaxed text-muted-foreground/80 font-medium px-4">
+              Ce profil représente le cœur de cible de Klando. Il privilégie la mobilité partagée pour ses trajets urbains et interurbains.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Gender Distribution */}
         <Card className="rounded-2xl border-none shadow-sm bg-card/50">
           <CardHeader>
