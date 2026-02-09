@@ -149,6 +149,11 @@ project_relation,2,userId,uuid,NO
 project_relation,3,role,character varying,NO
 project_relation,4,createdAt,timestamp with time zone,NO
 project_relation,5,updatedAt,timestamp with time zone,NO
+public_pending_trips,1,id,text,YES
+public_pending_trips,2,departure_city,text,YES
+public_pending_trips,3,arrival_city,text,YES
+public_pending_trips,4,departure_time,timestamp with time zone,YES
+public_pending_trips,5,seats_available,bigint,YES
 role,1,id,integer,NO
 role,2,name,character varying,NO
 role,3,scope,character varying,NO
@@ -167,6 +172,14 @@ shared_workflow,2,projectId,character varying,NO
 shared_workflow,3,role,text,NO
 shared_workflow,4,createdAt,timestamp with time zone,NO
 shared_workflow,5,updatedAt,timestamp with time zone,NO
+site_trip_requests,1,id,uuid,NO
+site_trip_requests,2,origin_city,text,NO
+site_trip_requests,3,destination_city,text,NO
+site_trip_requests,4,desired_date,timestamp with time zone,YES
+site_trip_requests,5,contact_info,text,NO
+site_trip_requests,6,status,text,YES
+site_trip_requests,7,created_at,timestamp with time zone,YES
+site_trip_requests,8,notes,text,YES
 support_comments,1,comment_id,uuid,NO
 support_comments,2,ticket_id,uuid,NO
 support_comments,3,user_id,text,NO

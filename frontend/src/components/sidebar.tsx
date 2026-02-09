@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { Home, Car, Users, BarChart3, MessageSquare, Map, LifeBuoy, Shield, X, Banknote } from "lucide-react";
+import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
 
@@ -16,7 +16,10 @@ const navItems = [
   // { href: "/chats", label: "Messages", icon: MessageSquare }, // Temporairement désactivé
 ];
 
-const supportItems = [{ href: "/support", label: "Support", icon: LifeBuoy }];
+const supportItems = [
+  { href: "/support", label: "Support", icon: LifeBuoy },
+  { href: "/site-requests", label: "Demandes Site", icon: Globe },
+];
 
 const adminItems = [
   { href: "/transactions", label: "Transactions", icon: Banknote },
