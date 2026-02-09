@@ -16,6 +16,10 @@ export interface DashboardStats {
     total: number;
     verifiedDrivers: number;
     newThisMonth: number;
+    demographics: {
+      gender: { label: string; count: number }[];
+      age: { label: string; count: number }[];
+    };
   };
   bookings: {
     total: number;
@@ -126,7 +130,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .select("status, distance, seats_booked, passenger_price, driver_price"),
     supabase
       .from("users")
-      .select("uid, is_driver_doc_validated, created_at"),
+      .select("uid, is_driver_doc_validated, created_at, gender, birth"),
     supabase
       .from("bookings")
       .select("*", { count: "exact", head: true }),
@@ -168,6 +172,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     uid: string;
     is_driver_doc_validated: boolean | null;
     created_at: string | null;
+    gender: string | null;
+    birth: string | null;
   };
   const usersData = (users || []) as UserRow[];
   const now = new Date();
@@ -176,6 +182,48 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     if (!u.created_at) return false;
     return new Date(u.created_at) >= monthStart;
   }).length;
+
+  // Gender distribution
+  const genderCounts: Record<string, number> = { "Homme": 0, "Femme": 0, "Non spécifié": 0 };
+  usersData.forEach((u: UserRow) => {
+    const g = u.gender?.toLowerCase();
+    if (g === "man") {
+      genderCounts["Homme"]++;
+    } else if (g === "woman") {
+      genderCounts["Femme"]++;
+    } else {
+      genderCounts["Non spécifié"]++;
+    }
+  });
+
+  // Age distribution
+  const ageGroups: Record<string, number> = {
+    "-18": 0,
+    "18-25": 0,
+    "26-35": 0,
+    "36-50": 0,
+    "50+": 0,
+    "Inconnu": 0
+  };
+
+  usersData.forEach((u: UserRow) => {
+    if (!u.birth) {
+      ageGroups["Inconnu"]++;
+      return;
+    }
+    const birthDate = new Date(u.birth);
+    let age = now.getFullYear() - birthDate.getFullYear();
+    const m = now.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    if (age < 18) ageGroups["-18"]++;
+    else if (age <= 25) ageGroups["18-25"]++;
+    else if (age <= 35) ageGroups["26-35"]++;
+    else if (age <= 50) ageGroups["36-50"]++;
+    else ageGroups["50+"]++;
+  });
 
   // --- Process transactions ---
   type TxnRow = {
@@ -242,6 +290,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       total: usersData.length,
       verifiedDrivers: usersData.filter((u: UserRow) => u.is_driver_doc_validated === true).length,
       newThisMonth,
+      demographics: {
+        gender: Object.entries(genderCounts).map(([label, count]) => ({ label, count })),
+        age: Object.entries(ageGroups).map(([label, count]) => ({ label, count })),
+      },
     },
     bookings: {
       total: bookingsCount || 0,

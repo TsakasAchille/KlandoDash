@@ -118,7 +118,9 @@ export function UserDetails({ user }: UserDetailsProps) {
             <div className="flex items-center gap-3">
               <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <span className="text-sm">
-                Genre: <span className="font-medium">{user.gender || "Non spécifié"}</span>
+                Genre: <span className="font-medium">
+                  {user.gender?.toLowerCase() === "man" ? "Homme" : user.gender?.toLowerCase() === "woman" ? "Femme" : "Non spécifié"}
+                </span>
               </span>
             </div>
             <div className="flex items-center gap-3">

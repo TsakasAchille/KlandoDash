@@ -54,6 +54,71 @@ export default async function StatsPage() {
         <MiniStatCard title="Nouveaux" value={stats.users.newThisMonth} icon={CalendarPlus} color="red" />
       </div>
 
+      {/* User Persona Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Gender Distribution */}
+        <Card className="rounded-2xl border-none shadow-sm bg-card/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
+              <Users className="w-4 h-4 text-klando-gold" />
+              Répartition par Genre
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {stats.users.demographics.gender.map(({ label, count }) => {
+              const percentage = stats.users.total > 0 ? Math.round((count / stats.users.total) * 100) : 0;
+              return (
+                <div key={label} className="space-y-2">
+                  <div className="flex justify-between items-end">
+                    <span className="text-sm font-bold uppercase tracking-tight">{label}</span>
+                    <span className="text-xs font-black text-muted-foreground">{count} ({percentage}%)</span>
+                  </div>
+                  <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-1000 ${
+                        label === "Homme" ? "bg-blue-500" : label === "Femme" ? "bg-pink-500" : "bg-gray-400"
+                      }`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        {/* Age Distribution */}
+        <Card className="rounded-2xl border-none shadow-sm bg-card/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
+              <CalendarPlus className="w-4 h-4 text-klando-gold" />
+              Groupes d'âge
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              {stats.users.demographics.age.map(({ label, count }) => {
+                const percentage = stats.users.total > 0 ? Math.round((count / stats.users.total) * 100) : 0;
+                return (
+                  <div key={label} className="flex items-center gap-4">
+                    <div className="w-16 text-xs font-black text-muted-foreground uppercase">{label}</div>
+                    <div className="flex-1 h-3 bg-secondary/50 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-klando-gold rounded-full transition-all duration-1000"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <div className="w-20 text-right text-[10px] font-bold">
+                      {count} ({percentage}%)
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Status Distribution */}
       <Card className="rounded-2xl border-none shadow-sm bg-card/50">
         <CardHeader>
