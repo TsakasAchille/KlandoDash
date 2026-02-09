@@ -42,6 +42,8 @@ export interface HomeSummary extends DashboardStats {
   recentTransactions: TransactionWithUser[];
   recentTickets: SupportTicketWithUser[];
   recentUsers: UserListItem[];
+  publicPending: any[];
+  publicCompleted: any[];
 }
 
 /**
@@ -57,6 +59,8 @@ export async function getHomeSummary(): Promise<HomeSummary> {
     { data: recentTxnsData },
     { data: recentTicketsData },
     { data: recentUsersData },
+    { data: publicPendingData },
+    { data: publicCompletedData },
   ] = await Promise.all([
     // Derniers trajets
     supabase
@@ -92,6 +96,19 @@ export async function getHomeSummary(): Promise<HomeSummary> {
       .select("uid, display_name, email, photo_url, role, created_at")
       .order("created_at", { ascending: false })
       .limit(5),
+
+    // Trajets affichés sur le site (LIVE)
+    supabase
+      .from("public_pending_trips")
+      .select("*")
+      .order("departure_time", { ascending: true })
+      .limit(4),
+
+    // Trajets terminés (PREUVE SOCIALE)
+    supabase
+      .from("public_completed_trips")
+      .select("*")
+      .limit(4),
   ]);
 
   // Transformer les trajets pour correspondre au type Trip
@@ -114,6 +131,8 @@ export async function getHomeSummary(): Promise<HomeSummary> {
     recentTransactions: (recentTxnsData || []) as unknown as TransactionWithUser[],
     recentTickets: (recentTicketsData || []) as SupportTicketWithUser[],
     recentUsers: (recentUsersData || []) as UserListItem[],
+    publicPending: publicPendingData || [],
+    publicCompleted: publicCompletedData || [],
   };
 }
 
