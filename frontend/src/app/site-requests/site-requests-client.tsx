@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { SiteTripRequest, SiteTripRequestStatus } from "@/types/site-request";
 import { SiteRequestTable } from "@/components/site-requests/site-request-table";
-import { updateSiteTripRequest } from "@/lib/queries/site-requests";
+import { updateRequestStatusAction } from "./actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -23,26 +23,28 @@ interface SiteRequestsClientProps {
 export function SiteRequestsClient({ initialRequests, publicPending, publicCompleted }: SiteRequestsClientProps) {
   const [requests, setRequests] = useState<SiteTripRequest[]>(initialRequests);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
-  const handleUpdateStatus = async (id: string, status: SiteTripRequestStatus) => {
+  const handleUpdateStatus = (id: string, status: SiteTripRequestStatus) => {
     setUpdatingId(id);
-    const success = await updateSiteTripRequest(id, { status });
-    
-    if (success) {
+    startTransition(async () => {
       // Optimistic update
       setRequests(prev => prev.map(r => (r.id === id ? { ...r, status } : r)));
-      toast.success("Statut mis à jour avec succès !");
+      
+      const result = await updateRequestStatusAction(id, status);
 
-      // Refresh data from server to ensure consistency
-      startTransition(() => {
-        router.refresh();
-      });
-    } else {
-      toast.error("Erreur lors de la mise à jour du statut.");
-    }
-    setUpdatingId(null);
+      if (result.success) {
+        toast.success("Statut mis à jour avec succès !");
+      } else {
+        toast.error(result.message || "Erreur lors de la mise à jour.");
+        // Revert optimistic update on failure
+        setRequests(initialRequests); 
+      }
+      
+      // No need for router.refresh() as revalidatePath in action handles it
+      setUpdatingId(null);
+    });
   };
 
   return (
