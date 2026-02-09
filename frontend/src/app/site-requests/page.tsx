@@ -3,6 +3,7 @@ import { SiteRequestsClient } from "./site-requests-client";
 import { LayoutGrid, CircleDot, Clock, CheckCircle, Globe } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 import { MiniStatCard } from "@/components/mini-stat-card";
+import { SiteRequestsInfo } from "@/components/site-requests/site-requests-info";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function SiteRequestsPage() {
           <h1 className="text-3xl font-black tracking-tight uppercase flex items-center gap-3">
             <Globe className="w-8 h-8 text-klando-gold" />
             Demandes Site
+            <SiteRequestsInfo />
           </h1>
           <p className="text-sm text-muted-foreground font-medium">
             Intentions de voyage collectées sur le site vitrine
