@@ -8,6 +8,8 @@ export interface UserListItem {
   rating: number | null;
   rating_count: number | null;
   role: string | null;
+  gender: string | null;
+  birth: string | null;
   created_at: string | null;
   is_driver_doc_validated?: boolean | null;
   bio?: string | null;

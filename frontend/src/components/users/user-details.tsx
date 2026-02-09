@@ -116,6 +116,18 @@ export function UserDetails({ user }: UserDetailsProps) {
               </div>
             )}
             <div className="flex items-center gap-3">
+              <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm">
+                Genre: <span className="font-medium">{user.gender || "Non spécifié"}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm">
+                Né(e) le: <span className="font-medium">{user.birth ? formatDate(user.birth) : "Non spécifié"}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
               <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <span className="text-sm">
                 Rôle: <span className="font-medium">{user.role || "user"}</span>

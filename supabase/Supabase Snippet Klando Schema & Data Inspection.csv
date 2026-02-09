@@ -1,0 +1,351 @@
+table_name,pos,column_name,data_type,is_nullable
+annotation_tag_entity,1,id,character varying,NO
+annotation_tag_entity,2,name,character varying,NO
+annotation_tag_entity,3,createdAt,timestamp with time zone,NO
+annotation_tag_entity,4,updatedAt,timestamp with time zone,NO
+auth_identity,1,userId,uuid,YES
+auth_identity,2,providerId,character varying,NO
+auth_identity,3,providerType,character varying,NO
+auth_identity,4,createdAt,timestamp with time zone,NO
+auth_identity,5,updatedAt,timestamp with time zone,NO
+auth_provider_sync_history,1,id,integer,NO
+auth_provider_sync_history,2,providerType,character varying,NO
+auth_provider_sync_history,3,runMode,text,NO
+auth_provider_sync_history,4,status,text,NO
+auth_provider_sync_history,5,startedAt,timestamp with time zone,NO
+auth_provider_sync_history,6,endedAt,timestamp with time zone,NO
+auth_provider_sync_history,7,scanned,integer,NO
+auth_provider_sync_history,8,created,integer,NO
+auth_provider_sync_history,9,updated,integer,NO
+auth_provider_sync_history,10,disabled,integer,NO
+auth_provider_sync_history,11,error,text,YES
+bookings,1,id,text,NO
+bookings,2,seats,integer,NO
+bookings,3,user_id,text,NO
+bookings,4,trip_id,text,NO
+bookings,5,status,text,YES
+bookings,6,created_at,timestamp with time zone,YES
+bookings,7,updated_at,timestamp with time zone,YES
+bookings,8,transaction_id,text,YES
+chats,1,id,character varying,NO
+chats,2,trip_id,character varying,YES
+chats,3,sender_id,character varying,YES
+chats,4,message,character varying,YES
+chats,5,timestamp,timestamp without time zone,YES
+chats,6,updated_at,timestamp without time zone,YES
+conversation_memory,1,id,integer,NO
+conversation_memory,2,user_id,integer,YES
+conversation_memory,3,session_id,uuid,NO
+conversation_memory,4,question,text,NO
+conversation_memory,5,sql_query,text,YES
+conversation_memory,6,response,text,YES
+conversation_memory,7,context,jsonb,YES
+conversation_memory,8,metadata,jsonb,YES
+conversation_memory,9,created_at,timestamp with time zone,YES
+conversation_memory,10,relevance_score,double precision,YES
+conversation_memory,11,is_favorite,boolean,YES
+credentials_entity,2,name,character varying,NO
+credentials_entity,3,data,text,NO
+credentials_entity,4,type,character varying,NO
+credentials_entity,6,createdAt,timestamp with time zone,NO
+credentials_entity,7,updatedAt,timestamp with time zone,NO
+credentials_entity,8,id,character varying,NO
+credentials_entity,9,isManaged,boolean,NO
+dash_authorized_users,1,email,character varying,NO
+dash_authorized_users,2,active,boolean,NO
+dash_authorized_users,3,role,character varying,NO
+dash_authorized_users,4,added_at,timestamp without time zone,YES
+dash_authorized_users,5,updated_at,timestamp without time zone,YES
+dash_authorized_users,6,added_by,character varying,YES
+dash_authorized_users,7,notes,text,YES
+dash_authorized_users,8,display_name,text,YES
+dash_authorized_users,9,avatar_url,text,YES
+event_destinations,1,id,uuid,NO
+event_destinations,2,destination,jsonb,NO
+event_destinations,3,createdAt,timestamp with time zone,NO
+event_destinations,4,updatedAt,timestamp with time zone,NO
+execution_annotation_tags,1,annotationId,integer,NO
+execution_annotation_tags,2,tagId,character varying,NO
+execution_annotations,1,id,integer,NO
+execution_annotations,2,executionId,integer,NO
+execution_annotations,3,vote,character varying,YES
+execution_annotations,4,note,text,YES
+execution_annotations,5,createdAt,timestamp with time zone,NO
+execution_annotations,6,updatedAt,timestamp with time zone,NO
+execution_data,1,executionId,integer,NO
+execution_data,2,workflowData,json,NO
+execution_data,3,data,text,NO
+execution_entity,1,id,integer,NO
+execution_entity,3,finished,boolean,NO
+execution_entity,4,mode,character varying,NO
+execution_entity,5,retryOf,character varying,YES
+execution_entity,6,retrySuccessId,character varying,YES
+execution_entity,7,startedAt,timestamp with time zone,YES
+execution_entity,8,stoppedAt,timestamp with time zone,YES
+execution_entity,11,waitTill,timestamp with time zone,YES
+execution_entity,12,status,character varying,NO
+execution_entity,13,workflowId,character varying,NO
+execution_entity,14,deletedAt,timestamp with time zone,YES
+execution_entity,15,createdAt,timestamp with time zone,NO
+execution_metadata,1,id,integer,NO
+execution_metadata,2,executionId,integer,NO
+execution_metadata,3,key,character varying,NO
+execution_metadata,4,value,text,NO
+folder,1,id,character varying,NO
+folder,2,name,character varying,NO
+folder,3,parentFolderId,character varying,YES
+folder,4,projectId,character varying,NO
+folder,5,createdAt,timestamp with time zone,NO
+folder,6,updatedAt,timestamp with time zone,NO
+folder_tag,1,folderId,character varying,NO
+folder_tag,2,tagId,character varying,NO
+insights_by_period,1,id,integer,NO
+insights_by_period,2,metaId,integer,NO
+insights_by_period,3,type,integer,NO
+insights_by_period,4,value,integer,NO
+insights_by_period,5,periodUnit,integer,NO
+insights_by_period,6,periodStart,timestamp with time zone,YES
+insights_metadata,1,metaId,integer,NO
+insights_metadata,2,workflowId,character varying,YES
+insights_metadata,3,projectId,character varying,YES
+insights_metadata,4,workflowName,character varying,NO
+insights_metadata,5,projectName,character varying,NO
+insights_raw,1,id,integer,NO
+insights_raw,2,metaId,integer,NO
+insights_raw,3,type,integer,NO
+insights_raw,4,value,integer,NO
+insights_raw,5,timestamp,timestamp with time zone,NO
+installed_nodes,1,name,character varying,NO
+installed_nodes,2,type,character varying,NO
+installed_nodes,3,latestVersion,integer,NO
+installed_nodes,4,package,character varying,NO
+installed_packages,1,packageName,character varying,NO
+installed_packages,2,installedVersion,character varying,NO
+installed_packages,3,authorName,character varying,YES
+installed_packages,4,authorEmail,character varying,YES
+installed_packages,5,createdAt,timestamp with time zone,NO
+installed_packages,6,updatedAt,timestamp with time zone,NO
+invalid_auth_token,1,token,character varying,NO
+invalid_auth_token,2,expiresAt,timestamp with time zone,NO
+migrations,1,id,integer,NO
+migrations,2,timestamp,bigint,NO
+migrations,3,name,character varying,NO
+n8n_chat_histories,1,id,integer,NO
+n8n_chat_histories,2,session_id,character varying,NO
+n8n_chat_histories,3,message,jsonb,NO
+processed_data,1,workflowId,character varying,NO
+processed_data,3,context,character varying,NO
+processed_data,4,createdAt,timestamp with time zone,NO
+processed_data,5,updatedAt,timestamp with time zone,NO
+processed_data,6,value,text,NO
+project,1,id,character varying,NO
+project,2,name,character varying,NO
+project,3,type,character varying,NO
+project,4,createdAt,timestamp with time zone,NO
+project,5,updatedAt,timestamp with time zone,NO
+project,6,icon,json,YES
+project_relation,1,projectId,character varying,NO
+project_relation,2,userId,uuid,NO
+project_relation,3,role,character varying,NO
+project_relation,4,createdAt,timestamp with time zone,NO
+project_relation,5,updatedAt,timestamp with time zone,NO
+role,1,id,integer,NO
+role,2,name,character varying,NO
+role,3,scope,character varying,NO
+role,4,createdAt,timestamp with time zone,NO
+role,5,updatedAt,timestamp with time zone,NO
+settings,1,key,character varying,NO
+settings,2,value,text,NO
+settings,3,loadOnStartup,boolean,NO
+shared_credentials,1,credentialsId,character varying,NO
+shared_credentials,2,projectId,character varying,NO
+shared_credentials,3,role,text,NO
+shared_credentials,4,createdAt,timestamp with time zone,NO
+shared_credentials,5,updatedAt,timestamp with time zone,NO
+shared_workflow,1,workflowId,character varying,NO
+shared_workflow,2,projectId,character varying,NO
+shared_workflow,3,role,text,NO
+shared_workflow,4,createdAt,timestamp with time zone,NO
+shared_workflow,5,updatedAt,timestamp with time zone,NO
+support_comments,1,comment_id,uuid,NO
+support_comments,2,ticket_id,uuid,NO
+support_comments,3,user_id,text,NO
+support_comments,4,comment_text,text,NO
+support_comments,5,created_at,timestamp without time zone,YES
+support_comments,6,comment_sent,text,YES
+support_comments,7,comment_received,text,YES
+support_comments,8,comment_type,text,YES
+support_comments,9,comment_source,text,YES
+support_tickets,2,user_id,text,NO
+support_tickets,3,subject,text,YES
+support_tickets,4,message,text,NO
+support_tickets,5,status,text,YES
+support_tickets,6,created_at,timestamp without time zone,YES
+support_tickets,7,updated_at,timestamp without time zone,YES
+support_tickets,8,contact_preference,text,YES
+support_tickets,9,phone,text,YES
+support_tickets,10,mail,text,YES
+support_tickets,11,ticket_id,uuid,NO
+tag_entity,2,name,character varying,NO
+tag_entity,3,createdAt,timestamp with time zone,NO
+tag_entity,4,updatedAt,timestamp with time zone,NO
+tag_entity,5,id,character varying,NO
+test_case_execution,1,id,character varying,NO
+test_case_execution,2,testRunId,character varying,NO
+test_case_execution,3,pastExecutionId,integer,YES
+test_case_execution,4,executionId,integer,YES
+test_case_execution,5,evaluationExecutionId,integer,YES
+test_case_execution,6,status,character varying,NO
+test_case_execution,7,runAt,timestamp with time zone,YES
+test_case_execution,8,completedAt,timestamp with time zone,YES
+test_case_execution,9,errorCode,character varying,YES
+test_case_execution,10,errorDetails,json,YES
+test_case_execution,11,metrics,json,YES
+test_case_execution,12,createdAt,timestamp with time zone,NO
+test_case_execution,13,updatedAt,timestamp with time zone,NO
+test_definition,2,name,character varying,NO
+test_definition,3,workflowId,character varying,NO
+test_definition,4,evaluationWorkflowId,character varying,YES
+test_definition,5,annotationTagId,character varying,YES
+test_definition,6,createdAt,timestamp with time zone,NO
+test_definition,7,updatedAt,timestamp with time zone,NO
+test_definition,8,description,text,YES
+test_definition,9,id,character varying,NO
+test_definition,10,mockedNodes,json,NO
+test_metric,1,id,character varying,NO
+test_metric,2,name,character varying,NO
+test_metric,3,testDefinitionId,character varying,NO
+test_metric,4,createdAt,timestamp with time zone,NO
+test_metric,5,updatedAt,timestamp with time zone,NO
+test_run,1,id,character varying,NO
+test_run,2,testDefinitionId,character varying,NO
+test_run,3,status,character varying,NO
+test_run,4,runAt,timestamp with time zone,YES
+test_run,5,completedAt,timestamp with time zone,YES
+test_run,6,metrics,json,YES
+test_run,7,createdAt,timestamp with time zone,NO
+test_run,8,updatedAt,timestamp with time zone,NO
+test_run,9,totalCases,integer,YES
+test_run,10,passedCases,integer,YES
+test_run,11,failedCases,integer,YES
+test_run,12,errorCode,character varying,YES
+test_run,13,errorDetails,text,YES
+ticket_references,1,reference_token,character varying,NO
+ticket_references,2,ticket_id,character varying,NO
+ticket_references,3,created_at,timestamp without time zone,NO
+ticket_references,4,expires_at,timestamp without time zone,YES
+transactions,1,id,text,NO
+transactions,2,user_id,text,NO
+transactions,3,intech_transaction_id,text,YES
+transactions,4,msg,text,YES
+transactions,5,amount,integer,YES
+transactions,6,status,text,YES
+transactions,7,phone,text,YES
+transactions,8,code_service,text,YES
+transactions,10,created_at,timestamp without time zone,YES
+transactions,11,updated_at,timestamp without time zone,YES
+transactions,15,type,text,YES
+trip_embeddings,1,id,uuid,NO
+trip_embeddings,2,trip_id,text,YES
+trip_embeddings,3,content,text,YES
+trip_embeddings,4,embedding,USER-DEFINED,YES
+trip_embeddings,5,created_at,timestamp without time zone,YES
+trips,2,created_at,timestamp with time zone,NO
+trips,3,departure_date,timestamp with time zone,YES
+trips,5,departure_name,text,YES
+trips,6,departure_schedule,timestamp with time zone,YES
+trips,9,destination_name,text,YES
+trips,13,seats_available,bigint,YES
+trips,14,passenger_price,bigint,YES
+trips,15,distance,double precision,YES
+trips,16,precision,text,YES
+trips,17,polyline,text,YES
+trips,20,trip_id,text,NO
+trips,21,driver_id,text,YES
+trips,25,departure_latitude,double precision,YES
+trips,26,departure_longitude,double precision,YES
+trips,27,destination_latitude,double precision,YES
+trips,28,destination_longitude,double precision,YES
+trips,30,updated_at,timestamp with time zone,YES
+trips,31,seats_booked,bigint,YES
+trips,32,seats_published,bigint,YES
+trips,33,driver_price,bigint,YES
+trips,34,status,text,YES
+trips,35,departure_description,text,YES
+trips,36,destination_description,text,YES
+trips,38,auto_confirmation,boolean,YES
+user,1,id,uuid,NO
+user,2,email,character varying,YES
+user,3,firstName,character varying,YES
+user,4,lastName,character varying,YES
+user,5,password,character varying,YES
+user,8,personalizationAnswers,json,YES
+user,9,createdAt,timestamp with time zone,NO
+user,10,updatedAt,timestamp with time zone,NO
+user,12,settings,json,YES
+user,14,disabled,boolean,NO
+user,15,mfaEnabled,boolean,NO
+user,16,mfaSecret,text,YES
+user,17,mfaRecoveryCodes,text,YES
+user,18,role,text,NO
+user_api_keys,1,id,character varying,NO
+user_api_keys,2,userId,uuid,NO
+user_api_keys,3,label,character varying,NO
+user_api_keys,4,apiKey,character varying,NO
+user_api_keys,5,createdAt,timestamp with time zone,NO
+user_api_keys,6,updatedAt,timestamp with time zone,NO
+users,3,uid,text,NO
+users,4,display_name,text,YES
+users,5,email,text,YES
+users,6,first_name,text,YES
+users,7,name,text,YES
+users,8,phone_number,text,YES
+users,9,birth,date,YES
+users,11,photo_url,text,YES
+users,12,bio,text,YES
+users,15,driver_license_url,text,YES
+users,16,gender,text,YES
+users,17,id_card_url,text,YES
+users,18,rating,numeric,YES
+users,19,rating_count,integer,YES
+users,20,role,text,YES
+users,21,updated_at,timestamp with time zone,YES
+users,22,created_at,timestamp with time zone,YES
+users,23,is_driver_doc_validated,boolean,YES
+variables,2,key,character varying,NO
+variables,3,type,character varying,NO
+variables,4,value,character varying,YES
+variables,5,id,character varying,NO
+webhook_entity,2,webhookPath,character varying,NO
+webhook_entity,3,method,character varying,NO
+webhook_entity,4,node,character varying,NO
+webhook_entity,5,webhookId,character varying,YES
+webhook_entity,6,pathLength,integer,YES
+webhook_entity,7,workflowId,character varying,NO
+workflow_entity,2,name,character varying,NO
+workflow_entity,3,active,boolean,NO
+workflow_entity,4,nodes,json,NO
+workflow_entity,5,connections,json,NO
+workflow_entity,6,createdAt,timestamp with time zone,NO
+workflow_entity,7,updatedAt,timestamp with time zone,NO
+workflow_entity,8,settings,json,YES
+workflow_entity,9,staticData,json,YES
+workflow_entity,10,pinData,json,YES
+workflow_entity,12,versionId,character,YES
+workflow_entity,13,triggerCount,integer,NO
+workflow_entity,14,id,character varying,NO
+workflow_entity,15,meta,json,YES
+workflow_entity,16,parentFolderId,character varying,YES
+workflow_history,1,versionId,character varying,NO
+workflow_history,2,workflowId,character varying,NO
+workflow_history,5,authors,character varying,NO
+workflow_history,6,createdAt,timestamp with time zone,NO
+workflow_history,7,updatedAt,timestamp with time zone,NO
+workflow_history,8,nodes,json,NO
+workflow_history,9,connections,json,NO
+workflow_statistics,1,count,integer,YES
+workflow_statistics,2,latestEvent,timestamp with time zone,YES
+workflow_statistics,3,name,character varying,NO
+workflow_statistics,5,workflowId,character varying,NO
+workflows_tags,3,workflowId,character varying,NO
+workflows_tags,4,tagId,character varying,NO
