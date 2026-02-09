@@ -86,6 +86,7 @@ KlandoDash/
 - `/transactions` - Flux financier & revenus (Marge Klando, Cash Flow)
 - `/stats` - Statistiques & KPI financiers
 - `/support` - Tickets support & système de mentions @user
+- `/site-requests` - Gestion des intentions de voyage issues du site vitrine
 - `/login` - Connexion Google OAuth
 
 ## Fonctionnalités Clés

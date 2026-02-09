@@ -50,10 +50,14 @@ src/
 │   └── trips/
 │       ├── page.tsx       # Server Component (fetch data)
 │       └── trips-client.tsx  # Client Component (interactivité)
+│   └── site-requests/
+│       ├── page.tsx       # Gestion des demandes site
+│       └── MODULE.md      # Doc locale du module
 │
 ├── components/
 │   ├── sidebar.tsx        # Navigation
 │   ├── ui/                # Composants Shadcn
+│   ├── site-requests/     # Composants spécifiques
 │   └── trips/
 │       ├── trip-table.tsx    # Tableau des trajets
 │       └── trip-details.tsx  # Détails d'un trajet
@@ -127,6 +131,7 @@ const stats = await getTripsStats();
 | `/trips` | Liste et détails trajets (pagination 5/page, filtre statut) | ✅ |
 | `/users` | Liste utilisateurs (pagination 10/page, filtre rôle) | ✅ |
 | `/stats` | Dashboard statistiques | ✅ |
+| `/site-requests` | Intentions de voyage (site vitrine) | ✅ |
 | `/chats` | Messages | 🚧 À faire |
 
 ## TODO

@@ -30,6 +30,10 @@ KlandoDash/
 │   ├── schema.sql    # Full database schema dump
 │   ├── tables.md     # Tables documentation
 │   └── migrations/   # SQL migration files
+├── docs/              # Documentation technique
+│   ├── WEBSITE_INTEGRATION.md # Guide d'intégration site vitrine
+│   ├── GPT.md         # Philosophie d'interconnexion
+│   └── ...
 ├── .env.local         # Local environment variables (symlinked to frontend/.env.local)
 ├── package.json       # Root project dependencies (if any)
 └── README.md          # General project README
@@ -104,6 +108,7 @@ frontend/src/
 │   ├── login/            # Login page and layout
 │   ├── trips/            # Trips page and client components
 │   ├── users/            # Users page and client components
+│   ├── site-requests/    # Website intent collection management
 │   ├── stats/            # Statistics dashboard page
 │   ├── transactions/     # Transactions management page
 │   └── map/              # Real-time trips visualization map
@@ -185,6 +190,7 @@ GOOGLE_CLIENT_SECRET=<your-google-client-secret>
 - `trips.ts`: `getTrips`, `getTripById`, `getTripsStats`, `getTripsWithDriver`, `getPassengersForTrip`, `getTripsForMap`, `getDriversList`
 - `users.ts`: `getUsers`, `getUserById`, `getUsersStats`, `getDriversList`
 - `support.ts`: `getTicketsWithUser`, `getTicketDetail`, `updateTicketStatus`, `addComment`
+- `site-requests.ts`: `getSiteTripRequests`, `getSiteTripRequestsStats`, `updateSiteTripRequest`
 - `transactions.ts`: `getTransactions`, `getTransactionById`, `getCashFlowStats`, `getRevenueStats`, `getTransactionsForUser`
 
 ## Theme Colors (Klando)
@@ -234,6 +240,9 @@ The dashboard uses a custom color palette defined in `tailwind.config.ts`.
 - [x] Support tickets module with chat-like interface for comments.
 - [x] Ability to change support ticket status via Server Actions.
 - [x] Mention/Tag system in support comments (emails via Resend).
+- [x] Website integration module (view for public trips, table for site requests).
+- [x] Dedicated dashboard page for managing website trip requests.
+- [x] Detailed integration guide for the landing page agent.
 
 ### TODO 🚧
 - [ ] Fix mention notification email rendering (known issue with `render` in App Router).
@@ -242,3 +251,9 @@ The dashboard uses a custom color palette defined in `tailwind.config.ts`.
 - [ ] Implement an audit log for user connections and significant actions.
 - [ ] Add comprehensive testing for all new features and bug fixes.
 - [ ] Implement data export functionality for various tables.
+
+## Useful Documentation
+
+- [docs/README.md](./docs/README.md) : Index de la documentation technique.
+- [docs/WEBSITE_INTEGRATION.md](./docs/WEBSITE_INTEGRATION.md) : Guide d'intégration pour le site vitrine.
+- [database/tables.md](./database/tables.md) : Dictionnaire de données complet.

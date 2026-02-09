@@ -153,6 +153,43 @@ Transactions de paiement.
 
 ---
 
+## Tables Site Vitrine (Landing Page)
+
+### `site_trip_requests`
+Demandes d'intentions de voyage collectées via le site vitrine.
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `id` | uuid | **PK** |
+| `origin_city` | text | Ville de départ |
+| `destination_city` | text | Ville d'arrivée |
+| `desired_date` | timestamptz | Date souhaitée |
+| `contact_info` | text | Email ou Téléphone |
+| `status` | text | NEW, REVIEWED, CONTACTED, IGNORED |
+| `created_at` | timestamptz | Date création |
+| `notes` | text | Notes internes dashboard |
+
+**Index créés:**
+- `idx_site_trip_requests_status`
+- `idx_site_trip_requests_created_at`
+
+---
+
+## Vues SQL
+
+### `public_pending_trips`
+Vue sécurisée pour l'affichage des trajets disponibles sur le site vitrine (masque les données sensibles).
+
+| Colonne | Type | Source | Description |
+|---------|------|--------|-------------|
+| `id` | text | `trip_id` | ID du trajet |
+| `departure_city` | text | `departure_name` | Ville départ |
+| `arrival_city` | text | `destination_name` | Ville arrivée |
+| `departure_time` | timestamptz | `departure_schedule` | Heure départ |
+| `seats_available` | bigint | `seats_available` | Places dispo |
+
+---
+
 ## Tables dashboard
 
 ### `dash_authorized_users`
