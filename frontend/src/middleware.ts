@@ -1,9 +1,6 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-// Routes réservées aux administrateurs
-const ADMIN_ROUTES = ["/admin", "/support"];
-
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isLoginPage = req.nextUrl.pathname === "/login";

@@ -7,7 +7,7 @@ import { MapFilters } from "@/components/map/map-filters";
 import { RecentTripsTable } from "@/components/map/recent-trips-table";
 import { TripMapPopup } from "@/components/map/trip-map-popup";
 import { TripMapItem, MapFilters as MapFiltersType } from "@/types/trip";
-import { Filter, X } from "lucide-react";
+import { X } from "lucide-react";
 
 // Import dynamique pour éviter les erreurs SSR avec Leaflet
 const TripMap = dynamic(
@@ -81,7 +81,7 @@ export function MapClient({
         })
         .catch(console.error);
     }
-  }, [selectedTrip?.trip_id]);
+  }, [selectedTrip]);
 
   // Pre-fetch pages liées (UX premium)
   useEffect(() => {
@@ -158,14 +158,18 @@ export function MapClient({
       setFilters((prev) => ({ ...prev, ...newFilters }));
       const url = new URL(window.location.href);
       if (newFilters.status !== undefined) {
-        newFilters.status === "ALL"
-          ? url.searchParams.delete("status")
-          : url.searchParams.set("status", newFilters.status);
+        if (newFilters.status === "ALL") {
+          url.searchParams.delete("status");
+        } else {
+          url.searchParams.set("status", newFilters.status);
+        }
       }
       if (newFilters.driverId !== undefined) {
-        newFilters.driverId === null
-          ? url.searchParams.delete("driver")
-          : url.searchParams.set("driver", newFilters.driverId);
+        if (newFilters.driverId === null) {
+          url.searchParams.delete("driver");
+        } else {
+          url.searchParams.set("driver", newFilters.driverId);
+        }
       }
       router.replace(url.pathname + url.search, { scroll: false });
     },

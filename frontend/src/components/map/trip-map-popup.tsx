@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { X, User, Users, MapPin, Calendar, Car, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,12 +87,13 @@ export function TripMapPopup({ trip, onClose }: TripMapPopupProps) {
           <div className="border-t border-gray-700 pt-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
+                <div className="relative w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
                   {trip.driver.photo_url ? (
-                    <img
+                    <Image
                       src={trip.driver.photo_url}
                       alt={trip.driver.display_name || ""}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   ) : (
                     <span className="text-xs text-white">
@@ -126,12 +128,13 @@ export function TripMapPopup({ trip, onClose }: TripMapPopupProps) {
             <div className="flex flex-wrap gap-2">
               {trip.passengers.map((p) => (
                 <Link key={p.uid} href={`/users?selected=${p.uid}`}>
-                  <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden cursor-pointer hover:ring-2 ring-klando-gold transition-all">
+                  <div className="relative w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden cursor-pointer hover:ring-2 ring-klando-gold transition-all">
                     {p.photo_url ? (
-                      <img
+                      <Image
                         src={p.photo_url}
                         alt={p.display_name || ""}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     ) : (
                       <span className="text-[10px] text-white">

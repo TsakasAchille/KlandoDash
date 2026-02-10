@@ -4,7 +4,7 @@ import type { SupportComment } from "@/types/support";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { User, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import Image from "next/image";
 
 // =======================================
@@ -57,10 +57,9 @@ function Avatar({ src, fallback, className }: AvatarProps) {
 
 interface CommentBubbleProps {
   comment: SupportComment;
-  isCurrentUserAdmin: boolean;
 }
 
-function CommentBubble({ comment, isCurrentUserAdmin }: CommentBubbleProps) {
+function CommentBubble({ comment }: CommentBubbleProps) {
   const {
     comment_text,
     created_at,
@@ -149,10 +148,6 @@ export function CommentThread({ comments, className }: CommentThreadProps) {
       </div>
     );
   }
-  
-  // NOTE: This is a placeholder for a real check.
-  // In a real app, you would get the current user's role from the session.
-  const isCurrentUserAdmin = true;
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -160,7 +155,6 @@ export function CommentThread({ comments, className }: CommentThreadProps) {
         <CommentBubble
           key={comment.comment_id}
           comment={comment}
-          isCurrentUserAdmin={isCurrentUserAdmin}
         />
       ))}
     </div>

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, Phone, Mail } from "lucide-react";
+import { Calendar, Phone, Mail } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 interface SiteRequestTableProps {
@@ -40,7 +40,14 @@ const statusConfig: Record<SiteTripRequestStatus, { label: string; color: string
   IGNORED: { label: "Ignoré", color: "text-gray-400", background: "bg-gray-500/10" },
 };
 
-const FilterControls = ({ statusFilter, setStatusFilter, setCurrentPage, statusCounts }) => (
+interface FilterControlsProps {
+  statusFilter: string;
+  setStatusFilter: (v: string) => void;
+  setCurrentPage: (p: number) => void;
+  statusCounts: Record<string, number>;
+}
+
+const FilterControls = ({ statusFilter, setStatusFilter, setCurrentPage, statusCounts }: FilterControlsProps) => (
   <>
     {/* Tabs for Desktop */}
     <div className="hidden md:block">
@@ -52,7 +59,7 @@ const FilterControls = ({ statusFilter, setStatusFilter, setCurrentPage, statusC
           {Object.entries(statusConfig).map(([status, { label }]) => (
             <TabsTrigger key={status} value={status} className="flex items-center gap-2">
               {label} 
-              <span className={cn("text-xs px-2 py-0.5 rounded-full", statusConfig[status].background, statusConfig[status].color)}>
+              <span className={cn("text-xs px-2 py-0.5 rounded-full", statusConfig[status as SiteTripRequestStatus].background, statusConfig[status as SiteTripRequestStatus].color)}>
                 {statusCounts[status]}
               </span>
             </TabsTrigger>
@@ -96,7 +103,7 @@ export function SiteRequestTable({
   const paginatedRequests = filteredRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   
   const statusCounts = useMemo(() => {
-    const counts = { all: requests.length };
+    const counts: Record<string, number> = { all: requests.length };
     for (const status in statusConfig) {
       counts[status] = requests.filter(r => r.status === status).length;
     }

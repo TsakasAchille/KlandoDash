@@ -1,6 +1,14 @@
 import { createServerClient } from "../supabase";
 import { SiteTripRequest, SiteTripRequestStatus, SiteTripRequestsStats } from "@/types/site-request";
 
+export interface PublicTrip {
+  id: string;
+  departure_city: string;
+  arrival_city: string;
+  departure_time: string;
+  seats_available?: number;
+}
+
 /**
  * Récupère la liste des demandes provenant du site vitrine
  */
@@ -82,7 +90,7 @@ export async function updateSiteTripRequest(
 /**
  * Récupère les trajets actuellement affichés en direct sur le site
  */
-export async function getPublicPendingTrips(): Promise<any[]> {
+export async function getPublicPendingTrips(): Promise<PublicTrip[]> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("public_pending_trips")
@@ -93,13 +101,13 @@ export async function getPublicPendingTrips(): Promise<any[]> {
     console.error("getPublicPendingTrips error:", error);
     return [];
   }
-  return data;
+  return (data || []) as PublicTrip[];
 }
 
 /**
  * Récupère les derniers trajets terminés affichés sur le site
  */
-export async function getPublicCompletedTrips(): Promise<any[]> {
+export async function getPublicCompletedTrips(): Promise<PublicTrip[]> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("public_completed_trips")
@@ -110,5 +118,5 @@ export async function getPublicCompletedTrips(): Promise<any[]> {
     console.error("getPublicCompletedTrips error:", error);
     return [];
   }
-  return data;
+  return (data || []) as PublicTrip[];
 }

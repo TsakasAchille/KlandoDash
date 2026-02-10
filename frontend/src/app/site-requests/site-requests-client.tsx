@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { SiteTripRequest, SiteTripRequestStatus } from "@/types/site-request";
 import { SiteRequestTable } from "@/components/site-requests/site-request-table";
 import { updateRequestStatusAction } from "./actions";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,17 +13,24 @@ import { MapPin, Calendar, Users, CheckCircle2, Globe } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
+interface PublicTrip {
+  id: string;
+  departure_city: string;
+  arrival_city: string;
+  departure_time: string;
+  seats_available?: number;
+}
+
 interface SiteRequestsClientProps {
   initialRequests: SiteTripRequest[];
-  publicPending: any[];
-  publicCompleted: any[];
+  publicPending: PublicTrip[];
+  publicCompleted: PublicTrip[];
 }
 
 export function SiteRequestsClient({ initialRequests, publicPending, publicCompleted }: SiteRequestsClientProps) {
   const [requests, setRequests] = useState<SiteTripRequest[]>(initialRequests);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
+  const [, startTransition] = useTransition();
 
   const handleUpdateStatus = (id: string, status: SiteTripRequestStatus) => {
     setUpdatingId(id);
@@ -151,10 +157,10 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
             <Globe className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-blue-900">Note d'intégration</h4>
+            <h4 className="text-sm font-bold text-blue-900">Note d&apos;intégration</h4>
             <p className="text-xs text-blue-700 leading-relaxed mt-1">
               Ces données proviennent des vues SQL <code className="bg-blue-100 px-1 rounded">public_pending_trips</code> et <code className="bg-blue-100 px-1 rounded">public_completed_trips</code>. 
-              Elles sont exposées publiquement sur le site vitrine pour attirer les clients. Seuls les trajets avec assez de places et dont la date n'est pas passée sont affichés en "Direct".
+              Elles sont exposées publiquement sur le site vitrine pour attirer les clients. Seuls les trajets avec assez de places et dont la date n&apos;est pas passée sont affichés en &quot;Direct&quot;.
             </p>
           </div>
         </div>

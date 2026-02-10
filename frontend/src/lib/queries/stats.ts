@@ -37,13 +37,21 @@ export interface DashboardStats {
   cashFlow: CashFlowStats;
 }
 
+export interface PublicTrip {
+  id: string;
+  departure_city: string;
+  arrival_city: string;
+  departure_time: string;
+  seats_available?: number;
+}
+
 export interface HomeSummary extends DashboardStats {
   recentTrips: Trip[];
   recentTransactions: TransactionWithUser[];
   recentTickets: SupportTicketWithUser[];
   recentUsers: UserListItem[];
-  publicPending: any[];
-  publicCompleted: any[];
+  publicPending: PublicTrip[];
+  publicCompleted: PublicTrip[];
 }
 
 /**
@@ -111,19 +119,35 @@ export async function getHomeSummary(): Promise<HomeSummary> {
       .limit(4),
   ]);
 
+  interface TripRaw {
+    trip_id: string;
+    departure_name: string | null;
+    destination_name: string | null;
+    departure_schedule: string | null;
+    status: string | null;
+    total_seats: number | null;
+    driver: {
+      display_name: string | null;
+      photo_url: string | null;
+    } | null;
+  }
+
   // Transformer les trajets pour correspondre au type Trip
-  const recentTrips = (recentTripsData || []).map((t: any) => ({
-    trip_id: t.trip_id,
-    departure_city: t.departure_name?.split(",")[0] || "N/A",
-    destination_city: t.destination_name?.split(",")[0] || "N/A",
-    departure_schedule: t.departure_schedule,
-    status: t.status,
-    trip_distance: 0,
-    passengers: [], // On ne charge pas les passagers pour le résumé
-    total_seats: t.total_seats || 0,
-    driver_name: t.driver?.display_name || "N/A",
-    driver_photo: t.driver?.photo_url || null,
-  })) as unknown as Trip[];
+  const recentTrips = (recentTripsData || []).map((t: unknown) => {
+    const trip = t as TripRaw;
+    return {
+      trip_id: trip.trip_id,
+      departure_city: trip.departure_name?.split(",")[0] || "N/A",
+      destination_city: trip.destination_name?.split(",")[0] || "N/A",
+      departure_schedule: trip.departure_schedule,
+      status: trip.status,
+      trip_distance: 0,
+      passengers: [], // On ne charge pas les passagers pour le résumé
+      total_seats: trip.total_seats || 0,
+      driver_name: trip.driver?.display_name || "N/A",
+      driver_photo: trip.driver?.photo_url || null,
+    };
+  }) as unknown as Trip[];
 
   return {
     ...stats,
@@ -131,8 +155,8 @@ export async function getHomeSummary(): Promise<HomeSummary> {
     recentTransactions: (recentTxnsData || []) as unknown as TransactionWithUser[],
     recentTickets: (recentTicketsData || []) as SupportTicketWithUser[],
     recentUsers: (recentUsersData || []) as UserListItem[],
-    publicPending: publicPendingData || [],
-    publicCompleted: publicCompletedData || [],
+    publicPending: (publicPendingData || []) as PublicTrip[],
+    publicCompleted: (publicCompletedData || []) as PublicTrip[],
   };
 }
 

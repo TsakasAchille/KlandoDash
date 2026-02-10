@@ -4,14 +4,12 @@ import Link from "next/link";
 import { TransactionWithBooking, getCashDirection } from "@/types/transaction";
 import { formatDate, formatPrice, cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Banknote,
   User,
   Phone,
   Mail,
   Calendar,
-  Hash,
   ArrowUpRight,
   ArrowDownLeft,
   Car,
@@ -217,7 +215,7 @@ export function TransactionDetails({ transaction }: TransactionDetailsProps) {
               <div>
                 <p className="font-medium">Transaction hors trajet</p>
                 <p className="text-sm text-muted-foreground">
-                  Cette transaction n'est pas liée à une réservation (top-up, remboursement, etc.)
+                  Cette transaction n&apos;est pas liée à une réservation (top-up, remboursement, etc.)
                 </p>
               </div>
             </div>

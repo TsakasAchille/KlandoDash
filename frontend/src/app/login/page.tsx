@@ -30,7 +30,7 @@ function LoginContent() {
               <>
                 <p className="font-semibold">Accès refusé</p>
                 <p className="text-sm mt-1">
-                  Votre adresse email n'est pas autorisée à accéder au
+                  Votre adresse email n&apos;est pas autorisée à accéder au
                   dashboard.
                 </p>
               </>

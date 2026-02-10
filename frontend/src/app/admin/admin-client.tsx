@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { DashUser } from "@/lib/queries/admin";
 import {
   Table,
@@ -31,7 +30,6 @@ interface Props {
 
 export function AdminPageClient({ users: initialUsers }: Props) {
   const { data: session } = useSession();
-  const router = useRouter();
   const [users, setUsers] = useState(initialUsers);
   const [loading, setLoading] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);

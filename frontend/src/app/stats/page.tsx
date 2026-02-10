@@ -11,9 +11,9 @@ import {
   UserCheck,
   CalendarPlus,
   Ticket,
+  TrendingUp,
   ArrowDownLeft,
   ArrowUpRight,
-  TrendingUp,
 } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 import { MiniStatCard } from "@/components/mini-stat-card";
@@ -122,7 +122,7 @@ export default async function StatsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
               <CalendarPlus className="w-4 h-4 text-klando-gold" />
-              Groupes d'âge
+              Groupes d&apos;âge
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

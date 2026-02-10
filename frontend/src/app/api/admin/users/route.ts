@@ -81,7 +81,7 @@ export async function PATCH(request: Request) {
     );
   }
 
-  let updateData: { role?: string; active?: boolean } = {};
+  const updateData: { role?: string; active?: boolean } = {};
 
   if (action === "role" && role) {
     updateData.role = role;

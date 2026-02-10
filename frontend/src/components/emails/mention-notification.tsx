@@ -3,7 +3,6 @@ import {
   Body,
   Container,
   Text,
-  Link,
   Button,
   Heading,
   Tailwind,
@@ -42,12 +41,12 @@ export const MentionNotificationEmail: React.FC<Readonly<MentionNotificationEmai
                 Bonjour,
               </Text>
               <Text className="text-base leading-relaxed text-gray-700">
-                <strong className="font-bold">{mentionedBy}</strong> vous a mentionné dans un commentaire sur le ticket : <strong className="font-bold">"{ticketSubject}"</strong>.
+                <strong className="font-bold">{mentionedBy}</strong> vous a mentionné dans un commentaire sur le ticket : <strong className="font-bold">&quot;{ticketSubject}&quot;</strong>.
               </Text>
             </Section>
 
             <Section className="border-l-4 border-gray-300 pl-4 my-5 text-gray-600 italic">
-              <Text className="my-0">"{commentText}"</Text>
+              <Text className="my-0">&quot;{commentText}&quot;</Text>
             </Section>
 
             <Section>

@@ -6,6 +6,7 @@ import { formatDate, cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, Mail, Phone, Calendar, Shield, User, Car, Banknote, ShieldCheck } from "lucide-react";
+import Image from "next/image";
 import { UserTripsTable } from "./user-trips-table";
 import { UserTransactionsTable } from "./user-transactions-table";
 
@@ -25,11 +26,14 @@ export function UserDetails({ user }: UserDetailsProps) {
         <CardContent className="pt-6">
           <div className="flex flex-col items-center text-center">
             {user.photo_url ? (
-              <img
-                src={user.photo_url}
-                alt=""
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover mb-4"
-              />
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-4">
+                <Image
+                  src={user.photo_url}
+                  alt=""
+                  fill
+                  className="rounded-full object-cover"
+                />
+              </div>
             ) : (
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-klando-burgundy flex items-center justify-center text-white text-xl sm:text-2xl font-semibold mb-4">
                 {(user.display_name || "?").charAt(0).toUpperCase()}
@@ -38,7 +42,7 @@ export function UserDetails({ user }: UserDetailsProps) {
             <h2 className="text-lg sm:text-xl font-bold">{user.display_name || "Sans nom"}</h2>
             {user.bio && (
               <p className="text-sm italic text-muted-foreground mt-1 max-w-[250px] line-clamp-3">
-                "{user.bio}"
+                &quot;{user.bio}&quot;
               </p>
             )}
             <p className="text-[10px] sm:text-xs text-muted-foreground break-all mt-1">{user.uid}</p>

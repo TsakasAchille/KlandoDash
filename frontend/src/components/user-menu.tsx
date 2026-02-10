@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
+import Image from "next/image";
 
 export function UserMenu() {
   const { data: session } = useSession();
@@ -23,9 +24,11 @@ export function UserMenu() {
       <div className="flex items-center gap-3">
         {/* Avatar */}
         {image ? (
-          <img
+          <Image
             src={image}
             alt={name || "Avatar"}
+            width={40}
+            height={40}
             className="w-10 h-10 rounded-full"
           />
         ) : (

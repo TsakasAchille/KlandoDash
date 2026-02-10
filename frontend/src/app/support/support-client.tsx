@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type {
   SupportTicketWithUser,
   TicketDetail,
-  TicketStatus,
 } from "@/types/support";
 import { TicketTable } from "@/components/support/ticket-table";
 import { TicketDetails } from "@/components/support/ticket-details";

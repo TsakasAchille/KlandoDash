@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Star, Search } from "lucide-react";
+import Image from "next/image";
 
 interface UserTableProps {
   users: UserListItem[];
@@ -144,9 +145,11 @@ export function UserTable({ users, selectedUserId, initialSelectedId, onSelectUs
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         {user.photo_url ? (
-                          <img
+                          <Image
                             src={user.photo_url}
                             alt=""
+                            width={40}
+                            height={40}
                             className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-border/50"
                           />
                         ) : (

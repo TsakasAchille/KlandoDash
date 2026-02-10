@@ -253,7 +253,7 @@ export async function getRevenueStats(options: {
   const supabase = createServerClient();
 
   // Bookings avec transaction_id non null + join transaction et trip
-  let query = supabase
+  const query = supabase
     .from("bookings")
     .select(`
       id,

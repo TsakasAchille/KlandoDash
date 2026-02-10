@@ -125,8 +125,13 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
     display_name: string | null;
     photo_url: string | null;
   };
-  const passengers = (data.bookings || [])
-    .map((b: any) => {
+
+  interface BookingRaw {
+    user: unknown;
+  }
+
+  const passengers = (data.bookings as unknown as BookingRaw[] || [])
+    .map((b: BookingRaw) => {
       const rawUser = b.user;
       if (!rawUser) return null;
       return Array.isArray(rawUser)

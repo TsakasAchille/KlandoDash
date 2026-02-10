@@ -1,14 +1,13 @@
 import { auth } from "@/lib/auth";
 import { getHomeSummary } from "@/lib/queries/stats";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice, cn, formatDate } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   Car, 
   Users, 
-  Ticket, 
-  Banknote, 
   ArrowRight, 
   Clock, 
   CheckCircle2,
@@ -16,12 +15,18 @@ import {
   TrendingUp,
   UserPlus,
   ArrowUpRight,
-  ArrowDownLeft,
-  Globe
+  Globe,
+  LucideIcon
 } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 
 export const dynamic = "force-dynamic";
+
+interface PublicTrip {
+  id: string;
+  departure_city: string;
+  arrival_city: string;
+}
 
 function KPICard({ 
   title, 
@@ -33,7 +38,7 @@ function KPICard({
 }: { 
   title: string; 
   value: string | number; 
-  icon: any; 
+  icon: LucideIcon; 
   color: "blue" | "purple" | "red" | "green";
   href: string;
   description?: string;
@@ -145,7 +150,7 @@ export default async function Home() {
           </div>
           <Link href="/site-requests">
             <Badge variant="outline" className="border-klando-gold/20 text-klando-gold hover:bg-klando-gold/10 transition-colors cursor-pointer px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase">
-              Gérer l'affichage <ArrowUpRight className="ml-2 w-3 h-3" />
+              Gérer l&apos;affichage <ArrowUpRight className="ml-2 w-3 h-3" />
             </Badge>
           </Link>
         </div>
@@ -159,7 +164,7 @@ export default async function Home() {
             </div>
             <div className="flex flex-wrap gap-2">
               {summary.publicPending.length > 0 ? (
-                summary.publicPending.map((trip: any) => (
+                summary.publicPending.map((trip: PublicTrip) => (
                   <div key={trip.id} className="bg-card border border-border/60 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-sm hover:border-klando-gold/40 transition-colors group">
                     <span className="text-[11px] font-black uppercase tracking-tight">{trip.departure_city}</span>
                     <ArrowRight className="w-3 h-3 text-klando-gold group-hover:translate-x-0.5 transition-transform" />
@@ -180,7 +185,7 @@ export default async function Home() {
             </div>
             <div className="flex flex-wrap gap-2">
               {summary.publicCompleted.length > 0 ? (
-                summary.publicCompleted.map((trip: any) => (
+                summary.publicCompleted.map((trip: PublicTrip) => (
                   <div key={trip.id} className="bg-green-500/5 border border-green-500/10 px-4 py-2.5 rounded-2xl flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
                     <span className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground">{trip.departure_city}</span>
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500/30" />
@@ -262,7 +267,7 @@ export default async function Home() {
                     <div className="relative">
                       <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-secondary to-card overflow-hidden flex-shrink-0 flex items-center justify-center border border-border/50 group-hover:border-klando-gold/50 transition-colors shadow-inner">
                         {user.photo_url ? (
-                          <img src={user.photo_url} alt="" className="w-full h-full object-cover" />
+                          <Image src={user.photo_url} alt="" width={48} height={48} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-lg font-black text-klando-gold">{(user.display_name || '?').charAt(0)}</span>
                         )}
