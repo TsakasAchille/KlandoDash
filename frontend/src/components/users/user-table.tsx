@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, Star, Search, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Search, Loader2, Filter, X, Sparkles, User2, Calendar } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -45,9 +45,14 @@ export function UserTable({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const roleFilter = searchParams.get("role") || "all";
+  const verifiedFilter = searchParams.get("verified") || "all";
+  const genderFilter = searchParams.get("gender") || "all";
+  const minRatingFilter = searchParams.get("minRating") || "0";
+  const isNewFilter = searchParams.get("isNew") === "true";
 
   // Calculate pagination
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -56,7 +61,7 @@ export function UserTable({
     const params = new URLSearchParams(searchParams.toString());
     
     Object.entries(newParams).forEach(([key, value]) => {
-      if (value === null || value === "all" || value === "") {
+      if (value === null || value === "all" || value === "" || value === "0" || value === "false") {
         params.delete(key);
       } else {
         params.set(key, value);
@@ -77,13 +82,14 @@ export function UserTable({
     updateFilters({ page: newPage.toString() });
   };
 
-  const handleRoleChange = (value: string) => {
-    updateFilters({ role: value, page: "1" });
+  const clearFilters = () => {
+    setSearchTerm("");
+    startTransition(() => {
+      router.push("/users");
+    });
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
+  const hasActiveFilters = searchParams.toString().length > 0 && !searchParams.has("selected");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -93,8 +99,6 @@ export function UserTable({
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
-
-  const roles = ["admin", "user", "support"];
 
   const PaginationControls = ({ className }: { className?: string }) => (
     <div className={cn("flex items-center gap-2", className)}>
@@ -124,44 +128,142 @@ export function UserTable({
 
   return (
     <div className="space-y-4">
-      {/* Top Bar: Search & Compact Pagination */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Nom, email, tel..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="pl-9 h-9 text-sm"
-            />
-            {isPending && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-              </div>
-            )}
+      {/* Search and Main Filters */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Nom, email, tel..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-9 text-sm"
+              />
+              {isPending && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Filtre Rôle - Basé sur colonne role (driver / passenger) */}
+              <Select value={roleFilter} onValueChange={(v) => updateFilters({ role: v, page: "1" })}>
+                <SelectTrigger className="h-9 w-[130px] text-xs font-bold uppercase tracking-wider border-klando-gold/20">
+                  <SelectValue placeholder="Rôle" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tout Rôle</SelectItem>
+                  <SelectItem value="driver">Conducteurs</SelectItem>
+                  <SelectItem value="passenger">Passagers</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filtre Vérification - Basé sur is_driver_doc_validated */}
+              <Select value={verifiedFilter} onValueChange={(v) => updateFilters({ verified: v, page: "1" })}>
+                <SelectTrigger className="h-9 w-[110px] text-xs font-bold uppercase tracking-wider">
+                  <SelectValue placeholder="Vérif." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tout Statut</SelectItem>
+                  <SelectItem value="true">Vérifiés</SelectItem>
+                  <SelectItem value="false">Non vérifiés</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant={showAdvanced ? "secondary" : "outline"}
+                size="sm"
+                className="h-9 gap-2 text-xs font-bold uppercase tracking-wider"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                <Filter className="w-3.5 h-3.5" />
+                {hasActiveFilters && (
+                  <span className="flex h-2 w-2 rounded-full bg-klando-gold" />
+                )}
+              </Button>
+            </div>
           </div>
-          <Select value={roleFilter} onValueChange={handleRoleChange}>
-            <SelectTrigger className="h-9 w-full sm:w-32 text-xs font-bold uppercase tracking-wider">
-              <SelectValue placeholder="Rôle" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous</SelectItem>
-              {roles.map((role) => (
-                <SelectItem key={role} value={role}>
-                  {role}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          <div className="flex items-center justify-between sm:justify-end gap-4 border-t lg:border-t-0 pt-3 lg:pt-0">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              {totalCount} membres
+            </span>
+            {totalPages > 1 && <PaginationControls />}
+          </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-4 border-t lg:border-t-0 pt-3 lg:pt-0">
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            {totalCount} membres
-          </span>
-          {totalPages > 1 && <PaginationControls />}
-        </div>
+        {/* Advanced Filters Panel */}
+        {showAdvanced && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-xl bg-secondary/20 border border-border/40 animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Gender */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <User2 className="w-3 h-3" /> Genre
+              </label>
+              <Select value={genderFilter} onValueChange={(v) => updateFilters({ gender: v, page: "1" })}>
+                <SelectTrigger className="h-8 text-[11px] font-bold">
+                  <SelectValue placeholder="Genre" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="man">Homme</SelectItem>
+                  <SelectItem value="woman">Femme</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Note Min */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Sparkles className="w-3 h-3" /> Note minimale
+              </label>
+              <Select value={minRatingFilter} onValueChange={(v) => updateFilters({ minRating: v, page: "1" })}>
+                <SelectTrigger className="h-8 text-[11px] font-bold">
+                  <SelectValue placeholder="Note" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Toutes les notes</SelectItem>
+                  <SelectItem value="3">3.0 et +</SelectItem>
+                  <SelectItem value="4">4.0 et +</SelectItem>
+                  <SelectItem value="4.5">4.5 et +</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Nouveauté */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Calendar className="w-3 h-3" /> Ancienneté
+              </label>
+              <Button
+                variant={isNewFilter ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "h-8 w-full text-[11px] font-bold",
+                  isNewFilter && "bg-klando-gold text-black hover:bg-klando-gold/90"
+                )}
+                onClick={() => updateFilters({ isNew: (!isNewFilter).toString(), page: "1" })}
+              >
+                Nouveaux membres (-30j)
+              </Button>
+            </div>
+
+            {/* Clear Actions */}
+            <div className="flex flex-col justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                onClick={clearFilters}
+              >
+                <X className="w-3 h-3 mr-2" />
+                Réinitialiser tout
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tableau responsive */}
@@ -179,7 +281,7 @@ export function UserTable({
                 <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px] hidden sm:table-cell">Email</TableHead>
                 <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px] hidden md:table-cell">Téléphone</TableHead>
                 <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px]">Note</TableHead>
-                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px]">Rôle</TableHead>
+                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px]">Type</TableHead>
                 <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px] hidden lg:table-cell">Date</TableHead>
               </TableRow>
             </TableHeader>
@@ -187,7 +289,7 @@ export function UserTable({
               {users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-10 text-sm">
-                    Aucun utilisateur trouvé
+                    {hasActiveFilters ? "Aucun membre ne correspond à ces critères" : "Aucun utilisateur trouvé"}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -217,9 +319,14 @@ export function UserTable({
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold truncate text-xs uppercase tracking-tight leading-none mb-1">
-                            {user.display_name || "Sans nom"}
-                          </p>
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <p className="font-bold truncate text-xs uppercase tracking-tight leading-none">
+                              {user.display_name || "Sans nom"}
+                            </p>
+                            {user.created_at && new Date(user.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-blue-500" title="Nouveau membre" />
+                            )}
+                          </div>
                           <p className="text-[9px] sm:hidden text-muted-foreground truncate font-medium">
                             {user.email || "-"}
                           </p>
@@ -243,16 +350,36 @@ export function UserTable({
                       )}
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={cn(
-                          "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
-                          user.role === "admin"
-                            ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                            : "bg-secondary text-muted-foreground border border-border/50"
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={cn(
+                            "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
+                            user.is_driver_doc_validated
+                              ? "bg-green-500/10 text-green-500 border border-green-500/20"
+                              : user.role === "driver"
+                              ? "bg-blue-500/10 text-blue-500 border border-blue-500/20"
+                              : user.role === "passenger"
+                              ? "bg-purple-500/10 text-purple-500 border border-purple-500/20"
+                              : "bg-secondary text-muted-foreground border border-border/50"
+                          )}
+                        >
+                          {user.is_driver_doc_validated 
+                            ? "Vérifié" 
+                            : user.role === "driver" 
+                            ? "Conducteur" 
+                            : user.role === "passenger"
+                            ? "Passager"
+                            : "Membre"}
+                        </span>
+                        {user.gender && (
+                          <span className={cn(
+                            "text-[10px]",
+                            user.gender.toLowerCase() === "man" ? "text-blue-400" : "text-pink-400"
+                          )}>
+                            {user.gender.toLowerCase() === "man" ? "♂" : "♀"}
+                          </span>
                         )}
-                      >
-                        {user.role || "user"}
-                      </span>
+                      </div>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-[10px] font-mono text-muted-foreground">
                       {user.created_at ? formatDate(user.created_at) : "-"}

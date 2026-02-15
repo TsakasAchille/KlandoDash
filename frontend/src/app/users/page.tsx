@@ -11,17 +11,28 @@ interface Props {
     selected?: string;
     page?: string;
     role?: string;
+    verified?: string;
     search?: string;
+    gender?: string;
+    minRating?: string;
+    isNew?: string;
   }>;
 }
 
 export default async function UsersPage({ searchParams }: Props) {
-  const { selected, page, role, search } = await searchParams;
+  const { selected, page, role, verified, search, gender, minRating, isNew } = await searchParams;
   const currentPage = parseInt(page || "1", 10);
   const pageSize = 10;
 
   const [{ users, totalCount }, stats, initialSelectedUser] = await Promise.all([
-    getUsers(currentPage, pageSize, role, search),
+    getUsers(currentPage, pageSize, {
+      role,
+      verified,
+      search,
+      gender,
+      minRating: minRating ? parseFloat(minRating) : undefined,
+      isNew: isNew === "true",
+    }),
     getUsersStats(),
     selected ? getUserById(selected) : null,
   ]);

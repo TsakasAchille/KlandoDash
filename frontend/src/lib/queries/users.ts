@@ -2,13 +2,19 @@ import { createServerClient } from "../supabase";
 import { UserListItem, UserDetail, UserStats } from "@/types/user";
 
 /**
- * Liste des utilisateurs avec pagination et filtres
+ * Liste des utilisateurs avec pagination et filtres avancés
  */
 export async function getUsers(
   page = 1, 
   pageSize = 20, 
-  role?: string, 
-  search?: string
+  filters: {
+    role?: string;
+    verified?: string;
+    gender?: string;
+    minRating?: number;
+    search?: string;
+    isNew?: boolean;
+  } = {}
 ): Promise<{ users: UserListItem[], totalCount: number }> {
   const supabase = createServerClient();
   const from = (page - 1) * pageSize;
@@ -32,12 +38,38 @@ export async function getUsers(
       created_at
     `, { count: "exact" });
 
-  if (role && role !== "all") {
-    query = query.eq("role", role);
+  // Filtre par Rôle (colonne 'role')
+  if (filters.role && filters.role !== "all") {
+    query = query.eq("role", filters.role);
   }
 
-  if (search) {
-    query = query.or(`display_name.ilike.%${search}%,email.ilike.%${search}%,phone_number.ilike.%${search}%`);
+  // Filtre par Vérification (colonne 'is_driver_doc_validated')
+  if (filters.verified === "true") {
+    query = query.eq("is_driver_doc_validated", true);
+  } else if (filters.verified === "false") {
+    query = query.eq("is_driver_doc_validated", false);
+  }
+
+  // Filter: Gender
+  if (filters.gender && filters.gender !== "all") {
+    query = query.eq("gender", filters.gender);
+  }
+
+  // Filter: Min Rating
+  if (filters.minRating && filters.minRating > 0) {
+    query = query.gte("rating", filters.minRating);
+  }
+
+  // Filter: New Members (last 30 days)
+  if (filters.isNew) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    query = query.gte("created_at", thirtyDaysAgo.toISOString());
+  }
+
+  // Search
+  if (filters.search) {
+    query = query.or(`display_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone_number.ilike.%${filters.search}%`);
   }
 
   const { data, error, count } = await query
