@@ -99,12 +99,11 @@ export function KlandoAIClient() {
                   : "bg-klando-gold/10 text-klando-gold border border-klando-gold/20"
               )}>
                 {m.role === "ai" ? (
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]}
-                    className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-li:my-1 prose-strong:text-klando-gold"
-                  >
-                    {m.text}
-                  </ReactMarkdown>
+                  <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-li:my-1 prose-strong:text-klando-gold">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {m.text}
+                    </ReactMarkdown>
+                  </div>
                 ) : (
                   m.text
                 )}

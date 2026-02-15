@@ -20,10 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Calendar, Phone, Mail } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { Calendar, Phone, Mail, Sparkles, Loader2, MessageSquare } from "lucide-react";
+import { getAIMatchingAction } from "@/app/site-requests/actions";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface SiteRequestTableProps {
   requests: SiteTripRequest[];
@@ -84,6 +93,91 @@ const FilterControls = ({ statusFilter, setStatusFilter, setCurrentPage, statusC
   </>
 );
 
+function AIMatchingDialog({ request }: { request: SiteTripRequest }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  const handleMatch = async () => {
+    setLoading(true);
+    try {
+      const res = await getAIMatchingAction(
+        request.id, 
+        request.origin_city, 
+        request.destination_city, 
+        request.desired_date
+      );
+      if (res.success) {
+        setResult(res.text || "Aucun résultat.");
+      } else {
+        setResult("Erreur lors de la génération.");
+      }
+    } catch (e) {
+      setResult("Une erreur est survenue.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog onOpenChange={(open) => open && !result && handleMatch()}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2 border-klando-gold/30 hover:border-klando-gold bg-klando-gold/5 text-klando-gold text-[10px] font-black uppercase tracking-widest px-3 h-8">
+          <Sparkles className="w-3 h-3" />
+          Aide IA
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto bg-klando-dark border-white/10">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <Sparkles className="w-5 h-5 text-klando-gold" />
+            Recommandation IA Matching
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="py-4">
+          <div className="bg-white/5 rounded-xl p-4 mb-6 border border-white/5">
+            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground mb-2">Demande Client</div>
+            <div className="text-white font-bold uppercase text-sm">
+              {request.origin_city} ➜ {request.destination_city}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Contact : {request.contact_info}
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <Loader2 className="w-8 h-8 text-klando-gold animate-spin" />
+              <p className="text-xs font-bold uppercase tracking-widest text-klando-gold animate-pulse">L&apos;IA analyse les trajets...</p>
+            </div>
+          ) : (
+            <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-li:my-1 prose-strong:text-klando-gold">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {result || ""}
+              </ReactMarkdown>
+            </div>
+          )}
+        </div>
+
+        {!loading && result && (
+          <div className="flex justify-end pt-4 border-t border-white/5">
+            <Button size="sm" className="bg-klando-burgundy text-white gap-2" onClick={() => {
+              if (result) {
+                // Essayer d'extraire le message ou simplement tout copier
+                navigator.clipboard.writeText(result);
+                // On pourrait ajouter un toast ici
+              }
+            }}>
+              <MessageSquare className="w-4 h-4" />
+              Copier la recommandation
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function SiteRequestTable({
   requests,
   onUpdateStatus,
@@ -137,7 +231,7 @@ export function SiteRequestTable({
               <TableHead>Client</TableHead>
               <TableHead className="hidden sm:table-cell">Trajet</TableHead>
               <TableHead className="hidden lg:table-cell text-right">Soumis il y a</TableHead>
-              <TableHead className="w-[150px] text-right">Statut</TableHead>
+              <TableHead className="w-[150px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -165,7 +259,7 @@ export function SiteRequestTable({
                         </div>
                         <div className="flex flex-col">
                           <div className="font-medium text-foreground">{contact}</div>
-                           <div className="font-semibold text-foreground uppercase text-xs sm:hidden mt-1">
+                           <div className="font-semibold text-foreground uppercase text-xs sm:hidden mt-1 text-klando-gold">
                             {origin} ➜ {destination}
                           </div>
                         </div>
@@ -186,25 +280,29 @@ export function SiteRequestTable({
                       {formatRelativeDate(request.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Select
-                        value={request.status}
-                        onValueChange={(value) => onUpdateStatus(request.id, value as SiteTripRequestStatus)}
-                        disabled={isUpdating}
-                      >
-                        <SelectTrigger className={cn("w-36 h-8 text-xs font-semibold border-2 transition-all",
-                          isUpdating ? "bg-muted text-muted-foreground" : statusConfig[request.status].background,
-                          isUpdating ? "border-muted" : statusConfig[request.status].color.replace('text-', 'border-')
-                        )}>
-                          {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <SelectValue />}
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(statusConfig).map(([status, { label }]) => (
-                            <SelectItem key={status} value={status}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex flex-col items-end gap-2">
+                        <Select
+                          value={request.status}
+                          onValueChange={(value) => onUpdateStatus(request.id, value as SiteTripRequestStatus)}
+                          disabled={isUpdating}
+                        >
+                          <SelectTrigger className={cn("w-36 h-8 text-xs font-semibold border-2 transition-all",
+                            isUpdating ? "bg-muted text-muted-foreground" : statusConfig[request.status].background,
+                            isUpdating ? "border-muted" : statusConfig[request.status].color.replace('text-', 'border-')
+                          )}>
+                            {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <SelectValue />}
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(statusConfig).map(([status, { label }]) => (
+                              <SelectItem key={status} value={status}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <AIMatchingDialog request={request} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
