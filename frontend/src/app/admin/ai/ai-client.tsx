@@ -5,8 +5,10 @@ import { askGeminiAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Send, Bot, User, Loader2, Info } from "lucide-react";
+import { Send, Bot, User, Loader2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
   role: "user" | "ai";
@@ -56,7 +58,7 @@ export function KlandoAIClient() {
       <div className="bg-klando-gold/10 border border-klando-gold/20 p-4 rounded-2xl flex gap-3 items-start">
         <Info className="w-5 h-5 text-klando-gold mt-0.5 shrink-0" />
         <div className="text-xs text-klando-gold/80 leading-relaxed">
-          <p className="font-bold uppercase tracking-widest mb-1 text-[10px]">Assistant Gemini 1.5 Flash</p>
+          <p className="font-bold uppercase tracking-widest mb-1 text-[10px]">Assistant Gemini 2.0 Flash</p>
           Je peux analyser tes statistiques, tes trajets récents et t&apos;aider à faire du matching avec les demandes du site vitrine.
         </div>
       </div>
@@ -91,12 +93,21 @@ export function KlandoAIClient() {
                 {m.role === "ai" ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
               <div className={cn(
-                "max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed",
+                "max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed",
                 m.role === "ai" 
                   ? "bg-secondary/50 text-foreground border border-white/5" 
                   : "bg-klando-gold/10 text-klando-gold border border-klando-gold/20"
               )}>
-                {m.text}
+                {m.role === "ai" ? (
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-li:my-1 prose-strong:text-klando-gold"
+                  >
+                    {m.text}
+                  </ReactMarkdown>
+                ) : (
+                  m.text
+                )}
               </div>
             </div>
           ))}
