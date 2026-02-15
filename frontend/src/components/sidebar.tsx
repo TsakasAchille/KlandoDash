@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe, CheckSquare } from "lucide-react";
+import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe, CheckSquare, Sparkles } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
 import packageInfo from "../../package.json";
@@ -22,6 +22,7 @@ const supportItems = [
 ];
 
 const adminItems = [
+  { href: "/admin/ai", label: "Klando AI", icon: Sparkles },
   { href: "/admin/validation", label: "Validation", icon: CheckSquare },
   { href: "/transactions", label: "Transactions", icon: Banknote },
   { href: "/stats", label: "Statistiques", icon: BarChart3 },

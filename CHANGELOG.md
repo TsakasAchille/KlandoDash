@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.0] - 2026-02-15
+
+### Added
+- **Klando AI Assistant**:
+  - New administrative interface at `/admin/ai` powered by **Gemini 1.5 Flash**.
+  - **Context-Aware Analysis**: AI has access to real-time stats, recent trips, and site requests to assist admins.
+  - **Natural Language Interaction**: Chat interface for querying business data and matching drivers with requests.
+  - **Server-Side Integration**: Secure API calls using Next.js Server Actions.
+- **Sidebar Enhancements**: Added version display and quick-link to Klando AI.
+
 ## [1.4.0] - 2026-02-15
 
 ### Added
