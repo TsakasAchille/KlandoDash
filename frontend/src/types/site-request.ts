@@ -9,6 +9,8 @@ export interface SiteTripRequest {
   status: SiteTripRequestStatus;
   created_at: string;
   notes: string | null;
+  ai_recommendation?: string | null;
+  ai_updated_at?: string | null;
 }
 
 export interface SiteTripRequestsStats {

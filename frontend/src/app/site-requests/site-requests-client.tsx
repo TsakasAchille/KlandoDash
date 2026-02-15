@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { SiteTripRequest, SiteTripRequestStatus } from "@/types/site-request";
 import { SiteRequestTable } from "@/components/site-requests/site-request-table";
 import { updateRequestStatusAction } from "./actions";
@@ -30,7 +30,14 @@ interface SiteRequestsClientProps {
 export function SiteRequestsClient({ initialRequests, publicPending, publicCompleted }: SiteRequestsClientProps) {
   const [requests, setRequests] = useState<SiteTripRequest[]>(initialRequests);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [, startTransition] = useTransition();
+
+  // Sync state with props when server re-renders (after revalidatePath)
+  useEffect(() => {
+    setRequests(initialRequests);
+  }, [initialRequests]);
 
   const handleUpdateStatus = (id: string, status: SiteTripRequestStatus) => {
     setUpdatingId(id);
@@ -48,7 +55,6 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
         setRequests(initialRequests); 
       }
       
-      // No need for router.refresh() as revalidatePath in action handles it
       setUpdatingId(null);
     });
   };
@@ -64,13 +70,16 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
         <SiteRequestTable 
           requests={requests} 
           onUpdateStatus={handleUpdateStatus}
-          updatingId={updatingId} 
+          updatingId={updatingId}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
         />
       </TabsContent>
       
       <TabsContent value="preview" className="space-y-8 outline-none">
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Section Trajets en Direct */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-1">
               <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
@@ -114,7 +123,6 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
             </div>
           </div>
 
-          {/* Section Trajets Terminés */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-1">
               <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -152,7 +160,7 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
           </div>
         </div>
         
-        <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 items-start">
+        <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 items-start mt-8">
           <div className="p-1 bg-blue-500 rounded text-white mt-0.5">
             <Globe className="w-4 h-4" />
           </div>
@@ -160,7 +168,7 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
             <h4 className="text-sm font-bold text-blue-900">Note d&apos;intégration</h4>
             <p className="text-xs text-blue-700 leading-relaxed mt-1">
               Ces données proviennent des vues SQL <code className="bg-blue-100 px-1 rounded">public_pending_trips</code> et <code className="bg-blue-100 px-1 rounded">public_completed_trips</code>. 
-              Elles sont exposées publiquement sur le site vitrine pour attirer les clients. Seuls les trajets avec assez de places et dont la date n&apos;est pas passée sont affichés en &quot;Direct&quot;.
+              Elles sont exposées publiquement sur le site vitrine pour attirer les clients.
             </p>
           </div>
         </div>

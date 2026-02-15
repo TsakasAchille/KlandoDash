@@ -73,7 +73,12 @@ export async function getSiteTripRequestsStats(): Promise<SiteTripRequestsStats>
  */
 export async function updateSiteTripRequest(
   id: string,
-  updates: { status?: SiteTripRequestStatus; notes?: string }
+  updates: { 
+    status?: SiteTripRequestStatus; 
+    notes?: string;
+    ai_recommendation?: string;
+    ai_updated_at?: string;
+  }
 ): Promise<boolean> {
   const supabase = createServerClient();
 
