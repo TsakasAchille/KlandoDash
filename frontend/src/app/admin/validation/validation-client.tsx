@@ -16,7 +16,6 @@ import {
   Mail, 
   Phone,
   ExternalLink,
-  Loader2,
   ShieldAlert,
   ChevronLeft,
   ChevronRight

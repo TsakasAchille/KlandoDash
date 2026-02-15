@@ -1,19 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-
-// Client Supabase admin créé de manière lazy pour éviter les erreurs Edge runtime
-let supabaseAdmin: SupabaseClient | null = null;
-
-function getSupabaseAdmin() {
-  if (!supabaseAdmin) {
-    supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-  }
-  return supabaseAdmin;
-}
+import { createClient } from "@supabase/supabase-js";
 
 // Extension des types NextAuth pour inclure le rôle
 declare module "next-auth" {
@@ -39,7 +26,7 @@ declare module "@auth/core/jwt" {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
-  trustHost: true, // 🔥 Ajout pour Render
+  trustHost: true,
 
   providers: [
     Google({
@@ -57,8 +44,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user }) {
       if (!user.email) return false;
 
+      // Initialisation du client admin uniquement ici pour éviter les erreurs Edge au build
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+
       // 1 requête: vérifie whitelist + récupère role
-      const { data, error } = await getSupabaseAdmin()
+      const { data, error } = await supabaseAdmin
         .from("dash_authorized_users")
         .select("role, active")
         .eq("email", user.email)
@@ -71,9 +64,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Attache le rôle pour le jwt callback
       user.role = data.role;
 
-      // NEW: Enrichir la table dash_authorized_users avec le nom et l'image
+      // Enrichir la table dash_authorized_users avec le nom et l'image
       if (user.name && user.image) {
-        await getSupabaseAdmin()
+        await supabaseAdmin
           .from("dash_authorized_users")
           .update({
             display_name: user.name,
@@ -85,8 +78,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async jwt({ token, user }) {
-      // Première connexion: prend le role de user
-      // Connexions suivantes: garde le token existant
       if (user?.role) {
         token.role = user.role;
       }
@@ -94,7 +85,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async session({ session, token }) {
-      // Expose le rôle dans la session côté client
       if (session.user) {
         session.user.id = token.sub as string;
         session.user.role = token.role;
