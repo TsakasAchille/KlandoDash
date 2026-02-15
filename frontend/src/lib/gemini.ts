@@ -1,41 +1,39 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
-
 export async function askKlandoAI(prompt: string, dataContext: any) {
-  if (!process.env.GOOGLE_GEMINI_API_KEY) {
-    throw new Error("Clé API Gemini manquante. Ajoutez GOOGLE_GEMINI_API_KEY à votre .env.local");
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("Clé API Gemini manquante dans .env.local");
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  
-  const systemInstruction = `
-    Tu es l'assistant intelligent du Dashboard Klando, un service de covoiturage au Sénégal.
-    Ta mission est d'aider les administrateurs à analyser les données et à prendre des décisions.
-    
-    CONSIGNES :
-    - Sois précis, pro et utilise un ton amical mais efficace.
-    - Utilise le contexte de données fourni pour répondre aux questions.
-    - Si tu ne connais pas la réponse, dis-le simplement.
-    - Les prix sont en XOF (Franc CFA).
-    - Les villes principales sont Dakar, Thies, Saint-Louis, Mbour, Ziguinchor, etc.
-  `;
-
-  const contextString = JSON.stringify(dataContext);
+  const genAI = new GoogleGenerativeAI(apiKey);
   
   const fullPrompt = `
-    SYSTÈME: ${systemInstruction}
-    CONTEXTE DES DONNÉES ACTUELLES: ${contextString}
+    Tu es l'assistant de Klando (covoiturage au Sénégal). 
+    Analyse ces données : ${JSON.stringify(dataContext)}
     
-    QUESTION DE L'ADMINISTRATEUR: ${prompt}
+    Question : ${prompt}
+    Réponds en français, de manière courte et efficace.
   `;
 
-  try {
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    return response.text();
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw new Error("Erreur lors de la communication avec l'IA.");
+  // On essaie d'abord le tout dernier modèle 2.0 Flash
+  // S'il échoue, on descend vers le 1.5 Flash
+  const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-pro"];
+  let lastError = "";
+
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`Essai avec le modèle: ${modelName}`);
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(fullPrompt);
+      return result.response.text();
+    } catch (error: any) {
+      lastError = error.message;
+      console.warn(`Le modèle ${modelName} a échoué:`, lastError);
+      continue; // On tente le suivant
+    }
   }
+
+  throw new Error(`Aucun modèle IA n'a pu répondre. (Dernière erreur: ${lastError})`);
 }

@@ -41,7 +41,7 @@ export function KlandoAIClient() {
       if (result.success && result.text) {
         setMessages((prev) => [...prev, { role: "ai", text: result.text! }]);
       } else {
-        setMessages((prev) => [...prev, { role: "ai", text: "Désolé, j'ai rencontré une erreur." }]);
+        setMessages((prev) => [...prev, { role: "ai", text: `Erreur: ${result.message || "Désolé, j'ai rencontré une erreur."}` }]);
       }
     } catch (error) {
       setMessages((prev) => [...prev, { role: "ai", text: "Erreur de connexion avec l'IA." }]);

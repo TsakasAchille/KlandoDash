@@ -5,6 +5,16 @@ import { getHomeSummary } from "@/lib/queries/stats";
 import { getSiteTripRequests } from "@/lib/queries/site-requests";
 import { auth } from "@/lib/auth";
 
+// Fonction utilitaire pour masquer les infos sensibles
+function maskContact(contact: string) {
+  if (!contact) return "N/A";
+  if (contact.includes('@')) {
+    const [part1, part2] = contact.split('@');
+    return `${part1.substring(0, 3)}***@${part2}`;
+  }
+  return `${contact.substring(0, 4)}******`;
+}
+
 export async function askGeminiAction(prompt: string) {
   const session = await auth();
   if (!session || session.user.role !== "admin") {
@@ -12,7 +22,6 @@ export async function askGeminiAction(prompt: string) {
   }
 
   try {
-    // Collecter un contexte riche mais optimisé pour Gemini
     const summary = await getHomeSummary();
     const siteRequests = await getSiteTripRequests({ limit: 10 });
     
@@ -33,7 +42,7 @@ export async function askGeminiAction(prompt: string) {
         site_requests: siteRequests.map(r => ({
           from: r.origin_city,
           to: r.destination_city,
-          contact: r.contact_info,
+          contact: maskContact(r.contact_info), // ✅ Donnée masquée
           status: r.status
         }))
       }
