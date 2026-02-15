@@ -4,9 +4,20 @@ import { ShieldCheck } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function ValidationPage() {
-  const { users: pendingUsers } = await getUsers(1, 100, {
-    verified: "pending"
+interface PageProps {
+  searchParams: {
+    page?: string;
+    status?: string;
+  };
+}
+
+export default async function ValidationPage({ searchParams }: PageProps) {
+  const currentPage = Number(searchParams.page) || 1;
+  const pageSize = 10;
+  const statusFilter = searchParams.status || "pending";
+
+  const { users: pendingUsers, totalCount } = await getUsers(currentPage, pageSize, {
+    verified: statusFilter
   });
 
   return (
@@ -18,12 +29,18 @@ export default async function ValidationPage() {
             Validation Conducteurs
           </h1>
           <p className="text-muted-foreground mt-1">
-            Vérifiez et approuvez les documents d&apos;identité et permis de conduire.
+            Gérez les documents d&apos;identité et permis de conduire des membres.
           </p>
         </div>
       </div>
 
-      <ValidationClient pendingUsers={pendingUsers} />
+      <ValidationClient 
+        pendingUsers={pendingUsers} 
+        totalCount={totalCount}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        currentStatus={statusFilter}
+      />
     </div>
   );
 }
