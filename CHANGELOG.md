@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.4.0] - 2026-02-15
+
+### Added
+- **Driver Validation Module**:
+  - New administrative interface at `/admin/validation` for verifying driver documents.
+  - **Document Preview**: Visual display of ID cards and Driver Licenses stored in Supabase.
+  - **Role-Based Security**: Access strictly restricted to administrators via middleware protection.
+  - **Server Actions**: Implementation of the validation flow (currently in "Preview" mode with toast notifications).
+  - **Database Integration**: Extended user queries to fetch document URLs and added a `pending` validation filter.
+
 ## [1.3.0] - 2026-02-15
 
 ### Added

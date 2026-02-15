@@ -12,7 +12,6 @@ const navItems = [
   { href: "/", label: "Accueil", icon: Home },
   { href: "/trips", label: "Trajets", icon: Car },
   { href: "/users", label: "Utilisateurs", icon: Users },
-  { href: "/validation", label: "Validation", icon: CheckSquare },
   { href: "/map", label: "Carte", icon: Map },
 ];
 
@@ -22,6 +21,7 @@ const supportItems = [
 ];
 
 const adminItems = [
+  { href: "/admin/validation", label: "Validation", icon: CheckSquare },
   { href: "/transactions", label: "Transactions", icon: Banknote },
   { href: "/stats", label: "Statistiques", icon: BarChart3 },
   { href: "/admin", label: "Administration", icon: Shield },
