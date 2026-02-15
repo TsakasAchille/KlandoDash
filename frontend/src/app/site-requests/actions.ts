@@ -58,21 +58,21 @@ export async function getAIMatchingAction(
       
       TA MISSION :
       1. Trouve les 2-3 meilleurs conducteurs qui font un trajet similaire.
-      2. Pour le meilleur match, rédige un message WhatsApp de traction ultra-convaincant.
+      2. S'il y a des correspondances : rédige un message WhatsApp de traction ultra-convaincant.
+      3. S'il n'y a AUCUNE correspondance pertinente : rédige un message poli expliquant qu'aucun trajet n'est disponible pour le moment mais que nous gardons sa demande et reviendrons vers lui dès qu'un chauffeur se manifeste.
       
       CONSIGNES POUR LE MESSAGE [MESSAGE] :
-      - Invite explicitement le client à ouvrir l'application Klando.
-      - Dis-lui de taper "${origin}" comme départ et "${destination}" comme destination.
-      - Précise-lui de bien sélectionner la date du ${date || "correspondante"}.
-      - Le message doit être court, chaleureux et donner envie de réserver immédiatement.
+      - Si match : Invite explicitement le client à ouvrir l'application Klando, à taper "${origin}" et "${destination}" pour la date du ${date || "choisie"}.
+      - Si pas de match : Dis-lui que nous n'avons pas encore de départ confirmé pour ce trajet précis, mais que nous l'informerons dès qu'une place se libère.
+      - Le message doit être court, chaleureux et professionnel.
       
-      IMPORTANT: Ta réponse DOIT impérativement suivre cette structure exacte pour que je puisse la traiter :
+      IMPORTANT: Ta réponse DOIT impérativement suivre cette structure exacte :
       
       [COMMENTAIRE]
-      (Ton analyse, tes conseils et tes explications pour l'admin ici)
+      (Ton analyse pour l'admin ici)
       
       [MESSAGE]
-      (Uniquement le texte du message WhatsApp prêt à être copié-collé, sans préambule ni guillemets)
+      (Le texte du message WhatsApp prêt à être envoyé)
     `;
 
     const response = await askKlandoAI(prompt, { context: "Matching Traction" });
