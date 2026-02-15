@@ -7,14 +7,21 @@ import { MiniStatCard } from "@/components/mini-stat-card";
 export const dynamic = "force-dynamic";
 
 interface Props {
-  searchParams: Promise<{ selected?: string }>;
+  searchParams: Promise<{ 
+    selected?: string;
+    page?: string;
+    role?: string;
+    search?: string;
+  }>;
 }
 
 export default async function UsersPage({ searchParams }: Props) {
-  const { selected } = await searchParams;
+  const { selected, page, role, search } = await searchParams;
+  const currentPage = parseInt(page || "1", 10);
+  const pageSize = 10;
 
-  const [users, stats, initialSelectedUser] = await Promise.all([
-    getUsers(100),
+  const [{ users, totalCount }, stats, initialSelectedUser] = await Promise.all([
+    getUsers(currentPage, pageSize, role, search),
     getUsersStats(),
     selected ? getUserById(selected) : null,
   ]);
@@ -60,6 +67,9 @@ export default async function UsersPage({ searchParams }: Props) {
       {/* Contenu principal */}
       <UsersPageClient
         users={users}
+        totalCount={totalCount}
+        currentPage={currentPage}
+        pageSize={pageSize}
         initialSelectedId={selected || null}
         initialSelectedUser={initialSelectedUser}
       />

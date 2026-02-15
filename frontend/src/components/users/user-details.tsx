@@ -20,163 +20,147 @@ export function UserDetails({ user }: UserDetailsProps) {
   const [activeTab, setActiveTab] = useState<TabValue>("trips");
 
   return (
-    <div className="space-y-4">
-      {/* Profile Card */}
-      <Card className="border-klando-gold/30">
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center text-center">
-            {user.photo_url ? (
-              <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-4">
-                <Image
-                  src={user.photo_url}
-                  alt=""
-                  fill
-                  className="rounded-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-klando-burgundy flex items-center justify-center text-white text-xl sm:text-2xl font-semibold mb-4">
-                {(user.display_name || "?").charAt(0).toUpperCase()}
-              </div>
-            )}
-            <h2 className="text-lg sm:text-xl font-bold">{user.display_name || "Sans nom"}</h2>
-            {user.bio && (
-              <p className="text-sm italic text-muted-foreground mt-1 max-w-[250px] line-clamp-3">
-                &quot;{user.bio}&quot;
-              </p>
-            )}
-            <p className="text-[10px] sm:text-xs text-muted-foreground break-all mt-1">{user.uid}</p>
+    <div className="space-y-4 sticky top-6">
+      {/* Profile Card - More compact */}
+      <Card className="border-klando-gold/20 overflow-hidden">
+        <div className="bg-gradient-to-r from-klando-burgundy/10 to-transparent p-4 flex items-center gap-4">
+          {user.photo_url ? (
+            <div className="relative w-12 h-12 flex-shrink-0">
+              <Image
+                src={user.photo_url}
+                alt=""
+                fill
+                className="rounded-xl object-cover border-2 border-white shadow-sm"
+              />
+            </div>
+          ) : (
+            <div className="w-12 h-12 rounded-xl bg-klando-burgundy flex items-center justify-center text-white text-lg font-black flex-shrink-0 shadow-sm">
+              {(user.display_name || "?").charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0">
+            <h2 className="text-base font-black uppercase tracking-tight truncate">
+              {user.display_name || "Sans nom"}
+            </h2>
+            <p className="text-[10px] text-muted-foreground font-mono truncate">
+              {user.uid}
+            </p>
+          </div>
+        </div>
+        
+        <CardContent className="p-4 pt-2">
+          {user.bio && (
+            <p className="text-[11px] italic text-muted-foreground mb-4 line-clamp-2 leading-tight border-l-2 border-klando-gold/30 pl-2 py-0.5">
+              &quot;{user.bio}&quot;
+            </p>
+          )}
 
-            <div className="flex items-center justify-center gap-3 sm:gap-6 mt-6 w-full">
-              {/* Profil Vérifié */}
-              <div 
-                className={cn(
-                  "flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full border transition-all",
-                  user.is_driver_doc_validated
-                    ? "bg-blue-500/10 border-blue-500/30 text-blue-500"
-                    : "bg-gray-500/5 border-gray-500/10 text-gray-400 grayscale opacity-50"
-                )}
-                title={user.is_driver_doc_validated ? "Documents validés" : "Non vérifié"}
-              >
-                <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 mb-1" />
-                <span className="text-[10px] sm:text-xs font-medium leading-none text-center px-1">
-                  {user.is_driver_doc_validated ? "Vérifié" : "Non vérif."}
+          <div className="grid grid-cols-3 gap-2">
+            {/* Status */}
+            <div className={cn(
+              "flex flex-col items-center justify-center py-2 rounded-lg border transition-all",
+              user.is_driver_doc_validated
+                ? "bg-blue-500/5 border-blue-500/20 text-blue-500"
+                : "bg-gray-500/5 border-gray-500/10 text-gray-400 grayscale opacity-60"
+            )}>
+              <ShieldCheck className="w-4 h-4 mb-1" />
+              <span className="text-[8px] font-black uppercase tracking-widest">
+                {user.is_driver_doc_validated ? "Vérifié" : "Non vérif."}
+              </span>
+            </div>
+
+            {/* Note */}
+            <div className="flex flex-col items-center justify-center py-2 rounded-lg bg-klando-gold/5 border border-klando-gold/20 text-klando-gold">
+              <div className="flex items-center gap-0.5 mb-1">
+                <span className="text-xs font-black">
+                  {user.rating ? user.rating.toFixed(1) : "-"}
                 </span>
+                <Star className="w-2.5 h-2.5 fill-current" />
               </div>
+              <span className="text-[8px] font-black uppercase tracking-widest">Note</span>
+            </div>
 
-              {/* Note Moyenne */}
-              <div className="flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-klando-gold/10 border border-klando-gold/30 text-klando-gold">
-                <div className="flex items-center gap-0.5 mb-1">
-                  <span className="text-sm sm:text-lg font-bold leading-none">
-                    {user.rating ? user.rating.toFixed(1) : "-"}
-                  </span>
-                  <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
-                </div>
-                <span className="text-[10px] sm:text-xs font-medium leading-none text-center">Note</span>
-              </div>
-
-              {/* Nombre d'avis */}
-              <div className="flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400">
-                <span className="text-sm sm:text-lg font-bold leading-none mb-1">
-                  {user.rating_count || 0}
-                </span>
-                <span className="text-[10px] sm:text-xs font-medium leading-none text-center">Avis</span>
-              </div>
+            {/* Avis */}
+            <div className="flex flex-col items-center justify-center py-2 rounded-lg bg-purple-500/5 border border-purple-500/20 text-purple-400">
+              <span className="text-xs font-black mb-1">
+                {user.rating_count || 0}
+              </span>
+              <span className="text-[8px] font-black uppercase tracking-widest">Avis</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Info Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <User className="w-4 h-4 sm:w-5 sm:h-5 text-klando-gold" />
-            Informations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Info Card - More compact */}
+      <Card className="border-border/40">
+        <CardContent className="p-4 space-y-3">
+          <div className="space-y-2">
             {user.email && (
-              <div className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm truncate break-all">{user.email}</span>
+              <div className="flex items-center gap-2">
+                <Mail className="w-3 h-3 text-muted-foreground" />
+                <span className="text-[11px] font-medium truncate">{user.email}</span>
               </div>
             )}
             {user.phone_number && (
-              <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm">{user.phone_number}</span>
+              <div className="flex items-center gap-2">
+                <Phone className="w-3 h-3 text-muted-foreground" />
+                <span className="text-[11px] font-bold font-mono">{user.phone_number}</span>
               </div>
             )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {user.created_at && (
-              <div className="flex items-center gap-3">
-                <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-3 h-3 text-muted-foreground" />
+                <span className="text-[11px] text-muted-foreground">
                   Inscrit le {formatDate(user.created_at)}
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-3">
-              <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm">
-                Genre: <span className="font-medium">
-                  {user.gender?.toLowerCase() === "man" ? "Homme" : user.gender?.toLowerCase() === "woman" ? "Femme" : "Non spécifié"}
-                </span>
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm">
-                Né(e) le: <span className="font-medium">{user.birth ? formatDate(user.birth) : "Non spécifié"}</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Shield className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm">
-                Rôle: <span className="font-medium">{user.role || "user"}</span>
+            <div className="flex items-center gap-2">
+              <Shield className="w-3 h-3 text-muted-foreground" />
+              <span className="text-[11px] uppercase font-black text-klando-gold/80">
+                {user.role || "user"}
               </span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabs */}
-      <div className="flex gap-2">
-        <Button
-          variant={activeTab === "trips" ? "default" : "outline"}
-          size="sm"
+      {/* Tabs - Sleek toggle */}
+      <div className="flex bg-secondary/30 p-1 rounded-lg border border-border/40">
+        <button
           onClick={() => setActiveTab("trips")}
           className={cn(
-            "flex items-center gap-2",
-            activeTab === "trips" && "bg-klando-burgundy hover:bg-klando-burgundy/90"
+            "flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all",
+            activeTab === "trips" 
+              ? "bg-white text-klando-burgundy shadow-sm border border-border/20" 
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <Car className="w-4 h-4" />
+          <Car className="w-3 h-3" />
           Trajets
-        </Button>
-        <Button
-          variant={activeTab === "transactions" ? "default" : "outline"}
-          size="sm"
+        </button>
+        <button
           onClick={() => setActiveTab("transactions")}
           className={cn(
-            "flex items-center gap-2",
-            activeTab === "transactions" && "bg-klando-burgundy hover:bg-klando-burgundy/90"
+            "flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all",
+            activeTab === "transactions" 
+              ? "bg-white text-klando-burgundy shadow-sm border border-border/20" 
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <Banknote className="w-4 h-4" />
+          <Banknote className="w-3 h-3" />
           Transactions
-        </Button>
+        </button>
       </div>
 
       {/* Tab Content */}
-      {activeTab === "trips" ? (
-        <UserTripsTable userId={user.uid} />
-      ) : (
-        <UserTransactionsTable userId={user.uid} />
-      )}
+      <div className="max-h-[400px] overflow-auto rounded-lg border border-border/20 scrollbar-thin">
+        {activeTab === "trips" ? (
+          <UserTripsTable userId={user.uid} />
+        ) : (
+          <UserTransactionsTable userId={user.uid} />
+        )}
+      </div>
     </div>
   );
 }

@@ -8,6 +8,9 @@ import { UserDetails } from "@/components/users/user-details";
 
 interface UsersPageClientProps {
   users: UserListItem[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
   initialSelectedId?: string | null;
   initialSelectedUser?: UserListItem | null;
 }
@@ -27,6 +30,9 @@ function scrollToRow(id: string, prefix: string = "user") {
 
 export function UsersPageClient({
   users,
+  totalCount,
+  currentPage,
+  pageSize,
   initialSelectedId,
   initialSelectedUser,
 }: UsersPageClientProps) {
@@ -44,7 +50,9 @@ export function UsersPageClient({
   const handleSelectUser = useCallback(
     (user: UserListItem) => {
       setSelectedUser(user);
-      router.replace(`/users?selected=${user.uid}`, { scroll: false });
+      const url = new URL(window.location.href);
+      url.searchParams.set("selected", user.uid);
+      router.replace(url.pathname + url.search, { scroll: false });
     },
     [router]
   );
@@ -65,6 +73,9 @@ export function UsersPageClient({
         <div className="w-full">
           <UserTable
             users={displayUsers}
+            totalCount={totalCount}
+            currentPage={currentPage}
+            pageSize={pageSize}
             selectedUserId={selectedUser?.uid || null}
             initialSelectedId={initialSelectedId}
             onSelectUser={handleSelectUser}
@@ -86,6 +97,9 @@ export function UsersPageClient({
           <div className="lg:col-span-2">
             <UserTable
               users={displayUsers}
+              totalCount={totalCount}
+              currentPage={currentPage}
+              pageSize={pageSize}
               selectedUserId={selectedUser?.uid || null}
               initialSelectedId={initialSelectedId}
               onSelectUser={handleSelectUser}

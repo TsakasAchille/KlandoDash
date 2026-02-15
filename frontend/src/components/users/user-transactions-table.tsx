@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { TransactionListItem, getCashDirection } from "@/types/transaction";
 import { formatDate, formatPrice, cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -12,16 +11,16 @@ import {
   TableCell,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, ExternalLink, Banknote, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, ArrowUpRight, ArrowDownLeft, Loader2 } from "lucide-react";
 
 interface UserTransactionsTableProps {
   userId: string;
 }
 
 const statusColors: Record<string, string> = {
-  SUCCESS: "text-green-400",
-  PENDING: "text-yellow-400",
-  FAILED: "text-red-400",
+  SUCCESS: "text-green-500",
+  PENDING: "text-yellow-500",
+  FAILED: "text-red-500",
 };
 
 export function UserTransactionsTable({ userId }: UserTransactionsTableProps) {
@@ -47,7 +46,6 @@ export function UserTransactionsTable({ userId }: UserTransactionsTableProps) {
       });
   }, [userId, page]);
 
-  // Reset page when user changes
   useEffect(() => {
     setPage(1);
   }, [userId]);
@@ -56,118 +54,98 @@ export function UserTransactionsTable({ userId }: UserTransactionsTableProps) {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Banknote className="w-5 h-5 text-klando-gold" />
-            Transactions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-12 bg-secondary rounded" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="p-8 flex justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-klando-gold" />
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Banknote className="w-5 h-5 text-klando-gold" />
-          Transactions ({total})
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {transactions.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Aucune transaction</p>
-        ) : (
-          <>
-            <Table>
-              <TableBody>
-                {transactions.map((txn) => {
-                  const direction = getCashDirection(txn.code_service);
-                  return (
-                    <TableRow key={txn.id}>
-                      <TableCell className="py-2 w-8">
-                        {direction === "CASH_OUT" ? (
-                          <ArrowDownLeft className="w-4 h-4 text-green-400" />
-                        ) : direction === "CASH_IN" ? (
-                          <ArrowUpRight className="w-4 h-4 text-red-400" />
-                        ) : (
-                          <span className="w-4 h-4 inline-block" />
-                        )}
-                      </TableCell>
-                      <TableCell className="py-2">
-                        <div className="text-sm">
-                          <span className={cn(
-                            "font-semibold",
-                            direction === "CASH_OUT" ? "text-green-400" :
-                            direction === "CASH_IN" ? "text-red-400" : ""
-                          )}>
-                            {direction === "CASH_OUT" ? "+" : direction === "CASH_IN" ? "-" : ""}
-                            {formatPrice(txn.amount ?? 0)}
-                          </span>
-                          <span className={cn("ml-2 text-xs", statusColors[txn.status || ""] || "text-muted-foreground")}>
-                            {txn.status}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {txn.type || "-"} · {txn.created_at ? formatDate(txn.created_at) : "-"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right py-2">
-                        <Link href={`/transactions?selected=${txn.id}`}>
-                          <Button
-                            variant="ghost"
-                            className="min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] px-3 sm:px-2"
-                            size="sm"
-                          >
-                            <ExternalLink className="w-4 h-4 sm:w-4 sm:h-4" />
-                            <span className="hidden sm:inline ml-2">Voir</span>
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+    <div className="bg-card">
+      {transactions.length === 0 ? (
+        <div className="p-6 text-center">
+          <p className="text-muted-foreground text-xs font-medium">Aucune transaction enregistrée</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-border/10">
+          <Table>
+            <TableBody>
+              {transactions.map((txn) => {
+                const direction = getCashDirection(txn.code_service);
+                return (
+                  <TableRow key={txn.id} className="hover:bg-muted/5 border-none">
+                    <TableCell className="py-2 px-4 w-6">
+                      {direction === "CASH_OUT" ? (
+                        <ArrowDownLeft className="w-3.5 h-3.5 text-green-500" />
+                      ) : direction === "CASH_IN" ? (
+                        <ArrowUpRight className="w-3.5 h-3.5 text-red-500" />
+                      ) : (
+                        <span className="w-3.5 h-3.5 inline-block" />
+                      )}
+                    </TableCell>
+                    <TableCell className="py-2 px-0">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-[11px] font-black font-mono",
+                          direction === "CASH_OUT" ? "text-green-500" :
+                          direction === "CASH_IN" ? "text-red-500" : ""
+                        )}>
+                          {direction === "CASH_OUT" ? "+" : direction === "CASH_IN" ? "-" : ""}
+                          {formatPrice(txn.amount ?? 0)}
+                        </span>
+                        <span className={cn("text-[9px] font-black px-1 rounded bg-secondary", statusColors[txn.status || ""] || "text-muted-foreground")}>
+                          {txn.status}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-medium">
+                        {txn.type || "-"} · {txn.created_at ? formatDate(txn.created_at) : "-"}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right py-2 px-4">
+                      <Link href={`/transactions?selected=${txn.id}`}>
+                        <Button
+                          variant="ghost"
+                          className="h-7 w-7 p-0 hover:bg-klando-gold/10 hover:text-klando-gold transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
 
-            {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-2 bg-muted/5">
+              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                {page} / {totalPages}
+              </span>
+              <div className="flex gap-1">
                 <Button
-                  variant="outline"
-                  className="min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px]"
-                  size="sm"
-                  onClick={() => setPage((p) => p - 1)}
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-2">Précédent</span>
+                  <ChevronLeft className="w-3 h-3" />
                 </Button>
-                <span className="text-sm text-muted-foreground text-center">
-                  {page} / {totalPages}
-                </span>
                 <Button
-                  variant="outline"
-                  className="min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px]"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
                 >
-                  <span className="hidden sm:inline mr-2">Suivant</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3 h-3" />
                 </Button>
               </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

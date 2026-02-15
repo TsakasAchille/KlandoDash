@@ -2,12 +2,19 @@ import { createServerClient } from "../supabase";
 import { UserListItem, UserDetail, UserStats } from "@/types/user";
 
 /**
- * Liste des utilisateurs (colonnes minimales)
+ * Liste des utilisateurs avec pagination et filtres
  */
-export async function getUsers(limit = 100): Promise<UserListItem[]> {
+export async function getUsers(
+  page = 1, 
+  pageSize = 20, 
+  role?: string, 
+  search?: string
+): Promise<{ users: UserListItem[], totalCount: number }> {
   const supabase = createServerClient();
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("users")
     .select(`
       uid,
@@ -23,16 +30,29 @@ export async function getUsers(limit = 100): Promise<UserListItem[]> {
       birth,
       is_driver_doc_validated,
       created_at
-    `)
+    `, { count: "exact" });
+
+  if (role && role !== "all") {
+    query = query.eq("role", role);
+  }
+
+  if (search) {
+    query = query.or(`display_name.ilike.%${search}%,email.ilike.%${search}%,phone_number.ilike.%${search}%`);
+  }
+
+  const { data, error, count } = await query
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .range(from, to);
 
   if (error) {
     console.error("getUsers error:", error);
-    return [];
+    return { users: [], totalCount: 0 };
   }
 
-  return data as UserListItem[];
+  return { 
+    users: data as UserListItem[], 
+    totalCount: count || 0 
+  };
 }
 
 /**
