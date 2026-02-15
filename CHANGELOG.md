@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.0] - 2026-02-15
+
+### Added
+- **AI Matching for Site Requests**:
+  - New "Aide IA" button in the Site Requests table.
+  - Generates persuasive WhatsApp messages and finds optimal driver matches.
+- **Enhanced Klando AI Dashboard**:
+  - **Manual Insights Generation**: Added a button to trigger business analysis, preventing API rate limits.
+  - **Visual Insight Cards**: Displays high-impact recommendations (Matching, Growth, Security).
+  - **Improved Model Stability**: Intelligent fallback mechanism (Gemini 2.0 Flash -> 1.5 Flash -> 1.5 Pro).
+  - **Markdown Rendering**: AI responses now support full markdown (bold, lists, links).
+- **Advanced Context**: AI now has access to the 50 most recent trips (including PENDING) for better future planning.
+
 ## [1.5.0] - 2026-02-15
 
 ### Added
