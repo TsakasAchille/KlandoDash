@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import { UserListItem } from "@/types/user";
 import { formatDate, cn } from "@/lib/utils";
 import {
@@ -57,7 +57,7 @@ export function UserTable({
   // Calculate pagination
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  const updateFilters = (newParams: Record<string, string | null>) => {
+  const updateFilters = useCallback((newParams: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
     
     Object.entries(newParams).forEach(([key, value]) => {
@@ -75,7 +75,7 @@ export function UserTable({
     startTransition(() => {
       router.push(`/users?${params.toString()}`);
     });
-  };
+  }, [router, searchParams]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
@@ -98,7 +98,7 @@ export function UserTable({
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, updateFilters, searchParams]);
 
   const PaginationControls = ({ className }: { className?: string }) => (
     <div className={cn("flex items-center gap-2", className)}>

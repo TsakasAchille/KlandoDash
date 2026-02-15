@@ -8,6 +8,9 @@ import { TripDetails } from "@/components/trips/trip-details";
 
 interface TripsPageClientProps {
   trips: Trip[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
   initialSelectedId: string | null;
   initialSelectedTripDetail: TripDetail | null;
 }
@@ -27,6 +30,9 @@ function scrollToRow(id: string, prefix: string = "trip") {
 
 export function TripsPageClient({
   trips,
+  totalCount,
+  currentPage,
+  pageSize,
   initialSelectedId,
   initialSelectedTripDetail,
 }: TripsPageClientProps) {
@@ -36,8 +42,9 @@ export function TripsPageClient({
   // Sync URL on selection change (replace pour éviter pollution historique)
   const handleSelectTrip = useCallback(
     (trip: Trip) => {
-      // Just navigate, the page will re-render with the new selected trip
-      router.replace(`/trips?selected=${trip.trip_id}`, { scroll: false });
+      const url = new URL(window.location.href);
+      url.searchParams.set("selected", trip.trip_id);
+      router.replace(url.pathname + url.search, { scroll: false });
     },
     [router]
   );
@@ -60,6 +67,9 @@ export function TripsPageClient({
       <div className="lg:col-span-1 min-w-0"> {/* min-w-0 pour permettre le scroll */}
         <TripTable
           trips={trips}
+          totalCount={totalCount}
+          currentPage={currentPage}
+          pageSize={pageSize}
           selectedTripId={detailedTrip?.trip_id || null}
           initialSelectedId={initialSelectedId}
           onSelectTrip={handleSelectTrip}
@@ -71,7 +81,7 @@ export function TripsPageClient({
         {detailedTrip ? (
           <TripDetails trip={detailedTrip} />
         ) : (
-          <div className="flex items-center justify-center h-64 rounded-lg border border-dashed border-border">
+          <div className="flex items-center justify-center h-64 rounded-lg border border-dashed border-border sticky top-6">
             <p className="text-muted-foreground">
               Sélectionnez un trajet pour voir les détails
             </p>

@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { UserListItem } from "@/types/user";
 import { formatDate, cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Star, Mail, Phone, Calendar, Shield, User, Car, Banknote, ShieldCheck } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Star, Mail, Phone, Calendar, Shield, Car, Banknote, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import { UserTripsTable } from "./user-trips-table";
 import { UserTransactionsTable } from "./user-transactions-table";

@@ -210,7 +210,7 @@ getPassengersForTrip(id)  // Passengers for a trip
 getTripsForMap(limit)     // Geo-data for trips map
 
 // users.ts
-getUsers(options)         // List with pagination
+getUsers(options)         // List with pagination and advanced filters (role, verified, gender, minRating, isNew)
 getUserById(uid)          // Detail with stats
 getUsersStats()           // Aggregated stats
 getDriversList()          // List of drivers

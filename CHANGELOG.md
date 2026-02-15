@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.2.0] - 2026-02-15
+
+### Added
+- **Server-side Pagination**: Implemented for the Users directory to improve performance with large datasets.
+- **Advanced Smart Filtering**:
+  - Distinct filters for Member Role (`driver`, `passenger`) and Verification Status (`is_driver_doc_validated`).
+  - Added filters for Gender, Minimum Rating, and New Members (last 30 days).
+  - All filters are processed server-side for efficiency.
+- **Enhanced UI/UX**:
+  - Compact table design with optimized row heights and font sizes.
+  - Expandable advanced filter panel with visual active-filter indicators.
+  - Sticky user details panel for better navigation.
+  - Internal scrolling for user trips and transactions lists.
+  - Custom sleek scrollbars for a premium dashboard feel.
+
+### Fixed
+- **Role Mappings**: Corrected the confusion between dashboard access roles and application member roles.
+- **Import Typos**: Fixed a broken import for Lucide icons.
+
 ## [1.1.0] - 2026-02-10
 
 ### Added

@@ -245,12 +245,35 @@ export async function getTripsByDriver(
 }
 
 /**
- * Liste des trajets avec infos conducteur (pour le tableau enrichi)
+ * Liste des trajets avec infos conducteur (pour le tableau enrichi) avec pagination et filtres
  */
-export async function getTripsWithDriver(limit = 50): Promise<TripDetail[]> {
+export async function getTripsWithDriver(options: {
+  page?: number;
+  pageSize?: number;
+  status?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minDistance?: number;
+  maxDistance?: number;
+  driverId?: string;
+} = {}): Promise<{ trips: TripDetail[], totalCount: number }> {
+  const { 
+    page = 1, 
+    pageSize = 20, 
+    status, 
+    search, 
+    minPrice, 
+    maxPrice, 
+    minDistance, 
+    maxDistance,
+    driverId
+  } = options;
   const supabase = createServerClient();
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("trips")
     .select(`
       trip_id,
@@ -282,13 +305,41 @@ export async function getTripsWithDriver(limit = 50): Promise<TripDetail[]> {
         rating_count,
         is_driver_doc_validated
       )
-    `)
+    `, { count: "exact" });
+
+  if (status && status !== "all") {
+    query = query.eq("status", status);
+  }
+
+  if (driverId && driverId !== "all") {
+    query = query.eq("driver_id", driverId);
+  }
+
+  if (search) {
+    query = query.or(`departure_name.ilike.%${search}%,destination_name.ilike.%${search}%`);
+  }
+
+  if (minPrice !== undefined) {
+    query = query.gte("passenger_price", minPrice);
+  }
+  if (maxPrice !== undefined) {
+    query = query.lte("passenger_price", maxPrice);
+  }
+
+  if (minDistance !== undefined) {
+    query = query.gte("distance", minDistance);
+  }
+  if (maxDistance !== undefined) {
+    query = query.lte("distance", maxDistance);
+  }
+
+  const { data, error, count } = await query
     .order("departure_schedule", { ascending: false })
-    .limit(limit);
+    .range(from, to);
 
   if (error) {
     console.error("getTripsWithDriver error:", error);
-    return [];
+    return { trips: [], totalCount: 0 };
   }
 
   type TripWithDriverRow = {
@@ -325,7 +376,7 @@ export async function getTripsWithDriver(limit = 50): Promise<TripDetail[]> {
     is_driver_doc_validated: boolean | null;
   };
 
-  return (data as unknown as TripWithDriverRow[]).map((t: TripWithDriverRow) => {
+  const trips = (data as unknown as TripWithDriverRow[]).map((t: TripWithDriverRow) => {
     const rawDriver = t.driver;
     const driver: DriverData | null = Array.isArray(rawDriver)
       ? (rawDriver[0] as DriverData | undefined) || null
@@ -361,6 +412,8 @@ export async function getTripsWithDriver(limit = 50): Promise<TripDetail[]> {
       driver_verified: driver?.is_driver_doc_validated || null,
     } as TripDetail;
   });
+
+  return { trips, totalCount: count || 0 };
 }
 
 // =====================================================

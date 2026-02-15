@@ -8,15 +8,33 @@ import { MiniStatCard } from "@/components/mini-stat-card";
 export const dynamic = "force-dynamic";
 
 interface Props {
-  searchParams: Promise<{ selected?: string }>;
+  searchParams: Promise<{ 
+    selected?: string;
+    page?: string;
+    status?: string;
+    search?: string;
+    driverId?: string;
+    minPrice?: string;
+    maxPrice?: string;
+  }>;
 }
 
 export default async function TripsPage({ searchParams }: Props) {
-  const { selected } = await searchParams;
+  const { selected, page, status, search, driverId, minPrice, maxPrice } = await searchParams;
+  const currentPage = parseInt(page || "1", 10);
+  const pageSize = 10;
 
-  // Pre-fetch selected trip if ID in URL
-  const [tripsData, stats, selectedTripData] = await Promise.all([
-    getTripsWithDriver(100),
+  // Pre-fetch data with filters and pagination
+  const [{ trips: tripsData, totalCount }, stats, selectedTripData] = await Promise.all([
+    getTripsWithDriver({
+      page: currentPage,
+      pageSize,
+      status,
+      search,
+      driverId,
+      minPrice: minPrice ? parseInt(minPrice, 10) : undefined,
+      maxPrice: maxPrice ? parseInt(maxPrice, 10) : undefined,
+    }),
     getTripsStats(),
     selected ? getTripById(selected) : null,
   ]);
@@ -64,6 +82,9 @@ export default async function TripsPage({ searchParams }: Props) {
 
       <TripsPageClient
         trips={trips}
+        totalCount={totalCount}
+        currentPage={currentPage}
+        pageSize={pageSize}
         initialSelectedId={selected || null}
         initialSelectedTripDetail={selectedTripData}
       />
