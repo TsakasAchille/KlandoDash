@@ -166,12 +166,15 @@ Demandes d'intentions de voyage collectées via le site vitrine.
 | `desired_date` | timestamptz | Date souhaitée |
 | `contact_info` | text | Email ou Téléphone |
 | `status` | text | `NEW`, `REVIEWED`, `CONTACTED`, `IGNORED` |
+| `ai_recommendation` | text | Analyse et message WhatsApp générés par l'IA |
+| `ai_updated_at` | timestamptz | Date de la dernière génération IA |
 | `created_at` | timestamptz | Date création |
 | `notes` | text | Notes internes pour les admins |
 
 **Index créés:**
 - `idx_site_trip_requests_status`
 - `idx_site_trip_requests_created_at`
+- `idx_site_trip_requests_ai_updated_at`
 
 ---
 

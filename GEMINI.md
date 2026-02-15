@@ -242,6 +242,11 @@ The dashboard uses a custom color palette defined in `tailwind.config.ts`.
 - [x] Mention/Tag system in support comments (emails via Resend).
 - [x] Website integration module (view for public trips, table for site requests).
 - [x] Dedicated dashboard page for managing website trip requests.
+- [x] AI-powered matching assistant for website requests (Gemini).
+- [x] Structured AI response system (Internal Comments vs. WhatsApp Message).
+- [x] Persistence of AI recommendations in database.
+- [x] SQL scripts for batch clearing AI data.
+- [x] Stable UI transitions and pagination for data revalidation.
 - [x] Detailed integration guide for the landing page agent.
 
 ### TODO 🚧
