@@ -71,6 +71,9 @@ export async function getAIMatchingAction(
       [COMMENTAIRE]
       (Ton analyse pour l'admin ici)
       
+      [TRIP_ID]
+      (L'ID du trajet du MEILLEUR match uniquement, ex: TRIP-12345. Si aucun match, laisse cette section vide ou écris NONE)
+      
       [MESSAGE]
       (Le texte du message WhatsApp prêt à être envoyé)
     `;

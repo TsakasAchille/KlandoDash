@@ -1,17 +1,23 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useMemo, useCallback } from "react";
 import { SiteTripRequest, SiteTripRequestStatus } from "@/types/site-request";
 import { SiteRequestTable } from "@/components/site-requests/site-request-table";
-import { updateRequestStatusAction } from "./actions";
+import { updateRequestStatusAction, getAIMatchingAction } from "./actions";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Users, CheckCircle2, Globe } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { MapPin, Calendar, CheckCircle2, Globe, Sparkles, Loader2, RefreshCw, Phone, MessageSquare, Copy, Info } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { ComparisonMap } from "@/components/site-requests/comparison-map";
 
 interface PublicTrip {
   id: string;
@@ -19,6 +25,7 @@ interface PublicTrip {
   arrival_city: string;
   departure_time: string;
   seats_available?: number;
+  polyline?: string | null;
 }
 
 interface SiteRequestsClientProps {
@@ -32,63 +39,150 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  
+  // AI Matching States
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [localAiResult, setLocalAiResult] = useState<string | null>(null);
+  const [isAiPending, startAiTransition] = useTransition();
   const [, startTransition] = useTransition();
 
-  // Sync state with props when server re-renders (after revalidatePath)
+  // Sync state with props when server re-renders
   useEffect(() => {
     setRequests(initialRequests);
   }, [initialRequests]);
 
+  const selectedRequest = useMemo(() => 
+    selectedRequestId ? requests.find(r => r.id === selectedRequestId) : null
+  , [requests, selectedRequestId]);
+
+  // Sync local AI result when data updates from server
+  useEffect(() => {
+    if (selectedRequest?.ai_recommendation) {
+      setLocalAiResult(selectedRequest.ai_recommendation);
+    }
+  }, [selectedRequest?.ai_recommendation]);
+
   const handleUpdateStatus = (id: string, status: SiteTripRequestStatus) => {
     setUpdatingId(id);
     startTransition(async () => {
-      // Optimistic update
       setRequests(prev => prev.map(r => (r.id === id ? { ...r, status } : r)));
-      
       const result = await updateRequestStatusAction(id, status);
-
-      if (result.success) {
-        toast.success("Statut mis à jour avec succès !");
-      } else {
+      if (!result.success) {
         toast.error(result.message || "Erreur lors de la mise à jour.");
-        // Revert optimistic update on failure
         setRequests(initialRequests); 
       }
-      
       setUpdatingId(null);
     });
   };
 
-  return (
-    <Tabs defaultValue="requests" className="space-y-6">
-      <TabsList className="bg-muted/50 p-1">
-        <TabsTrigger value="requests">Demandes Clients</TabsTrigger>
-        <TabsTrigger value="preview">Aperçu Public (Site)</TabsTrigger>
-      </TabsList>
+  const handleMatchIA = useCallback(async (force = false) => {
+    if (!selectedRequest) return;
+    
+    setAiLoading(true);
+    startAiTransition(async () => {
+      try {
+        const res = await getAIMatchingAction(
+          selectedRequest.id, 
+          selectedRequest.origin_city, 
+          selectedRequest.destination_city, 
+          selectedRequest.desired_date,
+          force
+        );
+        if (res.success) {
+          setLocalAiResult(res.text || null);
+        } else {
+          toast.error(res.message || "Erreur IA");
+        }
+      } catch {
+        toast.error("Erreur de connexion IA");
+      } finally {
+        setAiLoading(false);
+      }
+    });
+  }, [selectedRequest]);
 
-      <TabsContent value="requests" className="space-y-6 outline-none">
-        <SiteRequestTable 
-          requests={requests} 
-          onUpdateStatus={handleUpdateStatus}
-          updatingId={updatingId}
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-        />
-      </TabsContent>
-      
-      <TabsContent value="preview" className="space-y-8 outline-none">
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 px-1">
-              <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-              <h3 className="font-bold uppercase tracking-wider text-sm">Trajets en Direct sur le site</h3>
-            </div>
-            
-            <div className="space-y-3">
-              {publicPending.length > 0 ? (
-                publicPending.map((trip) => (
+  // Auto-trigger AI if opening a request with no analysis
+  useEffect(() => {
+    if (selectedRequestId && selectedRequest && !selectedRequest.ai_recommendation && !aiLoading && !localAiResult) {
+      handleMatchIA(false);
+    }
+  }, [selectedRequestId, selectedRequest, aiLoading, localAiResult, handleMatchIA]);
+
+  // Parsing AI result
+  const { aiComment, aiMessage, matchedTripId } = useMemo(() => {
+    const raw = localAiResult || selectedRequest?.ai_recommendation;
+    if (!raw) return { aiComment: null, aiMessage: null, matchedTripId: null };
+    
+    let comment = raw;
+    let message = null;
+    let tripId = null;
+
+    if (raw.includes('[MESSAGE]')) {
+      const parts = raw.split('[MESSAGE]');
+      comment = parts[0].replace('[COMMENTAIRE]', '').trim();
+      message = parts[1]?.trim() || '';
+    }
+
+    if (comment.includes('[TRIP_ID]')) {
+      const parts = comment.split('[TRIP_ID]');
+      comment = parts[0].trim();
+      const tripIdPart = parts[1]?.split('\n')[0]?.trim();
+      tripId = tripIdPart && tripIdPart !== 'NONE' ? tripIdPart : null;
+    } else if (raw.includes('[TRIP_ID]')) {
+      // In case [TRIP_ID] is after [MESSAGE] or elsewhere
+      const tripIdMatch = raw.match(/\[TRIP_ID\]\s*([A-Z0-9-]+)/);
+      tripId = tripIdMatch?.[1] && tripIdMatch[1] !== 'NONE' ? tripIdMatch[1] : null;
+    }
+
+    return { 
+      aiComment: comment.replace('[COMMENTAIRE]', '').trim(), 
+      aiMessage: message,
+      matchedTripId: tripId
+    };
+  }, [localAiResult, selectedRequest?.ai_recommendation]);
+
+  const matchedTrip = useMemo(() => {
+    if (!matchedTripId) return null;
+    return publicPending.find(t => t.id === matchedTripId) || 
+           publicCompleted.find(t => t.id === matchedTripId);
+  }, [matchedTripId, publicPending, publicCompleted]);
+
+  const processedComment = useMemo(() => 
+    aiComment ? aiComment.replace(/([^ \n])\n([^ \n])/g, '$1  \n$2') : "_Analyse en attente..._"
+  , [aiComment]);
+
+  return (
+    <>
+      <Tabs defaultValue="requests" className="space-y-6">
+        <TabsList className="bg-muted/50 p-1">
+          <TabsTrigger value="requests">Demandes Clients</TabsTrigger>
+          <TabsTrigger value="preview">Aperçu Public (Site)</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="requests" className="space-y-6 outline-none">
+          <SiteRequestTable 
+            requests={requests} 
+            onUpdateStatus={handleUpdateStatus}
+            updatingId={updatingId}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            onOpenIA={(id) => setSelectedRequestId(id)}
+          />
+        </TabsContent>
+        
+        <TabsContent value="preview" className="space-y-8 outline-none">
+          {/* Section preview reste inchangée */}
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                <h3 className="font-bold uppercase tracking-wider text-sm">Trajets en Direct sur le site</h3>
+              </div>
+              <div className="space-y-3">
+                {publicPending.map((trip) => (
                   <Card key={trip.id} className="border-l-4 border-l-klando-gold overflow-hidden">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
@@ -97,82 +191,118 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
                             <MapPin className="w-4 h-4 text-klando-gold" />
                             {trip.departure_city} → {trip.arrival_city}
                           </div>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5" />
-                              {format(new Date(trip.departure_time), "EEE d MMM 'à' HH:mm", { locale: fr })}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="w-3.5 h-3.5" />
-                              {trip.seats_available} places
-                            </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground font-bold">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {format(new Date(trip.departure_time), "EEE d MMM 'à' HH:mm", { locale: fr })}
                           </div>
                         </div>
-                        <Badge variant="outline" className="bg-klando-gold/10 text-klando-gold border-klando-gold/20">
-                          LIVE
-                        </Badge>
+                        <Badge variant="outline" className="bg-klando-gold/10 text-klando-gold border-klando-gold/20">LIVE</Badge>
                       </div>
                     </CardContent>
                   </Card>
-                ))
-              ) : (
-                <div className="text-center py-10 bg-muted/20 rounded-xl border border-dashed">
-                  <p className="text-sm text-muted-foreground">Aucun trajet en direct affiché</p>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 px-1">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <h3 className="font-bold uppercase tracking-wider text-sm text-muted-foreground">Preuve Sociale (Terminés)</h3>
-            </div>
-
-            <div className="space-y-3">
-              {publicCompleted.length > 0 ? (
-                publicCompleted.map((trip) => (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <h3 className="font-bold uppercase tracking-wider text-sm text-muted-foreground">Preuve Sociale (Terminés)</h3>
+              </div>
+              <div className="space-y-3">
+                {publicCompleted.map((trip) => (
                   <Card key={trip.id} className="bg-muted/30 border-dashed opacity-80">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-center">
-                        <div className="space-y-1">
-                          <div className="text-sm font-semibold text-muted-foreground line-through decoration-muted-foreground/30">
-                            {trip.departure_city} → {trip.arrival_city}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            Effectué le {format(new Date(trip.departure_time), "d MMM yyyy", { locale: fr })}
-                          </div>
+                        <div className="text-sm font-semibold text-muted-foreground italic">
+                          {trip.departure_city} → {trip.arrival_city}
                         </div>
-                        <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-none text-[10px]">
-                          TERMINÉ
-                        </Badge>
+                        <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-[10px]">TERMINÉ</Badge>
                       </div>
                     </CardContent>
                   </Card>
-                ))
-              ) : (
-                <div className="text-center py-10 bg-muted/10 rounded-xl border border-dashed">
-                  <p className="text-sm text-muted-foreground text-muted-foreground/50">Aucun trajet terminé récent</p>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 items-start mt-8">
-          <div className="p-1 bg-blue-500 rounded text-white mt-0.5">
-            <Globe className="w-4 h-4" />
+        </TabsContent>
+      </Tabs>
+
+      {/* STABLE DIALOG (Centralized) */}
+      <Dialog open={!!selectedRequestId} onOpenChange={(o) => { if(!o) setSelectedRequestId(null); setLocalAiResult(null); }}>
+        <DialogContent aria-describedby={undefined} className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-slate-50 border-border shadow-2xl p-0 gap-0">
+          <div className="p-6 space-y-6">
+            <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-klando-gold/10 rounded-xl shadow-inner"><Sparkles className="w-5 h-5 text-klando-gold" /></div>
+                <DialogTitle className="text-xl font-black uppercase tracking-tight text-klando-dark">Matching IA</DialogTitle>
+              </div>
+              {(localAiResult || selectedRequest?.ai_recommendation) && (
+                <Button variant="ghost" size="sm" onClick={() => handleMatchIA(true)} disabled={aiLoading} className="h-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-klando-gold">
+                  <RefreshCw className={cn("w-3 h-3 mr-2", (aiLoading || isAiPending) && "animate-spin")} />
+                  Regénérer
+                </Button>
+              )}
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl p-6 border border-border relative overflow-hidden shadow-sm">
+                <div className="absolute top-0 right-0 p-4 opacity-[0.03]"><Globe className="w-32 h-32 text-klando-dark" /></div>
+                <div className="relative z-10">
+                  <div className="text-[10px] font-black uppercase tracking-[0.3em] text-klando-burgundy mb-2">Fiche Client</div>
+                  <div className="text-xl text-klando-dark font-black uppercase tracking-tight">{selectedRequest?.origin_city} ➜ {selectedRequest?.destination_city}</div>
+                  <div className="flex gap-5 mt-4 text-xs font-black text-slate-600">
+                    <span className="flex items-center gap-2"><Phone className="w-4 h-4 text-klando-gold" /> {selectedRequest?.contact_info}</span>
+                    <span className="flex items-center gap-2"><Calendar className="w-4 h-4 text-klando-gold" /> {selectedRequest?.desired_date ? format(new Date(selectedRequest.desired_date), "dd MMM yyyy", { locale: fr }) : "Dès que possible"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* MAP COMPARISON */}
+              {selectedRequest && (
+                <ComparisonMap 
+                  originCity={selectedRequest.origin_city}
+                  destination_city={selectedRequest.destination_city}
+                  recommendedPolyline={matchedTrip?.polyline}
+                />
+              )}
+
+              <div className="space-y-6">
+                {aiLoading ? (
+                  <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-border space-y-6">
+                    <Loader2 className="w-14 h-14 text-klando-gold animate-spin" />
+                    <p className="text-sm font-black uppercase tracking-[0.2em] text-klando-gold animate-pulse">L&apos;IA analyse les trajets...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="bg-white rounded-3xl p-6 border border-border shadow-sm">
+                      <div className="flex items-center gap-2 mb-4 text-blue-600">
+                        <Info className="w-4 h-4" /><h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Analyse Interne</h4>
+                      </div>
+                      <div className="prose prose-sm max-w-full text-slate-700 font-medium whitespace-pre-wrap">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{processedComment}</ReactMarkdown>
+                      </div>
+                    </div>
+
+                    {aiMessage && (
+                      <div className="bg-green-50 rounded-3xl p-6 border border-green-100 shadow-sm border-l-4 border-l-green-500">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2 text-green-700">
+                            <MessageSquare className="w-4 h-4" /><h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Message WhatsApp Prêt</h4>
+                          </div>
+                          <Button size="sm" variant="ghost" className="h-8 text-green-700 font-bold gap-2 text-[10px] uppercase hover:bg-green-100" onClick={() => { navigator.clipboard.writeText(aiMessage); toast.success("Copié !"); }}>
+                            <Copy className="w-3.5 h-3.5" /> Copier
+                          </Button>
+                        </div>
+                        <div className="bg-white/60 p-4 rounded-2xl border border-green-100 text-sm font-medium text-slate-800 leading-relaxed italic whitespace-pre-wrap">{aiMessage}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <h4 className="text-sm font-bold text-blue-900">Note d&apos;intégration</h4>
-            <p className="text-xs text-blue-700 leading-relaxed mt-1">
-              Ces données proviennent des vues SQL <code className="bg-blue-100 px-1 rounded">public_pending_trips</code> et <code className="bg-blue-100 px-1 rounded">public_completed_trips</code>. 
-              Elles sont exposées publiquement sur le site vitrine pour attirer les clients.
-            </p>
-          </div>
-        </div>
-      </TabsContent>
-    </Tabs>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
