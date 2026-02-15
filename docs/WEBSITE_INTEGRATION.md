@@ -4,16 +4,25 @@ Ce document détaille comment le site vitrine interagit avec la base de données
 
 ## 1. Affichage de l'activité (Lecture) 🚗
 
-Utilisez la vue `public_pending_trips` pour montrer les trajets en attente.
+Utilisez la vue `public_pending_trips` pour montrer les trajets en attente. Cette vue inclut désormais la **polyline** pour afficher le tracé sur une carte.
 
 ```typescript
-// Récupérer les 5 prochains départs
+// Récupérer les 5 prochains départs avec tracé carte
 const { data, error } = await supabase
   .from('public_pending_trips')
-  .select('*')
+  .select('id, departure_city, arrival_city, departure_time, seats_available, polyline')
   .order('departure_time', { ascending: true })
   .limit(5);
 ```
+
+### Champs disponibles dans la vue
+* `id` : Identifiant unique du trajet.
+* `departure_city` : Ville de départ.
+* `arrival_city` : Ville d'arrivée.
+* `departure_time` : Date et heure du départ.
+* `seats_available` : Nombre de places restantes.
+* `polyline` : Tracé de l'itinéraire (format Google Encoded Polyline).
+* `destination_latitude` / `destination_longitude` : Coordonnées précises de l'arrivée.
 
 ---
 
