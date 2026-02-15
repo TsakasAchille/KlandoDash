@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe, CheckSquare } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
+import packageInfo from "../../package.json";
 
 const navItems = [
   { href: "/", label: "Accueil", icon: Home },
@@ -166,6 +167,10 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       {/* User Menu - adapté pour mobile */}
       <div className={cn("border-t border-border", isMobile ? "p-4" : "p-4")}>
         <UserMenu />
+        <div className="mt-4 px-4 flex justify-between items-center opacity-30">
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Version</span>
+          <span className="text-[10px] font-mono text-white">v{packageInfo.version}</span>
+        </div>
       </div>
     </aside>
   );
