@@ -35,6 +35,8 @@ export async function getUsers(
       bio,
       birth,
       is_driver_doc_validated,
+      driver_license_url,
+      id_card_url,
       created_at
     `, { count: "exact" });
 
@@ -48,6 +50,11 @@ export async function getUsers(
     query = query.eq("is_driver_doc_validated", true);
   } else if (filters.verified === "false") {
     query = query.eq("is_driver_doc_validated", false);
+  } else if (filters.verified === "pending") {
+    // Membres non validés possédant au moins un document
+    query = query
+      .eq("is_driver_doc_validated", false)
+      .or("id_card_url.not.is.null,driver_license_url.not.is.null");
   }
 
   // Filter: Gender
@@ -196,4 +203,26 @@ export async function getUsersStats(): Promise<UserStats> {
     avg_rating: Math.round(avgRating * 100) / 100,
     new_this_month: newThisMonth,
   };
+}
+
+/**
+ * Valide ou invalide les documents d'un conducteur
+ */
+export async function validateUser(uid: string, isValidated: boolean): Promise<boolean> {
+  const supabase = createServerClient();
+
+  const { error } = await supabase
+    .from("users")
+    .update({ 
+      is_driver_doc_validated: isValidated,
+      updated_at: new Date().toISOString()
+    })
+    .eq("uid", uid);
+
+  if (error) {
+    console.error("validateUser error:", error);
+    return false;
+  }
+
+  return true;
 }

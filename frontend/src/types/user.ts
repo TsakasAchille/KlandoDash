@@ -12,6 +12,8 @@ export interface UserListItem {
   birth: string | null;
   created_at: string | null;
   is_driver_doc_validated?: boolean | null;
+  driver_license_url?: string | null;
+  id_card_url?: string | null;
   bio?: string | null;
 }
 

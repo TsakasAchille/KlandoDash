@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe } from "lucide-react";
+import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe, CheckSquare } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
 
@@ -12,8 +12,8 @@ const navItems = [
   { href: "/", label: "Accueil", icon: Home },
   { href: "/trips", label: "Trajets", icon: Car },
   { href: "/users", label: "Utilisateurs", icon: Users },
+  { href: "/validation", label: "Validation", icon: CheckSquare },
   { href: "/map", label: "Carte", icon: Map },
-  // { href: "/chats", label: "Messages", icon: MessageSquare }, // Temporairement désactivé
 ];
 
 const supportItems = [
