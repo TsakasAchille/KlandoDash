@@ -60,6 +60,12 @@ export async function getAIMatchingAction(
       1. Trouve les 2-3 meilleurs conducteurs qui font un trajet similaire.
       2. Pour le meilleur match, rédige un message WhatsApp de traction ultra-convaincant.
       
+      CONSIGNES POUR LE MESSAGE [MESSAGE] :
+      - Invite explicitement le client à ouvrir l'application Klando.
+      - Dis-lui de taper "${origin}" comme départ et "${destination}" comme destination.
+      - Précise-lui de bien sélectionner la date du ${date || "correspondante"}.
+      - Le message doit être court, chaleureux et donner envie de réserver immédiatement.
+      
       IMPORTANT: Ta réponse DOIT impérativement suivre cette structure exacte pour que je puisse la traiter :
       
       [COMMENTAIRE]
