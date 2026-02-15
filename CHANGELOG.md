@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.0] - 2026-02-15
+
+### Added
+- **Trips Page Overhaul**:
+  - **Server-side Pagination**: Improved performance for large numbers of trips.
+  - **Advanced Filtering**: Added filtering by Status, Max Price, and text search (Departure/Arrival/ID).
+  - **Compact UI**: Redesigned trip table and details panel for better information density.
+  - **Interactive Map**: Integration of route visualization directly in the compact details panel.
+  - **Passenger Quick-links**: Visual passenger avatars with deep-links to user profiles.
+
 ## [1.2.0] - 2026-02-15
 
 ### Added

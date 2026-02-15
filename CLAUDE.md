@@ -205,7 +205,7 @@ Client Component (trips-client.tsx)
 getTrips(options)         // List with minimal columns
 getTripById(tripId)       // Detail with driver join
 getTripsStats()           // Aggregated stats
-getTripsWithDriver(limit) // Enriched list with driver info
+getTripsWithDriver(options) // Enriched list with pagination and filters (status, search, maxPrice, driverId)
 getPassengersForTrip(id)  // Passengers for a trip
 getTripsForMap(limit)     // Geo-data for trips map
 
