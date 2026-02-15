@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { UserListItem } from "@/types/user";
-import { validateUserAction } from "./actions";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +45,6 @@ export function ValidationClient({
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(
     pendingUsers.length > 0 ? pendingUsers[0] : null
   );
-  const [isPending, startTransition] = useTransition();
 
   // Reset selected user when the list changes
   useEffect(() => {
@@ -57,6 +55,7 @@ export function ValidationClient({
     } else {
       setSelectedUser(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingUsers]);
 
   const updateFilters = (newStatus: string, newPage: number = 1) => {
@@ -66,7 +65,7 @@ export function ValidationClient({
     router.push(`?${params.toString()}`);
   };
 
-  const handleValidate = (uid: string, isValidated: boolean) => {
+  const handleValidate = () => {
     toast.error("Option non disponible pour l'instant");
     return;
   };
@@ -310,8 +309,7 @@ export function ValidationClient({
 
                   <div className="mt-8 flex gap-3">
                     <Button
-                      onClick={() => handleValidate(selectedUser.uid, !selectedUser.is_driver_doc_validated)}
-                      disabled={isPending}
+                      onClick={() => handleValidate()}
                       className={cn(
                         "flex-1 font-bold text-white",
                         selectedUser.is_driver_doc_validated 
@@ -319,9 +317,7 @@ export function ValidationClient({
                           : "bg-green-600 hover:bg-green-700"
                       )}
                     >
-                      {isPending ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : selectedUser.is_driver_doc_validated ? (
+                      {selectedUser.is_driver_doc_validated ? (
                         <XCircle className="w-4 h-4 mr-2" />
                       ) : (
                         <CheckCircle className="w-4 h-4 mr-2" />
