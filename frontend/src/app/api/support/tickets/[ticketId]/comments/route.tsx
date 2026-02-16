@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+
 import { addComment, getTicketDetail } from "@/lib/queries/support";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";

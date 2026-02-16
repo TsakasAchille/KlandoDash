@@ -1,13 +1,15 @@
 import { getTripsForMap, getTripsStats, getDriversList } from "@/lib/queries/trips";
+import { getSiteTripRequests } from "@/lib/queries/site-requests";
 import { MapClient } from "./map-client";
 import { RefreshButton } from "@/components/refresh-button";
-import { Map as MapIcon } from "lucide-react";
+import { Map as MapIcon, Users } from "lucide-react";
 
 interface MapPageProps {
   searchParams: Promise<{
     selected?: string;
     status?: string;
     driver?: string;
+    showRequests?: string;
   }>;
 }
 
@@ -16,11 +18,13 @@ export default async function MapPage({ searchParams }: MapPageProps) {
   const selectedTripId = params.selected || null;
   const statusFilter = params.status || "ALL";
   const driverFilter = params.driver || null;
+  const showRequestsFilter = params.showRequests === "true";
 
-  const [trips, stats, drivers] = await Promise.all([
-    getTripsForMap(50),
+  const [trips, stats, drivers, siteRequests] = await Promise.all([
+    getTripsForMap(100),
     getTripsStats(),
     getDriversList(),
+    getSiteTripRequests({ limit: 100, hidePast: true })
   ]);
 
   const initialSelectedTrip = selectedTripId
@@ -28,28 +32,28 @@ export default async function MapPage({ searchParams }: MapPageProps) {
     : null;
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Header Stylisé */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between p-6 border-b border-border/40 gap-4 bg-card/50 backdrop-blur-sm z-10 relative">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between p-4 sm:p-6 border-b border-border/40 gap-4 bg-card/50 backdrop-blur-sm z-20 relative">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black tracking-tight uppercase flex items-center gap-3">
-            <MapIcon className="w-8 h-8 text-klando-gold" />
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight uppercase flex items-center gap-3">
+            <MapIcon className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
             Carte Live
           </h1>
-          <p className="text-sm text-muted-foreground font-medium">
-            Visualisation temps réel de la flotte
+          <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+            Visualisation temps réel de la flotte et des intentions
           </p>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
           <div className="flex gap-2">
-            <div className="px-3 py-1 rounded-lg bg-secondary/80 border border-border/50 text-xs font-bold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-foreground/20" />
-              {stats.total_trips} TOTAL
+            <div className="px-2 py-1 sm:px-3 sm:py-1 rounded-lg bg-secondary/80 border border-border/50 text-[10px] sm:text-xs font-bold flex items-center gap-2">
+              <MapIcon className="w-3 h-3 text-klando-gold" />
+              {stats.total_trips} TRAJETS
             </div>
-            <div className="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-500 text-xs font-bold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              {stats.active_trips} ACTIFS
+            <div className="px-2 py-1 sm:px-3 sm:py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-500 text-[10px] sm:text-xs font-bold flex items-center gap-2">
+              <Users className="w-3 h-3 text-purple-500" />
+              {siteRequests.length} DEMANDES
             </div>
           </div>
           <RefreshButton />
@@ -57,13 +61,15 @@ export default async function MapPage({ searchParams }: MapPageProps) {
       </div>
 
       {/* Client Component - Map prend tout l'espace restant */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="flex-1 relative overflow-hidden h-[calc(100vh-140px)]">
         <MapClient
           trips={trips}
           drivers={drivers}
+          siteRequests={siteRequests}
           initialSelectedTrip={initialSelectedTrip}
           initialStatusFilter={statusFilter}
           initialDriverFilter={driverFilter}
+          initialShowRequests={showRequestsFilter}
         />
       </div>
     </div>

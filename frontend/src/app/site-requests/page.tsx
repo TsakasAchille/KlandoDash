@@ -26,7 +26,7 @@ export default async function SiteRequestsPage() {
             <SiteRequestsInfo />
           </h1>
           <p className="text-sm text-muted-foreground font-medium">
-            Intentions de voyage collectées sur le site vitrine
+            Intentions de voyage (Aujourd&apos;hui & Futur) collectées sur le site vitrine
           </p>
         </div>
         <RefreshButton />

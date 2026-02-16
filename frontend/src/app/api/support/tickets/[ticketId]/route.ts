@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTicketDetail, updateTicketStatus } from "@/lib/queries/support";
 import type { TicketStatus } from "@/types/support";
 
+export const dynamic = "force-dynamic";
+
 interface RouteParams {
   params: Promise<{ ticketId: string }>;
 }

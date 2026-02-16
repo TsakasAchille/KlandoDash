@@ -11,6 +11,10 @@ export interface SiteTripRequest {
   notes: string | null;
   ai_recommendation?: string | null;
   ai_updated_at?: string | null;
+  origin_lat?: number | null;
+  origin_lng?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
 }
 
 export interface SiteTripRequestsStats {

@@ -19,18 +19,26 @@ export async function getSiteTripRequests(options: {
   limit?: number;
   offset?: number;
   status?: SiteTripRequestStatus | 'ALL';
+  hidePast?: boolean;
 } = {}): Promise<SiteTripRequest[]> {
-  const { limit = 50, offset = 0, status = 'ALL' } = options;
+  const { limit = 50, offset = 0, status = 'ALL', hidePast = true } = options;
   const supabase = createServerClient();
 
   let query = supabase
     .from("site_trip_requests")
     .select("*")
-    .order("created_at", { ascending: false })
+    .order("desired_date", { ascending: true }) // Plus logique d'afficher les dates proches en premier
     .range(offset, offset + limit - 1);
 
   if (status && status !== 'ALL') {
     query = query.eq("status", status);
+  }
+
+  if (hidePast) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // On inclut les dates >= aujourd'hui OU les dates non spécifiées (Dès que possible)
+    query = query.or(`desired_date.gte.${today.toISOString()},desired_date.is.null`);
   }
 
   const { data, error } = await query;
@@ -46,12 +54,22 @@ export async function getSiteTripRequests(options: {
 /**
  * Récupère les statistiques des demandes du site
  */
-export async function getSiteTripRequestsStats(): Promise<SiteTripRequestsStats> {
+export async function getSiteTripRequestsStats(options: { hidePast?: boolean } = {}): Promise<SiteTripRequestsStats> {
+  const { hidePast = true } = options;
   const supabase = createServerClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("site_trip_requests")
-    .select("status");
+    .select("status, desired_date");
+
+  if (hidePast) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // On inclut les dates >= aujourd'hui OU les dates non spécifiées (Dès que possible)
+    query = query.or(`desired_date.gte.${today.toISOString()},desired_date.is.null`);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("getSiteTripRequestsStats error:", error);
@@ -93,6 +111,26 @@ export async function updateSiteTripRequest(
   }
 
   return true;
+}
+
+/**
+ * Recherche des trajets correspondant par proximité géographique (RPC)
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function findMatchingTrips(requestId: string, radiusKm: number = 5): Promise<any[]> {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase.rpc("find_matching_trips", {
+    p_request_id: requestId,
+    p_radius_km: radiusKm
+  });
+
+  if (error) {
+    console.error("findMatchingTrips error:", error);
+    return [];
+  }
+
+  return data || [];
 }
 
 /**

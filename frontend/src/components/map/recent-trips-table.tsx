@@ -1,36 +1,27 @@
-"use client";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-} from "@/components/ui/table";
 import { TripMapItem } from "@/types/trip";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { Eye, EyeOff, User, MapPin } from "lucide-react";
 
 // Badge de statut
 const statusStyles: Record<string, string> = {
-  ACTIVE: "bg-blue-500/20 text-blue-400",
-  COMPLETED: "bg-green-500/20 text-green-400",
-  PENDING: "bg-yellow-500/20 text-yellow-400",
-  CANCELLED: "bg-red-500/20 text-red-400",
-  ARCHIVED: "bg-gray-500/20 text-gray-400",
+  ACTIVE: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  COMPLETED: "bg-green-500/10 text-green-500 border-green-500/20",
+  PENDING: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  CANCELLED: "bg-red-500/10 text-red-500 border-red-500/20",
+  ARCHIVED: "bg-secondary text-muted-foreground border-border/20",
 };
 
 // Couleurs des polylines (même palette que trip-map)
 const POLYLINE_COLORS = [
-  "#3B82F6", "#22C55E", "#EF4444", "#A855F7", "#F97316",
-  "#06B6D4", "#EC4899", "#84CC16", "#6366F1", "#14B8A6",
-  "#F59E0B", "#8B5CF6",
+  "#EBC33F", "#3B82F6", "#22C55E", "#EF4444", "#A855F7",
+  "#F97316", "#06B6D4", "#EC4899", "#84CC16", "#6366F1",
+  "#14B8A6", "#F59E0B",
 ];
 
 interface RecentTripsTableProps {
   trips: TripMapItem[];
   selectedTripId: string | undefined;
-  hoveredTripId: string | null;
   hiddenTripIds: Set<string>;
   onSelectTrip: (trip: TripMapItem) => void;
   onHoverTrip: (tripId: string | null) => void;
@@ -42,7 +33,6 @@ interface RecentTripsTableProps {
 export function RecentTripsTable({
   trips,
   selectedTripId,
-  hoveredTripId,
   hiddenTripIds,
   onSelectTrip,
   onHoverTrip,
@@ -51,115 +41,117 @@ export function RecentTripsTable({
   onShowAll,
 }: RecentTripsTableProps) {
   return (
-    <Card className="bg-klando-dark border-gray-700 flex-1 overflow-hidden">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-bold text-white">
-            10 Derniers Trajets
-          </CardTitle>
-        </div>
-        {/* Boutons d'action */}
-        <div className="flex flex-col gap-2 mt-2">
-          <button
-            onClick={onShowOnlyLast}
-            className="flex-1 px-1 py-0.5 text-[10px] bg-klando-burgundy hover:bg-klando-burgundy/80 text-white rounded transition-colors"
-          >
-            Dernier seul
-          </button>
-          <button
-            onClick={onShowAll}
-            className="flex-1 px-1 py-0.5 text-[10px] bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
-          >
-            Tous
-          </button>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0 flex-1 flex flex-col">
-        <div className="flex-1 overflow-y-auto">
-          <Table>
-            <TableBody>
-              {trips.length === 0 ? (
-                <TableRow>
-                  <TableCell className="text-center text-white py-8">
-                    Aucun trajet trouvé
-                  </TableCell>
-                </TableRow>
-              ) : (
-                trips.map((trip, index) => {
-                  const isHidden = hiddenTripIds.has(trip.trip_id);
-                  const polylineColor = POLYLINE_COLORS[index % POLYLINE_COLORS.length];
+    <div className="flex flex-col h-full space-y-4">
+      {/* Boutons d'action rapides */}
+      <div className="flex gap-2 p-1 bg-secondary/50 rounded-xl border border-border/40">
+        <button
+          onClick={onShowAll}
+          className="flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-white transition-all"
+        >
+          Afficher Tout
+        </button>
+        <button
+          onClick={onShowOnlyLast}
+          className="flex-1 py-2 text-[10px] font-black uppercase tracking-widest bg-klando-gold text-klando-dark rounded-lg shadow-sm hover:shadow-klando-gold/20 transition-all"
+        >
+          Dernier Seul
+        </button>
+      </div>
 
-                  return (
-                    <TableRow
-                      key={trip.trip_id}
-                      className={cn(
-                        "cursor-pointer transition-colors",
-                        selectedTripId === trip.trip_id && "bg-klando-burgundy/30",
-                        hoveredTripId === trip.trip_id &&
-                          selectedTripId !== trip.trip_id &&
-                          "bg-gray-800/50",
-                        isHidden && "opacity-50"
-                      )}
-                      onMouseEnter={() => onHoverTrip(trip.trip_id)}
-                      onMouseLeave={() => onHoverTrip(null)}
-                    >
-                      <TableCell className="py-2 px-2">
-                        <div className="flex items-start gap-2">
-                          {/* Checkbox + indicateur couleur */}
-                          <div className="flex flex-col items-center gap-1 pt-0.5">
-                            <input
-                              type="checkbox"
-                              checked={!isHidden}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                onToggleVisibility(trip.trip_id);
-                              }}
-                              className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-klando-gold focus:ring-klando-gold cursor-pointer"
-                            />
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: polylineColor }}
-                              title={`Couleur sur la carte`}
-                            />
-                          </div>
+      <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-klando-gold/30">
+        <div className="space-y-3">
+          {trips.length === 0 ? (
+            <div className="py-20 text-center flex flex-col items-center gap-3 opacity-40">
+              <MapPin className="w-10 h-10" />
+              <p className="text-[10px] font-black uppercase tracking-widest">Aucun trajet trouvé</p>
+            </div>
+          ) : (
+            trips.map((trip, index) => {
+              const isHidden = hiddenTripIds.has(trip.trip_id);
+              const isSelected = selectedTripId === trip.trip_id;
+              const polylineColor = isSelected ? "#EBC33F" : POLYLINE_COLORS[index % POLYLINE_COLORS.length];
 
-                          {/* Contenu */}
-                          <div
-                            className="flex-1 space-y-1 min-w-0"
-                            onClick={() => onSelectTrip(trip)}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-medium text-white truncate">
-                                {trip.driver?.display_name || 'N/A'}
-                              </span>
-                              <span
-                                className={cn(
-                                  "px-1.5 py-0.5 text-[10px] rounded flex-shrink-0",
-                                  statusStyles[trip.status || "ACTIVE"] ||
-                                    statusStyles.ACTIVE
-                                )}
-                              >
-                                {trip.status || "N/A"}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-gray-300">
-                                <span>{trip.seats_available} places</span>
-                                <span className="font-semibold text-klando-gold">{trip.passenger_price ? `${trip.passenger_price} FCFA` : 'N/A'}</span>
-                            </div>
-                            <div className="text-[10px] text-gray-300 pt-1">
-                                {formatDate(trip.departure_schedule || "")}
-                            </div>
+              return (
+                <div
+                  key={trip.trip_id}
+                  className={cn(
+                    "group relative p-4 rounded-2xl border transition-all duration-300 cursor-pointer",
+                    isSelected 
+                      ? "bg-card border-klando-gold shadow-lg shadow-klando-gold/5 scale-[1.02]" 
+                      : "bg-card/40 border-border/40 hover:border-klando-gold/30 hover:bg-card/60",
+                    isHidden && "opacity-40 grayscale-[0.5]"
+                  )}
+                  onMouseEnter={() => onHoverTrip(trip.trip_id)}
+                  onMouseLeave={() => onHoverTrip(null)}
+                  onClick={() => onSelectTrip(trip)}
+                >
+                  {/* Indicateur de couleur */}
+                  <div 
+                    className="absolute top-0 left-0 bottom-0 w-1 rounded-l-2xl transition-all"
+                    style={{ backgroundColor: polylineColor }}
+                  />
+
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-secondary/80 border border-border/50">
+                            <User className="w-3 h-3 text-klando-gold" />
                           </div>
+                          <span className="text-xs font-black uppercase tracking-tight truncate text-foreground">
+                            {trip.driver?.display_name || 'Inconnu'}
+                          </span>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleVisibility(trip.trip_id);
+                          }}
+                          className={cn(
+                            "p-1.5 rounded-lg border transition-all",
+                            isHidden 
+                              ? "bg-secondary text-muted-foreground border-border/40" 
+                              : "bg-klando-gold/10 text-klando-gold border-klando-gold/20"
+                          )}
+                        >
+                          {isHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                        <span className={cn(
+                          "px-2 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg border whitespace-nowrap",
+                          statusStyles[trip.status || "ACTIVE"]
+                        )}>
+                          {trip.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-tighter text-foreground/90">
+                          {trip.departure_name?.split(',')[0]} ➜ {trip.destination_name?.split(',')[0]}
+                        </span>
+                        <span className="text-[9px] font-bold text-muted-foreground mt-0.5">
+                          {formatDate(trip.departure_schedule || "")}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] font-black text-klando-gold block uppercase">
+                          {trip.passenger_price || 0} XOF
+                        </span>
+                        <span className="text-[9px] font-bold text-muted-foreground">
+                          {trip.seats_available} places libres
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
