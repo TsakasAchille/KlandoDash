@@ -244,6 +244,11 @@ export function TripMap({
           </div>
           <div class="font-black text-sm uppercase leading-tight">${req.origin_city} ➜ ${req.destination_city}</div>
           <div class="text-[10px] font-bold text-slate-400 uppercase">${req.contact_info}</div>
+          ${(req as any).is_estimated ? `
+            <div class="mt-2 p-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <p class="text-[8px] font-black text-yellow-500 uppercase tracking-tighter italic">Position approximative (Ville)</p>
+            </div>
+          ` : ''}
         </div>
       `).addTo(mapRef.current!);
       

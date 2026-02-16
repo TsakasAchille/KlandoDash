@@ -18,7 +18,8 @@ export default async function MapPage({ searchParams }: MapPageProps) {
   const selectedTripId = params.selected || null;
   const statusFilter = params.status || "ALL";
   const driverFilter = params.driver || null;
-  const showRequestsFilter = params.showRequests === "true";
+  // Activé par défaut pour que l'utilisateur voie les demandes immédiatement
+  const showRequestsFilter = params.showRequests !== "false"; 
 
   const [trips, stats, drivers, siteRequests] = await Promise.all([
     getTripsForMap(100),
