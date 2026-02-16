@@ -94,7 +94,7 @@ export function MapFilters({ filters, drivers, onFilterChange }: MapFiltersProps
       {/* Boutons d'action */}
       <div className="pt-4">
         <button
-          onClick={() => onFilterChange({ status: "ALL", driverId: null, dateFrom: null, dateTo: null, showRequests: false })}
+          onClick={() => onFilterChange({ status: "PENDING", driverId: null, dateFrom: null, dateTo: null, showRequests: false })}
           className="w-full py-4 rounded-2xl border border-dashed border-border/60 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-klando-gold hover:border-klando-gold/40 transition-all"
         >
           Réinitialiser tous les filtres

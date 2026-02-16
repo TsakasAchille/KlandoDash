@@ -1,314 +1,138 @@
 # Tables Supabase - Klando
 
-> Dernière mise à jour: 2026-02-09
+> Dernière mise à jour: 2026-02-16
 > Projet: `zzxeimcchndnrildeefl` (West EU - Paris)
 
-## Statistiques actuelles
+## Statistiques de production (Constatées)
 
 | Table | Lignes | Notes |
 |-------|--------|-------|
-| `trips` | 37 | 100% ARCHIVED |
-| `users` | ~50 | Avec ratings |
-| `bookings` | 21 | Réservations |
+| `users` | 676 | Profils Firebase migrés |
+| `trips` | 37 | Historique des trajets |
+| `bookings` | 21 | Réservations confirmées |
+| `transactions` | 4 | Flux financiers Integrapay |
 
 ---
 
 ## Tables métier principales
 
 ### `users`
-Profils utilisateurs de l'application Klando.
+Profils utilisateurs synchronisés depuis Firebase.
 
 | Colonne | Type | Description |
 |---------|------|-------------|
-| `uid` | text | **PK** - ID utilisateur (Firebase UID) |
-| `display_name` | text | Nom affiché |
-| `email` | text | Email |
-| `first_name` | text | Prénom |
-| `name` | text | Nom |
-| `phone_number` | text | Téléphone |
-| `birth` | date | Date de naissance |
-| `photo_url` | text | URL photo de profil |
-| `bio` | text | Biographie |
-| `gender` | text | Genre |
-| `rating` | numeric(3,2) | Note moyenne (ex: 4.50) |
-| `rating_count` | integer | Nombre d'avis |
-| `role` | text | Rôle utilisateur |
-| `driver_license_url` | text | URL permis de conduire |
-| `id_card_url` | text | URL carte d'identité |
-| `is_driver_doc_validated` | boolean | Documents conducteur validés |
-| `created_at` | timestamptz | Date création |
-| `updated_at` | timestamptz | Date mise à jour |
+| `uid` | text | **PK** - ID unique Firebase |
+| `display_name` | text | Nom d'affichage complet |
+| `email` | text | Adresse email |
+| `phone_number` | text | Numéro de téléphone international |
+| `birth` | date | Date de naissance (pour profil type) |
+| `gender` | text | Genre: `man`, `woman`, `unknown` |
+| `photo_url` | text | URL de l'image de profil (Storage/Google) |
+| `bio` | text | Biographie courte |
+| `role` | text | `user` ou `driver` |
+| `rating` | numeric | Note moyenne (ex: 4.81) |
+| `rating_count` | integer | Nombre total d'avis reçus |
+| `is_driver_doc_validated` | boolean | Statut de validation admin des documents |
+| `driver_license_url` | text | Scan du permis de conduire |
+| `id_card_url` | text | Scan de la carte d'identité |
+| `created_at` | timestamptz | Date d'inscription |
+| `updated_at` | timestamptz | Dernière modification |
 
 ---
 
 ### `trips`
-Trajets proposés par les conducteurs.
+Trajets de covoiturage.
 
 | Colonne | Type | Description |
 |---------|------|-------------|
-| `trip_id` | text | **PK** - ID du trajet (ex: TRIP-1768837...) |
-| `driver_id` | text | **FK → users.uid** - Conducteur |
-| `departure_name` | text | Nom lieu de départ (GPS complet) |
-| `departure_description` | text | Description départ (par conducteur) |
-| `departure_latitude` | float | Latitude départ |
-| `departure_longitude` | float | Longitude départ |
-| `destination_name` | text | Nom destination (GPS) |
-| `destination_description` | text | Description destination |
-| `destination_latitude` | float | Latitude destination |
-| `destination_longitude` | float | Longitude destination |
-| `departure_date` | timestamptz | Date de départ |
-| `departure_schedule` | timestamptz | Horaire de départ |
-| `distance` | float | Distance en km |
-| `polyline` | text | Polyline Google Maps encodé |
-| `seats_published` | bigint | Places mises en ligne |
-| `seats_available` | bigint | Places disponibles |
-| `seats_booked` | bigint | Places réservées |
-| `passenger_price` | bigint | Prix passager affiché (XOF) |
-| `driver_price` | bigint | Prix conducteur reçu (XOF) |
-| `status` | text | Statut: PENDING, ACTIVE, COMPLETED, ARCHIVED, CANCELLED |
-| `auto_confirmation` | boolean | Confirmation auto des réservations |
-| `precision` | text | Précision localisation |
-| `created_at` | timestamptz | Date création |
-| `updated_at` | timestamptz | Date mise à jour |
-
-**Index créés:**
-- `idx_trips_status` - Filtre par statut
-- `idx_trips_departure_schedule` - Tri par date DESC
-- `idx_trips_driver_id` - Jointure users
-- `idx_trips_status_departure` - Combo statut + date
-- `idx_trips_created_at` - Tri par création DESC
+| `trip_id` | text | **PK** - Format `TRIP-XXXXXX` |
+| `driver_id` | text | **FK → users.uid** |
+| `status` | text | `PENDING`, `ACTIVE`, `STARTED`, `COMPLETED`, `CANCELLED`, `ARCHIVED` |
+| `departure_name` | text | Ville/Lieu de départ (ex: "Dakar, Sénégal") |
+| `destination_name` | text | Ville/Lieu d'arrivée |
+| `departure_schedule` | timestamptz | Date et heure de départ prévues |
+| `distance` | float | Distance calculée en km |
+| `polyline` | text | Tracé de l'itinéraire (Encoded Polyline) |
+| `seats_published` | bigint | Capacité totale du véhicule |
+| `seats_available` | bigint | Places restant à vendre |
+| `seats_booked` | bigint | Places déjà réservées |
+| `passenger_price` | bigint | Prix payé par le passager (XOF) |
+| `driver_price` | bigint | Somme perçue par le conducteur (XOF) |
+| `auto_confirmation` | boolean | Acceptation auto des passagers |
+| `departure_latitude` | float | Coordonnées GPS départ |
+| `departure_longitude` | float | |
+| `destination_latitude` | float | Coordonnées GPS arrivée |
+| `destination_longitude` | float | |
+| `created_at` | timestamptz | Date de publication |
 
 ---
 
 ### `bookings`
-Réservations de places sur les trajets.
+Lien entre passagers et trajets.
 
 | Colonne | Type | Description |
 |---------|------|-------------|
 | `id` | text | **PK** - ID réservation |
-| `user_id` | text | **FK → users.uid** - Passager |
-| `trip_id` | text | **FK → trips.trip_id** - Trajet |
-| `seats` | integer | Nombre de places réservées |
-| `status` | text | Statut réservation |
-| `created_at` | timestamptz | Date création |
-| `updated_at` | timestamptz | Date mise à jour |
-
----
-
-### `chats`
-Messages de conversation (liés aux trajets).
-
-| Colonne | Type | Description |
-|---------|------|-------------|
-| `id` | varchar | **PK** - ID message |
-| `trip_id` | varchar | ID trajet associé |
-| `sender_id` | varchar | ID expéditeur |
-| `message` | varchar | Contenu du message |
-| `timestamp` | timestamp | Date envoi |
-| `updated_at` | timestamp | Date mise à jour |
+| `user_id` | text | **FK → users.uid** (Passager) |
+| `trip_id` | text | **FK → trips.trip_id** |
+| `transaction_id` | text | **FK → transactions.id** (Optionnel) |
+| `seats` | integer | Nombre de places prises |
+| `status` | text | `CONFIRMED`, `COMPLETED`, `CANCELLED` |
+| `created_at` | timestamptz | Date de réservation |
 
 ---
 
 ### `transactions`
-Transactions de paiement.
+Suivi des paiements Integrapay.
 
 | Colonne | Type | Description |
 |---------|------|-------------|
-| `id` | text | **PK** - ID transaction |
-| `user_id` | text | **FK → users.uid** - Utilisateur |
-| `external_id` | text | ID externe (provider paiement) |
-| `amount` | integer | Montant (XOF) |
-| `status` | text | Statut paiement |
-| `phone` | text | Téléphone |
-| `code_service` | text | Code service paiement (ex: XXXXX_CASH_IN) |
-| `sender` | text | Expéditeur |
-| `msg` | text | Message |
-| `error_message` | text | Message d'erreur |
-| `has_transactions` | boolean | A des transactions |
-| `metadata` | jsonb | Métadonnées JSON |
-| `created_at` | timestamp | Date création |
-| `updated_at` | timestamp | Date mise à jour |
-
----
-
-## Fonctions RPC (Remote Procedure Calls)
-
-Ces fonctions sont utilisées pour les calculs intensifs afin d'économiser la RAM du serveur.
-
-### `get_klando_stats_final()`
-**Description**: Calcule toutes les métriques agrégées du dashboard en une seule requête SQL.
-**Retour**: `json` (Mapping exact avec l'interface `DashboardStats`)
-**Sécurité**: `SECURITY DEFINER` (nécessaire pour calculer les totaux globaux malgré le RLS).
-
----
-
-## Tables support
-
-### `support_tickets`
-| Colonne | Type | Description |
-|---------|------|-------------|
-| `ticket_id` | uuid | **PK** |
+| `id` | text | **PK** - ID unique Klando |
 | `user_id` | text | **FK → users.uid** |
-| `subject` | text | Sujet |
-| `message` | text | Message |
-| `status` | text | open, closed |
-| `contact_preference` | text | mail/phone/aucun |
-
-### `support_comments`
-| Colonne | Type | Description |
-|---------|------|-------------|
-| `comment_id` | uuid | **PK** |
-| `ticket_id` | uuid | **FK → support_tickets** |
-| `user_id` | text | Auteur |
-| `comment_text` | text | Texte |
+| `intech_transaction_id` | text | ID retourné par Integrapay |
+| `amount` | integer | Montant total en XOF |
+| `status` | text | `SUCCESS`, `FAILED`, `PENDING` |
+| `type` | text | `TRIP_PAYMENT`, `DRIVER_PAYMENT` |
+| `code_service` | text | **Vérifié** : Type de flux (`XXXXX_CASH_IN` / `XXXXX_CASH_OUT`) |
+| `phone` | text | Téléphone utilisé pour le paiement |
+| `msg` | text | Message de retour provider |
+| `created_at` | timestamp | Date de transaction |
 
 ---
-
-## Tables Site Vitrine (Landing Page)
 
 ### `site_trip_requests`
-Demandes d'intentions de voyage collectées via le site vitrine.
+Demandes d'intentions collectées sur le site vitrine.
 
 | Colonne | Type | Description |
 |---------|------|-------------|
 | `id` | uuid | **PK** - `gen_random_uuid()` |
-| `origin_city` | text | Ville de départ |
-| `destination_city` | text | Ville d'arrivée |
-| `desired_date` | timestamptz | Date souhaitée |
-| `contact_info` | text | Email ou Téléphone |
+| `origin_city` | text | Ville de départ saisie |
+| `destination_city` | text | Ville d'arrivée saisie |
+| `desired_date` | timestamptz | Date souhaitée par le client |
+| `contact_info` | text | Téléphone ou WhatsApp |
 | `status` | text | `NEW`, `REVIEWED`, `CONTACTED`, `IGNORED` |
-| `ai_recommendation` | text | Analyse et message WhatsApp générés par l'IA |
-| `ai_updated_at` | timestamptz | Date de la dernière génération IA |
-| `created_at` | timestamptz | Date création |
-| `notes` | text | Notes internes pour les admins |
-
-**Index créés:**
-- `idx_site_trip_requests_status`
-- `idx_site_trip_requests_created_at`
-- `idx_site_trip_requests_ai_updated_at`
+| `ai_recommendation` | text | Analyse et matching générés par Gemini |
+| `origin_lat` | float | Latitude départ (Géocodée auto) |
+| `origin_lng` | float | |
+| `destination_lat` | float | Latitude arrivée (Géocodée auto) |
+| `destination_lng` | float | |
+| `polyline` | text | Tracé théorique pour affichage carte |
 
 ---
 
-## Vues SQL
+## Fonctions RPC (Calculs Optimisés)
+
+### `get_klando_stats_final()`
+- **Utilité** : Calcule TOUTES les stats du dashboard en 1 seule requête (RAM Friendly).
+- **Sécurité** : `SECURITY DEFINER` (Ignore RLS pour les totaux globaux).
+- **Structure de retour** : JSON structuré (Trips, Users, Bookings, Transactions, Revenue, Cashflow).
+
+---
+
+## Vues SQL (Interface Site Vitrine)
 
 ### `public_pending_trips`
-Vue sécurisée pour l'affichage des trajets `PENDING` disponibles sur le site vitrine.
-
-| Colonne | Type | Source | Description |
-|---------|------|--------|-------------|
-| `id` | text | `trips.trip_id` | ID du trajet |
-| `departure_city` | text | `trips.departure_name` | Ville départ |
-| `arrival_city` | text | `trips.destination_name` | Ville arrivée |
-| `departure_time` | timestamptz | `trips.departure_schedule` | Heure départ |
-| `seats_available` | bigint | `trips.seats_available` | Places dispo |
+Expose les trajets `PENDING` futurs avec places disponibles. Utilisée par l'agent IA du site pour répondre aux clients.
 
 ### `public_completed_trips`
-Vue sécurisée pour l'affichage des 10 derniers trajets `COMPLETED` (preuve sociale).
-
-| Colonne | Type | Source | Description |
-|---------|------|--------|-------------|
-| `id` | text | `trips.trip_id` | ID du trajet |
-| `departure_city` | text | `trips.departure_name` | Ville départ |
-| `arrival_city` | text | `trips.destination_name` | Ville arrivée |
-| `departure_time` | timestamptz | `trips.departure_schedule` | Heure départ |
-
----
-
-## Tables dashboard
-
-### `dash_authorized_users`
-Utilisateurs autorisés à accéder au dashboard admin.
-
-| Colonne | Type | Description |
-|---------|------|-------------|
-| `email` | varchar(255) | **PK** - Email |
-| `active` | boolean | Actif |
-| `role` | varchar(50) | admin, user, support |
-| `display_name` | text | Nom affiché (depuis Google) |
-| `avatar_url` | text | URL photo (depuis Google) |
-| `added_at` | timestamp | Date d'ajout |
-| `added_by` | varchar(255) | Ajouté par |
-| `notes` | text | Notes |
-
----
-
-## Tables IA/Embeddings
-
-### `trip_embeddings`
-Embeddings vectoriels pour recherche sémantique (pgvector).
-
-| Colonne | Type | Description |
-|---------|------|-------------|
-| `id` | uuid | **PK** |
-| `trip_id` | text | **FK → trips** |
-| `content` | text | Contenu textuel |
-| `embedding` | vector(1536) | Vecteur OpenAI |
-
----
-
-## Diagramme des relations
-
-```
-┌─────────┐
-│  users  │
-│   uid   │◄─────────────────────────────────┐
-└────┬────┘                                  │
-     │                                       │
-     │ driver_id                    user_id  │
-     ▼                                       │
-┌─────────┐         ┌──────────┐            │
-│  trips  │────────►│ bookings │────────────┘
-│ trip_id │         │    id    │
-└────┬────┘         └──────────┘
-     │
-     │ trip_id
-     ▼
-┌─────────┐
-│  chats  │
-└─────────┘
-```
-
----
-
-## Requêtes optimisées
-
-### Liste trips (dashboard)
-```sql
-SELECT
-    trip_id,
-    departure_name,
-    destination_name,
-    departure_schedule,
-    distance,
-    seats_available,
-    seats_published,
-    passenger_price,
-    status,
-    driver_id
-FROM trips
-WHERE status = 'ACTIVE'
-ORDER BY departure_schedule DESC
-LIMIT 50;
-```
-
-### Trip avec conducteur
-```sql
-SELECT
-    t.*,
-    u.display_name AS driver_name,
-    u.rating AS driver_rating,
-    u.photo_url AS driver_photo
-FROM trips t
-LEFT JOIN users u ON t.driver_id = u.uid
-WHERE t.trip_id = 'xxx';
-```
-
-### Stats globales
-```sql
-SELECT
-    COUNT(*) AS total,
-    COUNT(*) FILTER (WHERE status = 'ACTIVE') AS active,
-    SUM(distance) AS total_km,
-    SUM(seats_booked) AS total_passengers
-FROM trips;
-```
+Expose les 10 derniers trajets terminés pour la "Preuve Sociale" sur la landing page.

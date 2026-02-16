@@ -18,7 +18,7 @@ export default async function MapPage({ searchParams }: MapPageProps) {
   const params = await searchParams;
   const selectedTripId = params.selected || null;
   const requestId = params.request || null;
-  const statusFilter = params.status || "ALL";
+  const statusFilter = params.status || "PENDING";
   const driverFilter = params.driver || null;
   // Activé par défaut pour que l'utilisateur voie les demandes immédiatement
   const showRequestsFilter = params.showRequests !== "false"; 

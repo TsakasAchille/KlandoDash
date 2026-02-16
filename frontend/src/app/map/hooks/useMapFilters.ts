@@ -34,7 +34,7 @@ export function useMapFilters({
       const url = new URL(window.location.href);
       
       if (newFilters.status !== undefined) {
-        if (newFilters.status === "ALL") url.searchParams.delete("status");
+        if (newFilters.status === "PENDING") url.searchParams.delete("status");
         else url.searchParams.set("status", newFilters.status);
       }
       

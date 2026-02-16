@@ -10,8 +10,9 @@ KlandoDash is the administration dashboard for Klando, a carpooling service in S
 
 - **Authentication**: User authentication is handled by NextAuth.js (v5), with Google OAuth as the primary authentication provider. Access to the dashboard is restricted to authorized users listed in the `dash_authorized_users` table in the Supabase database. These records are now enriched with `display_name` and `avatar_url` directly from the Google profile during login via a NextAuth `signIn` callback. Role-based access control is implemented, including `admin` and `support` roles.
 
-- **Data Flow**: The frontend communicates with the Supabase backend through the `@supabase/supabase-js` client library. Data fetching is performed on the server-side using React Server Components.
-- **Aggregation Philosophy**: For performance and memory safety, heavy aggregations (stats, counts, complex sums) MUST be performed database-side via SQL RPC functions (`SECURITY DEFINER`). The frontend should only receive the final processed JSON object.
+- **Data Flow**: The frontend communicates with the Supabase backend through the `@supabase/supabase-js` client library.
+  - **Standard Data**: Fetched on the server-side using React Server Components with dedicated query functions in `frontend/src/lib/queries/`.
+  - **Aggregated Data (Stats)**: Heavy calculations MUST be performed database-side via **SQL RPC functions** (`SECURITY DEFINER`). The frontend calls these via `supabase.rpc()` to receive pre-processed JSON, ensuring memory safety on the application server.
 
 ## Project Structure
 
@@ -261,6 +262,12 @@ The dashboard uses a custom color palette defined in `tailwind.config.ts`.
 
 ## Useful Documentation
 
+
+
 - [docs/README.md](./docs/README.md) : Index de la documentation technique.
+
+- [docs/DEVELOPMENT_GUIDELINES.md](./docs/DEVELOPMENT_GUIDELINES.md) : **Standards de performance** (RAM, SQL, RPC).
+
 - [docs/WEBSITE_INTEGRATION.md](./docs/WEBSITE_INTEGRATION.md) : Guide d'intégration pour le site vitrine.
+
 - [database/tables.md](./database/tables.md) : Dictionnaire de données complet.
