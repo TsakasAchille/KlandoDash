@@ -23,6 +23,7 @@ interface RecentTripsTableProps {
   trips: TripMapItem[];
   selectedTripId: string | undefined;
   hiddenTripIds: Set<string>;
+  displayMode: "all" | "last";
   onSelectTrip: (trip: TripMapItem) => void;
   onHoverTrip: (tripId: string | null) => void;
   onToggleVisibility: (tripId: string) => void;
@@ -34,6 +35,7 @@ export function RecentTripsTable({
   trips,
   selectedTripId,
   hiddenTripIds,
+  displayMode,
   onSelectTrip,
   onHoverTrip,
   onToggleVisibility,
@@ -42,20 +44,38 @@ export function RecentTripsTable({
 }: RecentTripsTableProps) {
   return (
     <div className="flex flex-col h-full space-y-4">
-      {/* Boutons d'action rapides */}
-      <div className="flex gap-2 p-1 bg-secondary/50 rounded-xl border border-border/40">
+      {/* Boutons d'action rapides - Style Switcher */}
+      <div className="flex gap-1 p-1 bg-secondary/50 rounded-xl border border-border/40 relative">
         <button
           onClick={onShowAll}
-          className="flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-white transition-all"
+          className={cn(
+            "flex-1 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 rounded-lg relative z-10",
+            displayMode === "all" 
+              ? "text-klando-dark" 
+              : "text-muted-foreground hover:text-foreground"
+          )}
         >
           Afficher Tout
         </button>
         <button
           onClick={onShowOnlyLast}
-          className="flex-1 py-2 text-[10px] font-black uppercase tracking-widest bg-klando-gold text-klando-dark rounded-lg shadow-sm hover:shadow-klando-gold/20 transition-all"
+          className={cn(
+            "flex-1 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 rounded-lg relative z-10",
+            displayMode === "last" 
+              ? "text-klando-dark" 
+              : "text-muted-foreground hover:text-foreground"
+          )}
         >
           Dernier Seul
         </button>
+        
+        {/* Sliding background indicator */}
+        <div 
+          className={cn(
+            "absolute inset-y-1 w-[calc(50%-4px)] bg-klando-gold rounded-lg shadow-sm transition-all duration-300 ease-in-out z-0",
+            displayMode === "all" ? "left-1" : "left-[calc(50%+1px)]"
+          )}
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-klando-gold/30">

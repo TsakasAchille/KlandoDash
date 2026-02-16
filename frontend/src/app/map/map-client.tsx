@@ -65,6 +65,7 @@ export function MapClient({
   });
   const [hoveredTripId, setHoveredTripId] = useState<string | null>(null);
   const [hiddenTripIds, setHiddenTripIds] = useState<Set<string>>(new Set());
+  const [displayMode, setDisplayMode] = useState<"all" | "last">("all");
   const [activeTab, setActiveTab] = useState<"map" | "list">("map");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -151,11 +152,13 @@ export function MapClient({
       allIds.delete(filteredTrips[0].trip_id);
     }
     setHiddenTripIds(allIds);
+    setDisplayMode("last");
   }, [filteredTrips]);
 
   // Afficher tous les trajets
   const handleShowAll = useCallback(() => {
     setHiddenTripIds(new Set());
+    setDisplayMode("all");
   }, []);
 
   // Sélection avec sync URL
@@ -269,6 +272,7 @@ export function MapClient({
               trips={recentTrips}
               selectedTripId={selectedTrip?.trip_id}
               hiddenTripIds={hiddenTripIds}
+              displayMode={displayMode}
               onSelectTrip={handleSelectTrip}
               onHoverTrip={setHoveredTripId}
               onToggleVisibility={handleToggleVisibility}
