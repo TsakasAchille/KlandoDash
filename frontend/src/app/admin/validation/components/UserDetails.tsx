@@ -1,13 +1,15 @@
 "use client";
 
 import { UserListItem } from "@/types/user";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, CheckCircle, XCircle, User } from "lucide-react";
+import { Mail, Phone, CheckCircle, XCircle, User, Split } from "lucide-react";
 import Image from "next/image";
 import { DocumentCard } from "./DocumentCard";
+import { ImageComparisonDialog } from "./ImageComparisonDialog";
 
 interface UserDetailsProps {
   selectedUser: UserListItem | null;
@@ -15,6 +17,8 @@ interface UserDetailsProps {
 }
 
 export function UserDetails({ selectedUser, onValidate }: UserDetailsProps) {
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
+
   if (!selectedUser) {
     return (
       <div className="h-[400px] flex items-center justify-center rounded-xl border border-dashed border-muted-foreground/20 bg-muted/5">
@@ -59,16 +63,27 @@ export function UserDetails({ selectedUser, onValidate }: UserDetailsProps) {
                 </div>
               </div>
             </div>
-            <Badge 
-              variant="outline" 
-              className={cn(
-                selectedUser.is_driver_doc_validated 
-                  ? "bg-green-500/10 text-green-600 border-green-500/20"
-                  : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
-              )}
-            >
-              {selectedUser.is_driver_doc_validated ? "VALIDÉ" : "EN ATTENTE"}
-            </Badge>
+            <div className="flex flex-col items-end gap-2">
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  selectedUser.is_driver_doc_validated 
+                    ? "bg-green-500/10 text-green-600 border-green-500/20"
+                    : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                )}
+              >
+                {selectedUser.is_driver_doc_validated ? "VALIDÉ" : "EN ATTENTE"}
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCompareOpen(true)}
+                className="h-8 gap-2 text-[10px] font-black uppercase tracking-widest border-klando-gold/30 text-klando-gold hover:bg-klando-gold/10"
+              >
+                <Split className="w-3 h-3" />
+                Comparer
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-6">
@@ -117,6 +132,16 @@ export function UserDetails({ selectedUser, onValidate }: UserDetailsProps) {
           </p>
         </div>
       </div>
+
+      <ImageComparisonDialog 
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        image1={selectedUser.driver_license_url || null}
+        image2={selectedUser.id_card_url || null}
+        label1="Permis de conduire"
+        label2="Carte d'identité"
+        userName={selectedUser.display_name || "Utilisateur"}
+      />
     </>
   );
 }
