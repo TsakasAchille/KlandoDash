@@ -306,7 +306,10 @@ export async function getAIMatchingAction(
         (L'ID du trajet choisi parmi la liste fournie ci-dessus. Si aucun match, écris NONE)
         
         [MESSAGE]
-        (Le texte du message WhatsApp prêt à être envoyé)
+        (Le texte du message WhatsApp court et direct)
+
+        [EMAIL]
+        (Un email professionnel et chaleureux proposant la solution au client)
       `;
 
       aiRecommendation = await askKlandoAI(prompt, { context: "Matching Traction Site" });

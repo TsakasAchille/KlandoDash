@@ -29,6 +29,7 @@ interface SiteRequestsMapProps {
   selectedRequestId: string | null;
   onSelectRequest: (id: string) => void;
   onScan: (id: string) => void;
+  onOpenIA: (id: string) => void;
   scanningId: string | null;
 }
 
@@ -38,15 +39,42 @@ export function SiteRequestsMap({
   selectedRequestId,
   onSelectRequest,
   onScan,
+  onOpenIA,
   scanningId,
 }: SiteRequestsMapProps) {
   const [showAllTrips, setShowAllTrips] = useState(false);
   const [hiddenMatchedTripIds, setHiddenMatchedTripIds] = useState<Set<string>>(new Set());
+  const [hiddenSiteRequestIds, setHiddenSiteRequestIds] = useState<Set<string>>(new Set());
   const [selectedMatchedTripId, setSelectedMatchedTripId] = useState<string | null>(null);
 
   const selectedRequest = useMemo(() => 
     selectedRequestId ? requests.find(r => r.id === selectedRequestId) || null : null
   , [requests, selectedRequestId]);
+
+  // ISOLATION DES DEMANDES : Si un client est sélectionné, on cache les autres par défaut
+  useEffect(() => {
+    if (selectedRequestId) {
+      const others = requests
+        .filter(r => r.id !== selectedRequestId)
+        .map(r => r.id);
+      setHiddenSiteRequestIds(new Set(others));
+    } else {
+      setHiddenSiteRequestIds(new Set());
+    }
+  }, [selectedRequestId, requests.length]);
+
+  // ISOLATION DES TRAJETS : Si un trajet est sélectionné, on cache les autres matches par défaut
+  useEffect(() => {
+    if (selectedMatchedTripId && selectedRequest?.matches) {
+      const others = selectedRequest.matches
+        .filter(m => m.trip_id !== selectedMatchedTripId)
+        .map(m => m.trip_id);
+      setHiddenMatchedTripIds(new Set(others));
+    } else if (!selectedMatchedTripId && selectedRequest?.matches) {
+      // Si rien n'est sélectionné, on réaffiche tous les matches de cette demande
+      setHiddenMatchedTripIds(new Set());
+    }
+  }, [selectedMatchedTripId, selectedRequest?.id]);
 
   // Auto-sélection du meilleur match après un changement de requête ou de matches
   useEffect(() => {
@@ -65,6 +93,15 @@ export function SiteRequestsMap({
       const next = new Set(prev);
       if (next.has(tripId)) next.delete(tripId);
       else next.add(tripId);
+      return next;
+    });
+  };
+
+  const handleToggleRequestVisibility = (reqId: string) => {
+    setHiddenSiteRequestIds(prev => {
+      const next = new Set(prev);
+      if (next.has(reqId)) next.delete(reqId);
+      else next.add(reqId);
       return next;
     });
   };
@@ -121,7 +158,11 @@ export function SiteRequestsMap({
           <CompactRequestsList 
             requests={requests}
             selectedId={selectedRequestId}
+            hiddenIds={hiddenSiteRequestIds}
             onSelect={onSelectRequest}
+            onToggleVisibility={handleToggleRequestVisibility}
+            onShowAll={() => setHiddenSiteRequestIds(new Set())}
+            onHideAll={() => setHiddenSiteRequestIds(new Set(requests.map(r => r.id)))}
             onScan={onScan}
             scanningId={scanningId}
           />
@@ -138,7 +179,7 @@ export function SiteRequestsMap({
               hoveredTripId={null}
               hoveredRequestId={null}
               hiddenTripIds={new Set()}
-              hiddenRequestIds={new Set()}
+              hiddenRequestIds={hiddenSiteRequestIds}
               onSelectTrip={(trip) => setSelectedMatchedTripId(trip.trip_id)} 
               onSelectRequest={(req) => onSelectRequest(req.id)}
               onHoverTrip={() => {}}
@@ -174,6 +215,7 @@ export function SiteRequestsMap({
             onHideAll={() => setHiddenMatchedTripIds(new Set(matchedTrips.map(t => t.trip_id)))}
             selectedId={selectedMatchedTripId}
             onSelect={setSelectedMatchedTripId}
+            onOpenIA={() => selectedRequestId && onOpenIA(selectedRequestId)}
           />
         </div>
       </div>

@@ -308,10 +308,43 @@ export function TripMap({
       polylinesRef.current.set(trip.trip_id, line);
 
       if (isSelected || isHovered) {
-        const startMarker = L.marker(trip.coordinates[0], { 
+        // Départ Trajet (Coordonnées explicites)
+        const startCoords: [number, number] = (trip.departure_latitude && trip.departure_longitude) 
+          ? [trip.departure_latitude, trip.departure_longitude] 
+          : trip.coordinates[0];
+
+        const startMarker = L.marker(startCoords, { 
           icon: createTripIcon(polylineColor, isSelected) 
         }).addTo(mapRef.current!);
+
+        if (isSelected) {
+          startMarker.bindTooltip(`${trip.departure_name?.split(',')[0]} (Départ Conducteur)`, { 
+            permanent: true, 
+            direction: "top", 
+            className: "font-black text-[8px] bg-klando-gold text-klando-dark border-none rounded-md px-2 py-1 shadow-lg" 
+          }).openTooltip();
+        }
+        
         markersRef.current.push(startMarker);
+
+        // Arrivée Trajet (Coordonnées explicites)
+        if (isSelected) {
+          const endCoords: [number, number] = (trip.destination_latitude && trip.destination_longitude) 
+            ? [trip.destination_latitude, trip.destination_longitude] 
+            : trip.coordinates[trip.coordinates.length - 1];
+
+          const endMarker = L.marker(endCoords, { 
+            icon: createTripIcon(polylineColor, isSelected) 
+          }).addTo(mapRef.current!);
+
+          endMarker.bindTooltip(`${trip.destination_name?.split(',')[0]} (Arrivée Conducteur)`, { 
+            permanent: true, 
+            direction: "top", 
+            className: "font-black text-[8px] bg-klando-gold text-klando-dark border-none rounded-md px-2 py-1 shadow-lg" 
+          }).openTooltip();
+
+          markersRef.current.push(endMarker);
+        }
       }
     });
 

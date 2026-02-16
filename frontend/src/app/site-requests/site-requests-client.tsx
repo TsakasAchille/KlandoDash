@@ -128,6 +128,7 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
             selectedRequestId={selectedRequestId}
             onSelectRequest={handleSelectRequestOnMap}
             onScan={handleScan}
+            onOpenIA={(id) => setAiDialogOpenId(id)}
             scanningId={scanningId}
           />
         </TabsContent>

@@ -19,9 +19,19 @@ interface MatchedTripsListProps {
   onHideAll: () => void;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onOpenIA: () => void;
 }
 
-export function MatchedTripsList({ trips, hiddenIds, onToggleVisibility, onShowAll, onHideAll, selectedId, onSelect }: MatchedTripsListProps) {
+export function MatchedTripsList({ 
+  trips, 
+  hiddenIds, 
+  onToggleVisibility, 
+  onShowAll, 
+  onHideAll, 
+  selectedId, 
+  onSelect,
+  onOpenIA 
+}: MatchedTripsListProps) {
   const [radiusTab, setRadiusTab] = useState<string>("10");
 
   const filteredByRadius = useMemo(() => {
@@ -51,6 +61,14 @@ export function MatchedTripsList({ trips, hiddenIds, onToggleVisibility, onShowA
           </div>
           
           <div className="flex gap-2">
+            {filteredByRadius.length > 0 && (
+              <button 
+                onClick={onOpenIA}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-green-500 text-white text-[9px] font-black uppercase shadow-sm hover:bg-green-600 transition-all mr-1 animate-in zoom-in"
+              >
+                <Sparkles className="w-3 h-3" /> IA
+              </button>
+            )}
             <button 
               onClick={onShowAll}
               className="text-[9px] font-black uppercase text-klando-gold hover:underline flex items-center gap-1"
