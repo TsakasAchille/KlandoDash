@@ -6,6 +6,7 @@ Ce dossier contient la documentation détaillée de l'architecture, des modules 
 
 ### Architecture & Philosophie
 - [GPT.md](./GPT.md) : Philosophie de l'interconnexion entre le site vitrine et le dashboard.
+- [DEVELOPMENT_GUIDELINES.md](./DEVELOPMENT_GUIDELINES.md) : **Standards de performance** et Gotchas (SQL, RPC, RAM).
 - [ARCHITECTURE_DIAGRAMS.md](./ARCHITECTURE_DIAGRAMS.md) : Diagrammes de flux et de données.
 - [support-module-architecture.md](./support-module-architecture.md) : Détails du système de support.
 

@@ -10,7 +10,8 @@ KlandoDash is the administration dashboard for Klando, a carpooling service in S
 
 - **Authentication**: User authentication is handled by NextAuth.js (v5), with Google OAuth as the primary authentication provider. Access to the dashboard is restricted to authorized users listed in the `dash_authorized_users` table in the Supabase database. These records are now enriched with `display_name` and `avatar_url` directly from the Google profile during login via a NextAuth `signIn` callback. Role-based access control is implemented, including `admin` and `support` roles.
 
-- **Data Flow**: The frontend communicates with the Supabase backend through the `@supabase/supabase-js` client library. Data fetching is performed on the server-side using React Server Components, with dedicated query functions in `frontend/src/lib/queries/`. These functions are optimized to fetch only the required data, ensuring efficient data retrieval.
+- **Data Flow**: The frontend communicates with the Supabase backend through the `@supabase/supabase-js` client library. Data fetching is performed on the server-side using React Server Components.
+- **Aggregation Philosophy**: For performance and memory safety, heavy aggregations (stats, counts, complex sums) MUST be performed database-side via SQL RPC functions (`SECURITY DEFINER`). The frontend should only receive the final processed JSON object.
 
 ## Project Structure
 
@@ -248,6 +249,7 @@ The dashboard uses a custom color palette defined in `tailwind.config.ts`.
 - [x] SQL scripts for batch clearing AI data.
 - [x] Stable UI transitions and pagination for data revalidation.
 - [x] Detailed integration guide for the landing page agent.
+- [x] Optimized dashboard metrics calculation via SQL RPC (Memory safety).
 
 ### TODO 🚧
 - [ ] Fix mention notification email rendering (known issue with `render` in App Router).

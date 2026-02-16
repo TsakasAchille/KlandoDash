@@ -120,7 +120,7 @@ Transactions de paiement.
 | `amount` | integer | Montant (XOF) |
 | `status` | text | Statut paiement |
 | `phone` | text | Téléphone |
-| `service_code` | text | Code service paiement |
+| `code_service` | text | Code service paiement (ex: XXXXX_CASH_IN) |
 | `sender` | text | Expéditeur |
 | `msg` | text | Message |
 | `error_message` | text | Message d'erreur |
@@ -128,6 +128,17 @@ Transactions de paiement.
 | `metadata` | jsonb | Métadonnées JSON |
 | `created_at` | timestamp | Date création |
 | `updated_at` | timestamp | Date mise à jour |
+
+---
+
+## Fonctions RPC (Remote Procedure Calls)
+
+Ces fonctions sont utilisées pour les calculs intensifs afin d'économiser la RAM du serveur.
+
+### `get_klando_stats_final()`
+**Description**: Calcule toutes les métriques agrégées du dashboard en une seule requête SQL.
+**Retour**: `json` (Mapping exact avec l'interface `DashboardStats`)
+**Sécurité**: `SECURITY DEFINER` (nécessaire pour calculer les totaux globaux malgré le RLS).
 
 ---
 
