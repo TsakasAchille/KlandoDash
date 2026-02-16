@@ -1,7 +1,8 @@
 import { getTripsWithDriver, getTripById, getTripsStats } from "@/lib/queries/trips";
+import { getPublicPendingTrips } from "@/lib/queries/site-requests";
 import { toTrip } from "@/types/trip";
 import { TripsPageClient } from "./trips-client";
-import { Car, CheckCircle2, Play } from "lucide-react";
+import { Car, CheckCircle2, Play, Globe } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 import { MiniStatCard } from "@/components/mini-stat-card";
 
@@ -25,7 +26,7 @@ export default async function TripsPage({ searchParams }: Props) {
   const pageSize = 5;
 
   // Pre-fetch data with filters and pagination
-  const [{ trips: tripsData, totalCount }, stats, selectedTripData] = await Promise.all([
+  const [{ trips: tripsData, totalCount }, stats, selectedTripData, publicPending] = await Promise.all([
     getTripsWithDriver({
       page: currentPage,
       pageSize,
@@ -37,6 +38,7 @@ export default async function TripsPage({ searchParams }: Props) {
     }),
     getTripsStats(),
     selected ? getTripById(selected) : null,
+    getPublicPendingTrips(),
   ]);
 
   // Convert to legacy Trip format for compatibility with table component
@@ -67,10 +69,17 @@ export default async function TripsPage({ searchParams }: Props) {
           color="gold" 
         />
         <MiniStatCard 
+          title="Visibles (Site)" 
+          value={publicPending.length} 
+          icon={Globe} 
+          color="blue" 
+          description="En attente sur le site"
+        />
+        <MiniStatCard 
           title="Actifs" 
           value={stats.active_trips} 
           icon={Play} 
-          color="blue" 
+          color="gold" 
         />
         <MiniStatCard 
           title="Terminés" 
