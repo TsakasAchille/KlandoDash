@@ -2,14 +2,15 @@ import { createServerClient } from "../../supabase";
 import { PublicTrip } from "./types";
 
 /**
- * Récupère les trajets actuellement affichés en direct sur le site
+ * Récupère les trajets actuellement affichés en direct sur le site (limité à 50)
  */
 export async function getPublicPendingTrips(): Promise<PublicTrip[]> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("public_pending_trips")
     .select("*")
-    .order("departure_time", { ascending: true });
+    .order("departure_time", { ascending: true })
+    .limit(50);
 
   if (error) {
     console.error("getPublicPendingTrips error:", error);

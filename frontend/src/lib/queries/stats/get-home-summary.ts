@@ -13,16 +13,15 @@ export async function getHomeSummary(): Promise<HomeSummary> {
   const stats = await getDashboardStats();
   const supabase = createServerClient();
 
-  // Fetch recent activities in parallel
+  // Fetch recent activities with individual error handling to prevent failure
   const [
-    { data: recentTripsData },
-    { data: recentTxnsData },
-    { data: recentTicketsData },
-    { data: recentUsersData },
-    { data: publicPendingData },
-    { data: publicCompletedData },
+    recentTripsRes,
+    recentTxnsRes,
+    recentTicketsRes,
+    recentUsersRes,
+    publicPendingRes,
+    publicCompletedRes,
   ] = await Promise.all([
-    // Derniers trajets
     supabase
       .from("trips")
       .select(`
@@ -33,7 +32,6 @@ export async function getHomeSummary(): Promise<HomeSummary> {
       .order("created_at", { ascending: false })
       .limit(5),
 
-    // Dernières transactions
     supabase
       .from("transactions")
       .select(`
@@ -43,33 +41,41 @@ export async function getHomeSummary(): Promise<HomeSummary> {
       .order("created_at", { ascending: false })
       .limit(5),
 
-    // Derniers tickets support
     supabase.rpc("get_tickets_with_user", {
       p_status: null,
       p_limit: 5,
       p_offset: 0,
     }),
 
-    // Derniers utilisateurs
     supabase
       .from("users")
       .select("uid, display_name, email, photo_url, role, created_at")
       .order("created_at", { ascending: false })
       .limit(5),
 
-    // Trajets affichés sur le site (LIVE)
     supabase
       .from("public_pending_trips")
       .select("*")
       .order("departure_time", { ascending: true })
       .limit(4),
 
-    // Trajets terminés (PREUVE SOCIALE)
     supabase
       .from("public_completed_trips")
       .select("*")
       .limit(4),
   ]);
+
+  if (recentUsersRes.error) console.error("Error fetching recent users:", recentUsersRes.error);
+  if (recentTripsRes.error) console.error("Error fetching recent trips:", recentTripsRes.error);
+  
+  const recentUsersData = recentUsersRes.data || [];
+  const recentTripsData = recentTripsRes.data || [];
+  const recentTxnsData = recentTxnsRes.data || [];
+  const recentTicketsData = recentTicketsRes.data || [];
+  const publicPendingData = publicPendingRes.data || [];
+  const publicCompletedData = publicCompletedRes.data || [];
+
+  console.log("[HomeSummary] Recent Users Count:", recentUsersData.length);
 
   interface TripRaw {
     trip_id: string;
@@ -85,7 +91,7 @@ export async function getHomeSummary(): Promise<HomeSummary> {
   }
 
   // Transformer les trajets pour correspondre au type Trip
-  const recentTrips = (recentTripsData || []).map((t: unknown) => {
+  const recentTrips = (recentTripsData as any[]).map((t: unknown) => {
     const trip = t as TripRaw;
     return {
       trip_id: trip.trip_id,
@@ -94,7 +100,7 @@ export async function getHomeSummary(): Promise<HomeSummary> {
       departure_schedule: trip.departure_schedule,
       status: trip.status,
       trip_distance: 0,
-      passengers: [], // On ne charge pas les passagers pour le résumé
+      passengers: [], 
       total_seats: trip.total_seats || 0,
       driver_name: trip.driver?.display_name || "N/A",
       driver_photo: trip.driver?.photo_url || null,

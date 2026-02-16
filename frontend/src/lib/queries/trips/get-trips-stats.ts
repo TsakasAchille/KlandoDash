@@ -2,14 +2,12 @@ import { createServerClient } from "../../supabase";
 import { TripStats } from "@/types/trip";
 
 /**
- * Statistiques globales des trajets
+ * Statistiques globales des trajets (Optimisé via RPC)
  */
 export async function getTripsStats(): Promise<TripStats> {
   const supabase = createServerClient();
 
-  const { data, error } = await supabase
-    .from("trips")
-    .select("status, distance, seats_booked");
+  const { data, error } = await supabase.rpc("get_klando_stats_final");
 
   if (error) {
     console.error("getTripsStats error:", error);
@@ -22,14 +20,15 @@ export async function getTripsStats(): Promise<TripStats> {
     };
   }
 
-  type TripRow = { status: string | null; distance: number | null; seats_booked: number | null };
-  const trips = (data || []) as TripRow[];
-  const total = trips.length;
+  const byStatus = data.trips.byStatus || [];
+  const activeCount = byStatus.find((s: any) => s.status === 'ACTIVE')?.count || 0;
+  const completedCount = byStatus.find((s: any) => s.status === 'COMPLETED')?.count || 0;
+
   return {
-    total_trips: total,
-    active_trips: trips.filter((t: TripRow) => t.status === "ACTIVE").length,
-    completed_trips: trips.filter((t: TripRow) => t.status === "COMPLETED").length,
-    total_distance: trips.reduce((sum: number, t: TripRow) => sum + (t.distance || 0), 0),
-    total_seats_booked: trips.reduce((sum: number, t: TripRow) => sum + (t.seats_booked || 0), 0),
+    total_trips: data.trips.total,
+    active_trips: activeCount,
+    completed_trips: completedCount,
+    total_distance: data.trips.totalDistance,
+    total_seats_booked: data.trips.totalSeatsBooked,
   };
 }
