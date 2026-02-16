@@ -1,15 +1,20 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { MapFilters } from "@/components/map/map-filters";
 import { RecentTripsTable } from "@/components/map/recent-trips-table";
 import { TripMapPopup } from "@/components/map/trip-map-popup";
-import { TripMapItem, MapFilters as MapFiltersType } from "@/types/trip";
+import { TripMapItem } from "@/types/trip";
 import { SiteTripRequest } from "@/types/site-request";
 import { X, Filter, List, Map as MapIcon, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Hooks
+import { useMapFilters } from "./hooks/useMapFilters";
+import { useMapSelection } from "./hooks/useMapSelection";
+import { useMapUI } from "./hooks/useMapUI";
 
 // Import dynamique pour éviter les erreurs SSR avec Leaflet
 const TripMap = dynamic(
@@ -48,97 +53,47 @@ export function MapClient({
 }: MapClientProps) {
   const router = useRouter();
 
-  // State
-  const [selectedTrip, setSelectedTrip] = useState<TripMapItem | null>(
-    initialSelectedTrip
-  );
-  
-  // Refs
-  const lastFetchedPassengersId = useRef<string | null>(null);
-
-  const [filters, setFilters] = useState<MapFiltersType & { showRequests: boolean }>({
-    status: (initialStatusFilter as MapFiltersType["status"]) || "ALL",
-    dateFrom: null,
-    dateTo: null,
-    driverId: initialDriverFilter,
-    showRequests: initialShowRequests,
+  // 1. Filtrage
+  const { 
+    filters, 
+    handleFilterChange, 
+    filteredTrips, 
+    filteredRequests 
+  } = useMapFilters({
+    trips,
+    siteRequests,
+    initialStatusFilter,
+    initialDriverFilter,
+    initialShowRequests
   });
-  const [hoveredTripId, setHoveredTripId] = useState<string | null>(null);
-  const [hiddenTripIds, setHiddenTripIds] = useState<Set<string>>(new Set());
-  const [displayMode, setDisplayMode] = useState<"all" | "last">("all");
-  const [activeTab, setActiveTab] = useState<"map" | "list">("map");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [hasBeenManuallyClosed, setHasBeenManuallyClosed] = useState(false);
 
-  // Filtrage des demandes (géocodées uniquement ou avec fallback par ville)
-  const filteredRequests = useMemo(() => {
-    console.log(`[MapDebug] Total siteRequests received: ${siteRequests.length}`);
-    if (!filters.showRequests) {
-      console.log("[MapDebug] showRequests filter is OFF");
-      return [];
-    }
+  // 2. Sélection
+  const {
+    selectedTrip,
+    handleSelectTrip,
+    handleClosePopup,
+  } = useMapSelection({
+    initialSelectedTrip
+  });
 
-    // Fallback simple: si pas de coordonnées, on peut simuler des points proches de Dakar 
-    // pour montrer que le système fonctionne, ou mieux, filtrer ceux qui ont des coords.
-    // NOTE: Idéalement, le site vitrine doit envoyer les coords.
-    
-    const processed = siteRequests.map(r => {
-      // Si on a déjà des coordonnées, parfait
-      if (r.origin_lat && r.origin_lng) return r;
+  // 3. UI & Visibilité
+  const {
+    hoveredTripId,
+    setHoveredTripId,
+    hiddenTripIds,
+    displayMode,
+    activeTab,
+    setActiveTab,
+    isSidebarOpen,
+    setIsSidebarOpen,
+    showMobileFilters,
+    setShowMobileFilters,
+    handleToggleVisibility,
+    handleShowOnlyLast,
+    handleShowAll
+  } = useMapUI(filteredTrips);
 
-      // Fallback de simulation pour la démo si aucune donnée n'est géocodée
-      // On place les demandes sans coords autour de Dakar avec un léger offset aléatoire
-      const dakarLat = 14.7167;
-      const dakarLng = -17.4677;
-      const randomOffset = () => (Math.random() - 0.5) * 0.1;
-
-      return {
-        ...r,
-        origin_lat: dakarLat + randomOffset(),
-        origin_lng: dakarLng + randomOffset(),
-        is_estimated: true // Drapeau pour l'UI
-      };
-    });
-
-    console.log(`[MapDebug] showRequests filter is ON. Displaying ${processed.length} requests.`);
-    return processed;
-  }, [siteRequests, filters.showRequests]);
-
-  // Toggle visibility d'un trajet
-  const handleToggleVisibility = useCallback((tripId: string) => {
-    setHiddenTripIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(tripId)) {
-        newSet.delete(tripId);
-      } else {
-        newSet.add(tripId);
-      }
-      return newSet;
-    });
-  }, []);
-
-  // Fetch passagers uniquement pour le trajet sélectionné
-  useEffect(() => {
-    if (selectedTrip && lastFetchedPassengersId.current !== selectedTrip.trip_id) {
-      lastFetchedPassengersId.current = selectedTrip.trip_id;
-      
-      fetch(`/api/trips/${selectedTrip.trip_id}/passengers`)
-        .then((res) => res.json())
-        .then((passengers) => {
-          if (Array.isArray(passengers)) {
-            setSelectedTrip((prev) =>
-              prev && prev.trip_id === selectedTrip.trip_id 
-                ? { ...prev, passengers } 
-                : prev
-            );
-          }
-        })
-        .catch(console.error);
-    }
-  }, [selectedTrip?.trip_id, selectedTrip]);
-
-  // Pre-fetch pages liées (UX premium)
+  // UX: Pre-fetch pages liées
   useEffect(() => {
     if (selectedTrip) {
       if (selectedTrip.driver?.uid) {
@@ -148,111 +103,10 @@ export function MapClient({
     }
   }, [selectedTrip, router]);
 
-  // Filtrage des trajets (client-side MVP)
-  const filteredTrips = useMemo(() => {
-    return trips.filter((trip) => {
-      if (filters.status !== "ALL" && trip.status !== filters.status)
-        return false;
-      if (filters.driverId && trip.driver?.uid !== filters.driverId)
-        return false;
-      if (filters.dateFrom && trip.departure_schedule) {
-        const tripDate = new Date(trip.departure_schedule);
-        if (tripDate < new Date(filters.dateFrom)) return false;
-      }
-      if (filters.dateTo && trip.departure_schedule) {
-        const tripDate = new Date(trip.departure_schedule);
-        if (tripDate > new Date(filters.dateTo)) return false;
-      }
-      return true;
-    });
-  }, [trips, filters]);
-
-  // 15 derniers trajets filtrés
+  // 15 derniers trajets filtrés pour la barre latérale
   const recentTrips = useMemo(() => {
     return filteredTrips.slice(0, 15);
   }, [filteredTrips]);
-
-  // Afficher seulement le dernier trajet
-  const handleShowOnlyLast = useCallback(() => {
-    const allIds = new Set(filteredTrips.map((t) => t.trip_id));
-    // Garder seulement le premier (le plus récent)
-    if (filteredTrips.length > 0) {
-      allIds.delete(filteredTrips[0].trip_id);
-    }
-    setHiddenTripIds(allIds);
-    setDisplayMode("last");
-  }, [filteredTrips]);
-
-  // Afficher tous les trajets
-  const handleShowAll = useCallback(() => {
-    setHiddenTripIds(new Set());
-    setDisplayMode("all");
-  }, []);
-
-  // Sélection avec sync URL
-  const handleSelectTrip = useCallback(
-    (trip: TripMapItem) => {
-      setSelectedTrip(trip);
-      setActiveTab("map"); // Switch automatique sur mobile
-      const url = new URL(window.location.href);
-      url.searchParams.set("selected", trip.trip_id);
-      router.replace(url.pathname + url.search, { scroll: false });
-    },
-    [router]
-  );
-
-  // Fermeture popup
-  const handleClosePopup = useCallback(() => {
-    setSelectedTrip(null);
-    setHasBeenManuallyClosed(true);
-    const url = new URL(window.location.href);
-    url.searchParams.delete("selected");
-    router.replace(url.pathname + url.search, { scroll: false });
-  }, [router]);
-
-  // Mise à jour filtres avec sync URL
-  const handleFilterChange = useCallback(
-    (newFilters: Partial<MapFiltersType & { showRequests: boolean }>) => {
-      setFilters((prev) => ({ ...prev, ...newFilters }));
-      const url = new URL(window.location.href);
-      
-      if (newFilters.status !== undefined) {
-        if (newFilters.status === "ALL") url.searchParams.delete("status");
-        else url.searchParams.set("status", newFilters.status);
-      }
-      
-      if (newFilters.driverId !== undefined) {
-        if (newFilters.driverId === null) url.searchParams.delete("driver");
-        else url.searchParams.set("driver", newFilters.driverId);
-      }
-
-      if (newFilters.showRequests !== undefined) {
-        if (!newFilters.showRequests) url.searchParams.delete("showRequests");
-        else url.searchParams.set("showRequests", "true");
-      }
-
-      router.replace(url.pathname + url.search, { scroll: false });
-    },
-    [router]
-  );
-
-  // Sélectionner le premier trajet par défaut si aucun n'est sélectionné
-  useEffect(() => {
-    if (
-      !initialSelectedTrip &&
-      filteredTrips.length > 0 &&
-      !selectedTrip &&
-      !hasBeenManuallyClosed
-    ) {
-      // handleSelectTrip(filteredTrips[0]);
-    }
-  }, [
-    filteredTrips,
-    initialSelectedTrip,
-    selectedTrip,
-    handleSelectTrip,
-    hasBeenManuallyClosed,
-  ]);
 
   return (
     <div className="flex flex-col h-full relative">
@@ -279,7 +133,7 @@ export function MapClient({
       </div>
 
       <div className="flex-1 flex flex-col md:flex-row min-h-0 relative">
-        {/* Sidebar - Liste des trajets (Desktop: à gauche, Mobile: switchable) */}
+        {/* Sidebar - Liste des trajets */}
         <div className={cn(
           "bg-background/95 backdrop-blur-md border-r border-border/40 flex flex-col transition-all duration-500 z-30",
           "md:w-[350px] lg:w-[400px]",

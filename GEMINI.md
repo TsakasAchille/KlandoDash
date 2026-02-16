@@ -16,7 +16,7 @@ KlandoDash is the administration dashboard for Klando, a carpooling service in S
 
 ```
 KlandoDash/
-├── frontend/          # Next.js 14 + Shadcn/ui
+├── frontend/          # Next.js 14 + Shadcn/ui ([README](./frontend/README.md))
 │   ├── src/app/      # Pages (App Router)
 │   │   ├── transactions/ # Transactions module
 │   │   ├── map/          # Real-time trips map
@@ -26,17 +26,17 @@ KlandoDash/
 │   ├── src/types/    # TypeScript type definitions
 │   ├── .env.example  # Example environment variables
 │   └── package.json  # Frontend dependencies and scripts
-├── database/          # SQL schemas, migrations, queries
+├── database/          # SQL schemas, migrations, queries ([README](./database/README.md))
 │   ├── schema.sql    # Full database schema dump
 │   ├── tables.md     # Tables documentation
 │   └── migrations/   # SQL migration files
-├── docs/              # Documentation technique
+├── docs/              # Documentation technique ([README](./docs/README.md))
 │   ├── WEBSITE_INTEGRATION.md # Guide d'intégration site vitrine
 │   ├── GPT.md         # Philosophie d'interconnexion
 │   └── ...
 ├── .env.local         # Local environment variables (symlinked to frontend/.env.local)
 ├── package.json       # Root project dependencies (if any)
-└── README.md          # General project README
+└── README.md          # General project README ([README](./README.md))
 ```
 
 ## Commands
