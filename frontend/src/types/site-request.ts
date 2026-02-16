@@ -19,6 +19,8 @@ export interface SiteTripRequest {
   matches?: {
     trip_id: string;
     proximity_score: number;
+    origin_distance?: number;
+    destination_distance?: number;
   }[];
 }
 

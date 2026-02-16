@@ -15,6 +15,7 @@ import { useState } from "react";
 import { scanRequestMatchesAction } from "@/app/site-requests/actions";
 import { toast } from "sonner";
 import { ScanResultsDialog } from "@/app/site-requests/components/ScanResultsDialog";
+import { MapFocusHeader } from "./components/MapFocusHeader";
 
 // Hooks
 import { useMapFilters } from "./hooks/useMapFilters";
@@ -131,8 +132,21 @@ export function MapClient({
     handleToggleRequestVisibility,
     handleShowOnlyLast,
     handleShowAll,
-    handleHideAll
+    handleHideAll,
+    handleShowEverything,
+    handleHideEverything
   } = useMapUI(filteredTrips, filteredRequests);
+
+  // Auto-isoler les matches lors de la sélection d'une requête
+  useEffect(() => {
+    if (selectedRequest && (selectedRequest.matches?.length || 0) > 0) {
+      handleFilterChange({ showMatchesOnly: true });
+      // S'assurer que les trajets ne sont pas cachés manuellement
+      handleShowAll(); 
+    } else {
+      handleFilterChange({ showMatchesOnly: false });
+    }
+  }, [selectedRequest?.id, handleFilterChange, handleShowAll]);
 
   // UX: Pre-fetch pages liées
   useEffect(() => {
@@ -189,7 +203,38 @@ export function MapClient({
           !isSidebarOpen && "md:w-0 md:opacity-0 md:pointer-events-none"
         )}>
           <div className="p-4 flex-1 overflow-hidden flex flex-col">
-            {/* Sidebar Tabs */}
+            {/* 1. Global Toolbar */}
+            <div className="flex items-center justify-between mb-4 px-2">
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleShowEverything}
+                  className="p-2 rounded-xl bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-klando-gold transition-all"
+                  title="Tout afficher"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={handleHideEverything}
+                  className="p-2 rounded-xl bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
+                  title="Tout masquer"
+                >
+                  <EyeOff className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 italic mr-2">Exploration</h3>
+                <button 
+                  onClick={() => setShowMobileFilters(true)}
+                  className="p-2 rounded-xl bg-klando-gold/10 border border-klando-gold/20 text-klando-gold hover:bg-klando-gold/20 transition-all"
+                  title="Filtres avancés"
+                >
+                  <Filter className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Sidebar Tabs */}
             <div className="flex bg-muted/30 p-1 rounded-xl mb-4">
               <button
                 onClick={() => setSidebarTab("trips")}
@@ -216,34 +261,6 @@ export function MapClient({
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">
                   {sidebarTab === "trips" ? "Offre disponible" : "Demande client"}
                 </h3>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={handleShowAll}
-                    className="text-[9px] font-black uppercase text-klando-gold hover:underline flex items-center gap-1"
-                  >
-                    <Eye className="w-2.5 h-2.5" /> Tout
-                  </button>
-                  <button 
-                    onClick={handleHideAll}
-                    className="text-[9px] font-black uppercase text-muted-foreground hover:text-foreground flex items-center gap-1"
-                  >
-                    <EyeOff className="w-2.5 h-2.5" /> Aucun
-                  </button>
-                  
-                  {sidebarTab === "requests" && selectedRequest && (selectedRequest.matches?.length || 0) > 0 && (
-                    <button 
-                      onClick={() => handleFilterChange({ showMatchesOnly: !filters.showMatchesOnly })}
-                      className={cn(
-                        "text-[9px] font-black uppercase flex items-center gap-1 px-2 py-0.5 rounded-full transition-all",
-                        filters.showMatchesOnly 
-                          ? "bg-green-500 text-white shadow-sm" 
-                          : "text-green-500 hover:bg-green-500/10"
-                      )}
-                    >
-                      <Sparkles className="w-2.5 h-2.5" /> Matches
-                    </button>
-                  )}
-                </div>
               </div>
               <button 
                 onClick={() => setShowMobileFilters(true)}
@@ -284,6 +301,12 @@ export function MapClient({
           "flex-1 relative transition-all duration-500",
           activeTab === "list" ? "hidden md:block" : "block"
         )}>
+          {/* FOCUS MODE HEADER */}
+          <MapFocusHeader 
+            selectedRequest={selectedRequest} 
+            onClear={handleClosePopup} 
+          />
+
           <TripMap
             trips={filteredTrips}
             siteRequests={filteredRequests}

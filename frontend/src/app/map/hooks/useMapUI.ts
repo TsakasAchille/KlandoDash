@@ -78,6 +78,20 @@ export function useMapUI(filteredTrips: TripMapItem[], filteredRequests: SiteTri
     }
   }, [sidebarTab, filteredTrips, filteredRequests]);
 
+  const handleShowEverything = useCallback(() => {
+    setHiddenTripIds(new Set());
+    setHiddenRequestIds(new Set());
+    setTripDisplayMode("all");
+    setRequestDisplayMode("all");
+  }, []);
+
+  const handleHideEverything = useCallback(() => {
+    setHiddenTripIds(new Set(filteredTrips.map(t => t.trip_id)));
+    setHiddenRequestIds(new Set(filteredRequests.map(r => r.id)));
+    setTripDisplayMode("none");
+    setRequestDisplayMode("none");
+  }, [filteredTrips, filteredRequests]);
+
   return {
     hoveredTripId,
     setHoveredTripId,
@@ -98,6 +112,8 @@ export function useMapUI(filteredTrips: TripMapItem[], filteredRequests: SiteTri
     handleToggleRequestVisibility,
     handleShowOnlyLast,
     handleShowAll,
-    handleHideAll
+    handleHideAll,
+    handleShowEverything,
+    handleHideEverything
   };
 }

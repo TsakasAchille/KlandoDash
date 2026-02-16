@@ -10,32 +10,71 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSiteRequestAI, PublicTrip } from "./hooks/useSiteRequestAI";
 import { MatchingDialog } from "./components/MatchingDialog";
 import { PreviewTabs } from "./components/PreviewTabs";
+import { SiteRequestsMap } from "./components/SiteRequestsMap";
+import { TripMapItem } from "@/types/trip";
+import { useRouter, useSearchParams } from "next/navigation";
+import { scanRequestMatchesAction } from "./actions";
+import { ScanResultsDialog } from "./components/ScanResultsDialog";
 
 interface SiteRequestsClientProps {
   initialRequests: SiteTripRequest[];
   publicPending: PublicTrip[];
   publicCompleted: PublicTrip[];
+  tripsForMap: TripMapItem[];
 }
 
-export function SiteRequestsClient({ initialRequests, publicPending, publicCompleted }: SiteRequestsClientProps) {
+export function SiteRequestsClient({ initialRequests, publicPending, publicCompleted, tripsForMap }: SiteRequestsClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") || "requests";
+
   const [requests, setRequests] = useState<SiteTripRequest[]>(initialRequests);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   
-  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(searchParams.get("id") || null);
+  const [aiDialogOpenId, setAiDialogOpenId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  // SCAN STATE
+  const [scanningId, setScanningId] = useState<string | null>(null);
 
   // Sync state with props when server re-renders
   useEffect(() => {
     setRequests(initialRequests);
   }, [initialRequests]);
 
+  const handleScan = async (id: string) => {
+    setScanningId(id);
+    try {
+      // On scanne large (30km) pour remplir les onglets 5/10/15
+      const result = await scanRequestMatchesAction(id, 30);
+      if (result.success) {
+        toast.success(`Scan terminé : ${result.count} trajets analysés.`);
+      }
+    } catch (error) {
+      toast.error("Erreur lors du scan.");
+    } finally {
+      setScanningId(null);
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", value);
+    router.replace(url.pathname + url.search, { scroll: false });
+  };
+
   const selectedRequest = useMemo(() => 
     selectedRequestId ? requests.find(r => r.id === selectedRequestId) : null
   , [requests, selectedRequestId]);
 
-  const aiMatching = useSiteRequestAI(selectedRequest || null, publicPending, publicCompleted);
+  const aiRequest = useMemo(() => 
+    aiDialogOpenId ? requests.find(r => r.id === aiDialogOpenId) : null
+  , [requests, aiDialogOpenId]);
+
+  const aiMatching = useSiteRequestAI(aiRequest || null, publicPending, publicCompleted);
 
   const handleUpdateStatus = (id: string, status: SiteTripRequestStatus) => {
     setUpdatingId(id);
@@ -50,11 +89,20 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
     });
   };
 
+  const handleSelectRequestOnMap = (id: string) => {
+    setSelectedRequestId(id);
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("id", id);
+    else url.searchParams.delete("id");
+    router.replace(url.pathname + url.search, { scroll: false });
+  };
+
   return (
     <>
-      <Tabs defaultValue="requests" className="space-y-6">
+      <Tabs value={tabParam} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="bg-muted/50 p-1">
           <TabsTrigger value="requests">Demandes Clients</TabsTrigger>
+          <TabsTrigger value="map">Carte Interactive</TabsTrigger>
           <TabsTrigger value="preview">Aperçu Public (Site)</TabsTrigger>
         </TabsList>
 
@@ -67,7 +115,20 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
             setCurrentPage={setCurrentPage}
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
-            onOpenIA={(id) => setSelectedRequestId(id)}
+            onOpenIA={(id) => setAiDialogOpenId(id)}
+            onScan={handleScan}
+            scanningId={scanningId}
+          />
+        </TabsContent>
+
+        <TabsContent value="map" className="space-y-6 outline-none">
+          <SiteRequestsMap 
+            requests={requests}
+            trips={tripsForMap}
+            selectedRequestId={selectedRequestId}
+            onSelectRequest={handleSelectRequestOnMap}
+            onScan={handleScan}
+            scanningId={scanningId}
           />
         </TabsContent>
         
@@ -77,9 +138,9 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
       </Tabs>
 
       <MatchingDialog 
-        isOpen={!!selectedRequestId}
-        onClose={() => setSelectedRequestId(null)}
-        selectedRequest={selectedRequest || null}
+        isOpen={!!aiDialogOpenId}
+        onClose={() => setAiDialogOpenId(null)}
+        selectedRequest={aiRequest || null}
         {...aiMatching}
       />
     </>

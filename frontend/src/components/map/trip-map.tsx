@@ -53,6 +53,12 @@ const popupStyles = `
     background-color: #f1f5f9 !important;
     color: #EBC33F !important;
   }
+
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+  }
 `;
 
 // Palette de couleurs variées pour distinguer les trajets
@@ -89,21 +95,66 @@ const createTripIcon = (color: string, isSelected: boolean) =>
     iconAnchor: isSelected ? [8, 8] : [6, 6],
   });
 
-// Icône pour les demandes clients
+// Icône pour les demandes clients (Départ)
+const createRequestStartIcon = (isSelected: boolean) =>
+  L.divIcon({
+    className: "custom-request-start",
+    html: `<div style="
+      background-color: #22C55E;
+      width: ${isSelected ? '18px' : '14px'};
+      height: ${isSelected ? '18px' : '14px'};
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      ${isSelected ? 'animation: pulse 2s infinite;' : ''}
+    ">
+      <div style="width: 4px; height: 4px; background: white; border-radius: 50%;"></div>
+    </div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+
+// Icône pour les demandes clients (Arrivée)
+const createRequestEndIcon = (isSelected: boolean) =>
+  L.divIcon({
+    className: "custom-request-end",
+    html: `<div style="
+      background-color: #EF4444;
+      width: ${isSelected ? '18px' : '14px'};
+      height: ${isSelected ? '18px' : '14px'};
+      border-radius: 3px;
+      border: 3px solid white;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+      transform: rotate(45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      ${isSelected ? 'animation: pulse 2s infinite;' : ''}
+    ">
+      <div style="width: 4px; height: 4px; background: white; transform: rotate(-45deg);"></div>
+    </div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+
+// On garde l'icône générique pour le survol ou les états simples
 const createRequestIcon = () =>
   L.divIcon({
     className: "custom-request-marker",
     html: `<div style="
       background-color: #A855F7;
-      width: 14px;
-      height: 14px;
-      border-radius: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
       border: 2px solid white;
       box-shadow: 0 2px 10px rgba(168, 85, 247, 0.4);
       transform: rotate(45deg);
     "></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
   });
 
 interface TripMapProps {
@@ -141,6 +192,7 @@ export function TripMap({
   const mapRef = useRef<L.Map | null>(null);
   const polylinesRef = useRef<Map<string, L.Polyline>>(new Map());
   const requestPolylinesRef = useRef<Map<string, L.Polyline>>(new Map());
+  const matchLinesRef = useRef<L.Layer[]>([]);
   const markersRef = useRef<L.Layer[]>([]);
   const hasHighlighted = useRef(false);
   const [isHighlighting, setIsHighlighting] = useState(false);
@@ -223,6 +275,9 @@ export function TripMap({
     requestPolylinesRef.current.forEach((p) => p.remove());
     requestPolylinesRef.current.clear();
 
+    matchLinesRef.current.forEach((l) => l.remove());
+    matchLinesRef.current = [];
+
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
@@ -295,16 +350,101 @@ export function TripMap({
       const isSelected = selectedRequest?.id === req.id;
       const isHovered = hoveredRequestId === req.id;
 
-      const marker = L.marker([req.origin_lat, req.origin_lng], {
-        icon: createRequestIcon(),
+      // Marqueur Départ (Vert)
+      const startMarker = L.marker([req.origin_lat, req.origin_lng], {
+        icon: createRequestStartIcon(isSelected),
         zIndexOffset: isSelected || isHovered ? 1000 : 0
       }).on("click", (e) => {
         L.DomEvent.stopPropagation(e);
         onSelectRequest(req);
       }).addTo(mapRef.current!);
+
+      if (isSelected) {
+        startMarker.bindTooltip("DÉPART CLIENT", { permanent: true, direction: "top", className: "font-black text-[8px] bg-green-600 text-white border-none rounded-md px-2 py-1 shadow-lg" }).openTooltip();
+      }
       
-      markersRef.current.push(marker);
+      markersRef.current.push(startMarker);
+
+      // Marqueur Arrivée (Rouge) - uniquement si on a les coordonnées
+      if (req.destination_lat && req.destination_lng) {
+        const endMarker = L.marker([req.destination_lat, req.destination_lng], {
+          icon: createRequestEndIcon(isSelected),
+          zIndexOffset: isSelected || isHovered ? 1000 : 0
+        }).on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          onSelectRequest(req);
+        }).addTo(mapRef.current!);
+
+        if (isSelected) {
+          endMarker.bindTooltip("ARRIVÉE CLIENT", { permanent: true, direction: "top", className: "font-black text-[8px] bg-red-600 text-white border-none rounded-md px-2 py-1 shadow-lg" }).openTooltip();
+        }
+        
+        markersRef.current.push(endMarker);
+      }
     });
+
+    // 4. Dessiner les lignes de liaison pour les matches (si une demande est sélectionnée)
+    if (selectedRequest && selectedRequest.origin_lat && selectedRequest.origin_lng) {
+      const matchedTripIds = selectedRequest.matches?.map(m => m.trip_id) || [];
+      
+      decodedTrips.forEach(trip => {
+        // On ne dessine la liaison que si le trajet est un match ET n'est pas caché
+        if (matchedTripIds.includes(trip.trip_id) && !hiddenTripIds.has(trip.trip_id)) {
+          
+          // A. Ligne de liaison : Départ Client ➜ Départ Trajet (Coordonnées explicites)
+          if (trip.departure_latitude && trip.departure_longitude) {
+            const startLine = L.polyline([
+              [selectedRequest.origin_lat!, selectedRequest.origin_lng!],
+              [trip.departure_latitude, trip.departure_longitude]
+            ], {
+              color: "#22C55E", // Vert
+              weight: 1.5,
+              opacity: 0.7,
+              dashArray: "4, 6",
+              interactive: false
+            }).addTo(mapRef.current!);
+            
+            matchLinesRef.current.push(startLine);
+
+            // Petit ancrage visuel au point de départ du trajet
+            const startAnchor = L.circleMarker([trip.departure_latitude, trip.departure_longitude], {
+              radius: 3,
+              fillColor: "#22C55E",
+              color: "white",
+              weight: 1,
+              fillOpacity: 1
+            }).addTo(mapRef.current!);
+            matchLinesRef.current.push(startAnchor);
+          }
+
+          // B. Ligne de liaison : Arrivée Client ➜ Arrivée Trajet (Coordonnées explicites)
+          if (selectedRequest.destination_lat && selectedRequest.destination_lng && trip.destination_latitude && trip.destination_longitude) {
+            const endLine = L.polyline([
+              [selectedRequest.destination_lat!, selectedRequest.destination_lng!],
+              [trip.destination_latitude, trip.destination_longitude]
+            ], {
+              color: "#EF4444", // Rouge
+              weight: 1.5,
+              opacity: 0.7,
+              dashArray: "4, 6",
+              interactive: false
+            }).addTo(mapRef.current!);
+            
+            matchLinesRef.current.push(endLine);
+
+            // Petit ancrage visuel au point d'arrivée du trajet
+            const endAnchor = L.circleMarker([trip.destination_latitude, trip.destination_longitude], {
+              radius: 3,
+              fillColor: "#EF4444",
+              color: "white",
+              weight: 1,
+              fillOpacity: 1
+            }).addTo(mapRef.current!);
+            matchLinesRef.current.push(endAnchor);
+          }
+        }
+      });
+    }
 
   }, [decodedTrips, decodedRequests, siteRequests, selectedTrip, selectedRequest, hoveredTripId, hoveredRequestId, hiddenTripIds, hiddenRequestIds, isHighlighting, onSelectTrip, onSelectRequest, onHoverTrip, onHoverRequest]);
 

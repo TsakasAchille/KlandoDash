@@ -196,6 +196,7 @@ export async function scanRequestMatchesAction(requestId: string, radiusKm: numb
       success: true, 
       count: matches.length, 
       diagnostics: {
+        id: requestId,
         hasCoords: true,
         origin: requestData.origin_city,
         destination: requestData.destination_city,
