@@ -80,18 +80,20 @@ KlandoDash/
 ## Pages
 
 - `/` - Accueil (KPI globaux)
-- `/trips` - Gestion des trajets (Filtres, Recherche, Détails)
+- `/trips` - Gestion des trajets (Liste des passagers, Détails détaillés, Filtres)
 - `/users` - Gestion des utilisateurs (Recherche, Bio, Profil vérifié)
-- `/map` - Carte des trajets (Temps réel, Filtres conducteurs)
+- `/map` - Carte Live "Voyager" (Trajets & Demandes clients, Filtres avancés)
 - `/transactions` - Flux financier & revenus (Marge Klando, Cash Flow)
 - `/stats` - Statistiques & KPI financiers
 - `/support` - Tickets support & système de mentions @user
-- `/site-requests` - Gestion des intentions de voyage issues du site vitrine
+- `/site-requests` - Gestion des intentions de voyage avec Matching IA géographique
 - `/login` - Connexion Google OAuth
 
 ## Fonctionnalités Clés
 
+- **Carte Live Premium** : Visualisation en temps réel des trajets et des demandes clients avec filtrage avancé et style "Voyager".
+- **Matching IA** : Algorithme de correspondance géographique (2km, 5km, 10km, 15km) pour relier offre et demande.
+- **Gestion Passagers** : Vue détaillée des participants confirmés par trajet avec accès direct aux profils.
 - **Filtres Avancés** : Recherche par nom, email, ville ou ID sur les tableaux principaux.
-- **Expérience Fluide** : Transition entre les pages avec **Skeleton Loading**.
-- **Responsive Design** : Interface optimisée pour mobile et tablettes.
+- **Expérience Fluide** : Transition entre les pages avec **Skeleton Loading** et design responsive.
 - **Sécurité** : Accès restreint par liste blanche et rôles (Admin / Support).

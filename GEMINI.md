@@ -17,20 +17,20 @@ KlandoDash is the administration dashboard for Klando, a carpooling service in S
 ```
 KlandoDash/
 ├── frontend/          # Next.js 14 + Shadcn/ui ([README](./frontend/README.md))
-│   ├── src/app/      # Pages (App Router)
+│   ├── src/app/      # Pages & API Routes ([README](./frontend/src/app/README.md))
 │   │   ├── transactions/ # Transactions module
 │   │   ├── map/          # Real-time trips map
 │   │   └── ...
-│   ├── src/components/ # Reusable UI components
-│   ├── src/lib/      # Supabase client + queries, auth utilities
-│   ├── src/types/    # TypeScript type definitions
+│   ├── src/components/ # Reusable UI components ([README](./frontend/src/components/README.md))
+│   ├── src/lib/      # Supabase client, queries & logic ([README](./frontend/src/lib/README.md))
+│   ├── src/types/    # TypeScript definitions ([README](./frontend/src/types/README.md))
 │   ├── .env.example  # Example environment variables
 │   └── package.json  # Frontend dependencies and scripts
-├── database/          # SQL schemas, migrations, queries ([README](./database/README.md))
+├── database/          # SQL schemas & migrations ([README](./database/README.md))
 │   ├── schema.sql    # Full database schema dump
 │   ├── tables.md     # Tables documentation
 │   └── migrations/   # SQL migration files
-├── docs/              # Documentation technique ([README](./docs/README.md))
+├── docs/              # Technical Documentation ([README](./docs/README.md))
 │   ├── WEBSITE_INTEGRATION.md # Guide d'intégration site vitrine
 │   ├── GPT.md         # Philosophie d'interconnexion
 │   └── ...

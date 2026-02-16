@@ -1,93 +1,84 @@
-# Guide d'Intégration : Affichage & Collecte (Site Vitrine)
+# Guide d'Intégration Site Vitrine
 
-Ce document détaille comment le site vitrine interagit avec la base de données Klando pour afficher l'activité et collecter les besoins des utilisateurs.
+Ce document décrit comment le site vitrine doit interagir avec le Dashboard pour transmettre les intentions de voyage des utilisateurs.
 
-## 1. Affichage de l'activité (Lecture) 🚗
+## 1. Soumission d'une Demande (Intent)
 
-Utilisez la vue `public_pending_trips` pour montrer les trajets en attente. Cette vue inclut désormais la **polyline** pour afficher le tracé sur une carte.
+Lorsqu'un utilisateur effectue une recherche sur le site sans trouver de trajet, ou souhaite être alerté, le site doit insérer une demande dans la table `site_trip_requests` via Supabase.
 
-```typescript
-// Récupérer les 5 prochains départs avec tracé carte
+### Table : `public.site_trip_requests`
+
+La table est ouverte en écriture aux utilisateurs anonymes (clé publique `ANON_KEY`).
+
+| Colonne | Type | Requis | Description |
+|---|---|---|---|
+| `origin_city` | text | OUI | Ville de départ (ex: "Dakar") |
+| `destination_city` | text | OUI | Ville d'arrivée (ex: "Touba") |
+| `desired_date` | timestamp | NON | Date/Heure souhaitée. `NULL` = "Dès que possible" |
+| `contact_info` | text | OUI | Email ou Numéro de téléphone pour le recontact |
+| `origin_lat` | float | **RECOMMANDÉ** | Latitude du point de départ (pour le matching géo) |
+| `origin_lng` | float | **RECOMMANDÉ** | Longitude du point de départ |
+| `destination_lat` | float | NON | Latitude du point d'arrivée |
+| `destination_lng` | float | NON | Longitude du point d'arrivée |
+
+### Exemple de Code (Javascript / Supabase Client)
+
+```javascript
 const { data, error } = await supabase
+  .from('site_trip_requests')
+  .insert([
+    {
+      origin_city: 'Dakar',
+      destination_city: 'Mbour',
+      desired_date: '2024-05-20T10:00:00Z', // ou null
+      contact_info: '77 000 00 00',
+      // Coordonnées pour le matching intelligent (via Google Places ou autre)
+      origin_lat: 14.7167,
+      origin_lng: -17.4677,
+      destination_lat: 14.4167,
+      destination_lng: -16.9667
+    },
+  ]);
+```
+
+> **Note Importante** : L'envoi des coordonnées (`lat`/`lng`) est essentiel pour activer le matching géographique de haute précision (2km, 5km, etc.) dans le dashboard. Sans elles, le matching se fera uniquement sur le nom des villes ou via une position approximative par défaut.
+
+## 2. Affichage des Trajets "En Direct"
+
+Pour afficher les trajets disponibles (ex: "Départs imminents"), utilisez la vue sécurisée `public_pending_trips`.
+
+### Vue : `public.public_pending_trips`
+
+Cette vue expose uniquement les données non sensibles des trajets en statut `PENDING`.
+
+| Colonne | Description |
+|---|---|
+| `id` | Identifiant du trajet |
+| `departure_city` | Ville de départ |
+| `arrival_city` | Ville d'arrivée |
+| `departure_time` | Date/Heure de départ |
+| `seats_available` | Nombre de places restantes |
+| `polyline` | Tracé encodé du trajet (pour affichage carte) |
+
+### Exemple de requête
+
+```javascript
+const { data: trips } = await supabase
   .from('public_pending_trips')
-  .select('id, departure_city, arrival_city, departure_time, seats_available, polyline')
+  .select('*')
   .order('departure_time', { ascending: true })
   .limit(5);
 ```
 
-### Champs disponibles dans la vue
-* `id` : Identifiant unique du trajet.
-* `departure_city` : Ville de départ.
-* `arrival_city` : Ville d'arrivée.
-* `departure_time` : Date et heure du départ.
-* `seats_available` : Nombre de places restantes.
-* `polyline` : Tracé de l'itinéraire (format Google Encoded Polyline).
-* `destination_latitude` / `destination_longitude` : Coordonnées précises de l'arrivée.
+## 3. Preuve Sociale (Trajets Terminés)
 
----
+Pour afficher l'activité récente et rassurer les visiteurs, utilisez la vue `public_completed_trips`.
 
-## 2. Collecte d'intention (Écriture) ✍️
+### Vue : `public.public_completed_trips`
 
-Lorsqu'un visiteur remplit le formulaire "Vous voulez aller quelque part ?", vous devez insérer les données dans la table `site_trip_requests`. 
+Affiche les 10 derniers trajets terminés avec succès.
 
-Le préfixe `site_` garantit que cette donnée est traitée comme une intention à modérer dans le Dashboard.
+## Philosophie "Intention vs Action"
 
-### Schéma de données
-
-| Champ | Type | Description |
-| :--- | :--- | :--- |
-| `origin_city` | `string` | Ville de départ (obligatoire) |
-| `destination_city` | `string` | Ville d'arrivée (obligatoire) |
-| `contact_info` | `string` | Email ou Téléphone (obligatoire) |
-| `desired_date` | `ISO Date` | Date souhaitée (optionnel) |
-
-### Exemple d'implémentation (React)
-
-```typescript
-async function submitTripRequest(formData: {
-  origin: string;
-  destination: string;
-  contact: string;
-  date?: string;
-}) {
-  const { error } = await supabase
-    .from('site_trip_requests')
-    .insert([
-      {
-        origin_city: formData.origin,
-        destination_city: formData.destination,
-        contact_info: formData.contact,
-        desired_date: formData.date || null,
-        status: 'NEW' // Défini par défaut en DB
-      }
-    ]);
-
-  if (error) {
-    throw new Error("Impossible d'envoyer votre demande.");
-  }
-}
-```
-
-### Recommandations UX
-1.  **Confirmation** : Affichez un message du type : *"Merci ! Nous avons bien reçu votre demande. Un conducteur vous contactera si un trajet correspond."*
-2.  **Validation** : Vérifiez que `contact_info` ressemble à un email ou à un numéro de téléphone valide avant l'envoi.
-
----
-
-## 🛠 Configuration Supabase
-
-Les accès sont déjà configurés pour la clé anonyme :
-*   `SELECT` autorisé sur `public_pending_trips`.
-*   `INSERT` autorisé sur `site_trip_requests`.
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://<votre-project-ref>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<votre-anon-key>
-```
-
-## 📚 Ressources Techniques Supplémentaires
-
-Pour une inspection détaillée du schéma et des exemples de données réelles, vous pouvez vous référer au fichier de diagnostic suivant dans le dépôt du Dashboard :
-`supabase/Supabase Snippet Klando Schema & Data Inspection.csv`
-
-Ce fichier contient un export des structures de tables et des relations pour faciliter le mapping de vos composants.
+- **Le Site (Vitrine)** : Capture l'intention ("Je veux aller à..."). Il est passif sur la création de trajet mais actif sur la collecte de leads.
+- **Le Dashboard (Admin)** : Analyse l'intention, utilise l'IA pour matcher avec des trajets existants (proximité géographique) ou décide d'ouvrir une nouvelle ligne si la demande est forte.
