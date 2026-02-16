@@ -22,7 +22,7 @@ interface Props {
 export default async function TripsPage({ searchParams }: Props) {
   const { selected, page, status, search, driverId, minPrice, maxPrice } = await searchParams;
   const currentPage = parseInt(page || "1", 10);
-  const pageSize = 10;
+  const pageSize = 5;
 
   // Pre-fetch data with filters and pagination
   const [{ trips: tripsData, totalCount }, stats, selectedTripData] = await Promise.all([

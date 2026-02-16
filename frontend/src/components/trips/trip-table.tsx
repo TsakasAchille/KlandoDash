@@ -72,28 +72,28 @@ export function TripTable({
         totalPages={totalPages}
       />
 
-      <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm relative">
+      <div className="rounded-[2.5rem] border border-border/40 bg-card/40 backdrop-blur-md overflow-hidden shadow-sm relative">
         {filterState.isPending && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-klando-gold" />
+            <Loader2 className="h-10 w-10 animate-spin text-klando-gold" />
           </div>
         )}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border/40">
-                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px] py-3">Trajet</TableHead>
-                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px] hidden sm:table-cell">Distance</TableHead>
-                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px] hidden md:table-cell">Date</TableHead>
-                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px]">Places</TableHead>
-                <TableHead className="text-klando-gold font-black uppercase tracking-widest text-[9px]">Statut</TableHead>
+              <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border/40">
+                <TableHead className="text-klando-dark font-black uppercase tracking-[0.2em] text-[10px] py-5 px-6">Identité du Trajet</TableHead>
+                <TableHead className="text-klando-dark font-black uppercase tracking-[0.2em] text-[10px] hidden sm:table-cell px-6 text-center">Logistique</TableHead>
+                <TableHead className="text-klando-dark font-black uppercase tracking-[0.2em] text-[10px] hidden md:table-cell px-6 text-center">Calendrier</TableHead>
+                <TableHead className="text-klando-dark font-black uppercase tracking-[0.2em] text-[10px] px-6 text-center">Réservation</TableHead>
+                <TableHead className="text-klando-dark font-black uppercase tracking-[0.2em] text-[10px] px-6 text-right">État</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {trips.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-10 text-sm">
-                    {filterState.hasActiveFilters ? "Aucun trajet ne correspond à ces critères" : "Aucun trajet trouvé"}
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-20 text-sm italic">
+                    {filterState.hasActiveFilters ? "Aucun résultat pour cette recherche..." : "Aucun trajet dans la base."}
                   </TableCell>
                 </TableRow>
               ) : (

@@ -75,56 +75,62 @@ export function TripFilters({
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 bg-card/50 p-4 rounded-[2rem] border border-border/40 shadow-sm">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1">
+          <div className="relative flex-1 max-w-xl">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Départ, arrivée ou ID..."
+              placeholder="Rechercher par ville de départ, d'arrivée ou ID de trajet..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9 text-sm"
+              className="pl-11 h-12 text-sm rounded-2xl bg-background/50 border-border/60 focus:border-klando-gold/50 transition-all"
             />
             {isPending && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin text-klando-gold" />
               </div>
             )}
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Select value={statusFilter} onValueChange={(v) => updateFilters({ status: v, page: "1" })}>
-              <SelectTrigger className="h-9 w-[140px] text-xs font-bold uppercase tracking-wider">
-                <SelectValue placeholder="Statut" />
+              <SelectTrigger className="h-12 w-[180px] text-[10px] font-black uppercase tracking-widest rounded-2xl border-border/60 bg-background/50">
+                <SelectValue placeholder="STATUT DU TRAJET" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les trajets</SelectItem>
-                <SelectItem value="ACTIVE">Actifs</SelectItem>
-                <SelectItem value="COMPLETED">Terminés</SelectItem>
-                <SelectItem value="PENDING">En attente</SelectItem>
-                <SelectItem value="CANCELLED">Annulés</SelectItem>
+              <SelectContent className="rounded-2xl border-border/60">
+                <SelectItem value="all">TOUS LES TRAJETS</SelectItem>
+                <SelectItem value="ACTIVE">TRAJETS ACTIFS</SelectItem>
+                <SelectItem value="COMPLETED">TRAJETS TERMINÉS</SelectItem>
+                <SelectItem value="PENDING">EN ATTENTE</SelectItem>
+                <SelectItem value="CANCELLED">TRAJETS ANNULÉS</SelectItem>
               </SelectContent>
             </Select>
 
             <Button
               variant={showAdvanced ? "secondary" : "outline"}
               size="sm"
-              className="h-9 gap-2 text-xs font-bold uppercase tracking-wider"
+              className="h-12 w-12 rounded-2xl border-border/60 bg-background/50 relative p-0"
               onClick={() => setShowAdvanced(!showAdvanced)}
             >
-              <Filter className="w-3.5 h-3.5" />
+              <Filter className="w-4 h-4" />
               {hasActiveFilters && (
-                <span className="flex h-2 w-2 rounded-full bg-klando-gold" />
+                <span className="absolute top-3 right-3 flex h-2 w-2 rounded-full bg-klando-gold border-2 border-background" />
               )}
             </Button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-4 border-t lg:border-t-0 pt-3 lg:pt-0">
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            {totalCount} trajets
-          </span>
+        <div className="flex items-center justify-between sm:justify-end gap-6 border-t lg:border-t-0 pt-4 lg:pt-0 px-2">
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-klando-gold leading-none mb-1">
+              Base de données
+            </span>
+            <span className="text-sm font-black text-foreground">
+              {totalCount} <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest ml-1">trajets trouvés</span>
+            </span>
+          </div>
+          <div className="h-8 w-[1px] bg-border/40 hidden sm:block" />
           {totalPages > 1 && <PaginationControls />}
         </div>
       </div>

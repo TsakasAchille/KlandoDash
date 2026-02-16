@@ -62,9 +62,9 @@ export function TripsPageClient({
   }, [initialSelectedTripDetail]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Table - 1/3 width on large screens */}
-      <div className="lg:col-span-1 min-w-0"> {/* min-w-0 pour permettre le scroll */}
+    <div className="flex flex-col gap-10">
+      {/* Table - Full width */}
+      <div className="min-w-0"> {/* min-w-0 pour permettre le scroll */}
         <TripTable
           trips={trips}
           totalCount={totalCount}
@@ -76,13 +76,13 @@ export function TripsPageClient({
         />
       </div>
 
-      {/* Details - 2/3 width on large screens */}
-      <div className="lg:col-span-2">
+      {/* Details - Below the table, full width */}
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
         {detailedTrip ? (
           <TripDetails trip={detailedTrip} />
         ) : (
-          <div className="flex items-center justify-center h-64 rounded-lg border border-dashed border-border sticky top-6">
-            <p className="text-muted-foreground">
+          <div className="flex items-center justify-center py-20 rounded-[2rem] border border-dashed border-border bg-card/30">
+            <p className="text-muted-foreground font-medium">
               Sélectionnez un trajet pour voir les détails
             </p>
           </div>
