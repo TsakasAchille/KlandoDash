@@ -1,6 +1,8 @@
 import { Sparkles } from "lucide-react";
 import { KlandoAIClient } from "./ai-client";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Klando AI - Assistant Intelligent",
 };

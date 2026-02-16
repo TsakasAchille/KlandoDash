@@ -6,6 +6,7 @@ interface MiniStatCardProps {
   value: string | number;
   icon: React.ElementType;
   color: "blue" | "green" | "purple" | "red" | "gold";
+  description?: string;
 }
 
 const themes = {
@@ -16,7 +17,7 @@ const themes = {
   gold: "text-klando-gold bg-klando-gold/10 border-klando-gold/20",
 };
 
-export function MiniStatCard({ title, value, icon: Icon, color }: MiniStatCardProps) {
+export function MiniStatCard({ title, value, icon: Icon, color, description }: MiniStatCardProps) {
   return (
     <Card className="border-none shadow-sm bg-card/50 backdrop-blur-md overflow-hidden relative group min-w-[140px] flex-1">
       {/* Glow Effect (instead of sharp circle) */}
@@ -26,12 +27,17 @@ export function MiniStatCard({ title, value, icon: Icon, color }: MiniStatCardPr
       )} />
       
       <CardContent className="p-4 relative z-10 flex items-center justify-between gap-3">
-        <div className="space-y-0.5">
-          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{title}</p>
+        <div className="space-y-0.5 min-w-0">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest truncate">{title}</p>
           <p className="text-xl font-black tracking-tight">{value}</p>
+          {description && (
+            <p className="text-[8px] font-bold text-muted-foreground/60 uppercase tracking-tighter truncate italic">
+              {description}
+            </p>
+          )}
         </div>
         <div className={cn(
-          "p-2.5 rounded-xl border transition-transform duration-500 group-hover:scale-110",
+          "p-2.5 rounded-xl border transition-transform duration-500 group-hover:scale-110 shrink-0",
           themes[color]
         )}>
           <Icon className="w-4 h-4" />

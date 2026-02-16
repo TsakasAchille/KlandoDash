@@ -136,7 +136,7 @@ export function MapClient({
         })
         .catch(console.error);
     }
-  }, [selectedTrip?.trip_id]);
+  }, [selectedTrip?.trip_id, selectedTrip]);
 
   // Pre-fetch pages liées (UX premium)
   useEffect(() => {

@@ -141,12 +141,22 @@ export async function getTripsWithDriver(options: {
         rating,
         rating_count,
         is_driver_doc_validated
+      ),
+      bookings (
+        status,
+        user:users (
+          uid,
+          display_name,
+          photo_url
+        )
       )
     `, { count: "exact" });
 
   if (status && status !== "all") {
     query = query.eq("status", status);
   }
+
+  query = query.in("bookings.status", ["CONFIRMED", "COMPLETED"]);
 
   if (driverId && driverId !== "all") {
     query = query.eq("driver_id", driverId);
@@ -188,12 +198,32 @@ export async function getTripsWithDriver(options: {
     is_driver_doc_validated: boolean | null;
   };
 
+  type PassengerData = {
+    uid: string;
+    display_name: string | null;
+    photo_url: string | null;
+  };
+
+  interface BookingRaw {
+    user: unknown;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const trips = (data as any[]).map((t) => {
     const rawDriver = t.driver;
     const driver: DriverData | null = Array.isArray(rawDriver)
       ? (rawDriver[0] as DriverData | undefined) || null
       : (rawDriver as DriverData | null);
+
+    const passengers = (t.bookings as unknown as BookingRaw[] || [])
+      .map((b: BookingRaw) => {
+        const rawUser = b.user;
+        if (!rawUser) return null;
+        return Array.isArray(rawUser)
+          ? (rawUser[0] as PassengerData | undefined) || null
+          : (rawUser as PassengerData | null);
+      })
+      .filter((p): p is PassengerData => p !== null);
 
     return {
       trip_id: t.trip_id,
@@ -223,6 +253,7 @@ export async function getTripsWithDriver(options: {
       driver_rating: driver?.rating || null,
       driver_rating_count: driver?.rating_count || null,
       driver_verified: driver?.is_driver_doc_validated || null,
+      passengers: passengers,
     } as TripDetail;
   });
 

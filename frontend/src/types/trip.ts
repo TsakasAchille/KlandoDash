@@ -133,7 +133,11 @@ export interface Trip {
   price_per_seat: number;
   available_seats: number;
   total_seats: number;
-  passengers: string[];
+  passengers: Array<{
+    uid: string;
+    display_name: string | null;
+    photo_url: string | null;
+  }>;
   driver_id: string;
   driver_name: string;
   status: string;
@@ -159,7 +163,7 @@ export function toTrip(detail: TripDetail): Trip {
     price_per_seat: detail.passenger_price || 0,
     available_seats: detail.seats_available || 0,
     total_seats: detail.seats_published || 0,
-    passengers: detail.passengers ? detail.passengers.map((p) => p.uid) : [], // Utiliser les vrais IDs passagers
+    passengers: detail.passengers || [],
     driver_id: detail.driver_id || "",
     driver_name: detail.driver_name || "",
     status: detail.status || "",

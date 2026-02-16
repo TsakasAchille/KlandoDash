@@ -148,26 +148,35 @@ export function TripDetails({ trip }: TripDetailsProps) {
           </CardContent>
         </Card>
 
-        {/* Passagers & Info */}
+        {/* Passagers & Impact */}
         <Card className="border-border/40">
           <CardContent className="p-3">
             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Passagers ({trip.passengers.length}/{trip.seats_published})</p>
-            <div className="flex flex-wrap gap-1.5 mb-3">
+            
+            <div className="space-y-2 mb-4">
               {trip.passengers.map((p) => (
-                <Link key={p.uid} href={`/users?selected=${p.uid}`} title={p.display_name || p.uid}>
-                  {p.photo_url ? (
-                    <div className="relative w-7 h-7">
-                      <Image src={p.photo_url} alt="" fill className="rounded-md object-cover border border-border/50 hover:border-klando-gold transition-colors" />
-                    </div>
-                  ) : (
-                    <div className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center text-muted-foreground text-[10px] font-black hover:text-klando-gold transition-colors border border-border/50">
-                      {(p.display_name || "?").charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </Link>
+                <div key={p.uid} className="flex items-center justify-between p-2 rounded-xl bg-secondary/30 border border-border/20 group hover:border-klando-gold/30 transition-all">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {p.photo_url ? (
+                      <div className="relative w-8 h-8 flex-shrink-0">
+                        <Image src={p.photo_url} alt="" fill className="rounded-lg object-cover border border-border/50" />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground text-[10px] font-black flex-shrink-0 border border-border/50">
+                        {(p.display_name || "P").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-xs font-bold truncate text-foreground group-hover:text-klando-gold transition-colors">{p.display_name || "Passager"}</span>
+                  </div>
+                  <Link href={`/users?selected=${p.uid}`}>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 p-0 hover:bg-klando-gold/10 hover:text-klando-gold">
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </Link>
+                </div>
               ))}
               {trip.passengers.length === 0 && (
-                <p className="text-[10px] text-muted-foreground italic">Aucune réservation</p>
+                <p className="text-[10px] text-muted-foreground italic py-4 text-center">Aucune réservation confirmée</p>
               )}
             </div>
             

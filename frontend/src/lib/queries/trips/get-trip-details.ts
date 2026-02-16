@@ -42,6 +42,7 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
         is_driver_doc_validated
       ),
       bookings (
+        status,
         user:users (
           uid,
           display_name,
@@ -51,6 +52,7 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
     `
     )
     .eq("trip_id", tripId)
+    .in("bookings.status", ["CONFIRMED", "COMPLETED"])
     .single();
 
   if (error) {

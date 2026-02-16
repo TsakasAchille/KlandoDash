@@ -3,6 +3,7 @@
 import { Trip } from "@/types/trip";
 import { formatDate, formatDistance, cn } from "@/lib/utils";
 import { TableCell, TableRow } from "@/components/ui/table";
+import Image from "next/image";
 
 interface TripTableRowProps {
   trip: Trip;
@@ -62,17 +63,34 @@ export function TripTableRow({ trip, isSelected, onSelect }: TripTableRowProps) 
       </TableCell>
       <TableCell className="px-6 text-center">
         <div className="flex flex-col items-center">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Occupation</span>
-          <div className="flex items-center gap-1.5">
-            <div className="flex -space-x-1">
-              {[...Array(Math.min(3, trip.passengers.length))].map((_, i) => (
-                <div key={i} className="w-5 h-5 rounded-full bg-klando-gold/20 border-2 border-card flex items-center justify-center">
-                  <span className="text-[8px] font-black text-klando-gold">P</span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Passagers</span>
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-2">
+              {trip.passengers && trip.passengers.length > 0 ? (
+                trip.passengers.slice(0, 4).map((p, i) => (
+                  <div key={i} className="w-7 h-7 rounded-full bg-secondary border-2 border-card overflow-hidden flex items-center justify-center shadow-sm" title={p.display_name || "Passager"}>
+                    {p.photo_url ? (
+                      <Image src={p.photo_url} alt="" width={28} height={28} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[8px] font-black text-muted-foreground">{(p.display_name || "P").charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-muted border-2 border-dashed border-border/60 flex items-center justify-center">
+                  <span className="text-[8px] font-black text-muted-foreground/40">0</span>
                 </div>
-              ))}
+              )}
+              {trip.passengers && trip.passengers.length > 4 && (
+                <div className="w-7 h-7 rounded-full bg-klando-gold border-2 border-card flex items-center justify-center shadow-sm">
+                  <span className="text-[8px] font-black text-klando-dark">+{trip.passengers.length - 4}</span>
+                </div>
+              )}
             </div>
-            <span className="text-sm font-black text-klando-gold">{trip.passengers.length}</span>
-            <span className="text-xs text-muted-foreground">/ {trip.total_seats}</span>
+            <div className="flex flex-col items-start leading-none ml-1">
+              <span className="text-xs font-black text-foreground">{trip.passengers.length}</span>
+              <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter">/ {trip.total_seats} places</span>
+            </div>
           </div>
         </div>
       </TableCell>
