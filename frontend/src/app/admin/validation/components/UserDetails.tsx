@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, CheckCircle, XCircle, User, Split } from "lucide-react";
+import { Mail, Phone, CheckCircle, XCircle, User, Split, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import { DocumentCard } from "./DocumentCard";
 import { ImageComparisonDialog } from "./ImageComparisonDialog";
@@ -14,9 +14,10 @@ import { ImageComparisonDialog } from "./ImageComparisonDialog";
 interface UserDetailsProps {
   selectedUser: UserListItem | null;
   onValidate: () => void;
+  onBack?: () => void;
 }
 
-export function UserDetails({ selectedUser, onValidate }: UserDetailsProps) {
+export function UserDetails({ selectedUser, onValidate, onBack }: UserDetailsProps) {
   const [isCompareOpen, setIsCompareOpen] = useState(false);
 
   if (!selectedUser) {
@@ -29,6 +30,12 @@ export function UserDetails({ selectedUser, onValidate }: UserDetailsProps) {
 
   return (
     <>
+      <div className="lg:hidden mb-4">
+        <Button variant="ghost" onClick={onBack} className="gap-2 text-muted-foreground font-black uppercase text-[10px] tracking-widest">
+          <ChevronLeft className="w-4 h-4" /> Retour à la liste
+        </Button>
+      </div>
+
       <Card className="border-klando-gold/20 overflow-hidden">
         <CardHeader className="bg-muted/30 pb-4">
           <div className="flex justify-between items-start">
@@ -86,8 +93,8 @@ export function UserDetails({ selectedUser, onValidate }: UserDetailsProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid md:grid-cols-2 gap-6">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <DocumentCard 
               title="Permis de conduire" 
               url={selectedUser.driver_license_url} 
@@ -100,11 +107,11 @@ export function UserDetails({ selectedUser, onValidate }: UserDetailsProps) {
             />
           </div>
 
-          <div className="mt-8 flex gap-3">
+          <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <Button
               onClick={onValidate}
               className={cn(
-                "flex-1 font-bold text-white",
+                "flex-1 font-bold text-white h-12",
                 selectedUser.is_driver_doc_validated 
                   ? "bg-red-600 hover:bg-red-700" 
                   : "bg-green-600 hover:bg-green-700"

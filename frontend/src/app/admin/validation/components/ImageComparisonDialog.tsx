@@ -1,9 +1,8 @@
 "use client";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { X, Maximize2, Split } from "lucide-react";
+import { X, Split } from "lucide-react";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
 
 interface ImageComparisonDialogProps {
   isOpen: boolean;
@@ -49,9 +48,9 @@ export function ImageComparisonDialog({
           </button>
         </DialogHeader>
 
-        <div className="flex flex-col md:flex-row h-full pt-[72px]">
+        <div className="flex flex-col md:flex-row h-full pt-[72px] overflow-y-auto md:overflow-hidden pb-20 md:pb-0">
           {/* Image 1 */}
-          <div className="flex-1 relative group border-b md:border-b-0 md:border-r border-white/5">
+          <div className="flex-1 min-h-[40vh] md:min-h-0 relative group border-b md:border-b-0 md:border-r border-white/5">
             {image1 ? (
               <>
                 <div className="absolute top-4 left-4 z-10">
@@ -60,7 +59,7 @@ export function ImageComparisonDialog({
                   </div>
                 </div>
                 <div className="w-full h-full p-4 md:p-8 flex items-center justify-center bg-zinc-900/50">
-                  <div className="relative w-full h-full max-h-full">
+                  <div className="relative w-full h-full min-h-[30vh]">
                     <Image
                       src={image1}
                       alt={label1}
@@ -72,14 +71,14 @@ export function ImageComparisonDialog({
                 </div>
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
+              <div className="w-full h-full min-h-[20vh] flex items-center justify-center bg-zinc-900/50">
                 <p className="text-white/20 font-bold uppercase tracking-tighter italic">Document manquant</p>
               </div>
             )}
           </div>
 
           {/* Image 2 */}
-          <div className="flex-1 relative group">
+          <div className="flex-1 min-h-[40vh] md:min-h-0 relative group">
             {image2 ? (
               <>
                 <div className="absolute top-4 left-4 z-10">
@@ -88,7 +87,7 @@ export function ImageComparisonDialog({
                   </div>
                 </div>
                 <div className="w-full h-full p-4 md:p-8 flex items-center justify-center bg-zinc-900/50">
-                  <div className="relative w-full h-full max-h-full">
+                  <div className="relative w-full h-full min-h-[30vh]">
                     <Image
                       src={image2}
                       alt={label2}
@@ -100,7 +99,7 @@ export function ImageComparisonDialog({
                 </div>
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
+              <div className="w-full h-full min-h-[20vh] flex items-center justify-center bg-zinc-900/50">
                 <p className="text-white/20 font-bold uppercase tracking-tighter italic">Document manquant</p>
               </div>
             )}
