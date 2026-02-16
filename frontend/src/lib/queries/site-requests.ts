@@ -27,7 +27,7 @@ export async function getSiteTripRequests(options: {
   let query = supabase
     .from("site_trip_requests")
     .select("*")
-    .order("desired_date", { ascending: true }) // Plus logique d'afficher les dates proches en premier
+    .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (status && status !== 'ALL') {

@@ -57,18 +57,7 @@ export function SiteRequestTable({
   // Stable Filter and Sort
   const filteredRequests = useMemo(() => {
     const sorted = [...requests].sort((a, b) => {
-      // 1. Priorité aux dates de voyage (desired_date)
-      // Les dates NULL (Dès que possible) sont considérées comme très urgentes
-      if (!a.desired_date && b.desired_date) return -1;
-      if (a.desired_date && !b.desired_date) return 1;
-      
-      if (a.desired_date && b.desired_date) {
-        const dateA = new Date(a.desired_date).getTime();
-        const dateB = new Date(b.desired_date).getTime();
-        if (dateA !== dateB) return dateA - dateB; // Chronologique (proche en haut)
-      }
-
-      // 2. Secondaire: Date de création (plus récent en haut si même date de voyage)
+      // Priorité à la date de soumission (created_at) - Plus récent en premier
       const timeA = new Date(a.created_at).getTime();
       const timeB = new Date(b.created_at).getTime();
       if (timeB !== timeA) return timeB - timeA;
