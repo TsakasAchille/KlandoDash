@@ -233,19 +233,41 @@ export async function getAIMatchingAction(
       }
     }
 
-    // 2. Sinon, générer avec Gemini en utilisant la vue PUBLIC_PENDING_TRIPS et le matching géo
+    // 2. Sinon, générer avec Gemini en utilisant les matches déjà présents en DB (Scanner) ou le matching géo en direct
     if (!aiRecommendation) {
-      // On utilise la vue spécifique au site public comme demandé
       const relevantTrips = await getPublicPendingTrips();
       
-      // Nouvelle logique: Matching géo multi-rayons (2km, 5km, 10km, 15km)
-      const { findMatchingTrips } = await import("@/lib/queries/site-requests");
-      const [match2km, match5km, match10km, match15km] = await Promise.all([
-        findMatchingTrips(requestId, 2),
-        findMatchingTrips(requestId, 5),
-        findMatchingTrips(requestId, 10),
-        findMatchingTrips(requestId, 15),
-      ]);
+      // Récupérer les matches persistants du scanner pour cette demande
+      const { data: dbMatches } = await supabase
+        .from("site_trip_request_matches")
+        .select("trip_id, origin_distance, destination_distance")
+        .eq("request_id", requestId);
+
+      const hasDbMatches = dbMatches && dbMatches.length > 0;
+      let matchingContext = "";
+
+      if (hasDbMatches) {
+        // On utilise les résultats précis du scanner (Déjà calculés en SQL Haversine)
+        console.log(`[AI Matching] Using ${dbMatches.length} persistent matches from DB`);
+        matchingContext = `RÉSULTATS DU SCANNER (PRÉ-CALCULÉS) :\n${JSON.stringify(dbMatches)}`;
+      } else {
+        // Fallback: Matching géo multi-rayons en direct (plus lent)
+        console.log(`[AI Matching] No persistent matches, running live proximity scan`);
+        const { findMatchingTrips } = await import("@/lib/queries/site-requests");
+        const [match2km, match5km, match10km, match15km] = await Promise.all([
+          findMatchingTrips(requestId, 2),
+          findMatchingTrips(requestId, 5),
+          findMatchingTrips(requestId, 10),
+          findMatchingTrips(requestId, 15),
+        ]);
+        matchingContext = `
+          RÉSULTATS DU MATCHING GÉOGRAPHIQUE EN DIRECT :
+          - À moins de 2km : ${match2km.length > 0 ? JSON.stringify(match2km) : "Aucun"}
+          - À moins de 5km : ${match5km.length > 0 ? JSON.stringify(match5km) : "Aucun"}
+          - À moins de 10km : ${match10km.length > 0 ? JSON.stringify(match10km) : "Aucun"}
+          - À moins de 15km : ${match15km.length > 0 ? JSON.stringify(match15km) : "Aucun"}
+        `;
+      }
 
       const prompt = `
         Analyse cette demande client :
@@ -253,11 +275,7 @@ export async function getAIMatchingAction(
         Vers : ${destination}
         Date souhaitée : ${date || "Dès que possible"}
         
-        RÉSULTATS DU MATCHING GÉOGRAPHIQUE :
-        - À moins de 2km : ${match2km.length > 0 ? JSON.stringify(match2km) : "Aucun"}
-        - À moins de 5km : ${match5km.length > 0 ? JSON.stringify(match5km) : "Aucun"}
-        - À moins de 10km : ${match10km.length > 0 ? JSON.stringify(match10km) : "Aucun"}
-        - À moins de 15km : ${match15km.length > 0 ? JSON.stringify(match15km) : "Aucun"}
+        ${matchingContext}
 
         Voici également TOUS les trajets actuellement visibles sur le SITE PUBLIC :
         ${JSON.stringify(relevantTrips.map(t => ({

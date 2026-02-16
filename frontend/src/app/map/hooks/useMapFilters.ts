@@ -85,21 +85,8 @@ export function useMapFilters({
   const filteredRequests = useMemo(() => {
     if (!filters.showRequests) return [];
 
-    return siteRequests.map(r => {
-      if (r.origin_lat && r.origin_lng) return r;
-
-      // Fallback position for demo/incomplete data
-      const dakarLat = 14.7167;
-      const dakarLng = -17.4677;
-      const randomOffset = () => (Math.random() - 0.5) * 0.1;
-
-      return {
-        ...r,
-        origin_lat: dakarLat + randomOffset(),
-        origin_lng: dakarLng + randomOffset(),
-        is_estimated: true
-      };
-    });
+    // On ne montre que les requêtes qui ont des coordonnées réelles
+    return siteRequests.filter(r => r.origin_lat && r.origin_lng);
   }, [siteRequests, filters.showRequests]);
 
   return {

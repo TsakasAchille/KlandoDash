@@ -207,7 +207,15 @@ export function SiteRequestTable({
                     </TableCell>
                      <TableCell className="hidden sm:table-cell">
                       <div className="flex flex-col">
-                        <div className="font-black text-klando-dark uppercase text-xs tracking-tight">{request.origin_city} ➜ {request.destination_city}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-black text-klando-dark uppercase text-xs tracking-tight">{request.origin_city} ➜ {request.destination_city}</div>
+                          {request.matches && request.matches.length > 0 && (
+                            <div className="flex items-center gap-1 text-[8px] font-black text-green-600 uppercase bg-green-50 px-1.5 py-0.5 rounded-full border border-green-100">
+                              <Sparkles className="w-2 h-2" />
+                              {request.matches.length}
+                            </div>
+                          )}
+                        </div>
                         <div className="text-muted-foreground text-[10px] flex items-center gap-1.5 mt-1 font-bold">
                           <Calendar className="w-3 h-3" /> {formatDate(request.desired_date)}
                         </div>
