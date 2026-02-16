@@ -33,10 +33,68 @@ export async function saveRequestGeometryAction(
 ) {
   const success = await updateRequest(id, data);
   if (success) {
-    // On ne revalide pas forcément tout de suite pour éviter les flashs UI pendant le calcul en arrière-plan
     return { success: true };
   }
   return { success: false };
+}
+
+/**
+ * Calcule l'itinéraire et les coordonnées côté serveur (évite les erreurs CORS)
+ * et sauvegarde le résultat en base de données.
+ */
+export async function calculateAndSaveRequestRouteAction(requestId: string, originCity: string, destCity: string) {
+  try {
+    console.log(`[Server] Calculating route for ${requestId}: ${originCity} -> ${destCity}`);
+
+    const geocode = async (city: string) => {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city + ", Senegal")}&limit=1`, {
+        headers: { 'User-Agent': 'KlandoDash-Admin' }
+      });
+      const data = await res.json();
+      if (data && data[0]) {
+        return [parseFloat(data[0].lat), parseFloat(data[0].lon)] as [number, number];
+      }
+      return null;
+    };
+
+    const [originCoords, destCoords] = await Promise.all([
+      geocode(originCity),
+      geocode(destCity)
+    ]);
+
+    if (!originCoords || !destCoords) {
+      return { success: false, message: "Coordonnées non trouvées" };
+    }
+
+    const routeRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${originCoords[1]},${originCoords[0]};${destCoords[1]},${destCoords[0]}?overview=full`);
+    const routeData = await routeRes.json();
+    
+    if (!routeData.routes || !routeData.routes[0]) {
+      return { success: false, message: "Itinéraire non trouvé" };
+    }
+
+    const geometry = {
+      polyline: routeData.routes[0].geometry,
+      origin_lat: originCoords[0],
+      origin_lng: originCoords[1],
+      destination_lat: destCoords[0],
+      destination_lng: destCoords[1]
+    };
+
+    // Sauvegarde immédiate via l'action existante
+    const saveResult = await saveRequestGeometryAction(requestId, geometry);
+
+    if (!saveResult.success) {
+      console.error(`[Server] Failed to persist geometry for ${requestId} to DB`);
+      return { success: false, message: "Échec de la sauvegarde en base de données" };
+    }
+
+    console.log(`[Server] Successfully saved geometry for ${requestId}`);
+    return { success: true, data: geometry };
+  } catch (error) {
+    console.error(`[Server Error] Route calculation failed for ${requestId}:`, error);
+    return { success: false, message: "Erreur serveur lors du calcul" };
+  }
 }
 
 export async function getAIMatchingAction(

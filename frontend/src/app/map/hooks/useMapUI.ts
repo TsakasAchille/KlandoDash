@@ -1,12 +1,14 @@
 import { useState, useCallback } from "react";
 import { TripMapItem } from "@/types/trip";
+import { SiteTripRequest } from "@/types/site-request";
 
-export function useMapUI(filteredTrips: TripMapItem[]) {
+export function useMapUI(filteredTrips: TripMapItem[], filteredRequests: SiteTripRequest[]) {
   const [hoveredTripId, setHoveredTripId] = useState<string | null>(null);
   const [hoveredRequestId, setHoveredRequestId] = useState<string | null>(null);
   const [hiddenTripIds, setHiddenTripIds] = useState<Set<string>>(new Set());
   const [hiddenRequestIds, setHiddenRequestIds] = useState<Set<string>>(new Set());
-  const [displayMode, setDisplayMode] = useState<"all" | "last">("all");
+  const [tripDisplayMode, setTripDisplayMode] = useState<"all" | "last">("all");
+  const [requestDisplayMode, setRequestDisplayMode] = useState<"all" | "last">("all");
   const [activeTab, setActiveTab] = useState<"map" | "list">("map");
   const [sidebarTab, setSidebarTab] = useState<"trips" | "requests">("trips");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -37,18 +39,32 @@ export function useMapUI(filteredTrips: TripMapItem[]) {
   }, []);
 
   const handleShowOnlyLast = useCallback(() => {
-    const allIds = new Set(filteredTrips.map((t) => t.trip_id));
-    if (filteredTrips.length > 0) {
-      allIds.delete(filteredTrips[0].trip_id);
+    if (sidebarTab === "trips") {
+      const allIds = new Set(filteredTrips.map((t) => t.trip_id));
+      if (filteredTrips.length > 0) {
+        allIds.delete(filteredTrips[0].trip_id);
+      }
+      setHiddenTripIds(allIds);
+      setTripDisplayMode("last");
+    } else {
+      const allIds = new Set(filteredRequests.map((r) => r.id));
+      if (filteredRequests.length > 0) {
+        allIds.delete(filteredRequests[0].id);
+      }
+      setHiddenRequestIds(allIds);
+      setRequestDisplayMode("last");
     }
-    setHiddenTripIds(allIds);
-    setDisplayMode("last");
-  }, [filteredTrips]);
+  }, [sidebarTab, filteredTrips, filteredRequests]);
 
   const handleShowAll = useCallback(() => {
-    setHiddenTripIds(new Set());
-    setDisplayMode("all");
-  }, []);
+    if (sidebarTab === "trips") {
+      setHiddenTripIds(new Set());
+      setTripDisplayMode("all");
+    } else {
+      setHiddenRequestIds(new Set());
+      setRequestDisplayMode("all");
+    }
+  }, [sidebarTab]);
 
   return {
     hoveredTripId,
@@ -57,7 +73,7 @@ export function useMapUI(filteredTrips: TripMapItem[]) {
     setHoveredRequestId,
     hiddenTripIds,
     hiddenRequestIds,
-    displayMode,
+    displayMode: sidebarTab === "trips" ? tripDisplayMode : requestDisplayMode,
     activeTab,
     setActiveTab,
     sidebarTab,

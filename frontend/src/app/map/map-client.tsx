@@ -107,7 +107,7 @@ export function MapClient({
     handleToggleRequestVisibility,
     handleShowOnlyLast,
     handleShowAll
-  } = useMapUI(filteredTrips);
+  } = useMapUI(filteredTrips, filteredRequests);
 
   // UX: Pre-fetch pages liées
   useEffect(() => {

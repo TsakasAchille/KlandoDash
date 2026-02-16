@@ -18,3 +18,12 @@ export function createServerClient() {
     }
   );
 }
+
+// Client admin (utilise TOUJOURS la clé service_role)
+export function createAdminClient() {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) {
+    console.error("CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing!");
+  }
+  return createClient(supabaseUrl, serviceKey || supabaseAnonKey);
+}
