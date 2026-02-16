@@ -15,6 +15,7 @@ export interface SiteTripRequest {
   origin_lng?: number | null;
   destination_lat?: number | null;
   destination_lng?: number | null;
+  polyline?: string | null;
 }
 
 export interface SiteTripRequestsStats {

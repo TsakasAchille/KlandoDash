@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { MapFilters } from "@/components/map/map-filters";
 import { RecentTripsTable } from "@/components/map/recent-trips-table";
+import { RecentRequestsTable } from "@/components/map/recent-requests-table";
 import { TripMapPopup } from "@/components/map/trip-map-popup";
 import { TripMapItem } from "@/types/trip";
 import { SiteTripRequest } from "@/types/site-request";
-import { X, Filter, List, Map as MapIcon, Users } from "lucide-react";
+import { X, Filter, List, Map as MapIcon, Users, Car } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Hooks
@@ -70,7 +71,9 @@ export function MapClient({
   // 2. Sélection
   const {
     selectedTrip,
+    selectedRequest,
     handleSelectTrip,
+    handleSelectRequest,
     handleClosePopup,
   } = useMapSelection({
     initialSelectedTrip
@@ -80,15 +83,21 @@ export function MapClient({
   const {
     hoveredTripId,
     setHoveredTripId,
+    hoveredRequestId,
+    setHoveredRequestId,
     hiddenTripIds,
+    hiddenRequestIds,
     displayMode,
     activeTab,
     setActiveTab,
+    sidebarTab,
+    setSidebarTab,
     isSidebarOpen,
     setIsSidebarOpen,
     showMobileFilters,
     setShowMobileFilters,
     handleToggleVisibility,
+    handleToggleRequestVisibility,
     handleShowOnlyLast,
     handleShowAll
   } = useMapUI(filteredTrips);
@@ -101,12 +110,19 @@ export function MapClient({
       }
       router.prefetch(`/trips?selected=${selectedTrip.trip_id}`);
     }
-  }, [selectedTrip, router]);
+    if (selectedRequest) {
+      router.prefetch(`/site-requests?id=${selectedRequest.id}`);
+    }
+  }, [selectedTrip, selectedRequest, router]);
 
-  // 15 derniers trajets filtrés pour la barre latérale
+  // 15 derniers éléments filtrés pour la barre latérale
   const recentTrips = useMemo(() => {
     return filteredTrips.slice(0, 15);
   }, [filteredTrips]);
+
+  const recentRequests = useMemo(() => {
+    return filteredRequests.slice(0, 15);
+  }, [filteredRequests]);
 
   return (
     <div className="flex flex-col h-full relative">
@@ -133,7 +149,7 @@ export function MapClient({
       </div>
 
       <div className="flex-1 flex flex-col md:flex-row min-h-0 relative">
-        {/* Sidebar - Liste des trajets */}
+        {/* Sidebar - Liste des trajets / demandes */}
         <div className={cn(
           "bg-background/95 backdrop-blur-md border-r border-border/40 flex flex-col transition-all duration-500 z-30",
           "md:w-[350px] lg:w-[400px]",
@@ -141,8 +157,32 @@ export function MapClient({
           !isSidebarOpen && "md:w-0 md:opacity-0 md:pointer-events-none"
         )}>
           <div className="p-4 flex-1 overflow-hidden flex flex-col">
+            {/* Sidebar Tabs */}
+            <div className="flex bg-muted/30 p-1 rounded-xl mb-4">
+              <button
+                onClick={() => setSidebarTab("trips")}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all",
+                  sidebarTab === "trips" ? "bg-klando-gold text-klando-dark shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Car className="w-3 h-3" /> Trajets ({filteredTrips.length})
+              </button>
+              <button
+                onClick={() => setSidebarTab("requests")}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all",
+                  sidebarTab === "requests" ? "bg-purple-500 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Users className="w-3 h-3" /> Demandes ({filteredRequests.length})
+              </button>
+            </div>
+
             <div className="flex items-center justify-between mb-4 px-2">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-klando-gold">Activité Récente</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">
+                {sidebarTab === "trips" ? "Offre disponible" : "Demande client"}
+              </h3>
               <button 
                 onClick={() => setShowMobileFilters(true)}
                 className="p-2 rounded-lg bg-secondary border border-border/50 md:hidden"
@@ -150,17 +190,29 @@ export function MapClient({
                 <Filter className="w-4 h-4 text-klando-gold" />
               </button>
             </div>
-            <RecentTripsTable
-              trips={recentTrips}
-              selectedTripId={selectedTrip?.trip_id}
-              hiddenTripIds={hiddenTripIds}
-              displayMode={displayMode}
-              onSelectTrip={handleSelectTrip}
-              onHoverTrip={setHoveredTripId}
-              onToggleVisibility={handleToggleVisibility}
-              onShowOnlyLast={handleShowOnlyLast}
-              onShowAll={handleShowAll}
-            />
+
+            {sidebarTab === "trips" ? (
+              <RecentTripsTable
+                trips={recentTrips}
+                selectedTripId={selectedTrip?.trip_id}
+                hiddenTripIds={hiddenTripIds}
+                displayMode={displayMode}
+                onSelectTrip={handleSelectTrip}
+                onHoverTrip={setHoveredTripId}
+                onToggleVisibility={handleToggleVisibility}
+                onShowOnlyLast={handleShowOnlyLast}
+                onShowAll={handleShowAll}
+              />
+            ) : (
+              <RecentRequestsTable
+                requests={recentRequests}
+                selectedRequestId={selectedRequest?.id}
+                hiddenRequestIds={hiddenRequestIds}
+                onSelectRequest={handleSelectRequest}
+                onHoverRequest={setHoveredRequestId}
+                onToggleVisibility={handleToggleRequestVisibility}
+              />
+            )}
           </div>
         </div>
 
@@ -173,11 +225,16 @@ export function MapClient({
             trips={filteredTrips}
             siteRequests={filteredRequests}
             selectedTrip={selectedTrip}
+            selectedRequest={selectedRequest}
             hoveredTripId={hoveredTripId}
+            hoveredRequestId={hoveredRequestId}
             hiddenTripIds={hiddenTripIds}
+            hiddenRequestIds={hiddenRequestIds}
             initialSelectedId={initialSelectedTrip?.trip_id}
             onSelectTrip={handleSelectTrip}
+            onSelectRequest={handleSelectRequest}
             onHoverTrip={setHoveredTripId}
+            onHoverRequest={setHoveredRequestId}
           />
 
           {/* Floating Controls Overlay */}
@@ -202,9 +259,47 @@ export function MapClient({
           </div>
 
           {/* Popup détails (overlay sur la carte) */}
-          {selectedTrip && (
+          {(selectedTrip || selectedRequest) && (
             <div className="absolute bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[400px] z-[1001] animate-in slide-in-from-bottom-4 duration-500">
-              <TripMapPopup trip={selectedTrip} onClose={handleClosePopup} />
+              {selectedTrip ? (
+                <TripMapPopup trip={selectedTrip} onClose={handleClosePopup} />
+              ) : (
+                <div className="bg-card/95 backdrop-blur-md border border-purple-500/30 rounded-3xl p-6 shadow-2xl relative">
+                  <button 
+                    onClick={handleClosePopup}
+                    className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-3 bg-purple-500/10 rounded-2xl text-purple-500">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-black uppercase tracking-tight text-lg">Demande Client</h4>
+                      <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">{selectedRequest?.contact_info}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="p-4 bg-secondary/30 rounded-2xl border border-border/40">
+                      <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Départ</p>
+                      <p className="font-bold uppercase text-xs">{selectedRequest?.origin_city}</p>
+                    </div>
+                    <div className="p-4 bg-secondary/30 rounded-2xl border border-border/40">
+                      <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Arrivée</p>
+                      <p className="font-bold uppercase text-xs">{selectedRequest?.destination_city}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => router.push(`/site-requests?id=${selectedRequest?.id}`)}
+                      className="flex-1 py-4 bg-purple-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-purple-600 transition-all shadow-lg shadow-purple-500/20"
+                    >
+                      Voir dans le gestionnaire
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
