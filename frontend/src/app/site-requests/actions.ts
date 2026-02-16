@@ -21,6 +21,24 @@ export async function updateRequestStatusAction(id: string, status: SiteTripRequ
   return { success: false, message: "Erreur lors de la mise à jour." };
 }
 
+export async function saveRequestGeometryAction(
+  id: string, 
+  data: { 
+    polyline: string; 
+    origin_lat: number; 
+    origin_lng: number;
+    destination_lat: number;
+    destination_lng: number;
+  }
+) {
+  const success = await updateRequest(id, data);
+  if (success) {
+    // On ne revalide pas forcément tout de suite pour éviter les flashs UI pendant le calcul en arrière-plan
+    return { success: true };
+  }
+  return { success: false };
+}
+
 export async function getAIMatchingAction(
   requestId: string, 
   origin: string, 

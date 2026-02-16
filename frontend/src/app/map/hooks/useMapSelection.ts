@@ -5,14 +5,16 @@ import { SiteTripRequest } from "@/types/site-request";
 
 interface UseMapSelectionProps {
   initialSelectedTrip: TripMapItem | null;
+  initialSelectedRequest: SiteTripRequest | null;
 }
 
 export function useMapSelection({
-  initialSelectedTrip
+  initialSelectedTrip,
+  initialSelectedRequest
 }: UseMapSelectionProps) {
   const router = useRouter();
   const [selectedTrip, setSelectedTrip] = useState<TripMapItem | null>(initialSelectedTrip);
-  const [selectedRequest, setSelectedRequest] = useState<SiteTripRequest | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [selectedRequest, setSelectedRequest] = useState<SiteTripRequest | null>(initialSelectedRequest);
   const [hasBeenManuallyClosed, setHasBeenManuallyClosed] = useState(false);
   const lastFetchedPassengersId = useRef<string | null>(null);
 

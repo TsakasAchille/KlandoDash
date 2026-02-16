@@ -7,6 +7,7 @@ import { Map as MapIcon, Users } from "lucide-react";
 interface MapPageProps {
   searchParams: Promise<{
     selected?: string;
+    request?: string;
     status?: string;
     driver?: string;
     showRequests?: string;
@@ -16,6 +17,7 @@ interface MapPageProps {
 export default async function MapPage({ searchParams }: MapPageProps) {
   const params = await searchParams;
   const selectedTripId = params.selected || null;
+  const requestId = params.request || null;
   const statusFilter = params.status || "ALL";
   const driverFilter = params.driver || null;
   // Activé par défaut pour que l'utilisateur voie les demandes immédiatement
@@ -30,6 +32,10 @@ export default async function MapPage({ searchParams }: MapPageProps) {
 
   const initialSelectedTrip = selectedTripId
     ? trips.find((t) => t.trip_id === selectedTripId) || null
+    : null;
+
+  const initialSelectedRequest = requestId
+    ? siteRequests.find((r) => r.id === requestId) || null
     : null;
 
   return (
@@ -68,6 +74,7 @@ export default async function MapPage({ searchParams }: MapPageProps) {
           drivers={drivers}
           siteRequests={siteRequests}
           initialSelectedTrip={initialSelectedTrip}
+          initialSelectedRequest={initialSelectedRequest}
           initialStatusFilter={statusFilter}
           initialDriverFilter={driverFilter}
           initialShowRequests={showRequestsFilter}

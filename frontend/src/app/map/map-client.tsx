@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useMapFilters } from "./hooks/useMapFilters";
 import { useMapSelection } from "./hooks/useMapSelection";
 import { useMapUI } from "./hooks/useMapUI";
+import { useSiteRequestRoutes } from "./hooks/useSiteRequestRoutes";
 
 // Import dynamique pour éviter les erreurs SSR avec Leaflet
 const TripMap = dynamic(
@@ -38,6 +39,7 @@ interface MapClientProps {
   drivers: Array<{ uid: string; display_name: string | null }>;
   siteRequests: SiteTripRequest[];
   initialSelectedTrip: TripMapItem | null;
+  initialSelectedRequest: SiteTripRequest | null;
   initialStatusFilter: string;
   initialDriverFilter: string | null;
   initialShowRequests: boolean;
@@ -48,11 +50,15 @@ export function MapClient({
   drivers,
   siteRequests,
   initialSelectedTrip,
+  initialSelectedRequest,
   initialStatusFilter,
   initialDriverFilter,
   initialShowRequests,
 }: MapClientProps) {
   const router = useRouter();
+
+  // 0. Enrichissement dynamique des tracés (Polylines) pour les demandes
+  const enrichedRequests = useSiteRequestRoutes(siteRequests);
 
   // 1. Filtrage
   const { 
@@ -62,7 +68,7 @@ export function MapClient({
     filteredRequests 
   } = useMapFilters({
     trips,
-    siteRequests,
+    siteRequests: enrichedRequests,
     initialStatusFilter,
     initialDriverFilter,
     initialShowRequests
@@ -76,7 +82,8 @@ export function MapClient({
     handleSelectRequest,
     handleClosePopup,
   } = useMapSelection({
-    initialSelectedTrip
+    initialSelectedTrip,
+    initialSelectedRequest
   });
 
   // 3. UI & Visibilité
