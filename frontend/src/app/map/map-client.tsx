@@ -204,14 +204,44 @@ export function MapClient({
                 onShowAll={handleShowAll}
               />
             ) : (
-              <RecentRequestsTable
-                requests={recentRequests}
-                selectedRequestId={selectedRequest?.id}
-                hiddenRequestIds={hiddenRequestIds}
-                onSelectRequest={handleSelectRequest}
-                onHoverRequest={setHoveredRequestId}
-                onToggleVisibility={handleToggleRequestVisibility}
-              />
+              <div className="flex-1 flex flex-col min-h-0">
+                {/* Switcher for requests too if applicable, or at least common layout */}
+                <div className="flex bg-muted/20 p-1 rounded-xl mb-4 self-center relative w-full max-w-[280px]">
+                  <div 
+                    className={cn(
+                      "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-klando-gold rounded-lg transition-all duration-300 shadow-sm z-0",
+                      displayMode === "all" ? "left-1" : "left-[calc(50%+1px)]"
+                    )}
+                  />
+                  <button
+                    onClick={handleShowAll}
+                    className={cn(
+                      "flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all relative z-10",
+                      displayMode === "all" ? "text-klando-dark" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Afficher Tout
+                  </button>
+                  <button
+                    onClick={handleShowOnlyLast}
+                    className={cn(
+                      "flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all relative z-10",
+                      displayMode === "last" ? "text-klando-dark" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Dernière Seule
+                  </button>
+                </div>
+                
+                <RecentRequestsTable
+                  requests={recentRequests}
+                  selectedRequestId={selectedRequest?.id}
+                  hiddenRequestIds={hiddenRequestIds}
+                  onSelectRequest={handleSelectRequest}
+                  onHoverRequest={setHoveredRequestId}
+                  onToggleVisibility={handleToggleRequestVisibility}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -330,42 +360,6 @@ export function MapClient({
             
             <div className="p-6 flex-1 overflow-y-auto">
               <div className="space-y-8">
-                {/* Custom show requests toggle first */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-klando-gold">Données à afficher</h4>
-                  <label className="flex items-center justify-between p-4 rounded-2xl bg-secondary/50 border border-border/40 cursor-pointer group hover:border-klando-gold/30 transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "p-2 rounded-xl transition-colors",
-                        filters.showRequests ? "bg-purple-500/20 text-purple-500" : "bg-muted text-muted-foreground"
-                      )}>
-                        <Users className="w-5 h-5" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black uppercase tracking-tight">Demandes Clients</span>
-                        <span className="text-[10px] text-muted-foreground">Afficher les intentions de voyage sur la carte</span>
-                      </div>
-                    </div>
-                    <div 
-                      className={cn(
-                        "w-12 h-6 rounded-full relative transition-colors duration-300",
-                        filters.showRequests ? "bg-klando-gold" : "bg-muted"
-                      )}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleFilterChange({ showRequests: !filters.showRequests });
-                      }}
-                    >
-                      <div className={cn(
-                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-sm",
-                        filters.showRequests ? "left-7" : "left-1"
-                      )} />
-                    </div>
-                  </label>
-                </div>
-
-                <div className="h-[1px] bg-border/40" />
-
                 <MapFilters
                   filters={filters}
                   drivers={drivers}

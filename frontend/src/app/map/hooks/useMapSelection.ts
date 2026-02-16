@@ -12,7 +12,7 @@ export function useMapSelection({
 }: UseMapSelectionProps) {
   const router = useRouter();
   const [selectedTrip, setSelectedTrip] = useState<TripMapItem | null>(initialSelectedTrip);
-  const [selectedRequest, setSelectedRequest] = useState<SiteTripRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<SiteTripRequest | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [hasBeenManuallyClosed, setHasBeenManuallyClosed] = useState(false);
   const lastFetchedPassengersId = useRef<string | null>(null);
 
@@ -28,7 +28,7 @@ export function useMapSelection({
     [router]
   );
 
-  const handleSelectRequest = useCallback(
+  const handleSelectRequest = useCallback( // eslint-disable-line @typescript-eslint/no-unused-vars
     (request: SiteTripRequest) => {
       setSelectedRequest(request);
       setSelectedTrip(null); // Désélectionner le trajet si on choisit une demande
@@ -73,7 +73,9 @@ export function useMapSelection({
   return {
     selectedTrip,
     setSelectedTrip,
+    selectedRequest,
     handleSelectTrip,
+    handleSelectRequest,
     handleClosePopup,
     hasBeenManuallyClosed
   };

@@ -2,7 +2,7 @@
 
 import { SiteTripRequest } from "@/types/site-request";
 import { cn } from "@/lib/utils";
-import { Users, MapPin, Eye, EyeOff, Calendar } from "lucide-react";
+import { Users, Eye, EyeOff, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
