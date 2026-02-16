@@ -17,7 +17,15 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ComparisonMap } from "@/components/site-requests/comparison-map";
+import dynamic from "next/dynamic";
+
+const ComparisonMap = dynamic(() => import("@/components/site-requests/comparison-map").then(mod => mod.ComparisonMap), { 
+  ssr: false,
+  loading: () => <div className="w-full h-[300px] rounded-2xl bg-muted/20 animate-pulse flex flex-col items-center justify-center space-y-3">
+    <Loader2 className="w-8 h-8 text-klando-gold animate-spin" />
+    <p className="text-[10px] font-black uppercase tracking-widest text-klando-dark">Chargement de la carte...</p>
+  </div>
+});
 
 interface PublicTrip {
   id: string;
@@ -44,6 +52,8 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [localAiResult, setLocalAiResult] = useState<string | null>(null);
+  const [actionMatchedTrip, setActionMatchedTrip] = useState<PublicTrip | null>(null);
+  const [lastFetchedTripId, setLastFetchedTripId] = useState<string | null>(null);
   const [isAiPending, startAiTransition] = useTransition();
   const [, startTransition] = useTransition();
 
@@ -55,6 +65,12 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
   const selectedRequest = useMemo(() => 
     selectedRequestId ? requests.find(r => r.id === selectedRequestId) : null
   , [requests, selectedRequestId]);
+
+  // Reset matched trip when changing selection
+  useEffect(() => {
+    setActionMatchedTrip(null);
+    setLastFetchedTripId(null);
+  }, [selectedRequestId]);
 
   // Sync local AI result when data updates from server
   useEffect(() => {
@@ -80,6 +96,7 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
     if (!selectedRequest) return;
     
     setAiLoading(true);
+    setLastFetchedTripId(selectedRequest.id);
     startAiTransition(async () => {
       try {
         const res = await getAIMatchingAction(
@@ -91,6 +108,10 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
         );
         if (res.success) {
           setLocalAiResult(res.text || null);
+          console.log("Server Matched Trip Data:", res.matchedTrip);
+          if (res.matchedTrip) {
+            setActionMatchedTrip(res.matchedTrip as PublicTrip);
+          }
         } else {
           toast.error(res.message || "Erreur IA");
         }
@@ -109,45 +130,70 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
     }
   }, [selectedRequestId, selectedRequest, aiLoading, localAiResult, handleMatchIA]);
 
-  // Parsing AI result
-  const { aiComment, aiMessage, matchedTripId } = useMemo(() => {
-    const raw = localAiResult || selectedRequest?.ai_recommendation;
-    if (!raw) return { aiComment: null, aiMessage: null, matchedTripId: null };
-    
-    let comment = raw;
-    let message = null;
-    let tripId = null;
-
-    if (raw.includes('[MESSAGE]')) {
-      const parts = raw.split('[MESSAGE]');
-      comment = parts[0].replace('[COMMENTAIRE]', '').trim();
-      message = parts[1]?.trim() || '';
+  // Also trigger fetch if we have an AI recommendation but haven't fetched details yet
+  useEffect(() => {
+    if (selectedRequestId && selectedRequest?.ai_recommendation && !aiLoading && lastFetchedTripId !== selectedRequestId) {
+      handleMatchIA(false); // This will use cache but fetch the trip details
     }
+  }, [selectedRequestId, selectedRequest?.ai_recommendation, aiLoading, lastFetchedTripId, handleMatchIA]);
 
-    if (comment.includes('[TRIP_ID]')) {
-      const parts = comment.split('[TRIP_ID]');
-      comment = parts[0].trim();
-      const tripIdPart = parts[1]?.split('\n')[0]?.trim();
-      tripId = tripIdPart && tripIdPart !== 'NONE' ? tripIdPart : null;
-    } else if (raw.includes('[TRIP_ID]')) {
-      // In case [TRIP_ID] is after [MESSAGE] or elsewhere
-      const tripIdMatch = raw.match(/\[TRIP_ID\]\s*([A-Z0-9-]+)/);
-      tripId = tripIdMatch?.[1] && tripIdMatch[1] !== 'NONE' ? tripIdMatch[1] : null;
-    }
-
-    return { 
-      aiComment: comment.replace('[COMMENTAIRE]', '').trim(), 
-      aiMessage: message,
-      matchedTripId: tripId
-    };
-  }, [localAiResult, selectedRequest?.ai_recommendation]);
-
-  const matchedTrip = useMemo(() => {
-    if (!matchedTripId) return null;
-    return publicPending.find(t => t.id === matchedTripId) || 
-           publicCompleted.find(t => t.id === matchedTripId);
-  }, [matchedTripId, publicPending, publicCompleted]);
-
+      // Parsing AI result
+    const { aiComment, aiMessage, matchedTripId } = useMemo(() => {
+      const raw = localAiResult || selectedRequest?.ai_recommendation;
+      if (!raw) return { aiComment: null, aiMessage: null, matchedTripId: null };
+      
+      let comment = raw;
+      let message = null;
+      let tripId = null;
+  
+      if (raw.includes('[MESSAGE]')) {
+        const parts = raw.split('[MESSAGE]');
+        comment = parts[0].replace('[COMMENTAIRE]', '').trim();
+        message = parts[1]?.trim() || '';
+      }
+  
+      if (comment.includes('[TRIP_ID]')) {
+        const parts = comment.split('[TRIP_ID]');
+        comment = parts[0].trim();
+        const tripIdPart = parts[1]?.split('\n')[0]?.trim();
+        tripId = tripIdPart && tripIdPart !== 'NONE' ? tripIdPart : null;
+      } else if (raw.includes('[TRIP_ID]')) {
+        const tripIdMatch = raw.match(/\[TRIP_ID\]\s*([A-Z0-9-]+)/);
+        tripId = tripIdMatch?.[1] && tripIdMatch[1] !== 'NONE' ? tripIdMatch[1] : null;
+      }
+  
+      console.log("AI Raw Analysis:", raw.substring(0, 100) + "...");
+      console.log("Structured TripID Found:", tripId);
+  
+      // Fallback: If still no tripId, try to find a pattern like TRIP-XXXX in the comment
+      if (!tripId || tripId === 'NONE') {
+        const fallbackMatch = comment.match(/TRIP-[A-Z0-9]+/i);
+        if (fallbackMatch) {
+          tripId = fallbackMatch[0].toUpperCase().trim();
+          console.log("Fallback TripID Found in Text:", tripId);
+        }
+      }
+  
+      return { 
+        aiComment: comment.replace('[COMMENTAIRE]', '').trim(), 
+        aiMessage: message,
+        matchedTripId: tripId
+      };
+    }, [localAiResult, selectedRequest?.ai_recommendation]);
+  
+    const matchedTrip = useMemo(() => {
+      if (actionMatchedTrip) {
+        console.log("Using trip from ActionMatchedTrip:", actionMatchedTrip.id);
+        return actionMatchedTrip;
+      }
+      if (!matchedTripId) return null;
+      
+      const found = publicPending.find(t => t.id === matchedTripId) || 
+                    publicCompleted.find(t => t.id === matchedTripId);
+      
+      console.log("Search for TripID", matchedTripId, "in public lists:", found ? "FOUND" : "NOT FOUND");
+      return found;
+    }, [matchedTripId, publicPending, publicCompleted, actionMatchedTrip]);
   const processedComment = useMemo(() => 
     aiComment ? aiComment.replace(/([^ \n])\n([^ \n])/g, '$1  \n$2') : "_Analyse en attente..._"
   , [aiComment]);
@@ -264,6 +310,40 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
                   destination_city={selectedRequest.destination_city}
                   recommendedPolyline={matchedTrip?.polyline}
                 />
+              )}
+
+              {/* PROPOSED TRIP BOX */}
+              {!aiLoading && matchedTrip && (
+                <Card className="border-2 border-klando-gold bg-klando-gold/5 overflow-hidden shadow-md animate-in zoom-in-95 duration-300">
+                  <div className="bg-klando-gold px-4 py-1.5 flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-klando-dark">Trajet Proposé par l&apos;IA</span>
+                    <Badge variant="outline" className="bg-white/20 border-white/40 text-klando-dark text-[9px] font-bold">MATCH TROUVÉ</Badge>
+                  </div>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-klando-gold/20 flex items-center justify-center">
+                            <MapPin className="w-4 h-4 text-klando-gold" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-black uppercase text-klando-dark">
+                              {matchedTrip.departure_city} ➜ {matchedTrip.arrival_city}
+                            </div>
+                            <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1.5 mt-0.5">
+                              <Calendar className="w-3 h-3" />
+                              {matchedTrip.departure_time ? format(new Date(matchedTrip.departure_time), "EEEE d MMMM 'à' HH:mm", { locale: fr }) : "Date inconnue"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[10px] font-black text-muted-foreground uppercase mb-1">Places</div>
+                        <div className="text-xl font-black text-klando-gold leading-none">{matchedTrip.seats_available || "?"}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               <div className="space-y-6">

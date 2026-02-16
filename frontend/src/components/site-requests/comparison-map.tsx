@@ -48,19 +48,25 @@ export function ComparisonMap({ originCity, destination_city, recommendedPolylin
 
   // Geocoding and Routing
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    let isMounted = true;
 
     const initMap = async () => {
+      if (!mapContainerRef.current) return;
+
       try {
         setLoading(true);
         setError(null);
 
         // Geocode requested cities
         const geocode = async (city: string) => {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city + ", Senegal")}&limit=1`);
-          const data = await res.json();
-          if (data && data[0]) {
-            return [parseFloat(data[0].lat), parseFloat(data[0].lon)] as [number, number];
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city + ", Senegal")}&limit=1`);
+            const data = await res.json();
+            if (data && data[0]) {
+              return [parseFloat(data[0].lat), parseFloat(data[0].lon)] as [number, number];
+            }
+          } catch (e) {
+            console.warn(`Geocoding failed for ${city}`, e);
           }
           return null;
         };
@@ -69,6 +75,8 @@ export function ComparisonMap({ originCity, destination_city, recommendedPolylin
           geocode(originCity),
           geocode(destination_city)
         ]);
+
+        if (!isMounted) return;
 
         if (!originCoords || !destCoords) {
           setError("Impossible de localiser les villes sur la carte.");
@@ -87,6 +95,8 @@ export function ComparisonMap({ originCity, destination_city, recommendedPolylin
         } catch (e) {
           console.warn("Routing failed, using straight line", e);
         }
+
+        if (!isMounted || !mapContainerRef.current) return;
 
         // Initialize Map if not already done
         if (!mapRef.current) {
@@ -123,48 +133,54 @@ export function ComparisonMap({ originCity, destination_city, recommendedPolylin
         if (recommendedPolyline) {
           try {
             const recCoords = polyline.decode(recommendedPolyline) as [number, number][];
-            const recLine = L.polyline(recCoords, {
-              color: "#EBC33F",
-              weight: 6,
-              opacity: 0.9,
-            }).addTo(map);
-            bounds.extend(recLine.getBounds());
-            
-            // Markers for recommended trip
-            L.marker(recCoords[0], { icon: createCustomIcon("#22C55E", "Conducteur départ") }).addTo(map);
-            L.marker(recCoords[recCoords.length - 1], { icon: createCustomIcon("#EF4444", "Conducteur arrivée") }).addTo(map);
+            if (recCoords.length > 0) {
+              const recLine = L.polyline(recCoords, {
+                color: "#EBC33F",
+                weight: 6,
+                opacity: 0.9,
+              }).addTo(map);
+              bounds.extend(recLine.getBounds());
+              
+              // Markers for recommended trip
+              L.marker(recCoords[0], { icon: createCustomIcon("#22C55E", "Conducteur départ") }).addTo(map);
+              L.marker(recCoords[recCoords.length - 1], { icon: createCustomIcon("#EF4444", "Conducteur arrivée") }).addTo(map);
+            }
           } catch (e) {
             console.error("Failed to decode recommended polyline", e);
           }
         }
 
-        if (!bounds.isValid()) {
-          map.setView(originCoords, 10);
-        } else {
-          map.fitBounds(bounds, { padding: [40, 40] });
+        if (isMounted) {
+          if (!bounds.isValid()) {
+            map.setView(originCoords, 10);
+          } else {
+            map.fitBounds(bounds, { padding: [40, 40] });
+          }
+          setLoading(false);
         }
-
-        setLoading(false);
       } catch (err) {
-        console.error("Map error:", err);
-        setError("Erreur lors de l'initialisation de la carte.");
-        setLoading(false);
+        if (isMounted) {
+          console.error("Map error:", err);
+          setError("Erreur lors de l'initialisation de la carte.");
+          setLoading(false);
+        }
       }
     };
 
     initMap();
 
     return () => {
-      // Don't remove map entirely to avoid flickering if we update results,
-      // but initMap handles clearing layers.
+      isMounted = false;
     };
   }, [originCity, destination_city, recommendedPolyline]);
 
   // Handle cleanup on unmount
   useEffect(() => {
     return () => {
-      mapRef.current?.remove();
-      mapRef.current = null;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
   }, []);
 
