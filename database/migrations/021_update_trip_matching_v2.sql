@@ -36,7 +36,7 @@ BEGIN
     END IF;
 
     RETURN QUERY
-    SELECT 
+    SELECT DISTINCT ON (t.trip_id)
         t.trip_id, 
         t.departure_name, 
         t.destination_name, 
@@ -60,7 +60,7 @@ BEGIN
         AND public.haversine_distance(r_origin_lat, r_origin_lng, t.departure_latitude, t.departure_longitude) <= p_radius_km
         AND public.haversine_distance(r_dest_lat, r_dest_lng, t.destination_latitude, t.destination_longitude) <= p_radius_km
     ORDER BY 
-        score ASC;
+        t.trip_id, score ASC;
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
