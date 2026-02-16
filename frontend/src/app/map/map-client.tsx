@@ -9,8 +9,12 @@ import { RecentRequestsTable } from "@/components/map/recent-requests-table";
 import { TripMapPopup } from "@/components/map/trip-map-popup";
 import { TripMapItem } from "@/types/trip";
 import { SiteTripRequest } from "@/types/site-request";
-import { X, Filter, List, Map as MapIcon, Users, Car } from "lucide-react";
+import { X, Filter, List, Map as MapIcon, Users, Car, Eye, EyeOff, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { scanRequestMatchesAction } from "@/app/site-requests/actions";
+import { toast } from "sonner";
+import { ScanResultsDialog } from "@/app/site-requests/components/ScanResultsDialog";
 
 // Hooks
 import { useMapFilters } from "./hooks/useMapFilters";
@@ -56,11 +60,42 @@ export function MapClient({
   initialShowRequests,
 }: MapClientProps) {
   const router = useRouter();
+  const [scanningId, setScanningId] = useState<string | null>(null);
+  const [scanResults, setScanResults] = useState<any>(null);
+  const [showScanDialog, setShowScanDialog] = useState(false);
 
   // 0. Enrichissement dynamique des tracés (Polylines) pour les demandes
   const enrichedRequests = useSiteRequestRoutes(siteRequests);
 
-  // 1. Filtrage
+  const handleScan = async (id: string, radius: number = 5) => {
+    setScanningId(id);
+    try {
+      const result = await scanRequestMatchesAction(id, radius);
+      setScanResults(result);
+      setShowScanDialog(true);
+      if (result.success && result.count > 0) {
+        toast.success(result.message);
+      }
+    } catch (error) {
+      toast.error("Erreur lors du scan.");
+    } finally {
+      setScanningId(null);
+    }
+  };
+
+  // 1. Sélection (déplacé avant Filtrage pour avoir selectedRequest disponible)
+  const {
+    selectedTrip,
+    selectedRequest,
+    handleSelectTrip,
+    handleSelectRequest,
+    handleClosePopup,
+  } = useMapSelection({
+    initialSelectedTrip,
+    initialSelectedRequest
+  });
+
+  // 2. Filtrage
   const { 
     filters, 
     handleFilterChange, 
@@ -71,19 +106,8 @@ export function MapClient({
     siteRequests: enrichedRequests,
     initialStatusFilter,
     initialDriverFilter,
-    initialShowRequests
-  });
-
-  // 2. Sélection
-  const {
-    selectedTrip,
-    selectedRequest,
-    handleSelectTrip,
-    handleSelectRequest,
-    handleClosePopup,
-  } = useMapSelection({
-    initialSelectedTrip,
-    initialSelectedRequest
+    initialShowRequests,
+    selectedRequest
   });
 
   // 3. UI & Visibilité
@@ -106,7 +130,8 @@ export function MapClient({
     handleToggleVisibility,
     handleToggleRequestVisibility,
     handleShowOnlyLast,
-    handleShowAll
+    handleShowAll,
+    handleHideAll
   } = useMapUI(filteredTrips, filteredRequests);
 
   // UX: Pre-fetch pages liées
@@ -187,9 +212,39 @@ export function MapClient({
             </div>
 
             <div className="flex items-center justify-between mb-4 px-2">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">
-                {sidebarTab === "trips" ? "Offre disponible" : "Demande client"}
-              </h3>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">
+                  {sidebarTab === "trips" ? "Offre disponible" : "Demande client"}
+                </h3>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleShowAll}
+                    className="text-[9px] font-black uppercase text-klando-gold hover:underline flex items-center gap-1"
+                  >
+                    <Eye className="w-2.5 h-2.5" /> Tout
+                  </button>
+                  <button 
+                    onClick={handleHideAll}
+                    className="text-[9px] font-black uppercase text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  >
+                    <EyeOff className="w-2.5 h-2.5" /> Aucun
+                  </button>
+                  
+                  {sidebarTab === "requests" && selectedRequest && (selectedRequest.matches?.length || 0) > 0 && (
+                    <button 
+                      onClick={() => handleFilterChange({ showMatchesOnly: !filters.showMatchesOnly })}
+                      className={cn(
+                        "text-[9px] font-black uppercase flex items-center gap-1 px-2 py-0.5 rounded-full transition-all",
+                        filters.showMatchesOnly 
+                          ? "bg-green-500 text-white shadow-sm" 
+                          : "text-green-500 hover:bg-green-500/10"
+                      )}
+                    >
+                      <Sparkles className="w-2.5 h-2.5" /> Matches
+                    </button>
+                  )}
+                </div>
+              </div>
               <button 
                 onClick={() => setShowMobileFilters(true)}
                 className="p-2 rounded-lg bg-secondary border border-border/50 md:hidden"
@@ -203,43 +258,12 @@ export function MapClient({
                 trips={recentTrips}
                 selectedTripId={selectedTrip?.trip_id}
                 hiddenTripIds={hiddenTripIds}
-                displayMode={displayMode}
                 onSelectTrip={handleSelectTrip}
                 onHoverTrip={setHoveredTripId}
                 onToggleVisibility={handleToggleVisibility}
-                onShowOnlyLast={handleShowOnlyLast}
-                onShowAll={handleShowAll}
               />
             ) : (
               <div className="flex-1 flex flex-col min-h-0">
-                {/* Switcher for requests too if applicable, or at least common layout */}
-                <div className="flex bg-muted/20 p-1 rounded-xl mb-4 self-center relative w-full max-w-[280px]">
-                  <div 
-                    className={cn(
-                      "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-klando-gold rounded-lg transition-all duration-300 shadow-sm z-0",
-                      displayMode === "all" ? "left-1" : "left-[calc(50%+1px)]"
-                    )}
-                  />
-                  <button
-                    onClick={handleShowAll}
-                    className={cn(
-                      "flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all relative z-10",
-                      displayMode === "all" ? "text-klando-dark" : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Afficher Tout
-                  </button>
-                  <button
-                    onClick={handleShowOnlyLast}
-                    className={cn(
-                      "flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all relative z-10",
-                      displayMode === "last" ? "text-klando-dark" : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Dernière Seule
-                  </button>
-                </div>
-                
                 <RecentRequestsTable
                   requests={recentRequests}
                   selectedRequestId={selectedRequest?.id}
@@ -247,6 +271,8 @@ export function MapClient({
                   onSelectRequest={handleSelectRequest}
                   onHoverRequest={setHoveredRequestId}
                   onToggleVisibility={handleToggleRequestVisibility}
+                  onScan={handleScan}
+                  scanningId={scanningId}
                 />
               </div>
             )}
@@ -386,6 +412,18 @@ export function MapClient({
           </div>
         </div>
       )}
+
+      <ScanResultsDialog 
+        isOpen={showScanDialog}
+        onClose={() => setShowScanDialog(false)}
+        results={scanResults}
+        onRetry={() => {
+          if (scanResults?.diagnostics?.origin) {
+            const req = siteRequests.find(r => r.origin_city === scanResults.diagnostics.origin);
+            if (req) handleScan(req.id, 15);
+          }
+        }}
+      />
     </div>
   );
 }

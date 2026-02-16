@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import type { SiteTripRequest, SiteTripRequestStatus } from "@/types/site-request";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -22,7 +22,10 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Calendar, Phone, Mail, Sparkles, Loader2, ChevronLeft, ChevronRight, Hash } from "lucide-react";
+import { Calendar, Phone, Mail, Sparkles, Loader2, ChevronLeft, ChevronRight, Hash, Radar } from "lucide-react";
+import { scanRequestMatchesAction } from "@/app/site-requests/actions";
+import { toast } from "sonner";
+import { ScanResultsDialog } from "@/app/site-requests/components/ScanResultsDialog";
 
 interface SiteRequestTableProps {
   requests: SiteTripRequest[];
@@ -54,6 +57,10 @@ export function SiteRequestTable({
   setStatusFilter,
   onOpenIA,
 }: SiteRequestTableProps) {
+  const [scanningId, setScanningId] = useState<string | null>(null);
+  const [scanResults, setScanResults] = useState<any>(null);
+  const [showScanDialog, setShowScanDialog] = useState(false);
+
   // Stable Filter and Sort
   const filteredRequests = useMemo(() => {
     const sorted = [...requests].sort((a, b) => {
@@ -81,6 +88,22 @@ export function SiteRequestTable({
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedRequests = filteredRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   
+  const handleScan = async (id: string, radius: number = 5) => {
+    setScanningId(id);
+    try {
+      const result = await scanRequestMatchesAction(id, radius);
+      setScanResults(result);
+      setShowScanDialog(true);
+      if (result.success && result.count > 0) {
+        toast.success(result.message);
+      }
+    } catch (error) {
+      toast.error("Erreur lors du scan.");
+    } finally {
+      setScanningId(null);
+    }
+  };
+
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: requests.length };
     for (const status in statusConfig) {
@@ -205,9 +228,21 @@ export function SiteRequestTable({
                             ))}
                           </SelectContent>
                         </Select>
-                        <Button variant="outline" size="sm" onClick={() => onOpenIA(request.id)} className={cn("gap-2 border-klando-gold/30 text-[10px] font-black uppercase tracking-widest px-3 h-8 shadow-sm", request.ai_recommendation ? "bg-green-50 text-green-600 border-green-200" : "bg-klando-gold/5 text-klando-gold")}>
-                          <Sparkles className="w-3 h-3" /> {request.ai_recommendation ? "Aide IA ✓" : "Aide IA"}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleScan(request.id)} 
+                            disabled={scanningId === request.id}
+                            className="h-8 w-8 p-0 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                            title="Scanner les trajets proches"
+                          >
+                            {scanningId === request.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radar className="w-3.5 h-3.5" />}
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => onOpenIA(request.id)} className={cn("gap-2 border-klando-gold/30 text-[10px] font-black uppercase tracking-widest px-3 h-8 shadow-sm", request.ai_recommendation ? "bg-green-50 text-green-600 border-green-200" : "bg-klando-gold/5 text-klando-gold")}>
+                            <Sparkles className="w-3 h-3" /> {request.ai_recommendation ? "Aide IA ✓" : "Aide IA"}
+                          </Button>
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -227,6 +262,18 @@ export function SiteRequestTable({
           <Button variant="outline" size="icon" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="h-9 w-9 rounded-xl"><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
+
+      <ScanResultsDialog 
+        isOpen={showScanDialog}
+        onClose={() => setShowScanDialog(false)}
+        results={scanResults}
+        onRetry={() => {
+          if (scanResults?.diagnostics?.origin) {
+            const req = requests.find(r => r.origin_city === scanResults.diagnostics.origin);
+            if (req) handleScan(req.id, 15);
+          }
+        }}
+      />
     </div>
   );
 }

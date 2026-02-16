@@ -39,38 +39,54 @@ export async function saveRequestGeometryAction(
 }
 
 /**
- * Calcule l'itinéraire et les coordonnées côté serveur (évite les erreurs CORS)
- * et sauvegarde le résultat en base de données.
+ * Calcule l'itinéraire et les coordonnées côté serveur
+ * avec une stratégie d'affinage par IA pour les points d'intérêt locaux.
  */
 export async function calculateAndSaveRequestRouteAction(requestId: string, originCity: string, destCity: string) {
   try {
-    console.log(`[Server] Calculating route for ${requestId}: ${originCity} -> ${destCity}`);
+    console.log(`[Geocoding] Searching: ${originCity} -> ${destCity}`);
 
-    const geocode = async (city: string) => {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city + ", Senegal")}&limit=1`, {
-        headers: { 'User-Agent': 'KlandoDash-Admin' }
-      });
-      const data = await res.json();
-      if (data && data[0]) {
-        return [parseFloat(data[0].lat), parseFloat(data[0].lon)] as [number, number];
+    const geocodeWithRefinement = async (rawAddress: string) => {
+      // 1. Tentative brute avec Nominatim
+      const fetchCoords = async (query: string) => {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Senegal")}&limit=1`, {
+          headers: { 'User-Agent': 'KlandoDash-Admin' }
+        });
+        const data = await res.json();
+        return (data && data[0]) ? [parseFloat(data[0].lat), parseFloat(data[0].lon)] as [number, number] : null;
+      };
+
+      let coords = await fetchCoords(rawAddress);
+
+      // 2. Si échec, on demande à l'IA de nettoyer l'adresse (extraire quartier/ville)
+      if (!coords) {
+        console.log(`[Geocoding] Nominatim failed for "${rawAddress}", refining with AI...`);
+        const prompt = `Quel est le quartier et la ville correspondant à ce lieu au Sénégal : "${rawAddress}" ? Réponds UNIQUEMENT sous la forme "Quartier, Ville".`;
+        const refined = await askKlandoAI(prompt, { context: "Geocoding Refinement" });
+        
+        if (refined && !refined.includes("Error")) {
+          console.log(`[Geocoding] AI refined "${rawAddress}" to "${refined}"`);
+          coords = await fetchCoords(refined);
+        }
       }
-      return null;
+
+      return coords;
     };
 
     const [originCoords, destCoords] = await Promise.all([
-      geocode(originCity),
-      geocode(destCity)
+      geocodeWithRefinement(originCity),
+      geocodeWithRefinement(destCity)
     ]);
 
     if (!originCoords || !destCoords) {
-      return { success: false, message: "Coordonnées non trouvées" };
+      return { success: false, message: "Coordonnées introuvables même après affinage." };
     }
 
     const routeRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${originCoords[1]},${originCoords[0]};${destCoords[1]},${destCoords[0]}?overview=full`);
     const routeData = await routeRes.json();
     
     if (!routeData.routes || !routeData.routes[0]) {
-      return { success: false, message: "Itinéraire non trouvé" };
+      return { success: false, message: "Itinéraire non trouvé entre ces points." };
     }
 
     const geometry = {
@@ -81,19 +97,116 @@ export async function calculateAndSaveRequestRouteAction(requestId: string, orig
       destination_lng: destCoords[1]
     };
 
-    // Sauvegarde immédiate via l'action existante
+    // Sauvegarde immédiate
     const saveResult = await saveRequestGeometryAction(requestId, geometry);
 
     if (!saveResult.success) {
-      console.error(`[Server] Failed to persist geometry for ${requestId} to DB`);
-      return { success: false, message: "Échec de la sauvegarde en base de données" };
+      return { success: false, message: "Échec de la sauvegarde GPS." };
     }
 
-    console.log(`[Server] Successfully saved geometry for ${requestId}`);
     return { success: true, data: geometry };
   } catch (error) {
-    console.error(`[Server Error] Route calculation failed for ${requestId}:`, error);
-    return { success: false, message: "Erreur serveur lors du calcul" };
+    console.error(`[Geocoding Error] ${requestId}:`, error);
+    return { success: false, message: "Erreur serveur lors du calcul géographique." };
+  }
+}
+
+/**
+ * SCANNER : Calcule les trajets proches et les enregistre de manière persistante
+ */
+export async function scanRequestMatchesAction(requestId: string, radiusKm: number = 5) {
+  const session = await auth();
+  if (!session || session.user.role !== "admin") {
+    throw new Error("Non autorisé");
+  }
+
+  try {
+    const supabase = (await import("@/lib/supabase")).createAdminClient();
+    const { findMatchingTrips } = await import("@/lib/queries/site-requests");
+
+    // 0. Récupérer la demande
+    const { data: requestData } = await supabase
+      .from("site_trip_requests")
+      .select("origin_city, destination_city, origin_lat, origin_lng, destination_lat, destination_lng")
+      .eq("id", requestId)
+      .single();
+
+    if (!requestData) throw new Error("Demande introuvable");
+
+    // 1. AUTO-GÉOCODAGE si nécessaire
+    let coords = {
+      origin_lat: requestData.origin_lat,
+      origin_lng: requestData.origin_lng,
+      destination_lat: requestData.destination_lat,
+      destination_lng: requestData.destination_lng
+    };
+
+    if (!coords.origin_lat || !coords.destination_lat) {
+      console.log(`[Scanner] Coords missing for ${requestId}, geocoding...`);
+      const routeResult = await calculateAndSaveRequestRouteAction(
+        requestId, 
+        requestData.origin_city, 
+        requestData.destination_city
+      );
+      
+      if (routeResult.success && routeResult.data) {
+        coords = {
+          origin_lat: routeResult.data.origin_lat,
+          origin_lng: routeResult.data.origin_lng,
+          destination_lat: routeResult.data.destination_lat,
+          destination_lng: routeResult.data.destination_lng
+        };
+      } else {
+        return { 
+          success: false, 
+          message: "Impossible de géocoder les villes de départ ou d'arrivée." 
+        };
+      }
+    }
+
+    // 2. Rechercher les trajets correspondants (RPC SQL Haversine)
+    const matches = await findMatchingTrips(requestId, radiusKm);
+    
+    // 3. Diagnostic: Nombre de trajets PENDING au total
+    const { count: totalPending } = await supabase
+      .from("trips")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "PENDING")
+      .gt("departure_schedule", new Date().toISOString());
+
+    // 4. Nettoyer et Insérer les matches
+    await supabase.from("site_trip_request_matches").delete().eq("request_id", requestId);
+
+    if (matches.length > 0) {
+      await supabase.from("site_trip_request_matches").insert(
+        matches.map((m: any) => ({
+          request_id: requestId,
+          trip_id: m.trip_id,
+          proximity_score: m.total_proximity_score,
+          origin_distance: m.origin_distance,
+          destination_distance: m.destination_distance
+        }))
+      );
+    }
+
+    revalidatePath("/site-requests");
+    revalidatePath("/map");
+
+    return { 
+      success: true, 
+      count: matches.length, 
+      diagnostics: {
+        hasCoords: true,
+        origin: requestData.origin_city,
+        destination: requestData.destination_city,
+        totalPending: totalPending || 0,
+        radiusUsed: radiusKm
+      },
+      message: `${matches.length} trajet(s) trouvé(s) et enregistré(s).` 
+    };
+  } catch (error) {
+    console.error("[Scanner Error] Failed to scan matches:", error);
+    return { success: false, message: "Erreur lors du scan des trajets." };
   }
 }
 

@@ -15,7 +15,7 @@ export async function getSiteTripRequests(options: {
 
   let query = supabase
     .from("site_trip_requests")
-    .select("*")
+    .select("*, matches:site_trip_request_matches(trip_id, proximity_score)")
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 

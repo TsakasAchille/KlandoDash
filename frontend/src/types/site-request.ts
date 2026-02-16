@@ -16,6 +16,10 @@ export interface SiteTripRequest {
   destination_lat?: number | null;
   destination_lng?: number | null;
   polyline?: string | null;
+  matches?: {
+    trip_id: string;
+    proximity_score: number;
+  }[];
 }
 
 export interface SiteTripRequestsStats {

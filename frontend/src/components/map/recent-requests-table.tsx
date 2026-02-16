@@ -2,7 +2,7 @@
 
 import { SiteTripRequest } from "@/types/site-request";
 import { cn } from "@/lib/utils";
-import { Users, Eye, EyeOff, Calendar } from "lucide-react";
+import { Users, Eye, EyeOff, Calendar, Radar, Loader2, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -13,6 +13,8 @@ interface RecentRequestsTableProps {
   onSelectRequest: (request: SiteTripRequest) => void;
   onHoverRequest: (requestId: string | null) => void;
   onToggleVisibility: (requestId: string) => void;
+  onScan: (requestId: string) => void;
+  scanningId: string | null;
 }
 
 export function RecentRequestsTable({
@@ -22,6 +24,8 @@ export function RecentRequestsTable({
   onSelectRequest,
   onHoverRequest,
   onToggleVisibility,
+  onScan,
+  scanningId
 }: RecentRequestsTableProps) {
   const formatRelativeDate = (date: string) => {
     try {
@@ -43,6 +47,7 @@ export function RecentRequestsTable({
           requests.map((request) => {
             const isSelected = selectedRequestId === request.id;
             const isHidden = hiddenRequestIds.has(request.id);
+            const hasMatches = request.matches && request.matches.length > 0;
 
             return (
               <div
@@ -66,13 +71,22 @@ export function RecentRequestsTable({
 
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-500">
-                        <Users className="w-3 h-3" />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-500">
+                          <Users className="w-3 h-3" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-purple-500 truncate">
+                          {request.contact_info}
+                        </span>
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-purple-500 truncate">
-                        {request.contact_info}
-                      </span>
+                      
+                      {hasMatches && (
+                        <div className="flex items-center gap-1 text-[9px] font-black text-green-500 uppercase bg-green-500/10 px-2 py-0.5 rounded-full">
+                          <Sparkles className="w-2.5 h-2.5" />
+                          {request.matches?.length} matches
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 text-xs font-black uppercase tracking-tight text-foreground mb-1">
@@ -95,15 +109,36 @@ export function RecentRequestsTable({
                     </div>
                   </div>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleVisibility(request.id);
-                    }}
-                    className="p-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/40 transition-colors text-muted-foreground hover:text-foreground"
-                  >
-                    {isHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onScan(request.id);
+                      }}
+                      disabled={scanningId === request.id}
+                      className={cn(
+                        "p-2 rounded-xl border border-border/40 transition-all",
+                        scanningId === request.id ? "bg-blue-500 text-white animate-pulse" : "bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white"
+                      )}
+                      title="Scanner les trajets"
+                    >
+                      {scanningId === request.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Radar className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleVisibility(request.id);
+                      }}
+                      className="p-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/40 transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                      {isHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Selected Indicator */}

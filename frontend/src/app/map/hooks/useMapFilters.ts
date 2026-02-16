@@ -9,6 +9,7 @@ interface UseMapFiltersProps {
   initialStatusFilter: string;
   initialDriverFilter: string | null;
   initialShowRequests: boolean;
+  selectedRequest: SiteTripRequest | null;
 }
 
 export function useMapFilters({
@@ -16,20 +17,22 @@ export function useMapFilters({
   siteRequests,
   initialStatusFilter,
   initialDriverFilter,
-  initialShowRequests
+  initialShowRequests,
+  selectedRequest
 }: UseMapFiltersProps) {
   const router = useRouter();
 
-  const [filters, setFilters] = useState<MapFiltersType & { showRequests: boolean }>({
+  const [filters, setFilters] = useState<MapFiltersType & { showRequests: boolean; showMatchesOnly: boolean }>({
     status: (initialStatusFilter as MapFiltersType["status"]) || "ALL",
     dateFrom: null,
     dateTo: null,
     driverId: initialDriverFilter,
     showRequests: initialShowRequests,
+    showMatchesOnly: false,
   });
 
   const handleFilterChange = useCallback(
-    (newFilters: Partial<MapFiltersType & { showRequests: boolean }>) => {
+    (newFilters: Partial<MapFiltersType & { showRequests: boolean; showMatchesOnly: boolean }>) => {
       setFilters((prev) => ({ ...prev, ...newFilters }));
       const url = new URL(window.location.href);
       
@@ -54,7 +57,15 @@ export function useMapFilters({
   );
 
   const filteredTrips = useMemo(() => {
+    // Si le filtre "Matches Only" est actif et qu'on a une demande sélectionnée
+    const matchedTripIds = selectedRequest?.matches?.map(m => m.trip_id) || [];
+    
+    if (filters.showMatchesOnly && selectedRequest && matchedTripIds.length > 0) {
+      return trips.filter(t => matchedTripIds.includes(t.trip_id));
+    }
+
     return trips.filter((trip) => {
+      // Mode normal (filtres classiques)
       if (filters.status !== "ALL" && trip.status !== filters.status)
         return false;
       if (filters.driverId && trip.driver?.uid !== filters.driverId)
@@ -69,7 +80,7 @@ export function useMapFilters({
       }
       return true;
     });
-  }, [trips, filters]);
+  }, [trips, filters, selectedRequest]);
 
   const filteredRequests = useMemo(() => {
     if (!filters.showRequests) return [];
