@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function askKlandoAI(prompt: string, dataContext: any) {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
   
@@ -37,6 +38,7 @@ export async function askKlandoAI(prompt: string, dataContext: any) {
         console.log(`[AI] Succès avec ${modelName}`);
         return text;
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       lastError = error.message;
       console.error(`[AI] Échec du modèle ${modelName}:`, lastError);

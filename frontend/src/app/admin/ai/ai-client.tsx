@@ -48,7 +48,7 @@ export function KlandoAIClient() {
       } else {
         toast.error("Impossible de générer les insights");
       }
-    } catch (e) {
+    } catch {
       console.error("Failed to load insights");
       toast.error("Erreur de connexion avec l'IA");
     } finally {
@@ -72,7 +72,7 @@ export function KlandoAIClient() {
       } else {
         setMessages((prev) => [...prev, { role: "ai", text: `Erreur: ${result.message || "Désolé, j'ai rencontré une erreur."}` }]);
       }
-    } catch (error) {
+    } catch {
       setMessages((prev) => [...prev, { role: "ai", text: "Erreur de connexion avec l'IA." }]);
     } finally {
       setIsLoading(false);

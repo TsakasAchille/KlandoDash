@@ -61,6 +61,7 @@ export async function askGeminiAction(prompt: string) {
     const context = await getDataContext();
     const response = await askKlandoAI(prompt, context);
     return { success: true, text: response };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("AI Action Error:", error);
     return { success: false, message: error.message || "Erreur lors de l'appel à l'IA" };
