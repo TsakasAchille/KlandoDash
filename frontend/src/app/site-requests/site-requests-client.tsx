@@ -26,14 +26,17 @@ interface SiteRequestsClientProps {
 export function SiteRequestsClient({ initialRequests, publicPending, publicCompleted, tripsForMap }: SiteRequestsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // SOURCE DE VÉRITÉ : URL
   const tabParam = searchParams.get("tab") || "requests";
+  const selectedRequestId = searchParams.get("id");
+  const aiMatchedTripId = searchParams.get("selectedTrip");
 
   const [requests, setRequests] = useState<SiteTripRequest[]>(initialRequests);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   
-  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(searchParams.get("id") || null);
   const [aiDialogOpenId, setAiDialogOpenId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
@@ -48,7 +51,6 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
   const handleScan = async (id: string) => {
     setScanningId(id);
     try {
-      // On scanne large (30km) pour remplir les onglets 5/10/15
       const result = await scanRequestMatchesAction(id, 30);
       if (result.success) {
         toast.success(`Scan terminé : ${result.count} trajets analysés.`);
@@ -90,10 +92,15 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
   };
 
   const handleSelectRequestOnMap = (id: string) => {
-    setSelectedRequestId(id);
     const url = new URL(window.location.href);
-    if (id) url.searchParams.set("id", id);
-    else url.searchParams.delete("id");
+    if (id) {
+        url.searchParams.set("id", id);
+        // Si on change de tab vers la map, on garde l'id
+        url.searchParams.set("tab", "map");
+    } else {
+        url.searchParams.delete("id");
+        url.searchParams.delete("selectedTrip");
+    }
     router.replace(url.pathname + url.search, { scroll: false });
   };
 
@@ -118,6 +125,7 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
             onOpenIA={(id) => setAiDialogOpenId(id)}
             onScan={handleScan}
             scanningId={scanningId}
+            selectedId={selectedRequestId || undefined}
           />
         </TabsContent>
 
@@ -130,6 +138,7 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
             onScan={handleScan}
             onOpenIA={(id) => setAiDialogOpenId(id)}
             scanningId={scanningId}
+            aiMatchedTripId={aiMatchedTripId}
           />
         </TabsContent>
         
