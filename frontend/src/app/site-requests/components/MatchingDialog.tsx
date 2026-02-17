@@ -85,6 +85,8 @@ export function MatchingDialog({
               originCity={selectedRequest.origin_city}
               destination_city={selectedRequest.destination_city}
               recommendedPolyline={matchedTrip?.polyline}
+              recommendedDepartureCity={matchedTrip?.departure_city}
+              recommendedArrivalCity={matchedTrip?.arrival_city}
             />
 
             {/* PROPOSED TRIP BOX */}

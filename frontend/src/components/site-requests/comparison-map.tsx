@@ -10,12 +10,14 @@ interface ComparisonMapProps {
   originCity: string;
   destination_city: string;
   recommendedPolyline?: string | null;
+  recommendedDepartureCity?: string | null;
+  recommendedArrivalCity?: string | null;
 }
 
 const createCustomIcon = (color: string, label: string) =>
   L.divIcon({
     className: "custom-marker",
-    html: `<div style="display: flex; flex-col; items-center; transform: translate(-50%, -100%);">
+    html: `<div style="display: flex; flex-direction: column; items-center; transform: translate(-50%, -100%);">
       <div style="
         background-color: ${color};
         width: 14px;
@@ -23,24 +25,33 @@ const createCustomIcon = (color: string, label: string) =>
         border-radius: 50%;
         border: 2px solid white;
         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        margin: 0 auto;
       "></div>
       <div style="
         background: white;
         color: black;
-        font-size: 10px;
-        font-weight: bold;
+        font-size: 9px;
+        font-weight: 900;
         padding: 2px 6px;
         border-radius: 4px;
         border: 1px solid ${color};
-        margin-left: 4px;
+        margin-top: 2px;
         white-space: nowrap;
+        text-transform: uppercase;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       ">${label}</div>
     </div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
 
-export function ComparisonMap({ originCity, destination_city, recommendedPolyline }: ComparisonMapProps) {
+export function ComparisonMap({ 
+  originCity, 
+  destination_city, 
+  recommendedPolyline,
+  recommendedDepartureCity,
+  recommendedArrivalCity
+}: ComparisonMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,15 +130,15 @@ export function ComparisonMap({ originCity, destination_city, recommendedPolylin
         // 1. Draw Requested Trip (Dashed Blue)
         const reqLine = L.polyline(requestedPolylineCoords, {
           color: "#3B82F6",
-          weight: 4,
-          opacity: 0.6,
-          dashArray: "10, 10"
+          weight: 3,
+          opacity: 0.5,
+          dashArray: "8, 8"
         }).addTo(map);
         bounds.extend(reqLine.getBounds());
 
         // Markers for requested trip
-        L.marker(originCoords, { icon: createCustomIcon("#3B82F6", "Départ voulu") }).addTo(map);
-        L.marker(destCoords, { icon: createCustomIcon("#3B82F6", "Arrivée voulue") }).addTo(map);
+        L.marker(originCoords, { icon: createCustomIcon("#3B82F6", `CLIENT: ${originCity.split(',')[0]}`) }).addTo(map);
+        L.marker(destCoords, { icon: createCustomIcon("#3B82F6", `CLIENT: ${destination_city.split(',')[0]}`) }).addTo(map);
 
         // 2. Draw Recommended Trip (Solid Gold)
         if (recommendedPolyline) {
@@ -136,14 +147,34 @@ export function ComparisonMap({ originCity, destination_city, recommendedPolylin
             if (recCoords.length > 0) {
               const recLine = L.polyline(recCoords, {
                 color: "#EBC33F",
-                weight: 6,
+                weight: 5,
                 opacity: 0.9,
               }).addTo(map);
               bounds.extend(recLine.getBounds());
               
+              const startRec = recCoords[0];
+              const endRec = recCoords[recCoords.length - 1];
+
               // Markers for recommended trip
-              L.marker(recCoords[0], { icon: createCustomIcon("#22C55E", "Conducteur départ") }).addTo(map);
-              L.marker(recCoords[recCoords.length - 1], { icon: createCustomIcon("#EF4444", "Conducteur arrivée") }).addTo(map);
+              L.marker(startRec, { icon: createCustomIcon("#22C55E", `CONDUCTEUR: ${recommendedDepartureCity?.split(',')[0] || "Départ"}`) }).addTo(map);
+              L.marker(endRec, { icon: createCustomIcon("#EF4444", `CONDUCTEUR: ${recommendedArrivalCity?.split(',')[0] || "Arrivée"}`) }).addTo(map);
+
+              // 3. DRAW JUNCTION LINES (The gap between request and trip)
+              // Green dashed line for departure gap
+              L.polyline([originCoords, startRec], {
+                color: "#22C55E",
+                weight: 2,
+                opacity: 0.7,
+                dashArray: "4, 4"
+              }).addTo(map);
+
+              // Red dashed line for arrival gap
+              L.polyline([destCoords, endRec], {
+                color: "#EF4444",
+                weight: 2,
+                opacity: 0.7,
+                dashArray: "4, 4"
+              }).addTo(map);
             }
           } catch (e) {
             console.error("Failed to decode recommended polyline", e);
@@ -154,7 +185,7 @@ export function ComparisonMap({ originCity, destination_city, recommendedPolylin
           if (!bounds.isValid()) {
             map.setView(originCoords, 10);
           } else {
-            map.fitBounds(bounds, { padding: [40, 40] });
+            map.fitBounds(bounds, { padding: [50, 50] });
           }
           setLoading(false);
         }
@@ -172,7 +203,7 @@ export function ComparisonMap({ originCity, destination_city, recommendedPolylin
     return () => {
       isMounted = false;
     };
-  }, [originCity, destination_city, recommendedPolyline]);
+  }, [originCity, destination_city, recommendedPolyline, recommendedDepartureCity, recommendedArrivalCity]);
 
   // Handle cleanup on unmount
   useEffect(() => {
@@ -210,7 +241,7 @@ export function ComparisonMap({ originCity, destination_city, recommendedPolylin
           </div>
           <div className="flex items-center gap-2 bg-white/90 backdrop-blur px-2 py-1 rounded-md border border-border shadow-sm">
             <div className="w-3 h-1 bg-klando-gold rounded-full"></div>
-            <span className="text-[9px] font-bold uppercase">Proposition Chauffeur</span>
+            <span className="text-[9px] font-bold uppercase">Trajet Proposé</span>
           </div>
         </div>
       )}

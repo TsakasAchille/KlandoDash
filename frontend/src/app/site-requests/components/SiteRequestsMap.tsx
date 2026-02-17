@@ -164,6 +164,7 @@ export function SiteRequestsMap({
             onShowAll={() => setHiddenSiteRequestIds(new Set())}
             onHideAll={() => setHiddenSiteRequestIds(new Set(requests.map(r => r.id)))}
             onScan={onScan}
+            onOpenIA={onOpenIA}
             scanningId={scanningId}
           />
         </div>
@@ -188,7 +189,7 @@ export function SiteRequestsMap({
             
             {/* Overlay d'info */}
             {selectedRequest && (
-              <div className="absolute top-6 left-6 right-6 z-[1000] pointer-events-none">
+              <div className="absolute top-6 left-6 right-6 z-40 pointer-events-none">
                 <div className="bg-klando-dark/90 backdrop-blur-md border border-purple-500/30 rounded-2xl p-4 shadow-2xl flex items-center justify-between pointer-events-auto animate-in slide-in-from-top-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-purple-500/20 rounded-xl"><Radar className="w-5 h-5 text-purple-500" /></div>

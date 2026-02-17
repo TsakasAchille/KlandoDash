@@ -14,6 +14,7 @@ interface CompactRequestsListProps {
   onShowAll: () => void;
   onHideAll: () => void;
   onScan: (id: string) => void;
+  onOpenIA: (id: string) => void;
   scanningId: string | null;
 }
 
@@ -26,6 +27,7 @@ export function CompactRequestsList({
   onShowAll,
   onHideAll,
   onScan, 
+  onOpenIA,
   scanningId 
 }: CompactRequestsListProps) {
   return (
@@ -111,8 +113,22 @@ export function CompactRequestsList({
                       "p-1 rounded-md transition-colors",
                       isScanning ? "text-blue-500 animate-spin" : "text-muted-foreground hover:text-blue-500"
                     )}
+                    title="Scanner"
                   >
                     <Radar className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenIA(req.id);
+                    }}
+                    className={cn(
+                      "p-1 rounded-md transition-all",
+                      req.ai_recommendation ? "text-green-500 bg-green-500/10" : "text-klando-gold hover:bg-klando-gold/10"
+                    )}
+                    title="Aide IA"
+                  >
+                    <Sparkles className="w-3 h-3" />
                   </button>
                 </div>
               </div>

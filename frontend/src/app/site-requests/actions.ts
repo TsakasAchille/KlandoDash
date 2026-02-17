@@ -236,6 +236,8 @@ export async function getAIMatchingAction(
 
     // 2. Sinon, générer avec Gemini en utilisant les matches déjà présents en DB (Scanner) ou le matching géo en direct
     if (!aiRecommendation) {
+      const { createAdminClient } = await import("@/lib/supabase");
+      const supabase = createAdminClient();
       const relevantTrips = await getPublicPendingTrips();
       
       // Récupérer les matches persistants du scanner pour cette demande
@@ -289,27 +291,30 @@ export async function getAIMatchingAction(
         
         TA MISSION :
         1. Trouve le MEILLEUR trajet qui correspond à la demande (priorise les résultats du MATCHING GÉOGRAPHIQUE s'ils existent).
-        2. Rédige un message WhatsApp de traction convaincant.
+        2. Analyse la liste pour voir si ce trajet est RÉCURRENT (même itinéraire à des dates différentes). Identifie les jours de la semaine (ex: Lundi, Mardi...).
+        3. Rédige un message WhatsApp de traction ultra-précis, professionnel et utilisant impérativement le VOUVOIEMENT.
         
         CONSIGNES POUR LE MESSAGE [MESSAGE] :
-        - Si match géo proche (2-5km) : "Bonne nouvelle ! Nous avons un départ juste à côté de chez vous..."
-        - Si match géo moyen (10-15km) : "Bonne nouvelle ! Nous avons un départ à proximité de ${origin}..."
-        - Si match ville uniquement : "Bonne nouvelle ! Nous avons un départ de ${origin} vers ${destination}..."
-        - Si pas de match : "Nous n'avons pas encore de départ confirmé pour ce trajet précis..."
+        - Commence par une salutation polie (ex: "Bonjour ! Nous avons trouvé un trajet correspondant à votre demande.").
+        - UTILISE LE VOUVOIEMENT uniquement (Pas de "tu", pas de "toi").
+        - NE JAMAIS inclure l'ID technique (ex: TRIP-XXXX) dans le message.
+        - Utilise EXACTEMENT ce format pour les instructions : 
+          "Veuillez saisir ces adresses dans l'application Klando : 
+          Départ : [Adresse exacte de départ du chauffeur]
+          Arrivée : [Adresse exacte d'arrivée du chauffeur]"
+        - Précisez la date et l'heure du départ (ex: "le 18 février à 07h10").
+        - Si c'est un trajet régulier, ajoutez : "C'est un trajet régulier, il est disponible les jours suivants : [Liste des jours de la semaine]".
         
-        IMPORTANT: Ta réponse DOIT impérativement suivre cette structure exacte :
+        IMPORTANT: Ta réponse DOIT impérativement suivre cette structure exacte (SANS section EMAIL) :
         
         [COMMENTAIRE]
-        (Ton analyse : pourquoi ce trajet est un bon match ? Mentionne la distance si c'est un match géo)
+        (Ton analyse technique courte : distance géo et détection de la récurrence)
         
         [TRIP_ID]
-        (L'ID du trajet choisi parmi la liste fournie ci-dessus. Si aucun match, écris NONE)
+        (L'ID du trajet choisi parmi la liste fournie. Si aucun match, écris NONE)
         
         [MESSAGE]
-        (Le texte du message WhatsApp court et direct)
-
-        [EMAIL]
-        (Un email professionnel et chaleureux proposant la solution au client)
+        (Le texte du message WhatsApp complet, professionnel, au vouvoiement, avec les adresses exactes)
       `;
 
       aiRecommendation = await askKlandoAI(prompt, { context: "Matching Traction Site" });
