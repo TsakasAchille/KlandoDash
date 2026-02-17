@@ -357,7 +357,11 @@ export async function getAIMatchingAction(
           arrival_city: trip.destination_name,
           departure_time: trip.departure_schedule,
           seats_available: trip.seats_available,
-          polyline: trip.polyline
+          polyline: trip.polyline,
+          departure_latitude: trip.departure_latitude,
+          departure_longitude: trip.departure_longitude,
+          destination_latitude: trip.destination_latitude,
+          destination_longitude: trip.destination_longitude
         };
         console.log(`[AI Matching] Successfully loaded trip data for map (Polyline length: ${trip.polyline?.length || 0})`);
       } else {

@@ -78,8 +78,16 @@ export function MatchingDialog({
       : null;
 
     const driverTrip = (matchedTrip && matchedTrip.polyline) ? {
-      origin: { lat: 0, lng: 0, label: matchedTrip.departure_city.split(',')[0] }, 
-      destination: { lat: 0, lng: 0, label: matchedTrip.arrival_city.split(',')[0] },
+      origin: { 
+        lat: matchedTrip.departure_latitude || 0, 
+        lng: matchedTrip.departure_longitude || 0, 
+        label: matchedTrip.departure_city.split(',')[0] 
+      }, 
+      destination: { 
+        lat: matchedTrip.destination_latitude || 0, 
+        lng: matchedTrip.destination_longitude || 0, 
+        label: matchedTrip.arrival_city.split(',')[0] 
+      },
       polyline: matchedTrip.polyline
     } : null;
 

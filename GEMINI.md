@@ -8,37 +8,39 @@ KlandoDash is the administration dashboard for Klando, a carpooling service in S
 
 - **Backend & Database**: The project leverages Supabase, a Backend-as-a-Service (BaaS) platform, which provides a PostgreSQL database, authentication, and auto-generated APIs. The database schema includes core tables for `trips`, `users`, `bookings`, `support_tickets`, and `transactions`. The `database/schema.sql` file defines the complete database structure, including tables, relationships, and indexes.
 
-- **Authentication**: User authentication is handled by NextAuth.js (v5), with Google OAuth as the primary authentication provider. Access to the dashboard is restricted to authorized users listed in the `dash_authorized_users` table in the Supabase database. These records are now enriched with `display_name` and `avatar_url` directly from the Google profile during login via a NextAuth `signIn` callback. Role-based access control is implemented, including `admin` and `support` roles.
+- **Authentication**: User authentication is handled by NextAuth.js (v5), with Google OAuth as the primary authentication provider. Access to the dashboard is restricted to authorized users listed in the `dash_authorized_users` table in the Supabase database. These records are enriched with `display_name` and `avatar_url` from the Google profile. Role-based access control is implemented (Admin, Support).
 
 - **Data Flow**: The frontend communicates with the Supabase backend through the `@supabase/supabase-js` client library.
-  - **Standard Data**: Fetched on the server-side using React Server Components with dedicated query functions in `frontend/src/lib/queries/`.
-  - **Aggregated Data (Stats)**: Heavy calculations MUST be performed database-side via **SQL RPC functions** (`SECURITY DEFINER`). The frontend calls these via `supabase.rpc()` to receive pre-processed JSON, ensuring memory safety on the application server.
+  - **Standard Data**: Fetched on the server-side using React Server Components with dedicated query functions.
+  - **Aggregated Data (Stats)**: Heavy calculations MUST be performed database-side via **SQL RPC functions** (`SECURITY DEFINER`). The frontend calls these via `supabase.rpc()` to receive pre-processed JSON, ensuring memory safety.
 
 ## Project Structure
 
 ```
 KlandoDash/
-├── frontend/          # Next.js 14 + Shadcn/ui ([README](./frontend/README.md))
-│   ├── src/app/      # Pages & API Routes ([README](./frontend/src/app/README.md))
+├── frontend/          # Next.js 14 + Shadcn/ui
+│   ├── src/app/      # Pages & API Routes
+│   │   ├── site-requests/ # Intentions management (AI Matching)
 │   │   ├── transactions/ # Transactions module
 │   │   ├── map/          # Real-time trips map
 │   │   └── ...
-│   ├── src/components/ # Reusable UI components ([README](./frontend/src/components/README.md))
-│   ├── src/lib/      # Supabase client, queries & logic ([README](./frontend/src/lib/README.md))
-│   ├── src/types/    # TypeScript definitions ([README](./frontend/src/types/README.md))
-│   ├── .env.example  # Example environment variables
-│   └── package.json  # Frontend dependencies and scripts
-├── database/          # SQL schemas & migrations ([README](./database/README.md))
+│   ├── src/features/ # Modular business logic (SOLID)
+│   │   └── site-requests/ # Geocoding, Trip, and AI services
+│   ├── src/components/ # Reusable UI components
+│   ├── src/lib/      # Supabase client, queries & logic
+│   ├── src/types/    # TypeScript definitions
+│   └── package.json  # Frontend dependencies
+├── database/          # SQL schemas & migrations
 │   ├── schema.sql    # Full database schema dump
 │   ├── tables.md     # Tables documentation
 │   └── migrations/   # SQL migration files
-├── docs/              # Technical Documentation ([README](./docs/README.md))
-│   ├── WEBSITE_INTEGRATION.md # Guide d'intégration site vitrine
+├── docs/              # Technical Documentation
+│   ├── WEBSITE_INTEGRATION.md # Guide site vitrine
+│   ├── AI_MATCHING_SYSTEM.md  # Flux technique Matching IA
 │   ├── GPT.md         # Philosophie d'interconnexion
 │   └── ...
-├── .env.local         # Local environment variables (symlinked to frontend/.env.local)
-├── package.json       # Root project dependencies (if any)
-└── README.md          # General project README ([README](./README.md))
+├── .env.local         # Local environment variables
+└── README.md          # General project README
 ```
 
 ## Commands
@@ -55,9 +57,6 @@ npm run lint     # Run ESLint for code quality
 
 ### Database (Supabase CLI)
 ```bash
-# Link your local Supabase project to a remote one (replace with your project ref)
-npx supabase link --project-ref your-supabase-project-ref
-
 # Push local migrations to your Supabase project
 npx supabase db push
 
@@ -66,8 +65,6 @@ npx supabase db dump --schema public -f database/schema.sql
 ```
 
 ## Database (Supabase)
-
-**Platform**: Supabase (PostgreSQL)
 
 ### Main Tables
 | Table | Description | PK |
@@ -78,78 +75,6 @@ npx supabase db dump --schema public -f database/schema.sql
 | `support_tickets` | User support tickets | `ticket_id` |
 | `transactions` | Financial transactions (Integrapay) | `id` |
 | `dash_authorized_users` | Authorized dashboard users | `email` |
-
-### Key Relations
-```mermaid
-erDiagram
-    users ||--o{ trips : "driver_id FK"
-    users ||--o{ bookings : "user_id FK"
-    trips ||--o{ bookings : "trip_id FK"
-    users ||--o{ dash_authorized_users : "email FK"
-    users ||--o{ support_tickets : "user_id FK"
-    users ||--o{ transactions : "user_id FK"
-    bookings ||--o? transactions : "transaction_id FK"
-```
-
-### Query Best Practices
-- **Avoid `SELECT *`**: Always specify columns to fetch only necessary data.
-- **Utilize Indexes**: Ensure relevant columns are indexed for efficient filtering and sorting.
-- **Leverage Joins**: Use Supabase's foreign table relationships for efficient data retrieval across tables (e.g., `driver:users!fk_driver`).
-
-## Frontend Architecture (Next.js 14)
-
-### Structure (`frontend/src/`)
-```
-frontend/src/
-├── app/                  # App Router pages and layouts
-│   ├── layout.tsx        # Root layout, SessionProvider
-│   ├── page.tsx          # Home page
-│   ├── api/              # API Routes (serverless functions)
-│   │   └── admin/        # Admin-specific API routes
-│   │       └── users/    # API for user management
-│   ├── login/            # Login page and layout
-│   ├── trips/            # Trips page and client components
-│   ├── users/            # Users page and client components
-│   ├── site-requests/    # Website intent collection management
-│   ├── stats/            # Statistics dashboard page
-│   ├── transactions/     # Transactions management page
-│   └── map/              # Real-time trips visualization map
-├── components/           # Reusable UI components
-│   ├── ui/               # Shadcn/ui components
-│   ├── sidebar.tsx       # Main navigation sidebar
-│   ├── user-menu.tsx     # User profile menu (avatar, role, logout)
-│   ├── refresh-button.tsx # Global manual refresh component
-│   └── providers.tsx     # Context providers (e.g., NextAuth SessionProvider)
-├── lib/                  # Utility functions and configurations
-│   ├── auth.ts           # NextAuth.js configuration
-│   ├── supabase.ts       # Supabase client initialization
-│   ├── queries/          # Data fetching functions for specific entities
-│   │   ├── trips.ts      # Trip-related data queries
-│   │   ├── users.ts      # User-related data queries
-│   │   ├── transactions.ts # Transaction-related data queries
-│   │   └── stats.ts      # Dashboard metrics queries
-│   └── utils.ts          # General utility functions (formatters, class mergers)
-├── middleware.ts         # Authentication middleware for route protection (RBAC)
-└── types/                # TypeScript global type definitions
-    ├── trip.ts           # Trip data structures
-    ├── user.ts           # User data structures
-    └── transaction.ts    # Transaction data structures
-```
-
-### Data Flow Example (Trips Page)
-```mermaid
-graph TD
-    A[User requests /trips] --> B(Next.js Server Component: frontend/src/app/trips/page.tsx)
-    B --> C{Call getTripsWithDriver & getTripsStats}
-    C --> D[Supabase (trips, users tables)]
-    D --> E{Data received}
-    E --> F(Data transformed to Trip[] and TripDetail)
-    F --> G(Passes props to Client Component: frontend/src/app/trips/trips-client.tsx)
-    G --> H(TripTable: displays list of Trip)
-    G --> I(TripDetails: displays selected TripDetail)
-    H -- User selects a trip --> J{Update URL: /trips?selected=TRIP_ID}
-    J --> A
-```
 
 ### Table `dash_authorized_users`
 | Column | Type | Description |
@@ -162,42 +87,52 @@ graph TD
 | `display_name` | text | User's display name from OAuth provider |
 | `avatar_url` | text | User's avatar URL from OAuth provider |
 
-### Key Authentication Files
-- `frontend/src/lib/auth.ts`: NextAuth.js configuration, callbacks.
-- `frontend/src/middleware.ts`: Route protection and redirection.
-- `frontend/src/app/login/page.tsx`: Login user interface.
-- `frontend/src/components/user-menu.tsx`: User session display and logout functionality.
+## Architecture & Data Flow
+
+### Data Flow Example (AI Matching)
+1. **Trigger**: Admin clique sur "Aide IA" pour une demande client.
+2. **Action**: `getAIMatchingAction` (Server Action) appelle Gemini.
+3. **Services (SOLID)**: `TripService` (Admin) récupère les détails du trajet ; `GeocodingService` calcule les itinéraires et flèches.
+4. **Visualisation**: `ComparisonMap` affiche les polylines, jonctions (Vert/Rouge) et sens du trajet.
+
+### Data Flow Example (Trips Page)
+```mermaid
+graph TD
+    A[User requests /trips] --> B(Next.js Server Component)
+    B --> C{Call getTripsWithDriver & getTripsStats}
+    C --> D[Supabase (trips, users tables)]
+    D --> E{Data received}
+    E --> F(Data transformed to Trip[] and TripDetail)
+    F --> G(Passes props to Client Component)
+    G --> H(TripTable: displays list of Trip)
+    G --> I(TripDetails: displays selected TripDetail)
+```
 
 ## Environment Variables
-
-The project requires a `.env.local` file in the root directory (symlinked to `frontend/.env.local`).
 
 ```env
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key> # Used for admin operations
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 
 # NextAuth.js Configuration
-NEXTAUTH_URL=http://localhost:3000 # Base URL of your application
-NEXTAUTH_SECRET=<32-char-base64-string> # Generate with: openssl rand -base64 32
-AUTH_SECRET=<same-as-NEXTAUTH_SECRET> # NextAuth v5 specific
+NEXTAUTH_URL=http://localhost:3000
+AUTH_SECRET=<32-char-base64-string>
 
-# Google OAuth Credentials (from Google Cloud Console)
+# Google OAuth Credentials
 GOOGLE_CLIENT_ID=<your-google-client-id>
 GOOGLE_CLIENT_SECRET=<your-google-client-secret>
 ```
 
 ## Available Queries (`frontend/src/lib/queries/`)
-- `trips.ts`: `getTrips`, `getTripById`, `getTripsStats`, `getTripsWithDriver`, `getPassengersForTrip`, `getTripsForMap`, `getDriversList`
-- `users.ts`: `getUsers`, `getUserById`, `getUsersStats`, `getDriversList`
-- `support.ts`: `getTicketsWithUser`, `getTicketDetail`, `updateTicketStatus`, `addComment`
-- `site-requests.ts`: `getSiteTripRequests`, `getSiteTripRequestsStats`, `updateSiteTripRequest`
-- `transactions.ts`: `getTransactions`, `getTransactionById`, `getCashFlowStats`, `getRevenueStats`, `getTransactionsForUser`
+- `trips.ts`: `getTrips`, `getTripById`, `getTripsStats`, `getTripsWithDriver`, `getTripsForMap`
+- `users.ts`: `getUsers`, `getUserById`, `getUsersStats`
+- `support.ts`: `getTicketsWithUser`, `updateTicketStatus`, `addComment`
+- `site-requests.ts`: `getSiteTripRequests`, `getPublicPendingTrips`
+- `transactions.ts`: `getTransactions`, `getCashFlowStats`, `getRevenueStats`
 
 ## Theme Colors (Klando)
-
-The dashboard uses a custom color palette defined in `tailwind.config.ts`.
 
 | Name | Hex | CSS Variable | Usage |
 |------|-----|--------------|-------|
@@ -206,68 +141,16 @@ The dashboard uses a custom color palette defined in `tailwind.config.ts`.
 | Dark Blue | `#081C36` | `--klando-dark` | Text, primary backgrounds |
 | Light Blue | `#1B3A5F` | `--klando-blue-light` | Comment bubbles |
 | Secondary Dark | `#102A4C` | `--klando-dark-s` | Comment bubbles |
-| Grizzly Grey | `#A0AEC0` | `--klando-grizzly` | Text |
 
-## Key Conventions
+## Convenciones & Performance
 
-- **Language**: French for UI text, comments, and documentation.
-- **Currency**: XOF (West African CFA franc).
-- **Distances**: Kilometers.
-- **Dates**: French locale (`DD/MM/YYYY HH:mm`).
-- **Row Level Security (RLS)**: Generally disabled for the admin dashboard (uses `service_role` key for direct access).
-- **Status Values**: Uppercase (`ACTIVE`, `COMPLETED`, `ARCHIVED`, `CANCELLED`, `PENDING`).
-
-## Current Status
-
-### Done ✅
-- [x] Next.js frontend setup with Shadcn/ui.
-- [x] Supabase integration with optimized queries.
-- [x] Trips page with list, details, deep linking, passenger profiles.
-- [x] Users page with list, details, deep linking.
-- [x] Stats page with dashboard metrics.
-- [x] Transactions module with cash flow and revenue tracking.
-- [x] Map page for real-time trip visualization.
-- [x] Database indexes for performance.
-- [x] Dark theme with Klando colors.
-- [x] Authentication using NextAuth.js v5 + Google OAuth.
-- [x] User whitelisting via `dash_authorized_users` table.
-- [x] Role-based access control (Admin, Support).
-- [x] UserMenu with avatar, role, and logout.
-- [x] Refresh button for manual data revalidation.
-- [x] Global Skeleton Loading for smooth page transitions.
-- [x] Responsive tables with optimized mobile display.
-- [x] Search filters for users (name/email) and trips (city/ID).
-- [x] Redesigned User Details with circular indicators and bio.
-- [x] Basic admin API for user management (`/api/admin/users`).
-- [x] Support tickets module with chat-like interface for comments.
-- [x] Ability to change support ticket status via Server Actions.
-- [x] Mention/Tag system in support comments (emails via Resend).
-- [x] Website integration module (view for public trips, table for site requests).
-- [x] Dedicated dashboard page for managing website trip requests.
-- [x] AI-powered matching assistant for website requests (Gemini).
-- [x] Structured AI response system (Internal Comments vs. WhatsApp Message).
-- [x] Persistence of AI recommendations in database.
-- [x] SQL scripts for batch clearing AI data.
-- [x] Stable UI transitions and pagination for data revalidation.
-- [x] Detailed integration guide for the landing page agent.
-- [x] Optimized dashboard metrics calculation via SQL RPC (Memory safety).
-
-### TODO 🚧
-- [ ] Fix mention notification email rendering (known issue with `render` in App Router).
-- [ ] Implement a Chats page for inter-user communication.
-- [ ] Develop more robust admin routes and permissions beyond basic user management.
-- [ ] Implement an audit log for user connections and significant actions.
-- [ ] Add comprehensive testing for all new features and bug fixes.
-- [ ] Implement data export functionality for various tables.
+- **Principes SOLID**: Logique métier séparée de l'UI via des Services (`features/`).
+- **Memory Safety**: Calculs lourds déportés en SQL RPC.
+- **Extraction Robuste**: Parsing d'IA gérant l'insensibilité à la casse et les formats d'IDs multiples.
+- **Clarté Visuelle**: Utilisation de flèches directionnelles et auto-correction du sens des tracés.
 
 ## Useful Documentation
-
-
-
-- [docs/README.md](./docs/README.md) : Index de la documentation technique.
-
-- [docs/DEVELOPMENT_GUIDELINES.md](./docs/DEVELOPMENT_GUIDELINES.md) : **Standards de performance** (RAM, SQL, RPC).
-
-- [docs/WEBSITE_INTEGRATION.md](./docs/WEBSITE_INTEGRATION.md) : Guide d'intégration pour le site vitrine.
-
-- [database/tables.md](./database/tables.md) : Dictionnaire de données complet.
+- [docs/README.md](./docs/README.md) : Index.
+- [docs/AI_MATCHING_SYSTEM.md](./docs/AI_MATCHING_SYSTEM.md) : Guide technique du Matching IA.
+- [docs/DEVELOPMENT_GUIDELINES.md](./docs/DEVELOPMENT_GUIDELINES.md) : Standards de performance.
+- [docs/WEBSITE_INTEGRATION.md](./docs/WEBSITE_INTEGRATION.md) : Guide intégration site.
