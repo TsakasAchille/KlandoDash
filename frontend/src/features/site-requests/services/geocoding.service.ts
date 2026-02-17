@@ -20,6 +20,10 @@ export const GeocodingService = {
    * Trouve les coordonnées GPS d'une ville/adresse
    */
   async getCoordinates(query: string): Promise<GeoPoint | null> {
+    if (!query || query.length < 3 || /test|abc|123/i.test(query)) {
+      console.warn("[GeocodingService] Query rejected (invalid or test):", query);
+      return null;
+    }
     try {
       const url = `${NOMINATIM_BASE}?format=json&q=${encodeURIComponent(query + ", Senegal")}&limit=1`;
       const res = await fetch(url, {
