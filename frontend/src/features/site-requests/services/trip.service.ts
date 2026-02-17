@@ -3,25 +3,16 @@ import { TripDetail } from "@/types/trip";
 
 export const TripService = {
   /**
-   * Récupère un trajet par son ID (complet ou partiel)
-   * Utilise le client ADMIN pour bypasser les restrictions RLS lors du matching technique.
+   * Récupère un trajet par son ID avec une robustesse maximale (gestion des préfixes)
    */
   async getById(tripId: string): Promise<TripDetail | null> {
     const supabase = createAdminClient();
+    const cleanId = tripId.trim();
     
-    // On garde l'ID tel quel car les hashes en suffixe sont sensibles à la casse !
-    let cleanId = tripId.trim();
-    
-    // On prépare les variantes sans forcer la casse
-    const idsToTry = [cleanId];
-    
-    // Si l'ID est en majuscules (venant de l'extraction regex), 
-    // on essaiera aussi une recherche ILIKE (insensible à la casse) si nécessaire.
-    
-    console.log(`[TripService] Searching for ID: "${cleanId}"`);
+    console.log(`[TripService] Searching for: "${cleanId}"`);
 
-    // Tentative 1: Recherche exacte (Rapide)
-    let { data: foundData, error } = await supabase
+    // 1. Tentative de recherche exacte
+    const { data: exactData } = await supabase
       .from("trips")
       .select(`
         *,
@@ -31,33 +22,38 @@ export const TripService = {
       .eq("trip_id", cleanId)
       .maybeSingle();
 
-    // Tentative 2: Recherche insensible à la casse (si l'IA a crié en MAJUSCULES)
-    if (!foundData) {
-      console.log(`[TripService] Exact match failed for ${cleanId}, trying ILIKE...`);
-      const { data: ilikeData } = await supabase
-        .from("trips")
-        .select(`
-          *,
-          driver:users!fk_driver (uid, display_name, photo_url, phone_number, rating, rating_count, is_driver_doc_validated),
-          bookings (status, user:users (uid, display_name, photo_url))
-        `)
-        .ilike("trip_id", cleanId)
-        .maybeSingle();
-      foundData = ilikeData;
+    if (exactData) return this.mapToTripDetail(exactData);
+
+    // 2. Tentative de recherche par préfixe (si l'IA a tronqué le hash)
+    // On cherche tout ce qui commence par l'ID fourni
+    console.log(`[TripService] Exact match failed, trying prefix search (${cleanId}%)...`);
+    const { data: prefixData } = await supabase
+      .from("trips")
+      .select(`
+        *,
+        driver:users!fk_driver (uid, display_name, photo_url, phone_number, rating, rating_count, is_driver_doc_validated),
+        bookings (status, user:users (uid, display_name, photo_url))
+      `)
+      .ilike("trip_id", `${cleanId}%`)
+      .limit(1)
+      .maybeSingle();
+
+    if (prefixData) {
+      console.log(`[TripService] Trip found via prefix: ${prefixData.trip_id}`);
+      return this.mapToTripDetail(prefixData);
     }
 
-    if (!foundData) {
-      console.warn(`[TripService] No trip found even with ILIKE for: ${cleanId}`);
-      return null;
-    }
+    console.warn(`[TripService] Trip NOT FOUND: ${cleanId}`);
+    return null;
+  },
 
-    const data = foundData;
+  /**
+   * Helper pour mapper les données brute vers le type TripDetail
+   */
+  mapToTripDetail(data: any): TripDetail {
     const driver = Array.isArray(data.driver) ? data.driver[0] : data.driver;
-    
     const bookings = (data.bookings || [])
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .filter((b: any) => ["CONFIRMED", "COMPLETED"].includes(b.status))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((b: any) => {
             const u = Array.isArray(b.user) ? b.user[0] : b.user;
             return u ? { uid: u.uid, display_name: u.display_name, photo_url: u.photo_url } : null;
@@ -86,13 +82,13 @@ export const TripService = {
       auto_confirmation: data.auto_confirmation,
       created_at: data.created_at,
       driver_id: data.driver_id,
-      driver_name: driver?.display_name,
+      driver_name: driver?.display_name || "Chauffeur Klando",
       driver_photo: driver?.photo_url,
       driver_phone: driver?.phone_number,
       driver_rating: driver?.rating,
       driver_rating_count: driver?.rating_count,
       driver_verified: driver?.is_driver_doc_validated,
       passengers: bookings,
-    } as TripDetail;
+    };
   }
 };

@@ -81,12 +81,12 @@ export function MatchingDialog({
       origin: { 
         lat: matchedTrip.departure_latitude || 0, 
         lng: matchedTrip.departure_longitude || 0, 
-        label: matchedTrip.departure_city.split(',')[0] 
+        label: matchedTrip.departure_city?.split(',')[0] || "Départ"
       }, 
       destination: { 
         lat: matchedTrip.destination_latitude || 0, 
         lng: matchedTrip.destination_longitude || 0, 
-        label: matchedTrip.arrival_city.split(',')[0] 
+        label: matchedTrip.arrival_city?.split(',')[0] || "Arrivée"
       },
       polyline: matchedTrip.polyline
     } : null;
@@ -154,7 +154,17 @@ export function MatchingDialog({
             {!aiLoading && matchedTrip && (
               <Card className="border-2 border-klando-gold bg-klando-gold/5 overflow-hidden shadow-md animate-in zoom-in-95 duration-300">
                 <div className="bg-klando-gold px-4 py-1.5 flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-klando-dark">Trajet Proposé par l&apos;IA</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-klando-dark">Trajet Proposé par l&apos;IA</span>
+                    {matchedTrip.origin_dist !== undefined && (
+                      <Badge variant="outline" className={cn(
+                        "text-[8px] font-black border-none px-1.5 py-0",
+                        matchedTrip.origin_dist < 2 ? "bg-green-500 text-white" : "bg-klando-dark text-white"
+                      )}>
+                        {matchedTrip.origin_dist.toFixed(1)} KM DU CLIENT
+                      </Badge>
+                    )}
+                  </div>
                   <Badge variant="outline" className="bg-white/20 border-white/40 text-klando-dark text-[9px] font-bold">MATCH TROUVÉ</Badge>
                 </div>
                 <CardContent className="p-4">

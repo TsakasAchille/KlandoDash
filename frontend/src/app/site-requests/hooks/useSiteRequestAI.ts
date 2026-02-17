@@ -14,6 +14,8 @@ export interface PublicTrip {
   departure_longitude?: number | null;
   destination_latitude?: number | null;
   destination_longitude?: number | null;
+  origin_dist?: number;
+  dest_dist?: number;
 }
 
 export function useSiteRequestAI(
@@ -27,25 +29,21 @@ export function useSiteRequestAI(
   const [lastFetchedTripId, setLastFetchedTripId] = useState<string | null>(null);
   const [isAiPending, startAiTransition] = useTransition();
 
-  // Reset matched trip when changing selection
+  // Reset local state when switching requests
   useEffect(() => {
-    setActionMatchedTrip(null);
-    setLastFetchedTripId(null);
-    setLocalAiResult(null);
-  }, [selectedRequest?.id]);
-
-  // Sync local AI result when data updates from server
-  useEffect(() => {
-    if (selectedRequest?.ai_recommendation) {
-      setLocalAiResult(selectedRequest.ai_recommendation);
+    if (selectedRequest?.id !== lastFetchedTripId) {
+      setActionMatchedTrip(null);
+      setLocalAiResult(null);
+      setLastFetchedTripId(null);
     }
-  }, [selectedRequest?.ai_recommendation]);
+  }, [selectedRequest?.id]);
 
   const handleMatchIA = useCallback(async (force = false) => {
     if (!selectedRequest) return;
     
     setAiLoading(true);
     setLastFetchedTripId(selectedRequest.id);
+    
     startAiTransition(async () => {
       try {
         const res = await getAIMatchingAction(
@@ -57,37 +55,26 @@ export function useSiteRequestAI(
         );
         if (res.success) {
           setLocalAiResult(res.text || null);
-          console.log("[AI Hook] Server matchedTrip received:", res.matchedTrip);
           if (res.matchedTrip) {
-            console.log("[AI Hook] Setting actionMatchedTrip with polyline length:", res.matchedTrip.polyline?.length || 0);
             setActionMatchedTrip(res.matchedTrip as PublicTrip);
-          } else {
-            console.warn("[AI Hook] Server success but matchedTrip is NULL");
           }
         } else {
           toast.error(res.message || "Erreur IA");
         }
       } catch {
-        toast.error("Erreur de connexion IA");
+        toast.error("Erreur de connexion");
       } finally {
         setAiLoading(false);
       }
     });
   }, [selectedRequest]);
 
-  // Auto-trigger AI if opening a request with no analysis
+  // Auto-trigger only once per request
   useEffect(() => {
-    if (selectedRequest && !selectedRequest.ai_recommendation && !aiLoading && !localAiResult) {
+    if (selectedRequest && !aiLoading && !localAiResult && lastFetchedTripId !== selectedRequest.id) {
       handleMatchIA(false);
     }
-  }, [selectedRequest, aiLoading, localAiResult, handleMatchIA]);
-
-  // Also trigger fetch if we have an AI recommendation but haven't fetched details yet
-  useEffect(() => {
-    if (selectedRequest?.ai_recommendation && !aiLoading && lastFetchedTripId !== selectedRequest.id) {
-      handleMatchIA(false); // This will use cache but fetch the trip details
-    }
-  }, [selectedRequest?.id, selectedRequest?.ai_recommendation, aiLoading, lastFetchedTripId, handleMatchIA]);
+  }, [selectedRequest?.id, aiLoading, localAiResult, lastFetchedTripId, handleMatchIA]);
 
   // Parsing AI result
   const { aiComment, aiMessage, matchedTripId } = useMemo(() => {
@@ -95,7 +82,7 @@ export function useSiteRequestAI(
     if (!raw) return { aiComment: null, aiMessage: null, matchedTripId: null };
     
     let comment = raw;
-    let message = null;
+    let message = "";
     let tripId = null;
 
     if (raw.includes('[MESSAGE]')) {
@@ -104,22 +91,12 @@ export function useSiteRequestAI(
       message = parts[1]?.trim() || '';
     }
 
-    if (comment.includes('[TRIP_ID]')) {
-      const parts = comment.split('[TRIP_ID]');
-      comment = parts[0].trim();
-      const tripIdPart = parts[1]?.split('\n')[0]?.trim();
-      tripId = tripIdPart && tripIdPart !== 'NONE' ? tripIdPart : null;
-    } else if (raw.includes('[TRIP_ID]')) {
-      const tripIdMatch = raw.match(/\[TRIP_ID\]\s*([A-Z0-9-]+)/);
-      tripId = tripIdMatch?.[1] && tripIdMatch[1] !== 'NONE' ? tripIdMatch[1] : null;
-    }
-
-    // Fallback: If still no tripId, try to find a pattern like TRIP-XXXX in the comment
-    if (!tripId || tripId === 'NONE') {
-      const fallbackMatch = comment.match(/TRIP-[0-9]+/i);
-      if (fallbackMatch) {
-        tripId = fallbackMatch[0].toUpperCase().trim();
-      }
+    const tripIdMatch = raw.match(/\[TRIP_ID\][:\s]*([A-Za-z0-9-]+)/i);
+    if (tripIdMatch) {
+      tripId = tripIdMatch[1].trim();
+    } else {
+      const globalMatch = raw.match(/TRIP-[A-Za-z0-9-]+/);
+      if (globalMatch) tripId = globalMatch[0].trim();
     }
 
     return { 
@@ -130,16 +107,15 @@ export function useSiteRequestAI(
   }, [localAiResult, selectedRequest?.ai_recommendation]);
 
   const matchedTrip = useMemo(() => {
+    // Priority to data directly returned by the server action (contains polyline & distances)
     if (actionMatchedTrip) return actionMatchedTrip;
+    
+    // Fallback to local search in public lists
     if (!matchedTripId) return null;
-    
-    const normalizeId = (id: string) => id.toUpperCase().replace('TRIP-', '');
-    const normalizedTarget = normalizeId(matchedTripId);
-
-    const found = publicPending.find(t => normalizeId(t.id) === normalizedTarget) || 
-                  publicCompleted.find(t => normalizeId(t.id) === normalizedTarget);
-    
-    return found || null;
+    const normalize = (id: string) => id.toUpperCase().replace('TRIP-', '');
+    const target = normalize(matchedTripId);
+    return publicPending.find(t => normalize(t.id) === target) || 
+           publicCompleted.find(t => normalize(t.id) === target) || null;
   }, [matchedTripId, publicPending, publicCompleted, actionMatchedTrip]);
 
   const processedComment = useMemo(() => 
