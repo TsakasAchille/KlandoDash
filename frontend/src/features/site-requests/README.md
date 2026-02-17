@@ -1,24 +1,28 @@
 # Site Requests Feature (SOLID Architecture)
 
-Ce module gère l'intention de voyage des clients collectée via le site vitrine et leur mise en relation (matching) avec les trajets existants.
+Ce module gère l'intention de voyage des clients et leur mise en relation intelligente.
 
-## Architecture
+## Architecture & Services
 
-Le module suit les principes **SOLID** pour garantir la robustesse en production :
+Le module est structuré pour isoler la logique métier complexe du rendu React :
 
-### 1. Services (Logique Métier Pure)
-- **`GeocodingService`** : Isolate toutes les interactions avec les APIs externes (Nominatim pour le géocodage, OSRM pour le calcul d'itinéraires). Gère également le décodage des polylines et le calcul des vecteurs directionnels (flèches).
-- **`TripService`** : Service d'accès aux données des trajets. Utilise le client `admin` pour bypasser les RLS lors des opérations de matching et implémente une logique de recherche d'ID robuste (insensibilité à la casse, gestion des préfixes `TRIP-`).
+### 1. Services (Services métier)
+- **`GeocodingService`** : Géocodage (Nominatim), Itinéraires (OSRM), décodage de polylines et calcul de distances Haversine (km).
+- **`TripService`** : Accès Admin aux trajets. Implémente une recherche par préfixe (`ILIKE 'TRIP-XXXX%'`) pour gérer les mentions partielles par l'IA.
+- **`AIMatchingService`** : Orchestre la préparation du contexte pour Gemini, incluant le calcul des km de jonction pour chaque match potentiel.
+- **`prompts.ts`** : Centralise les instructions de Gemini. Définit le ton (Vouvoiement), les seuils de distance honnêtes, et le template visuel WhatsApp (🚗/🏁).
 
 ### 2. Components (UI)
-- **`maps/ComparisonMap`** : Composant de visualisation "pur". Il ne contient aucune logique de fetch. Il reçoit des coordonnées et des polylines déjà prêtes et s'occupe uniquement du rendu Leaflet.
-- **Auto-Correction de Sens** : Le composant détecte automatiquement si une polyline est inversée par rapport aux points de départ/arrivée officiels et corrige le tracé avant affichage.
+- **`maps/ComparisonMap`** : Composant Leaflet pur. Affiche les polylines, les flèches directionnelles de fin de path, et les traits de jonction stylisés.
+- **Auto-Direction** : Détecte et inverse dynamiquement les tracés inversés en base de données.
 
-### 3. Workflow de Matching
-1. **Extraction** : L'IA Gemini identifie un trajet potentiel.
-2. **Action Serveur** : `getAIMatchingAction` extrait l'ID et utilise `TripService` pour récupérer la géométrie complète.
-3. **Visualisation** : `MatchingDialog` calcule l'itinéraire client et passe l'ensemble à la `ComparisonMap`.
+### 3. Workflow
+1. L'admin déclenche le matching.
+2. `AIMatchingService` calcule les km client <-> chauffeur.
+3. Gemini génère un message WhatsApp formaté selon le template officiel.
+4. `MatchingDialog` affiche les distances calculées via des badges visuels.
 
 ## Maintenance
-- Pour modifier la logique de calcul d'itinéraire : `services/geocoding.service.ts`.
-- Pour ajuster le rendu de la carte : `components/maps/ComparisonMap.tsx`.
+- Pour changer les seuils de distance ou le ton : `services/prompts.ts`.
+- Pour corriger une erreur de recherche d'ID : `services/trip.service.ts`.
+- Pour ajuster le calcul des km : `services/geocoding.service.ts`.

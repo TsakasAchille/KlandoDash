@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe, CheckSquare, Sparkles } from "lucide-react";
+import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe, CheckSquare, Sparkles, Loader2 } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
+import { useState, useEffect } from "react";
 import packageInfo from "../../package.json";
 
 const navItems = [
@@ -38,11 +39,61 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const userRole = session?.user?.role;
+  const [loadingHref, setLoadingHref] = useState<string | null>(null);
 
-  const handleLinkClick = () => {
+  // Reset loading state when pathname changes
+  useEffect(() => {
+    setLoadingHref(null);
+  }, [pathname]);
+
+  const handleLinkClick = (href: string) => {
+    if (href !== pathname) {
+      setLoadingHref(href);
+    }
     if (isMobile && onClose) {
       onClose();
     }
+  };
+
+  const renderNavItem = (item: { href: string, label: string, icon: any }) => {
+    const Icon = item.icon;
+    const isActive = pathname === item.href;
+    const isLoading = loadingHref === item.href;
+
+    return (
+      <li key={item.href}>
+        <Link
+          href={item.href}
+          onClick={() => handleLinkClick(item.href)}
+          className={cn(
+            "flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group relative overflow-hidden",
+            isActive
+              ? "bg-klando-burgundy text-white shadow-md shadow-klando-burgundy/20"
+              : "text-muted-foreground hover:bg-white/5 hover:text-white",
+            isMobile ? "text-base py-4" : "text-sm py-3",
+            isLoading && "opacity-70 pointer-events-none bg-white/5"
+          )}
+        >
+          <div className="flex items-center gap-3 relative z-10">
+            <Icon className={cn(
+              "w-5 h-5 transition-transform duration-300 group-hover:scale-110", 
+              isMobile && "w-6 h-6",
+              isActive && "text-klando-gold"
+            )} />
+            <span className={cn(isMobile && "text-lg", isActive && "font-bold")}>{item.label}</span>
+          </div>
+          
+          {isLoading && (
+            <Loader2 className="w-4 h-4 animate-spin text-klando-gold relative z-10" />
+          )}
+          
+          {/* Active indicator bar */}
+          {isActive && (
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-klando-gold rounded-full my-2" />
+          )}
+        </Link>
+      </li>
+    );
   };
 
   return (
@@ -64,39 +115,18 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         )}
       </div>
       
-      <nav className={cn("flex-1", isMobile ? "p-2" : "p-4")}>
-        <ul className="space-y-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={handleLinkClick}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                    isActive
-                      ? "bg-klando-burgundy text-white"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                    isMobile ? "text-base py-4" : "text-sm py-3"
-                  )}
-                >
-                  <Icon className={cn("w-5 h-5", isMobile && "w-6 h-6")} />
-                  <span className={cn(isMobile && "text-lg")}>{item.label}</span>
-                </Link>
-              </li>
-            );
-          })}
+      <nav className={cn("flex-1 overflow-y-auto scrollbar-none", isMobile ? "p-2" : "p-4")}>
+        <ul className="space-y-1">
+          {navItems.map(renderNavItem)}
 
           {/* --- Section Support / Admin --- */}
           {(userRole === "admin" || userRole === "support") && (
             <>
-              <li className={cn("pt-4 pb-2", isMobile && "pt-6 pb-3")}>
+              <li className={cn("pt-6 pb-2", isMobile && "pt-8 pb-3")}>
                 <span
                   className={cn(
-                    "px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider",
-                    isMobile && "text-sm px-4"
+                    "px-4 text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.2em]",
+                    isMobile && "text-xs px-4"
                   )}
                 >
                   {userRole === "admin" ? "Administration" : "Support"}
@@ -104,69 +134,17 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
               </li>
 
               {/* Liens pour le rôle Support (et Admin) */}
-              {userRole &&
-                supportItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        onClick={handleLinkClick}
-                        className={cn(
-                          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                          isActive
-                            ? "bg-klando-burgundy text-white"
-                            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                          isMobile ? "text-base py-4" : "text-sm py-3"
-                        )}
-                      >
-                        <Icon
-                          className={cn("w-5 h-5", isMobile && "w-6 h-6")}
-                        />
-                        <span className={cn(isMobile && "text-lg")}>
-                          {item.label}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
+              {userRole && supportItems.map(renderNavItem)}
 
               {/* Liens supplémentaires pour le rôle Admin */}
-              {userRole === "admin" &&
-                adminItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        onClick={handleLinkClick}
-                        className={cn(
-                          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                          isActive
-                            ? "bg-klando-burgundy text-white"
-                            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                          isMobile ? "text-base py-4" : "text-sm py-3"
-                        )}
-                      >
-                        <Icon
-                          className={cn("w-5 h-5", isMobile && "w-6 h-6")}
-                        />
-                        <span className={cn(isMobile && "text-lg")}>
-                          {item.label}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
+              {userRole === "admin" && adminItems.map(renderNavItem)}
             </>
           )}
         </ul>
       </nav>
       
       {/* User Menu - adapté pour mobile */}
-      <div className={cn("border-t border-border", isMobile ? "p-4" : "p-4")}>
+      <div className={cn("border-t border-border bg-klando-dark/50 backdrop-blur-sm", isMobile ? "p-4" : "p-4")}>
         <UserMenu />
         <div className="mt-4 px-4 flex justify-between items-center opacity-30">
           <span className="text-[10px] font-black uppercase tracking-widest text-white">Version</span>

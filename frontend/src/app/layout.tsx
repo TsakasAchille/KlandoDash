@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { LayoutContent } from "@/components/layout-content";
+import { ProgressProvider } from "@/components/progress-provider";
 import { Toaster } from "sonner"; // Import Toaster
 
 const inter = Inter({ subsets: ["latin"] });
@@ -21,7 +22,9 @@ export default function RootLayout({
     <html lang="fr" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         <Providers>
-          <LayoutContent>{children}</LayoutContent>
+          <ProgressProvider>
+            <LayoutContent>{children}</LayoutContent>
+          </ProgressProvider>
           <Toaster /> {/* Add Toaster component */}
         </Providers>
       </body>

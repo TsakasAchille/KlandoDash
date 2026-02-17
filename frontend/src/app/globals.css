@@ -104,6 +104,10 @@
   z-index: 1;
 }
 
+.leaflet-container {
+  z-index: 10 !important;
+}
+
 .leaflet-control {
   z-index: 2;
 }
@@ -129,4 +133,15 @@
 
 .scrollbar-thin::-webkit-scrollbar {
   width: 4px;
+}
+
+/* NProgress Custom Styling */
+#nprogress .bar {
+  background: #EBC33F !important;
+  height: 3px !important;
+  z-index: 10000 !important;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px #EBC33F, 0 0 5px #EBC33F !important;
 }
