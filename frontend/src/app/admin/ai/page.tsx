@@ -4,7 +4,7 @@ import { KlandoAIClient } from "./ai-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Klando AI - Assistant Intelligent",
+  title: "Yobé - Intelligence Opérationnelle",
 };
 
 export default function AIPage() {
@@ -14,10 +14,10 @@ export default function AIPage() {
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
             <Sparkles className="w-8 h-8 text-klando-gold animate-pulse" />
-            Klando AI
+            Yobé
           </h1>
           <p className="text-muted-foreground mt-1 text-sm font-medium italic">
-            Ton assistant intelligent alimenté par Gemini 1.5 Flash.
+            Ton centre d&apos;intelligence opérationnelle.
           </p>
         </div>
       </div>

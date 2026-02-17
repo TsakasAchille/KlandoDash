@@ -111,7 +111,7 @@ export function MatchingDialog({
             <div className="flex items-center gap-3">
               <div className="p-2 bg-klando-gold/10 rounded-xl shadow-inner"><Sparkles className="w-5 h-5 text-klando-gold" /></div>
               <div>
-                <DialogTitle className="text-xl font-black uppercase tracking-tight text-klando-dark">Matching IA</DialogTitle>
+                <DialogTitle className="text-xl font-black uppercase tracking-tight text-klando-dark">Yobé Matching</DialogTitle>
                 {matchedTrip && (
                   <div className="flex items-center gap-1.5 text-[9px] font-bold text-green-600 uppercase tracking-widest mt-0.5">
                     <Link2 className="w-3 h-3" /> Trajet Lié : {matchedTrip.id}

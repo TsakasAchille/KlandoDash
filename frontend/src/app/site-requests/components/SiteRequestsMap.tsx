@@ -47,7 +47,14 @@ export function SiteRequestsMap({
   const [showAllTrips, setShowAllTrips] = useState(false);
   const [hiddenMatchedTripIds, setHiddenMatchedTripIds] = useState<Set<string>>(new Set());
   const [hiddenSiteRequestIds, setHiddenSiteRequestIds] = useState<Set<string>>(new Set());
-  const [selectedMatchedTripId, setSelectedMatchedTripId] = useState<string | null>(null);
+  const [selectedMatchedTripId, setSelectedMatchedTripId] = useState<string | null>(aiMatchedTripId || null);
+
+  // Synchronisation avec les props (IA)
+  useEffect(() => {
+    if (aiMatchedTripId) {
+      setSelectedMatchedTripId(aiMatchedTripId);
+    }
+  }, [aiMatchedTripId]);
 
   const selectedRequest = useMemo(() => 
     selectedRequestId ? requests.find(r => r.id === selectedRequestId) || null : null
@@ -78,19 +85,12 @@ export function SiteRequestsMap({
     }
   }, [selectedMatchedTripId, selectedRequest?.id]);
 
-  // Auto-sélection du meilleur match (IA > Scanner)
+  // Auto-sélection par défaut si pas de match IA
   useEffect(() => {
-    if (aiMatchedTripId) {
-      setSelectedMatchedTripId(aiMatchedTripId);
-    } else if (selectedRequest && selectedRequest.matches && selectedRequest.matches.length > 0) {
-      const bestMatchId = selectedRequest.matches[0].trip_id;
-      if (!selectedMatchedTripId) {
-        setSelectedMatchedTripId(bestMatchId);
-      }
-    } else {
-      setSelectedMatchedTripId(null);
+    if (!selectedMatchedTripId && selectedRequest && selectedRequest.matches && selectedRequest.matches.length > 0) {
+      setSelectedMatchedTripId(selectedRequest.matches[0].trip_id);
     }
-  }, [selectedRequest?.id, selectedRequest?.matches?.length, aiMatchedTripId]);
+  }, [selectedRequest?.id, selectedRequest?.matches?.length]);
 
   const handleToggleMatchedTripVisibility = (tripId: string) => {
     setHiddenMatchedTripIds(prev => {

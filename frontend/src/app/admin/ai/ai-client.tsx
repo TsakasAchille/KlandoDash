@@ -66,10 +66,10 @@ export function KlandoAIClient() {
             <span className="text-[10px] font-black uppercase tracking-widest text-klando-gold">Système prédictif actif</span>
           </div>
           <h2 className="text-2xl font-black text-white uppercase tracking-tight leading-tight">
-            Klando Operational Intelligence
+            Yobé Operational Intelligence
           </h2>
           <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
-            L&apos;IA analyse en continu les demandes clients, les trajets en attente et l&apos;activité des chauffeurs pour vous suggérer les meilleures actions opérationnelles.
+            Yobé analyse en continu les demandes clients, les trajets en attente et l&apos;activité des chauffeurs pour vous suggérer les meilleures actions opérationnelles.
           </p>
         </div>
 

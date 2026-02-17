@@ -8,6 +8,7 @@ import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe,
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
 import { useState, useEffect } from "react";
+import Image from "next/image"; // Ajout de Image
 import packageInfo from "../../package.json";
 
 const navItems = [
@@ -23,7 +24,7 @@ const supportItems = [
 ];
 
 const adminItems = [
-  { href: "/admin/ai", label: "Klando AI", icon: Sparkles },
+  { href: "/admin/ai", label: "Yobé", icon: "/Yobe-removebg-preview.png" }, // Utilisation du chemin image
   { href: "/admin/validation", label: "Validation", icon: CheckSquare },
   { href: "/transactions", label: "Transactions", icon: Banknote },
   { href: "/stats", label: "Statistiques", icon: BarChart3 },
@@ -56,9 +57,9 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   };
 
   const renderNavItem = (item: { href: string, label: string, icon: any }) => {
-    const Icon = item.icon;
     const isActive = pathname === item.href;
     const isLoading = loadingHref === item.href;
+    const isImageIcon = typeof item.icon === "string";
 
     return (
       <li key={item.href}>
@@ -75,11 +76,31 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
           )}
         >
           <div className="flex items-center gap-3 relative z-10">
-            <Icon className={cn(
-              "w-5 h-5 transition-transform duration-300 group-hover:scale-110", 
-              isMobile && "w-6 h-6",
-              isActive && "text-klando-gold"
-            )} />
+            {/* Icône Container - Largeur fixe w-8 pour aligner tout le monde */}
+            <div className={cn(
+              "w-8 h-8 flex items-center justify-center shrink-0",
+              isMobile && "w-10 h-10"
+            )}>
+              {isImageIcon ? (
+                <div className="w-full h-full relative transition-transform duration-300 group-hover:scale-110 flex items-center justify-center">
+                  <Image 
+                    src={item.icon} 
+                    alt={item.label} 
+                    fill 
+                    className={cn(
+                      "object-contain scale-150", 
+                      !isActive && "grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
+                    )}
+                  />
+                </div>
+              ) : (
+                <item.icon className={cn(
+                  "w-5 h-5 transition-transform duration-300 group-hover:scale-110", 
+                  isMobile && "w-6 h-6",
+                  isActive && "text-klando-gold"
+                )} />
+              )}
+            </div>
             <span className={cn(isMobile && "text-lg", isActive && "font-bold")}>{item.label}</span>
           </div>
           
