@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Globe, Sparkles, Loader2, RefreshCw, Phone, MessageSquare, Copy, Info } from "lucide-react";
+import { MapPin, Calendar, Globe, Sparkles, Loader2, RefreshCw, Phone, MessageSquare, Copy, Info, Link2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
@@ -14,8 +15,10 @@ import { toast } from "sonner";
 import { SiteTripRequest } from "@/types/site-request";
 import { PublicTrip } from "../hooks/useSiteRequestAI";
 import dynamic from "next/dynamic";
+import { GeocodingService } from "@/features/site-requests/services/geocoding.service";
 
-const ComparisonMap = dynamic(() => import("@/components/site-requests/comparison-map").then(mod => mod.ComparisonMap), { 
+// IMPORT DU NOUVEAU COMPOSANT FEATURES (Architecture SOLID)
+const ComparisonMap = dynamic(() => import("@/features/site-requests/components/maps/ComparisonMap").then(mod => mod.ComparisonMap), { 
   ssr: false,
   loading: () => <div className="w-full h-[300px] rounded-2xl bg-muted/20 animate-pulse flex flex-col items-center justify-center space-y-3">
     <Loader2 className="w-8 h-8 text-klando-gold animate-spin" />
@@ -48,6 +51,48 @@ export function MatchingDialog({
   handleMatchIA,
   localAiResult
 }: MatchingDialogProps) {
+  const [clientPolyline, setClientPolyline] = useState<string | null>(null);
+
+  // Calcul de l'itinéraire théorique du client (en pointillés sur la carte)
+  useEffect(() => {
+    if (selectedRequest?.origin_lat && selectedRequest?.destination_lat) {
+      GeocodingService.getRoute(
+        { lat: selectedRequest.origin_lat!, lng: selectedRequest.origin_lng! },
+        { lat: selectedRequest.destination_lat!, lng: selectedRequest.destination_lng! }
+      ).then(route => {
+        if (route) setClientPolyline(route.polyline);
+      });
+    }
+  }, [selectedRequest?.id, selectedRequest?.origin_lat, selectedRequest?.destination_lat]);
+
+  // Données mémoïsées pour stabiliser le rendu de la carte
+  const mapProps = useMemo(() => {
+    if (!selectedRequest) return null;
+
+    const clientOrigin = (selectedRequest.origin_lat && selectedRequest.origin_lng) 
+      ? { lat: selectedRequest.origin_lat, lng: selectedRequest.origin_lng, label: selectedRequest.origin_city.split(',')[0] }
+      : null; 
+
+    const clientDestination = (selectedRequest.destination_lat && selectedRequest.destination_lng)
+      ? { lat: selectedRequest.destination_lat, lng: selectedRequest.destination_lng, label: selectedRequest.destination_city.split(',')[0] }
+      : null;
+
+    const driverTrip = (matchedTrip && matchedTrip.polyline) ? {
+      origin: { lat: 0, lng: 0, label: matchedTrip.departure_city.split(',')[0] }, 
+      destination: { lat: 0, lng: 0, label: matchedTrip.arrival_city.split(',')[0] },
+      polyline: matchedTrip.polyline
+    } : null;
+
+    console.log("[MatchingDialog] MapProps prepared:", { 
+      hasClientOrigin: !!clientOrigin, 
+      hasClientDest: !!clientDestination, 
+      hasDriverTrip: !!driverTrip,
+      driverPolylineLen: driverTrip?.polyline?.length || 0
+    });
+
+    return { clientOrigin, clientDestination, driverTrip };
+  }, [selectedRequest, matchedTrip]);
+
   if (!selectedRequest) return null;
 
   return (
@@ -57,7 +102,14 @@ export function MatchingDialog({
           <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-klando-gold/10 rounded-xl shadow-inner"><Sparkles className="w-5 h-5 text-klando-gold" /></div>
-              <DialogTitle className="text-xl font-black uppercase tracking-tight text-klando-dark">Matching IA</DialogTitle>
+              <div>
+                <DialogTitle className="text-xl font-black uppercase tracking-tight text-klando-dark">Matching IA</DialogTitle>
+                {matchedTrip && (
+                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-green-600 uppercase tracking-widest mt-0.5">
+                    <Link2 className="w-3 h-3" /> Trajet Lié : {matchedTrip.id}
+                  </div>
+                )}
+              </div>
             </div>
             {(localAiResult || selectedRequest?.ai_recommendation) && (
               <Button variant="ghost" size="sm" onClick={() => handleMatchIA(true)} disabled={aiLoading} className="h-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-klando-gold">
@@ -80,13 +132,14 @@ export function MatchingDialog({
               </div>
             </div>
 
-            {/* MAP COMPARISON */}
+            {/* MAP COMPARISON - Stable memoized props */}
             <ComparisonMap 
-              originCity={selectedRequest.origin_city}
-              destination_city={selectedRequest.destination_city}
-              recommendedPolyline={matchedTrip?.polyline}
-              recommendedDepartureCity={matchedTrip?.departure_city}
-              recommendedArrivalCity={matchedTrip?.arrival_city}
+              key={`${matchedTrip?.id || "no-trip"}-${clientPolyline ? 'route' : 'no-route'}`}
+              clientOrigin={mapProps?.clientOrigin || null}
+              clientDestination={mapProps?.clientDestination || null}
+              clientPolyline={clientPolyline}
+              driverTrip={mapProps?.driverTrip || null}
+              isLoading={aiLoading}
             />
 
             {/* PROPOSED TRIP BOX */}

@@ -31,6 +31,7 @@ interface SiteRequestsMapProps {
   onScan: (id: string) => void;
   onOpenIA: (id: string) => void;
   scanningId: string | null;
+  aiMatchedTripId?: string | null; // Nouveau : ID du trajet identifié par l'IA
 }
 
 export function SiteRequestsMap({
@@ -41,6 +42,7 @@ export function SiteRequestsMap({
   onScan,
   onOpenIA,
   scanningId,
+  aiMatchedTripId,
 }: SiteRequestsMapProps) {
   const [showAllTrips, setShowAllTrips] = useState(false);
   const [hiddenMatchedTripIds, setHiddenMatchedTripIds] = useState<Set<string>>(new Set());
@@ -76,9 +78,11 @@ export function SiteRequestsMap({
     }
   }, [selectedMatchedTripId, selectedRequest?.id]);
 
-  // Auto-sélection du meilleur match après un changement de requête ou de matches
+  // Auto-sélection du meilleur match (IA > Scanner)
   useEffect(() => {
-    if (selectedRequest && selectedRequest.matches && selectedRequest.matches.length > 0) {
+    if (aiMatchedTripId) {
+      setSelectedMatchedTripId(aiMatchedTripId);
+    } else if (selectedRequest && selectedRequest.matches && selectedRequest.matches.length > 0) {
       const bestMatchId = selectedRequest.matches[0].trip_id;
       if (!selectedMatchedTripId) {
         setSelectedMatchedTripId(bestMatchId);
@@ -86,7 +90,7 @@ export function SiteRequestsMap({
     } else {
       setSelectedMatchedTripId(null);
     }
-  }, [selectedRequest?.id, selectedRequest?.matches?.length]);
+  }, [selectedRequest?.id, selectedRequest?.matches?.length, aiMatchedTripId]);
 
   const handleToggleMatchedTripVisibility = (tripId: string) => {
     setHiddenMatchedTripIds(prev => {
@@ -110,18 +114,22 @@ export function SiteRequestsMap({
     selectedMatchedTripId ? trips.find(t => t.trip_id === selectedMatchedTripId) || null : null
   , [trips, selectedMatchedTripId]);
 
-  // Filtrer les trajets (Logique SOLIDE)
+  // Filtrer les trajets
   const filteredTrips = useMemo(() => {
     if (showAllTrips) return trips;
     
+    // On montre les matches du scanner ET le match IA si présent
     const matchedIds = selectedRequest?.matches?.map(m => m.trip_id) || [];
+    if (aiMatchedTripId && !matchedIds.includes(aiMatchedTripId)) {
+      matchedIds.push(aiMatchedTripId);
+    }
+
     if (selectedRequest && matchedIds.length > 0) {
-      // On montre les matches SAUF ceux cachés individuellement
       return trips.filter(t => matchedIds.includes(t.trip_id) && !hiddenMatchedTripIds.has(t.trip_id));
     }
     
     return [];
-  }, [trips, selectedRequest, showAllTrips, hiddenMatchedTripIds]);
+  }, [trips, selectedRequest, showAllTrips, hiddenMatchedTripIds, aiMatchedTripId]);
 
   // Trajets réellement matchés pour la liste de droite avec enrichissement des distances
   const matchedTrips = useMemo(() => {

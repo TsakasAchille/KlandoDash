@@ -328,29 +328,27 @@ export async function getAIMatchingAction(
       revalidatePath("/site-requests");
     }
 
-    // 3. Extraire le TRIP_ID pour renvoyer les détails complets (notamment la polyline)
+    // 3. Extraire le TRIP_ID pour renvoyer les détails complets
     let matchedTripData = null;
     
-    const tripIdMatch = aiRecommendation.match(/\[TRIP_ID\][:\s]*([A-Z0-9-]+)/i);
-    let tripId = tripIdMatch?.[1]?.trim()?.toUpperCase();
+    // Tentative 1 : Extraction via la balise stricte [TRIP_ID]
+    const tripIdMatch = aiRecommendation.match(/\[TRIP_ID\][:\s]*([A-Za-z0-9-]+)/i);
+    let tripId = tripIdMatch?.[1]?.trim();
     
-    if (!tripId || tripId === 'NONE') {
-      const fallbackMatch = aiRecommendation.match(/TRIP-[A-Z0-9]+/i);
-      if (fallbackMatch) {
-        tripId = fallbackMatch[0].toUpperCase().trim();
+    // Tentative 2 : Recherche libre de TRIP-XXXX dans le texte
+    if (!tripId || tripId.toUpperCase() === 'NONE' || tripId === '') {
+      const globalMatch = aiRecommendation.match(/TRIP-[A-Za-z0-9-]+/);
+      if (globalMatch) {
+        tripId = globalMatch[0].trim();
       }
     }
 
-    const finalTripId = tripId && tripId !== 'NONE' && tripId !== '' ? tripId : null;
+    const finalTripId = tripId && tripId.toUpperCase() !== 'NONE' && tripId !== '' ? tripId : null;
 
     if (finalTripId) {
-      console.log(`[AI Matching] Searching details for ID: ${finalTripId}`);
-      const { getTripById } = await import("@/lib/queries/trips");
-      
-      let trip = await getTripById(finalTripId);
-      if (!trip && finalTripId.startsWith('TRIP-')) {
-        trip = await getTripById(finalTripId.replace('TRIP-', ''));
-      }
+      console.log(`[AI Matching] Final ID to fetch: ${finalTripId}`);
+      const { TripService } = await import("@/features/site-requests/services/trip.service");
+      const trip = await TripService.getById(finalTripId);
 
       if (trip) {
         matchedTripData = {
@@ -361,6 +359,9 @@ export async function getAIMatchingAction(
           seats_available: trip.seats_available,
           polyline: trip.polyline
         };
+        console.log(`[AI Matching] Successfully loaded trip data for map (Polyline length: ${trip.polyline?.length || 0})`);
+      } else {
+        console.warn(`[AI Matching] Trip ID ${finalTripId} found by AI but not found in Database.`);
       }
     }
     

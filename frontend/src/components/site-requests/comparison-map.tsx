@@ -9,6 +9,10 @@ import { Loader2, MapPin } from "lucide-react";
 interface ComparisonMapProps {
   originCity: string;
   destination_city: string;
+  originLat?: number | null;
+  originLng?: number | null;
+  destLat?: number | null;
+  destLng?: number | null;
   recommendedPolyline?: string | null;
   recommendedDepartureCity?: string | null;
   recommendedArrivalCity?: string | null;
@@ -48,6 +52,10 @@ const createCustomIcon = (color: string, label: string) =>
 export function ComparisonMap({ 
   originCity, 
   destination_city, 
+  originLat,
+  originLng,
+  destLat,
+  destLng,
   recommendedPolyline,
   recommendedDepartureCity,
   recommendedArrivalCity
@@ -68,7 +76,7 @@ export function ComparisonMap({
         setLoading(true);
         setError(null);
 
-        // Geocode requested cities
+        // Geocode requested cities (Fallback if GPS coords are missing)
         const geocode = async (city: string) => {
           try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city + ", Senegal")}&limit=1`);
@@ -82,15 +90,22 @@ export function ComparisonMap({
           return null;
         };
 
-        const [originCoords, destCoords] = await Promise.all([
-          geocode(originCity),
-          geocode(destination_city)
-        ]);
+        // Strict GPS detection
+        const hasOriginGPS = originLat !== null && originLat !== undefined && originLng !== null && originLng !== undefined;
+        const hasDestGPS = destLat !== null && destLat !== undefined && destLng !== null && destLng !== undefined;
+
+        const originCoords: [number, number] | null = hasOriginGPS 
+          ? [originLat as number, originLng as number] 
+          : await geocode(originCity);
+
+        const destCoords: [number, number] | null = hasDestGPS
+          ? [destLat as number, destLng as number]
+          : await geocode(destination_city);
 
         if (!isMounted) return;
 
         if (!originCoords || !destCoords) {
-          setError("Impossible de localiser les villes sur la carte.");
+          setError("Localisation impossible.");
           setLoading(false);
           return;
         }
@@ -109,20 +124,17 @@ export function ComparisonMap({
 
         if (!isMounted || !mapContainerRef.current) return;
 
-        // Initialize Map if not already done
-        if (!mapRef.current) {
-          mapRef.current = L.map(mapContainerRef.current).setView(originCoords, 8);
-          L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-            attribution: '&copy; CartoDB positron'
-          }).addTo(mapRef.current);
-        } else {
-          // Clear previous layers
-          mapRef.current.eachLayer((layer) => {
-            if (layer instanceof L.Polyline || layer instanceof L.Marker) {
-              mapRef.current?.removeLayer(layer);
-            }
-          });
+        // Force cleanup if map already exists
+        if (mapRef.current) {
+          mapRef.current.remove();
+          mapRef.current = null;
         }
+
+        // Re-init Map
+        mapRef.current = L.map(mapContainerRef.current).setView(originCoords, 8);
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+          attribution: '&copy; CartoDB positron'
+        }).addTo(mapRef.current);
 
         const map = mapRef.current;
         const bounds = L.latLngBounds([]);
@@ -159,22 +171,26 @@ export function ComparisonMap({
               L.marker(startRec, { icon: createCustomIcon("#22C55E", `CONDUCTEUR: ${recommendedDepartureCity?.split(',')[0] || "Départ"}`) }).addTo(map);
               L.marker(endRec, { icon: createCustomIcon("#EF4444", `CONDUCTEUR: ${recommendedArrivalCity?.split(',')[0] || "Arrivée"}`) }).addTo(map);
 
-              // 3. DRAW JUNCTION LINES (The gap between request and trip)
+              // 3. DRAW JUNCTION LINES
               // Green dashed line for departure gap
               L.polyline([originCoords, startRec], {
                 color: "#22C55E",
-                weight: 2,
-                opacity: 0.7,
-                dashArray: "4, 4"
+                weight: 2.5,
+                opacity: 0.8,
+                dashArray: "5, 5"
               }).addTo(map);
 
               // Red dashed line for arrival gap
               L.polyline([destCoords, endRec], {
                 color: "#EF4444",
-                weight: 2,
-                opacity: 0.7,
-                dashArray: "4, 4"
+                weight: 2.5,
+                opacity: 0.8,
+                dashArray: "5, 5"
               }).addTo(map);
+
+              // Visual anchor circles at driver points
+              L.circleMarker(startRec, { radius: 4, color: "#22C55E", fillColor: "white", fillOpacity: 1, weight: 2 }).addTo(map);
+              L.circleMarker(endRec, { radius: 4, color: "#EF4444", fillColor: "white", fillOpacity: 1, weight: 2 }).addTo(map);
             }
           } catch (e) {
             console.error("Failed to decode recommended polyline", e);
@@ -203,7 +219,7 @@ export function ComparisonMap({
     return () => {
       isMounted = false;
     };
-  }, [originCity, destination_city, recommendedPolyline, recommendedDepartureCity, recommendedArrivalCity]);
+  }, [originCity, destination_city, originLat, originLng, destLat, destLng, recommendedPolyline, recommendedDepartureCity, recommendedArrivalCity]);
 
   // Handle cleanup on unmount
   useEffect(() => {

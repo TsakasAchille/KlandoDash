@@ -7,6 +7,8 @@ import { TripDetail } from "@/types/trip";
 export async function getTripById(tripId: string): Promise<TripDetail | null> {
   const supabase = createServerClient();
 
+  // On récupère le trajet. Le filtre sur les réservations est fait au niveau du mapping 
+  // pour ne pas exclure les trajets qui n'ont pas encore de passagers.
   const { data, error } = await supabase
     .from("trips")
     .select(
@@ -52,7 +54,6 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
     `
     )
     .eq("trip_id", tripId)
-    .in("bookings.status", ["CONFIRMED", "COMPLETED"])
     .single();
 
   if (error) {
@@ -75,7 +76,7 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
     ? (rawDriver[0] as DriverData | undefined) || null
     : (rawDriver as DriverData | null);
 
-  // Extract and flatten passenger data
+  // Extract and flatten passenger data (only confirmed/completed)
   type PassengerData = {
     uid: string;
     display_name: string | null;
@@ -83,10 +84,12 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
   };
 
   interface BookingRaw {
+    status: string;
     user: unknown;
   }
 
   const passengers = (data.bookings as unknown as BookingRaw[] || [])
+    .filter((b: BookingRaw) => ["CONFIRMED", "COMPLETED"].includes(b.status))
     .map((b: BookingRaw) => {
       const rawUser = b.user;
       if (!rawUser) return null;

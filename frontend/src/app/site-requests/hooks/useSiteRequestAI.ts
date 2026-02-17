@@ -53,9 +53,12 @@ export function useSiteRequestAI(
         );
         if (res.success) {
           setLocalAiResult(res.text || null);
-          console.log("Server Matched Trip Data:", res.matchedTrip);
+          console.log("[AI Hook] Server matchedTrip received:", res.matchedTrip);
           if (res.matchedTrip) {
+            console.log("[AI Hook] Setting actionMatchedTrip with polyline length:", res.matchedTrip.polyline?.length || 0);
             setActionMatchedTrip(res.matchedTrip as PublicTrip);
+          } else {
+            console.warn("[AI Hook] Server success but matchedTrip is NULL");
           }
         } else {
           toast.error(res.message || "Erreur IA");
@@ -107,15 +110,11 @@ export function useSiteRequestAI(
       tripId = tripIdMatch?.[1] && tripIdMatch[1] !== 'NONE' ? tripIdMatch[1] : null;
     }
 
-    console.log("AI Raw Analysis:", raw.substring(0, 100) + "...");
-    console.log("Structured TripID Found:", tripId);
-
     // Fallback: If still no tripId, try to find a pattern like TRIP-XXXX in the comment
     if (!tripId || tripId === 'NONE') {
-      const fallbackMatch = comment.match(/TRIP-[A-Z0-9]+/i);
+      const fallbackMatch = comment.match(/TRIP-[0-9]+/i);
       if (fallbackMatch) {
         tripId = fallbackMatch[0].toUpperCase().trim();
-        console.log("Fallback TripID Found in Text:", tripId);
       }
     }
 
@@ -127,16 +126,15 @@ export function useSiteRequestAI(
   }, [localAiResult, selectedRequest?.ai_recommendation]);
 
   const matchedTrip = useMemo(() => {
-    if (actionMatchedTrip) {
-      console.log("Using trip from ActionMatchedTrip:", actionMatchedTrip.id);
-      return actionMatchedTrip;
-    }
+    if (actionMatchedTrip) return actionMatchedTrip;
     if (!matchedTripId) return null;
     
-    const found = publicPending.find(t => t.id === matchedTripId) || 
-                  publicCompleted.find(t => t.id === matchedTripId);
+    const normalizeId = (id: string) => id.toUpperCase().replace('TRIP-', '');
+    const normalizedTarget = normalizeId(matchedTripId);
+
+    const found = publicPending.find(t => normalizeId(t.id) === normalizedTarget) || 
+                  publicCompleted.find(t => normalizeId(t.id) === normalizedTarget);
     
-    console.log("Search for TripID", matchedTripId, "in public lists:", found ? "FOUND" : "NOT FOUND");
     return found || null;
   }, [matchedTripId, publicPending, publicCompleted, actionMatchedTrip]);
 
