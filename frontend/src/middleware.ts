@@ -22,18 +22,15 @@ export default auth((req) => {
   if (isLoggedIn) {
     const userRole = req.auth?.user?.role;
 
-    // Seuls les admins peuvent accéder à /admin
-    if (pathname.startsWith("/admin") && userRole !== "admin") {
+    // Seuls les admins peuvent accéder à /admin, /transactions et /stats
+    const isAdminPage = pathname.startsWith("/admin") || pathname.startsWith("/transactions") || pathname.startsWith("/stats");
+    if (isAdminPage && userRole !== "admin") {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
     // Marketing role access
-    if (pathname.startsWith("/marketing") && userRole !== "admin" && userRole !== "marketing") {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-
-    // Le rôle 'support' et 'marketing' ne peuvent pas accéder à /stats
-    if (pathname.startsWith("/stats") && userRole !== "admin") {
+    const isMarketingPage = pathname.startsWith("/marketing") || pathname.startsWith("/editorial");
+    if (isMarketingPage && userRole !== "admin" && userRole !== "marketing") {
       return NextResponse.redirect(new URL("/", req.url));
     }
 

@@ -13,7 +13,7 @@ interface AddUserFormProps {
 
 export function AddUserForm({ onAdd, onCancel, isLoading }: AddUserFormProps) {
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<"admin" | "user" | "support">("user");
+  const [newRole, setNewRole] = useState<"admin" | "user" | "support" | "marketing">("user");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,11 +44,12 @@ export function AddUserForm({ onAdd, onCancel, isLoading }: AddUserFormProps) {
       />
       <select
         value={newRole}
-        onChange={(e) => setNewRole(e.target.value as "admin" | "user" | "support")}
+        onChange={(e) => setNewRole(e.target.value as any)}
         className="px-3 py-2 rounded-md bg-background border border-border"
       >
         <option value="user">Utilisateur</option>
         <option value="support">Support</option>
+        <option value="marketing">Marketing</option>
         <option value="admin">Administrateur</option>
       </select>
       <Button
