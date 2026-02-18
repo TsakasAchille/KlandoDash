@@ -272,6 +272,7 @@ export function MarketingClient({
             setStatusFilter={setStatusFilter}
             onOpenIA={(id) => setAiDialogOpenId(id)}
             onScan={handleScanRequest}
+            onSelectOnMap={handleSelectRequestOnMap}
             scanningId={scanningId}
             selectedId={selectedRequestId || undefined}
           />

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Calendar, Phone, Mail, Sparkles, Loader2, ChevronLeft, ChevronRight, Hash, Radar, CheckCircle, Check } from "lucide-react";
+import { Calendar, Phone, Mail, Sparkles, Loader2, ChevronLeft, ChevronRight, Hash, Radar, CheckCircle, Check, ArrowUpRight } from "lucide-react";
 import { scanRequestMatchesAction } from "@/app/site-requests/actions";
 import { toast } from "sonner";
 import { ScanResultsDialog } from "@/app/site-requests/components/ScanResultsDialog";
@@ -37,6 +37,7 @@ interface SiteRequestTableProps {
   setStatusFilter: (v: string) => void;
   onOpenIA: (id: string) => void;
   onScan: (id: string) => void;
+  onSelectOnMap?: (id: string) => void; // Nouvelle prop pour redirection
   scanningId: string | null;
   selectedId?: string;
 }
@@ -61,6 +62,7 @@ export function SiteRequestTable({
   setStatusFilter,
   onOpenIA,
   onScan,
+  onSelectOnMap,
   scanningId,
 }: SiteRequestTableProps) {
   // Stable Filter and Sort
@@ -211,54 +213,28 @@ export function SiteRequestTable({
                       {formatRelativeDate(request.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {request.status === 'VALIDATED' ? (
-                        <div className="flex items-center justify-end gap-2 pr-2">
-                           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-600 font-black uppercase text-[10px] tracking-widest shadow-sm">
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            Validé
-                          </div>
+                      <div className="flex flex-col items-end gap-2">
+                        {/* Badge de statut simple */}
+                        <div className={cn("px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border", statusConfig[request.status].background, statusConfig[request.status].color, statusConfig[request.status].color.replace('text-', 'border-'))}>
+                          {statusConfig[request.status].label}
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-end gap-2">
-                          <div className="flex gap-2 items-center">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onUpdateStatus(request.id, 'VALIDATED')}
-                              className="h-8 text-[10px] font-black uppercase tracking-wider bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-500/30 hover:border-green-500/50 gap-1.5 shadow-sm"
-                              title="Marquer comme validé"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              Valider
-                            </Button>
-                            <Select value={request.status} onValueChange={(v) => onUpdateStatus(request.id, v as SiteTripRequestStatus)}>
-                              <SelectTrigger className={cn("w-32 h-8 text-[10px] font-black uppercase tracking-wider border-2 shadow-sm", statusConfig[request.status].background, statusConfig[request.status].color.replace('text-', 'border-'))}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.entries(statusConfig).map(([status, { label }]) => (
-                                  <SelectItem key={status} value={status} className="text-[10px] font-black uppercase">{label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+
+                        {request.status === 'VALIDATED' ? (
+                          <div className="text-green-600 font-black uppercase text-[10px] pr-2 flex items-center gap-1.5">
+                            <CheckCircle className="w-3.5 h-3.5" /> Terminé
                           </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => onScan(request.id)} 
-                              disabled={scanningId === request.id}
-                              className="h-8 w-8 p-0 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
-                              title="Scanner les trajets proches"
-                            >
-                              {scanningId === request.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radar className="w-3.5 h-3.5" />}
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => onOpenIA(request.id)} className={cn("gap-2 border-klando-gold/30 text-[10px] font-black uppercase tracking-widest px-3 h-8 shadow-sm", request.ai_recommendation ? "bg-green-50 text-green-600 border-green-200" : "bg-klando-gold/5 text-klando-gold")}>
-                              <Sparkles className="w-3 h-3" /> {request.ai_recommendation ? "Aide IA ✓" : "Aide IA"}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onSelectOnMap?.(request.id)}
+                            className="h-9 rounded-xl border-klando-gold/20 hover:border-klando-gold hover:bg-klando-gold/5 text-klando-gold font-black text-[10px] uppercase tracking-widest group transition-all"
+                          >
+                            Traiter sur la Carte
+                            <ArrowUpRight className="w-3.5 h-3.5 ml-2 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
