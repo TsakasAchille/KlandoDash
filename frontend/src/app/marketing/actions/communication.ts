@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { auth } from "@/lib/auth";
 import { askKlandoAI } from "@/lib/gemini";
 import { getDashboardStats } from "@/lib/queries/stats";
-import { CommPlatform, MarketingComm } from "../types";
+import { CommPlatform, MarketingComm, CommStatus } from "../types";
 
 /**
  * Génère des idées de communication stratégiques via IA
@@ -37,7 +37,8 @@ export async function generateCommIdeasAction() {
           title: i.title,
           content: i.content,
           visual_suggestion: i.visual,
-          platform: 'GENERAL'
+          platform: 'GENERAL',
+          status: 'NEW'
         }))
       );
     }
@@ -45,6 +46,7 @@ export async function generateCommIdeasAction() {
     revalidatePath("/marketing");
     return { success: true, count: ideas.length };
   } catch (err) {
+    console.error(err);
     return { success: false };
   }
 }
@@ -81,7 +83,8 @@ export async function generateSocialPostAction(platform: CommPlatform, topic: st
       title: data.title,
       content: data.content,
       hashtags: data.hashtags,
-      visual_suggestion: data.visual
+      visual_suggestion: data.visual,
+      status: 'NEW'
     }]).select().single();
 
     if (error) throw error;
@@ -91,6 +94,123 @@ export async function generateSocialPostAction(platform: CommPlatform, topic: st
   } catch (err) {
     return { success: false };
   }
+}
+
+/**
+ * Génère une publication pour promouvoir les trajets en attente (Site Requests)
+ */
+export async function generatePendingRequestsPostAction(platform: CommPlatform) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
+  const supabase = createAdminClient();
+
+  // 1. Récupérer les trajets en attente les plus récents (intentions clients)
+  const { data: requests, error: reqError } = await supabase
+    .from('site_trip_requests')
+    .select('origin_city, destination_city, desired_date')
+    .eq('status', 'NEW')
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  if (reqError || !requests || requests.length === 0) {
+    return { success: false, message: "Aucun trajet en attente trouvé." };
+  }
+
+  const tripsContext = requests.map(r => 
+    `${r.origin_city} -> ${r.destination_city} (${r.desired_date || 'ASAP'})`
+  ).join(', ');
+
+  const prompt = `
+    En tant que Community Manager de Klando Sénégal, crée une publication ${platform} pour inviter les conducteurs à répondre à ces demandes de trajets en attente :
+    Demandes : ${tripsContext}
+    
+    L'objectif est de trouver des chauffeurs pour ces passagers. 
+    Utilise un ton communautaire, solidaire et efficace.
+    
+    Réponds en JSON STRICT : { "title": "...", "content": "...", "hashtags": ["...", "..."], "visual": "..." }
+  `;
+
+  try {
+    const aiResponse = await askKlandoAI(prompt, { platform, requests });
+    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("IA JSON Error");
+    
+    const data = JSON.parse(jsonMatch[0]);
+
+    const { data: post, error } = await supabase.from('dash_marketing_communications').insert([{
+      type: 'POST',
+      platform,
+      title: data.title,
+      content: data.content,
+      hashtags: data.hashtags,
+      visual_suggestion: data.visual,
+      status: 'NEW'
+    }]).select().single();
+
+    if (error) throw error;
+
+    revalidatePath("/marketing");
+    return { success: true, post };
+  } catch (err) {
+    console.error(err);
+    return { success: false };
+  }
+}
+
+/**
+ * Met à jour une communication (Titre, contenu, plateforme, statut)
+ */
+export async function updateMarketingCommAction(id: string, updates: Partial<MarketingComm>) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from('dash_marketing_communications')
+    .update(updates)
+    .eq('id', id);
+
+  if (error) {
+    console.error("[COMM UPDATE ERROR]", error);
+    return { success: false };
+  }
+  
+  revalidatePath("/marketing");
+  return { success: true };
+}
+
+/**
+ * Déplace une communication vers la corbeille
+ */
+export async function trashMarketingCommAction(id: string) {
+  return updateMarketingCommAction(id, { status: 'TRASH' });
+}
+
+/**
+ * Restaure une communication depuis la corbeille (repasse en DRAFT)
+ */
+export async function restoreMarketingCommAction(id: string) {
+  return updateMarketingCommAction(id, { status: 'DRAFT' });
+}
+
+/**
+ * Supprime définitivement une communication
+ */
+export async function deleteMarketingCommAction(id: string) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from('dash_marketing_communications')
+    .delete()
+    .eq('id', id);
+
+  if (error) return { success: false };
+  
+  revalidatePath("/marketing");
+  return { success: true };
 }
 
 /**

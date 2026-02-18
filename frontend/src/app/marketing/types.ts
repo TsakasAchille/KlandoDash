@@ -28,6 +28,7 @@ export interface MarketingEmail {
 
 export type CommType = 'IDEA' | 'POST';
 export type CommPlatform = 'TIKTOK' | 'INSTAGRAM' | 'X' | 'WHATSAPP' | 'GENERAL';
+export type CommStatus = 'NEW' | 'DRAFT' | 'PUBLISHED' | 'TRASH';
 
 export interface MarketingComm {
   id: string;
@@ -37,7 +38,9 @@ export interface MarketingComm {
   content: string;
   hashtags?: string[];
   visual_suggestion?: string;
+  status: CommStatus;
   created_at: string;
+  updated_at: string;
 }
 
 export type RecommendationType = 'TRACTION' | 'STRATEGIC' | 'ENGAGEMENT' | 'QUALITY';

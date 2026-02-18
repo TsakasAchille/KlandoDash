@@ -26,7 +26,8 @@ import {
 } from "./actions/mailing";
 import { 
   generateCommIdeasAction, 
-  generateSocialPostAction 
+  generateSocialPostAction,
+  generatePendingRequestsPostAction
 } from "./actions/communication";
 import { 
   MarketingInsight, 
@@ -188,6 +189,18 @@ export function MarketingClient({
     setIsScanningComm(false);
   };
 
+  const handlePromotePending = async (platform: CommPlatform) => {
+    setIsScanningComm(true);
+    const res = await generatePendingRequestsPostAction(platform);
+    if (res.success) {
+      toast.success(`Publication promotionnelle ${platform} générée !`);
+      router.refresh();
+    } else {
+      toast.error(res.message || "Échec de la génération.");
+    }
+    setIsScanningComm(false);
+  };
+
   const handleSendEmail = async (id: string) => {
     setSendingEmailId(id);
     const res = await sendMarketingEmailAction(id);
@@ -298,6 +311,7 @@ export function MarketingClient({
             isScanning={isScanningComm}
             onGenerateIdeas={handleCommIdeasScan}
             onGeneratePost={handleGenerateSocialPost}
+            onPromotePending={handlePromotePending}
           />
         </TabsContent>
 
