@@ -77,10 +77,3 @@ export async function getRevenueStats(options: {
   return data.revenue;
 }
 
-  if (error) {
-    console.error("Erreur getRevenueStats:", error.message);
-    return { totalPassengerPaid: 0, totalDriverPrice: 0, klandoMargin: 0, transactionCount: 0 };
-  }
-
-  return data.revenue;
-}
