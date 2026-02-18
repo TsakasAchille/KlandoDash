@@ -4,3 +4,4 @@ export * from "./get-stats";
 export * from "./update-request";
 export * from "./find-matching";
 export * from "./get-public-trips";
+export * from "./get-flow-stats";

@@ -1,4 +1,10 @@
-import { getSiteTripRequests, getSiteTripRequestsStats, getPublicPendingTrips, getPublicCompletedTrips } from "@/lib/queries/site-requests";
+import { 
+  getSiteTripRequests, 
+  getSiteTripRequestsStats, 
+  getPublicPendingTrips, 
+  getPublicCompletedTrips,
+  getMarketingFlowStats
+} from "@/lib/queries/site-requests";
 import { getTripsForMap } from "@/lib/queries/trips";
 import { getStoredRecommendationsAction } from "@/app/admin/ai/actions";
 import { getMarketingInsightsAction } from "./actions";
@@ -18,8 +24,8 @@ export default async function MarketingPage() {
     redirect("/login");
   }
 
-  const [requests, stats, publicPending, publicCompleted, tripsForMap, recoResult, insightResult, emailResult] = await Promise.all([
-    getSiteTripRequests({ limit: 100 }),
+  const [requests, stats, publicPending, publicCompleted, tripsForMap, recoResult, insightResult, emailResult, flowStats] = await Promise.all([
+    getSiteTripRequests({ limit: 1000, hidePast: false }), // On prend tout pour l'observatoire
     getSiteTripRequestsStats(),
     getPublicPendingTrips(),
     getPublicCompletedTrips(),
@@ -27,6 +33,7 @@ export default async function MarketingPage() {
     getStoredRecommendationsAction(),
     getMarketingInsightsAction(),
     getMarketingEmailsAction(),
+    getMarketingFlowStats(),
   ]);
 
   const recommendations = recoResult.success ? recoResult.data : [];
@@ -92,6 +99,7 @@ export default async function MarketingPage() {
         publicPending={publicPending}
         publicCompleted={publicCompleted}
         tripsForMap={tripsForMap}
+        flowStats={flowStats}
       />
     </div>
   );

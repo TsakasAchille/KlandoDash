@@ -90,7 +90,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                     alt={item.label} 
                     fill 
                     className={cn(
-                      "object-contain scale-150", 
+                      "object-contain scale-125", 
                       !isActive && "grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
                     )}
                   />

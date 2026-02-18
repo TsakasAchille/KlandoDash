@@ -6,6 +6,7 @@ import { SiteTripRequest, SiteTripRequestStatus } from "@/types/site-request";
 import { PublicTrip, useSiteRequestAI } from "@/app/site-requests/hooks/useSiteRequestAI";
 import { TripMapItem } from "@/types/trip";
 import { AIRecommendation } from "@/features/site-requests/components/ai/RecommendationCard";
+import { MarketingFlowStat } from "@/lib/queries/site-requests";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
@@ -32,7 +33,7 @@ import {
 import { StrategyTab } from "./components/tabs/StrategyTab";
 import { IntelligenceTab } from "./components/tabs/IntelligenceTab";
 import { MailingTab } from "./components/tabs/MailingTab";
-import { HistoryTab } from "./components/tabs/HistoryTab";
+import { RequestHistoryTab } from "./components/tabs/RequestHistoryTab";
 import { InsightDetailModal } from "./components/InsightDetailModal";
 
 // Existing Site Requests Components
@@ -55,6 +56,7 @@ interface MarketingClientProps {
   publicPending: PublicTrip[];
   publicCompleted: PublicTrip[];
   tripsForMap: TripMapItem[];
+  flowStats: MarketingFlowStat[];
 }
 
 export function MarketingClient({ 
@@ -64,7 +66,8 @@ export function MarketingClient({
   initialEmails,
   publicPending, 
   publicCompleted, 
-  tripsForMap 
+  tripsForMap,
+  flowStats
 }: MarketingClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -213,7 +216,7 @@ export function MarketingClient({
               <Mail className="w-3.5 h-3.5" /> Mailing
             </TabsTrigger>
             <TabsTrigger value="history" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
-              <History className="w-3.5 h-3.5" /> Archives
+              <History className="w-3.5 h-3.5" /> Observatoire
             </TabsTrigger>
           </TabsList>
           
@@ -303,7 +306,7 @@ export function MarketingClient({
         </TabsContent>
 
         <TabsContent value="history" className="outline-none">
-          <HistoryTab recommendations={recommendations} />
+          <RequestHistoryTab requests={requests} flowStats={flowStats} />
         </TabsContent>
       </Tabs>
 
