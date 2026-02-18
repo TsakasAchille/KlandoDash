@@ -5,7 +5,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { CheckCircle2, cn } from "@/lib/utils";
-import { AIRecommendation } from "@/features/site-requests/components/ai/RecommendationCard";
+import { AIRecommendation } from "../../types";
 
 interface HistoryTabProps {
   recommendations: AIRecommendation[];

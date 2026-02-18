@@ -16,7 +16,7 @@ import { SiteTripRequest } from "@/types/site-request";
 import { PublicTrip } from "../hooks/useSiteRequestAI";
 import dynamic from "next/dynamic";
 import { GeocodingService } from "@/features/site-requests/services/geocoding.service";
-import { createEmailDraftAction, uploadMarketingImageAction } from "@/app/marketing/mailing-actions";
+import { createEmailDraftAction, uploadMarketingImageAction } from "@/app/marketing/actions/mailing";
 import html2canvas from "html2canvas";
 
 // IMPORT DU NOUVEAU COMPOSANT FEATURES (Architecture SOLID)

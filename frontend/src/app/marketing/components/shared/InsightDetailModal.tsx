@@ -9,7 +9,7 @@ import remarkGfm from "remark-gfm";
 import { 
   BarChart3, Calendar, Clock, Sparkles 
 } from "lucide-react";
-import { MarketingInsight } from "../../actions";
+import { MarketingInsight } from "../../types";
 import { cn } from "@/lib/utils";
 
 interface InsightDetailModalProps {

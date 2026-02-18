@@ -7,11 +7,11 @@ import {
 } from "@/lib/queries/site-requests";
 import { getTripsForMap } from "@/lib/queries/trips";
 import { getStoredRecommendationsAction } from "@/app/admin/ai/actions";
-import { getMarketingInsightsAction } from "./actions";
-import { getMarketingEmailsAction } from "./mailing-actions";
-import { getMarketingCommAction } from "./comm-actions";
+import { getMarketingInsightsAction } from "./actions/intelligence";
+import { getMarketingEmailsAction } from "./actions/mailing";
+import { getMarketingCommAction } from "./actions/communication";
 import { MarketingClient } from "./marketing-client";
-import { LayoutGrid, CircleDot, Clock, CheckCircle, Globe, ShieldCheck, TrendingUp, Zap, Target } from "lucide-react";
+import { CircleDot, CheckCircle, Globe, ShieldCheck, TrendingUp, Zap } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 import { MiniStatCard } from "@/components/mini-stat-card";
 import { auth } from "@/lib/auth";

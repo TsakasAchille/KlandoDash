@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-const FlowMap = dynamic(() => import("../FlowMap"), { 
+const FlowMap = dynamic(() => import("../shared/FlowMap"), { 
   ssr: false,
   loading: () => <div className="w-full h-[500px] rounded-[2rem] bg-slate-100 animate-pulse flex items-center justify-center">
     <MapIcon className="w-8 h-8 text-slate-300 animate-bounce" />

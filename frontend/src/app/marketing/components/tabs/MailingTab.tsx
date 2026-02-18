@@ -1,25 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
-} from "@/components/ui/table";
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  Sparkles, Loader2, Send, History, Mail, FileText, 
+  Sparkles, Loader2, Send, Mail, FileText, 
   SendHorizontal, AlertCircle, Trash2, ChevronRight,
-  Search, Filter, Inbox, Clock, Plus, User, Tag, Edit3, Save, X, Image as ImageIcon, CheckCircle2
+  Search, Filter, Inbox, Plus, User, Tag, Edit3, Save, X, Image as ImageIcon, CheckCircle2
 } from "lucide-react";
-import { MarketingEmail, createEmailDraftAction, moveEmailToTrashAction, updateMarketingEmailAction } from "../../mailing-actions";
+import { MarketingEmail } from "../../types";
+import { createEmailDraftAction, moveEmailToTrashAction, updateMarketingEmailAction } from "../../actions/mailing";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 interface MailingTabProps {
   emails: MarketingEmail[];
@@ -39,7 +36,6 @@ export function MailingTab({
   onSendEmail 
 }: MailingTabProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   
   const [activeFolder, setActiveFolder] = useState<MailFolder>('SUGGESTIONS');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
@@ -94,7 +90,7 @@ export function MailingTab({
         setEditForm({ subject: selectedEmail.subject, content: selectedEmail.content });
         setIsEditing(false);
     }
-  }, [selectedEmailId]);
+  }, [selectedEmailId, selectedEmail]);
 
   const handleSaveManualDraft = async () => {
     if (!newDraft.recipient_email || !newDraft.subject) {
@@ -114,7 +110,8 @@ export function MailingTab({
             setSelectedEmailId(res.id as string);
             setActiveFolder('DRAFTS');
         }
-    } catch (e) {
+    } catch (err) {
+        console.error(err);
         toast.error("Erreur de sauvegarde");
     } finally {
         setIsSaving(false);
@@ -129,7 +126,8 @@ export function MailingTab({
             toast.success("Déplacé vers la corbeille");
             setSelectedEmailId(null);
         }
-    } catch (e) {
+    } catch (err) {
+        console.error(err);
         toast.error("Erreur");
     } finally {
         setIsTrashing(false);
@@ -145,7 +143,8 @@ export function MailingTab({
             setActiveFolder('DRAFTS');
             setSelectedEmailId(id); // On garde la sélection
         }
-    } catch (e) {
+    } catch (err) {
+        console.error(err);
         toast.error("Erreur");
     } finally {
         setIsSaving(false);
@@ -161,7 +160,8 @@ export function MailingTab({
             toast.success("Brouillon mis à jour");
             setIsEditing(false);
         }
-    } catch (e) {
+    } catch (err) {
+        console.error(err);
         toast.error("Erreur de mise à jour");
     } finally {
         setIsSaving(false);

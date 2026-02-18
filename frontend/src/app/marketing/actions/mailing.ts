@@ -6,23 +6,7 @@ import { auth } from "@/lib/auth";
 import { askKlandoAI } from "@/lib/gemini";
 import { sendEmail } from "@/lib/mail";
 import React from "react";
-
-export type EmailStatus = 'DRAFT' | 'SENT' | 'FAILED' | 'TRASH';
-export type EmailCategory = 'WELCOME' | 'MATCH_FOUND' | 'RETENTION' | 'PROMO' | 'GENERAL';
-
-export interface MarketingEmail {
-  id: string;
-  category: EmailCategory;
-  subject: string;
-  content: string;
-  recipient_email: string;
-  recipient_name: string | null;
-  status: EmailStatus;
-  is_ai_generated: boolean;
-  image_url?: string | null;
-  created_at: string;
-  sent_at: string | null;
-}
+import { EmailCategory, EmailStatus, MarketingEmail } from "../types";
 
 /**
  * Télécharge une capture d'écran de carte vers Supabase Storage
@@ -41,7 +25,7 @@ export async function uploadMarketingImageAction(base64Image: string) {
   const filePath = `screenshots/${fileName}`;
 
   // Upload vers le bucket 'marketing' (Assurez-vous qu'il est public)
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from('marketing')
     .upload(filePath, buffer, {
       contentType: 'image/png',

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { 
   BarChart3, Sparkles, Loader2, TrendingUp, ArrowRightCircle 
 } from "lucide-react";
-import { MarketingInsight } from "../../actions";
+import { MarketingInsight } from "../../types";
 import { cn } from "@/lib/utils";
 
 interface IntelligenceTabProps {

@@ -11,19 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-
-export type RecommendationType = 'TRACTION' | 'STRATEGIC' | 'ENGAGEMENT' | 'QUALITY';
-
-export interface AIRecommendation {
-  id: string;
-  type: RecommendationType;
-  priority: number;
-  title: string;
-  content: any;
-  target_id: string;
-  status: 'PENDING' | 'APPLIED' | 'DISMISSED';
-  created_at: string;
-}
+import { AIRecommendation } from "@/app/marketing/types";
 
 interface RecommendationCardProps {
   reco: AIRecommendation;
@@ -83,15 +71,13 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
       "bg-card/40 backdrop-blur-md border-white/5 transition-all duration-500 group relative overflow-hidden",
       !isApplied && "hover:border-klando-gold/30",
       isApplied && "opacity-75 border-green-500/20",
-      isTraction && !isApplied && "md:col-span-2 lg:col-span-1" // On peut ajuster la taille
+      isTraction && !isApplied && "md:col-span-2 lg:col-span-1"
     )}>
-      {/* Background Icon Decor */}
       <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
         {getIcon()}
       </div>
       
       <CardContent className="p-5 space-y-4 relative z-10">
-        {/* Header */}
         <div className="flex justify-between items-start">
           <div className="flex flex-col gap-1">
             <span className={cn("w-fit text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border", getBadgeColor())}>
@@ -110,14 +96,13 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
                     <Check className="w-2 h-2" /> Validé
                 </span>
             ) : (
-                <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tabular-nums tracking-tighter text-right">
+                <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tabular-nums tracking-tighter text-right text-right">
                    Scan: {formatDate(reco.created_at)}
                 </span>
             )}
           </div>
         </div>
 
-        {/* Action Content (TRACTION / PROSPECT) */}
         {isTraction && reco.content.top_trips && (
           <div className="space-y-3">
              <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center justify-between">
@@ -177,16 +162,14 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
           </div>
         )}
 
-        {/* Other Types Content */}
         {!isTraction && (
             <div className="bg-white/5 p-3 rounded-xl border border-white/5 text-left">
-                <p className="text-[11px] text-muted-foreground leading-relaxed text-left">
+                <p className="text-[11px] text-muted-foreground leading-relaxed text-left font-medium">
                     {reco.content.alert || reco.content.reason || "Action recommandée par le système."}
                 </p>
             </div>
         )}
 
-        {/* Bottom Actions */}
         {!isApplied && (
           <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
             <div className="flex gap-2">

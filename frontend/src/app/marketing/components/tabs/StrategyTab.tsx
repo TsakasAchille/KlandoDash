@@ -3,7 +3,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Target, History } from "lucide-react";
-import { RecommendationCard, AIRecommendation } from "@/features/site-requests/components/ai/RecommendationCard";
+import { RecommendationCard } from "@/features/site-requests/components/ai/RecommendationCard";
+import { AIRecommendation } from "../../types";
 
 interface StrategyTabProps {
   recommendations: AIRecommendation[];

@@ -5,20 +5,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { auth } from "@/lib/auth";
 import { askKlandoAI } from "@/lib/gemini";
 import { getDashboardStats } from "@/lib/queries/stats";
-
-export type CommType = 'IDEA' | 'POST';
-export type CommPlatform = 'TIKTOK' | 'INSTAGRAM' | 'X' | 'WHATSAPP' | 'GENERAL';
-
-export interface MarketingComm {
-  id: string;
-  type: CommType;
-  platform: CommPlatform;
-  title: string;
-  content: string;
-  hashtags?: string[];
-  visual_suggestion?: string;
-  created_at: string;
-}
+import { CommPlatform, MarketingComm } from "../types";
 
 /**
  * Génère des idées de communication stratégiques via IA

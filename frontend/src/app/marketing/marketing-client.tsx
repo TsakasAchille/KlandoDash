@@ -5,12 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SiteTripRequest, SiteTripRequestStatus } from "@/types/site-request";
 import { PublicTrip, useSiteRequestAI } from "@/app/site-requests/hooks/useSiteRequestAI";
 import { TripMapItem } from "@/types/trip";
-import { AIRecommendation } from "@/features/site-requests/components/ai/RecommendationCard";
-import { MarketingFlowStat } from "@/lib/queries/site-requests";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
-// Actions
+// Actions & Types
 import { 
   updateRequestStatusAction, 
   scanRequestMatchesAction 
@@ -20,21 +18,24 @@ import {
   updateRecommendationStatusAction 
 } from "@/app/admin/ai/actions";
 import { 
-  runMarketingAIScanAction, 
-  MarketingInsight 
-} from "./actions";
+  runMarketingAIScanAction 
+} from "./actions/intelligence";
 import { 
   generateMailingSuggestionsAction, 
-  sendMarketingEmailAction, 
-  MarketingEmail 
-} from "./mailing-actions";
+  sendMarketingEmailAction 
+} from "./actions/mailing";
 import { 
   generateCommIdeasAction, 
-  generateSocialPostAction, 
-  MarketingComm,
-  CommPlatform,
-  getMarketingCommAction
-} from "./comm-actions";
+  generateSocialPostAction 
+} from "./actions/communication";
+import { 
+  MarketingInsight, 
+  MarketingEmail, 
+  MarketingComm, 
+  CommPlatform, 
+  MarketingFlowStat,
+  AIRecommendation
+} from "./types";
 
 // Sub-components (extracted for SOLID)
 import { StrategyTab } from "./components/tabs/StrategyTab";
@@ -42,7 +43,7 @@ import { IntelligenceTab } from "./components/tabs/IntelligenceTab";
 import { CommunicationTab } from "./components/tabs/CommunicationTab";
 import { MailingTab } from "./components/tabs/MailingTab";
 import { RequestHistoryTab } from "./components/tabs/RequestHistoryTab";
-import { InsightDetailModal } from "./components/InsightDetailModal";
+import { InsightDetailModal } from "./components/shared/InsightDetailModal";
 
 // Existing Site Requests Components
 import { SiteRequestTable } from "@/components/site-requests/site-request-table";
@@ -53,7 +54,7 @@ import { MatchingDialog } from "@/app/site-requests/components/MatchingDialog";
 import { Button } from "@/components/ui/button";
 import { 
   Zap, Users, Map as MapIcon, History, Sparkles, Loader2, 
-  RefreshCw, BarChart3, Mail, TrendingUp, Megaphone
+  RefreshCw, BarChart3, Mail, Megaphone
 } from "lucide-react";
 
 interface MarketingClientProps {
@@ -278,7 +279,7 @@ export function MarketingClient({
           </div>
         </div>
 
-        {/* --- TABS CONTENT --- */}
+        {/* --- TABS CONTENT: DELEGATED TO SUB-COMPONENTS --- */}
 
         <TabsContent value="strategy" className="outline-none">
           <StrategyTab 

@@ -5,17 +5,7 @@ import { createAdminClient } from "@/lib/supabase";
 import { auth } from "@/lib/auth";
 import { getDashboardStats } from "@/lib/queries/stats";
 import { askKlandoAI } from "@/lib/gemini";
-
-export type InsightCategory = 'REVENUE' | 'CONVERSION' | 'USER_QUALITY' | 'GROWTH' | 'GENERAL';
-
-export interface MarketingInsight {
-  id: string;
-  category: InsightCategory;
-  title: string;
-  content: string;
-  summary: string;
-  created_at: string;
-}
+import { InsightCategory, MarketingInsight } from "../types";
 
 /**
  * Lance l'analyse IA des statistiques marketing

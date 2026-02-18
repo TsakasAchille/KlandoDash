@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Sparkles, Loader2, Megaphone, Music, Instagram, 
-  Twitter, Send, Image as ImageIcon, Hash, History,
+  Twitter, Send, Image as ImageIcon, History,
   PlusCircle, Target, ArrowRightCircle
 } from "lucide-react";
-import { MarketingComm, CommPlatform } from "../../comm-actions";
+import { MarketingComm, CommPlatform } from "../../types";
 import { cn } from "@/lib/utils";
 
 interface CommunicationTabProps {
@@ -70,7 +70,7 @@ export function CommunicationTab({
                   {idea.visual_suggestion && (
                     <div className="bg-white/5 p-3 rounded-xl border border-white/5">
                         <p className="text-[9px] font-black uppercase text-purple-400 mb-1 flex items-center gap-1.5"><ImageIcon className="w-2.5 h-2.5" /> Idée Visuelle</p>
-                        <p className="text-[10px] text-muted-foreground/80 italic">"{idea.visual_suggestion}"</p>
+                        <p className="text-[10px] text-muted-foreground/80 italic">&quot;{idea.visual_suggestion}&quot;</p>
                     </div>
                   )}
                   <Button 
@@ -207,7 +207,7 @@ export function CommunicationTab({
                         <span className="text-[8px] text-muted-foreground tabular-nums">{new Date(post.created_at).toLocaleDateString()}</span>
                     </div>
                     <p className="text-[10px] font-bold text-white uppercase truncate mb-1">{post.title}</p>
-                    <p className="text-[9px] text-muted-foreground line-clamp-2 italic">"{post.content}"</p>
+                    <p className="text-[9px] text-muted-foreground line-clamp-2 italic">&quot;{post.content}&quot;</p>
                 </Card>
             ))}
         </div>
