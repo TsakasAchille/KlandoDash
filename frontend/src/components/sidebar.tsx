@@ -4,11 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe, CheckSquare, Sparkles, Loader2, TrendingUp } from "lucide-react";
+import { 
+  Home, Car, Users, BarChart3, Map, LifeBuoy, 
+  Shield, X, Banknote, Globe, CheckSquare, 
+  Sparkles, Loader2, TrendingUp, PenTool 
+} from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
 import { useState, useEffect } from "react";
-import Image from "next/image"; // Ajout de Image
+import Image from "next/image";
 import packageInfo from "../../package.json";
 
 const navItems = [
@@ -23,7 +27,8 @@ const supportItems = [
 ];
 
 const marketingItems = [
-  { href: "/marketing", label: "Marketing", icon: TrendingUp },
+  { href: "/marketing", label: "Marketing & Radar", icon: TrendingUp },
+  { href: "/editorial", label: "Centre Éditorial", icon: PenTool },
 ];
 
 const adminItems = [
@@ -78,7 +83,6 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
           )}
         >
           <div className="flex items-center gap-3 relative z-10">
-            {/* Icône Container - Largeur fixe w-8 pour aligner tout le monde */}
             <div className={cn(
               "w-8 h-8 flex items-center justify-center shrink-0",
               isMobile && "w-10 h-10"
@@ -110,7 +114,6 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             <Loader2 className="w-4 h-4 animate-spin text-klando-gold relative z-10" />
           )}
           
-          {/* Active indicator bar */}
           {isActive && (
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-klando-gold rounded-full my-2" />
           )}
@@ -156,20 +159,15 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                 </span>
               </li>
 
-              {/* Liens pour le rôle Marketing (et Admin) */}
               {(userRole === "admin" || userRole === "marketing") && marketingItems.map(renderNavItem)}
-
-              {/* Liens pour le rôle Support (et Admin) */}
               {(userRole === "admin" || userRole === "support") && supportItems.map(renderNavItem)}
-
-              {/* Liens supplémentaires pour le rôle Admin */}
               {userRole === "admin" && adminItems.map(renderNavItem)}
             </>
           )}
         </ul>
       </nav>
       
-      {/* User Menu - adapté pour mobile */}
+      {/* User Menu */}
       <div className={cn("border-t border-border bg-klando-dark/50 backdrop-blur-sm", isMobile ? "p-4" : "p-4")}>
         <UserMenu />
         <div className="mt-4 px-4 flex justify-between items-center opacity-30">

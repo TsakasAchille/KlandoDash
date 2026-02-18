@@ -21,19 +21,7 @@ import {
   runMarketingAIScanAction 
 } from "./actions/intelligence";
 import { 
-  generateMailingSuggestionsAction, 
-  sendMarketingEmailAction 
-} from "./actions/mailing";
-import { 
-  generateCommIdeasAction, 
-  generateSocialPostAction,
-  generatePendingRequestsPostAction
-} from "./actions/communication";
-import { 
   MarketingInsight, 
-  MarketingEmail, 
-  MarketingComm, 
-  CommPlatform, 
   MarketingFlowStat,
   AIRecommendation
 } from "./types";
@@ -41,8 +29,6 @@ import {
 // Sub-components (extracted for SOLID)
 import { StrategyTab } from "./components/tabs/StrategyTab";
 import { IntelligenceTab } from "./components/tabs/IntelligenceTab";
-import { CommunicationTab } from "./components/tabs/CommunicationTab";
-import { MailingTab } from "./components/tabs/MailingTab";
 import { RequestHistoryTab } from "./components/tabs/RequestHistoryTab";
 import { InsightDetailModal } from "./components/shared/InsightDetailModal";
 
@@ -55,15 +41,13 @@ import { MatchingDialog } from "@/app/site-requests/components/MatchingDialog";
 import { Button } from "@/components/ui/button";
 import { 
   Zap, Users, Map as MapIcon, History, Sparkles, Loader2, 
-  RefreshCw, BarChart3, Mail, Megaphone
+  RefreshCw, BarChart3, TrendingUp
 } from "lucide-react";
 
 interface MarketingClientProps {
   initialRequests: SiteTripRequest[];
   initialRecommendations: AIRecommendation[];
   initialInsights: MarketingInsight[];
-  initialEmails: MarketingEmail[];
-  initialComms: MarketingComm[];
   publicPending: PublicTrip[];
   publicCompleted: PublicTrip[];
   tripsForMap: TripMapItem[];
@@ -74,8 +58,6 @@ export function MarketingClient({
   initialRequests, 
   initialRecommendations,
   initialInsights,
-  initialEmails,
-  initialComms,
   publicPending, 
   publicCompleted, 
   tripsForMap,
@@ -93,15 +75,10 @@ export function MarketingClient({
   const [requests, setRequests] = useState<SiteTripRequest[]>(initialRequests);
   const [recommendations, setRecommendations] = useState<AIRecommendation[]>(initialRecommendations);
   const [insights, setInsights] = useState<MarketingInsight[]>(initialInsights);
-  const [emails, setEmails] = useState<MarketingEmail[]>(initialEmails);
-  const [comms, setComms] = useState<MarketingComm[]>(initialComms);
   
   // Loading states
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isScanningMarketing, setIsScanningMarketing] = useState(false);
-  const [isScanningMailing, setIsScanningMailing] = useState(false);
-  const [isScanningComm, setIsScanningComm] = useState(false);
-  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [scanningId, setScanningId] = useState<string | null>(null);
 
@@ -116,8 +93,6 @@ export function MarketingClient({
   useEffect(() => { setRequests(initialRequests); }, [initialRequests]);
   useEffect(() => { setRecommendations(initialRecommendations); }, [initialRecommendations]);
   useEffect(() => { setInsights(initialInsights); }, [initialInsights]);
-  useEffect(() => { setEmails(initialEmails); }, [initialEmails]);
-  useEffect(() => { setComms(initialComms); }, [initialComms]);
 
   // --- HANDLERS: NAVIGATION ---
   const handleTabChange = (value: string) => {
@@ -159,60 +134,6 @@ export function MarketingClient({
     setIsScanningMarketing(false);
   };
 
-  const handleMailingScan = async () => {
-    setIsScanningMailing(true);
-    const res = await generateMailingSuggestionsAction();
-    if (res.success) {
-      toast.success(`${res.count} nouvelles opportunités de mail identifiées.`);
-      router.refresh();
-    }
-    setIsScanningMailing(false);
-  };
-
-  const handleCommIdeasScan = async () => {
-    setIsScanningComm(true);
-    const res = await generateCommIdeasAction();
-    if (res.success) {
-      toast.success("Nouveaux angles de communication générés.");
-      router.refresh();
-    }
-    setIsScanningComm(false);
-  };
-
-  const handleGenerateSocialPost = async (platform: CommPlatform, topic: string) => {
-    setIsScanningComm(true);
-    const res = await generateSocialPostAction(platform, topic);
-    if (res.success) {
-      toast.success(`Publication ${platform} générée !`);
-      router.refresh();
-    }
-    setIsScanningComm(false);
-  };
-
-  const handlePromotePending = async (platform: CommPlatform) => {
-    setIsScanningComm(true);
-    const res = await generatePendingRequestsPostAction(platform);
-    if (res.success) {
-      toast.success(`Publication promotionnelle ${platform} générée !`);
-      router.refresh();
-    } else {
-      toast.error(res.message || "Échec de la génération.");
-    }
-    setIsScanningComm(false);
-  };
-
-  const handleSendEmail = async (id: string) => {
-    setSendingEmailId(id);
-    const res = await sendMarketingEmailAction(id);
-    if (res.success) {
-      toast.success("Email envoyé avec succès !");
-      router.refresh();
-    } else {
-      toast.error("Échec de l'envoi.");
-    }
-    setSendingEmailId(null);
-  };
-
   const handleApplyRecommendation = async (id: string) => {
     const res = await updateRecommendationStatusAction(id, 'APPLIED');
     if (res.success) toast.success("Action marketing validée !");
@@ -250,9 +171,6 @@ export function MarketingClient({
             <TabsTrigger value="strategy" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
               <Zap className="w-3.5 h-3.5" /> Stratégie
             </TabsTrigger>
-            <TabsTrigger value="comm" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
-              <Megaphone className="w-3.5 h-3.5" /> Communication
-            </TabsTrigger>
             <TabsTrigger value="stats" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
               <BarChart3 className="w-3.5 h-3.5" /> Intelligence
             </TabsTrigger>
@@ -261,9 +179,6 @@ export function MarketingClient({
             </TabsTrigger>
             <TabsTrigger value="radar" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
               <MapIcon className="w-3.5 h-3.5" /> Radar
-            </TabsTrigger>
-            <TabsTrigger value="mailing" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
-              <Mail className="w-3.5 h-3.5" /> Mailing
             </TabsTrigger>
             <TabsTrigger value="history" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
               <History className="w-3.5 h-3.5" /> Observatoire
@@ -283,12 +198,6 @@ export function MarketingClient({
                     Scan IA Stratégique
                 </Button>
             )}
-            {tabParam === "mailing" && (
-                <Button onClick={handleMailingScan} disabled={isScanningMailing} size="sm" className="bg-purple-600 hover:bg-purple-700 text-white font-black rounded-2xl px-6 h-10 shadow-lg shadow-purple-500/20">
-                    {isScanningMailing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                    Scan IA Mailing
-                </Button>
-            )}
           </div>
         </div>
 
@@ -302,16 +211,6 @@ export function MarketingClient({
             onApply={handleApplyRecommendation}
             onDismiss={handleDismissRecommendation}
             onGlobalScan={handleGlobalScan}
-          />
-        </TabsContent>
-
-        <TabsContent value="comm" className="outline-none">
-          <CommunicationTab 
-            comms={comms}
-            isScanning={isScanningComm}
-            onGenerateIdeas={handleCommIdeasScan}
-            onGeneratePost={handleGenerateSocialPost}
-            onPromotePending={handlePromotePending}
           />
         </TabsContent>
 
@@ -352,16 +251,6 @@ export function MarketingClient({
             onUpdateStatus={handleUpdateStatus}
             scanningId={scanningId}
             aiMatchedTripId={aiMatchedTripId}
-          />
-        </TabsContent>
-
-        <TabsContent value="mailing" className="outline-none">
-          <MailingTab 
-            emails={emails}
-            isScanning={isScanningMailing}
-            sendingEmailId={sendingEmailId}
-            onScan={handleMailingScan}
-            onSendEmail={handleSendEmail}
           />
         </TabsContent>
 

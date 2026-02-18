@@ -22,6 +22,7 @@ export interface MarketingEmail {
   status: EmailStatus;
   is_ai_generated: boolean;
   image_url?: string | null;
+  asset_id?: string | null;
   created_at: string;
   sent_at: string | null;
 }
@@ -41,6 +42,31 @@ export interface MarketingComm {
   status: CommStatus;
   created_at: string;
   updated_at: string;
+  scheduled_at?: string | null;
+  asset_id?: string | null;
+  image_url?: string | null;
+}
+
+export interface MarketingAsset {
+  id: string;
+  file_url: string;
+  file_name?: string;
+  file_type?: 'IMAGE' | 'VIDEO';
+  metadata?: any;
+  created_at: string;
+}
+
+export interface MarketingComment {
+  id: string;
+  comm_id?: string | null;
+  email_id?: string | null;
+  user_email: string;
+  content: string;
+  created_at: string;
+  author?: {
+    display_name: string | null;
+    avatar_url: string | null;
+  };
 }
 
 export type RecommendationType = 'TRACTION' | 'STRATEGIC' | 'ENGAGEMENT' | 'QUALITY';

@@ -8,8 +8,6 @@ import {
 import { getTripsForMap } from "@/lib/queries/trips";
 import { getStoredRecommendationsAction } from "@/app/admin/ai/actions";
 import { getMarketingInsightsAction } from "./actions/intelligence";
-import { getMarketingEmailsAction } from "./actions/mailing";
-import { getMarketingCommAction } from "./actions/communication";
 import { MarketingClient } from "./marketing-client";
 import { CircleDot, CheckCircle, Globe, ShieldCheck, TrendingUp, Zap } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
@@ -25,7 +23,7 @@ export default async function MarketingPage() {
     redirect("/login");
   }
 
-  const [requests, stats, publicPending, publicCompleted, tripsForMap, recoResult, insightResult, emailResult, flowStats, commResult] = await Promise.all([
+  const [requests, stats, publicPending, publicCompleted, tripsForMap, recoResult, insightResult, flowStats] = await Promise.all([
     getSiteTripRequests({ limit: 1000, hidePast: false }),
     getSiteTripRequestsStats(),
     getPublicPendingTrips(),
@@ -33,15 +31,11 @@ export default async function MarketingPage() {
     getTripsForMap(100),
     getStoredRecommendationsAction(),
     getMarketingInsightsAction(),
-    getMarketingEmailsAction(),
     getMarketingFlowStats(),
-    getMarketingCommAction(),
   ]);
 
   const recommendations = recoResult.success ? recoResult.data : [];
   const insights = insightResult.success ? insightResult.data : [];
-  const emails = emailResult.success ? emailResult.data : [];
-  const comms = commResult.success ? commResult.data : [];
   const pendingCount = recommendations.filter((r: any) => r.status === 'PENDING').length;
 
   return (
@@ -51,10 +45,10 @@ export default async function MarketingPage() {
         <div className="space-y-1 text-left">
           <h1 className="text-3xl font-black tracking-tight uppercase flex items-center gap-3">
             <TrendingUp className="w-8 h-8 text-klando-gold" />
-            Marketing & Croissance
+            Marketing & Radar
           </h1>
           <p className="text-sm text-muted-foreground font-medium">
-            Intelligence opérationnelle et gestion des intentions de voyage
+            Intelligence analytique et détection d&apos;opportunités
           </p>
         </div>
         <RefreshButton />
@@ -98,8 +92,6 @@ export default async function MarketingPage() {
         initialRequests={requests} 
         initialRecommendations={recommendations}
         initialInsights={insights}
-        initialEmails={emails}
-        initialComms={comms}
         publicPending={publicPending}
         publicCompleted={publicCompleted}
         tripsForMap={tripsForMap}

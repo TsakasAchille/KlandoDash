@@ -166,7 +166,7 @@ export function CommunicationTab({
         </div>
 
         <Card className="bg-slate-50 border-slate-200 rounded-[2.5rem] overflow-hidden shadow-2xl">
-            <div className="grid md:grid-cols-12 h-[500px]">
+            <div className="grid md:grid-cols-12 h-[700px]">
                 {/* Selector */}
                 <div className="md:col-span-4 border-r border-slate-200 p-8 space-y-6 bg-white overflow-y-auto">
                     <div className="space-y-4">
