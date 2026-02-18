@@ -60,7 +60,7 @@ Seuls les utilisateurs presents dans la table `dash_authorized_users` (Supabase)
 |---------|-------------|
 | `email` | Email Google (PK) |
 | `active` | Autorisation active |
-| `role` | `admin`, `support` ou `user` |
+| `role` | `admin`, `marketing` ou `support` |
 | `display_name` | Nom complet recupere de Google |
 | `avatar_url` | Photo de profil recuperee de Google |
 
@@ -70,30 +70,31 @@ Seuls les utilisateurs presents dans la table `dash_authorized_users` (Supabase)
 KlandoDash/
 ├── frontend/          # Next.js 14 + Shadcn/ui
 │   ├── src/app/      # Pages (App Router)
+│   ├── src/marketing # Module de croissance (IA + Prospects + Radar)
 │   ├── src/components/
 │   ├── src/lib/      # Supabase + Auth + Queries
 │   └── src/types/
 ├── database/          # SQL schemas, migrations
-└── CLAUDE.md          # Documentation technique
+└── docs/              # Documentation technique
 ```
 
 ## Pages
 
 - `/` - Accueil (KPI globaux)
+- `/marketing` - **Cockpit Marketing** (Stratégie IA, Intelligence, Prospects, Radar, Mailing)
 - `/trips` - Gestion des trajets (Liste des passagers, Détails détaillés, Filtres)
 - `/users` - Gestion des utilisateurs (Recherche, Bio, Profil vérifié)
 - `/map` - Carte Live "Voyager" (Trajets & Demandes clients, Filtres avancés)
 - `/transactions` - Flux financier & revenus (Marge Klando, Cash Flow)
-- `/stats` - Statistiques & KPI financiers
+- `/stats` - Statistiques & KPI financiers (Admins uniquement)
 - `/support` - Tickets support & système de mentions @user
-- `/site-requests` - Gestion des intentions de voyage avec Matching IA géographique
 - `/login` - Connexion Google OAuth
 
 ## Fonctionnalités Clés
 
+- **Cockpit Marketing Unifié** : Un espace unique pour transformer les intentions du site en réservations réelles via l'IA et le Radar géographique.
+- **Intelligence Artificielle (Gemini)** : Analyses stratégiques par thématique (Revenus, Conversion, Qualité) et aide à la rédaction de messages WhatsApp/Email.
+- **Mailing IA** : Détection automatique des opportunités de relance et envoi via Resend.
 - **Carte Live Premium** : Visualisation en temps réel des trajets et des demandes clients avec filtrage avancé et style "Voyager".
-- **Matching IA** : Algorithme de correspondance géographique (2km, 5km, 10km, 15km) pour relier offre et demande.
-- **Gestion Passagers** : Vue détaillée des participants confirmés par trajet avec accès direct aux profils.
-- **Filtres Avancés** : Recherche par nom, email, ville ou ID sur les tableaux principaux.
-- **Expérience Fluide** : Transition entre les pages avec **Skeleton Loading** et design responsive.
-- **Sécurité** : Accès restreint par liste blanche et rôles (Admin / Support).
+- **Matching Analytique** : Algorithme de correspondance géographique SQL (PostGIS) pour un filtrage ultra-précis.
+- **Sécurité** : Accès restreint par liste blanche et rôles (Admin / Marketing / Support).

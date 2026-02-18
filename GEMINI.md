@@ -2,54 +2,56 @@
 
 ## Project Overview
 
-KlandoDash is the administration dashboard for Klando, a carpooling service in Senegal. This full-stack project is built with a modern tech stack, providing a comprehensive interface for managing trips, users, support tickets, and financial transactions.
+KlandoDash is the administration dashboard for Klando, a carpooling service in Senegal. This full-stack project is built with a modern tech stack, providing a comprehensive interface for managing trips, users, support tickets, financial transactions, and marketing growth.
 
-- **Frontend**: The frontend is a Next.js 14 application, utilizing the App Router for page management. The user interface is built with Shadcn/ui and styled with TailwindCSS, creating a responsive and modern design. Key frontend dependencies include `leaflet` for map visualizations, `recharts` for statistical charts, and `@tanstack/react-table` for data tables. Mutations are handled using **Next.js Server Actions**.
-
-- **Backend & Database**: The project leverages Supabase (PostgreSQL), providing a database, authentication, and auto-generated APIs. Aggregated data and stats are performed database-side via **SQL RPC functions** (`SECURITY DEFINER`) for performance and memory safety.
-
-- **Authentication**: User authentication is handled by NextAuth.js (v5), with Google OAuth as the primary provider. Access is restricted to whitelisted users in the `dash_authorized_users` table.
+- **Frontend**: Next.js 14 (App Router) + Shadcn/ui + TailwindCSS.
+- **Backend & Database**: Supabase (PostgreSQL) + SQL RPC functions for performance.
+- **Authentication**: NextAuth.js (v5) + Google OAuth (Whitelisted access).
+- **Intelligence**: Integrated Google Gemini API for strategic and operational analysis.
 
 ## Project Structure
 
 ```
 KlandoDash/
 ├── frontend/          # Next.js 14 + Shadcn/ui
-│   ├── src/app/      # Pages (site-requests, transactions, map, stats, support)
-│   ├── src/features/ # SOLID Business Logic (site-requests services & components)
+│   ├── src/app/      # Pages (marketing, transactions, map, stats, support)
+│   ├── src/features/ # SOLID Business Logic
 │   ├── src/components/ # Reusable UI components
-│   ├── src/lib/      # Supabase client, shared queries & core utils
+│   ├── src/lib/      # Supabase client, mail service, shared queries
 │   └── src/types/    # TypeScript definitions
-├── database/          # SQL schemas & migrations (find_matching_trips v2, stats rpc)
-├── docs/              # Technical Documentation (AI Matching flow, Development guidelines)
+├── database/          # SQL schemas & migrations (find_matching_trips, marketing tables)
+├── docs/              # Technical Documentation
 └── README.md          # General project README
 ```
 
 ## Architecture & Logic Flow
 
-### AI Matching Workflow (SOLID)
-1. **Request**: Admin triggers matching for a client intention.
-2. **Context**: `AIMatchingService` computes real-time km distances between client and driver points using `GeocodingService`.
-3. **Intelligence**: Gemini receives the km context and generates a message using standardized `prompts.ts` templates (WhatsApp focused, car/flag emojis).
-4. **Extraction**: `TripService` (Admin) fetches the full trip geometry using prefix-based search to handle partial IDs.
-5. **Rendering**: `ComparisonMap` renders polylines with directional arrows and auto-corrects inverted paths.
+### Unified Marketing Cockpit
+1.  **Strategy**: Analytical scan (SQL PostGIS) to identify matching opportunities without systematic AI costs.
+2.  **Intelligence**: AI-generated strategic reports (Gemini) on Revenue, Conversion, and Quality.
+3.  **Mailing**: AI-driven email campaigns dispatched via Resend.
+4.  **Radar**: Precision execution workbench for geographical matching.
+
+### Data-Driven Workflows
+*   **Analytical First**: High-performance SQL queries for proximity calculation.
+*   **Optional AI Finish**: Gemini is used only when language intelligence is required (message drafting, report writing).
+*   **SOLID Principles**: Modular architecture with extracted tab components for maintainability.
 
 ## Key Performance Standards
 
-- **SOLID Principles**: Business logic (geocoding, trip queries, AI) is strictly isolated from React components.
-- **Honest AI Thresholds**: Adaptive messaging based on real distance (e.g., 5km is not "near" but a "solid option").
-- **Reliable Map Lifecycle**: Manual Leaflet cleanup and `invalidateSize` calls to prevent DOM-related crashes.
+- **Honest AI Thresholds**: Strict km limits (15km max) for matching suggestions.
+- **Stateless Intelligence**: AI only sees anonymized context relevant to the current task.
+- **Reliable UI**: Controlled tab states and robust error handling for asynchronous actions.
 
 ## Current Status
 
 ### Done ✅
-- [x] SOLID Architecture for Site Requests (Services/Features).
-- [x] Advanced AI Matching with distance-aware prompts and robust ID extraction.
-- [x] High-precision Map Visualization (Directional arrows, auto-correction, junction lines).
-- [x] Optimized stats via SQL RPC functions.
+- [x] Marketing Cockpit with Strategy, Intelligence, Radar, and Mailing tabs.
+- [x] SOLID Architecture for modular tab management.
+- [x] Advanced AI Matching with distance-aware prompts.
+- [x] Premium report rendering with ReactMarkdown.
+- [x] Professional mailing system with Resend integration.
 - [x] Whitelisted Google OAuth Authentication.
-- [x] Support ticket system with chat-like comments.
-- [x] Transactions and cash-flow tracking.
 
 ### TODO 🚧
 - [ ] Implement inter-user Chats module.
@@ -58,6 +60,6 @@ KlandoDash/
 
 ## Useful Documentation
 - [docs/README.md](./docs/README.md) : Index.
-- [docs/AI_MATCHING_SYSTEM.md](./docs/AI_MATCHING_SYSTEM.md) : **Detailed AI matching technical guide.**
-- [docs/DEVELOPMENT_GUIDELINES.md](./docs/DEVELOPMENT_GUIDELINES.md) : Standards.
-- [docs/WEBSITE_INTEGRATION.md](./docs/WEBSITE_INTEGRATION.md) : Website sync guide.
+- [docs/AI_ARCHITECTURE.md](./docs/AI_ARCHITECTURE.md) : **AI & Marketing Architecture Guide.**
+- [docs/Klando-Gemini.md](./docs/Klando-Gemini.md) : Data Visibility Matrix.
+- [docs/AI_MATCHING_SYSTEM.md](./docs/AI_MATCHING_SYSTEM.md) : Analytical matching details.

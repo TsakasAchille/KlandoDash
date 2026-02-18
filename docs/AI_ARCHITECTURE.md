@@ -1,67 +1,55 @@
 # Architecture de l'Intelligence Artificielle (Klando AI)
 
-Ce document décrit l'implémentation, le flux de données et la stratégie de l'IA au sein de KlandoDash.
+Ce document décrit l'implémentation, le flux de données et la stratégie de l'IA au sein du module Marketing de KlandoDash.
 
 ## 1. Moteur d'IA : Google Gemini
-Klando utilise l'API **Google Gemini** (via le SDK `@google/generative-ai`) pour sa puissance de traitement du langage naturel et sa rapidité.
+Klando utilise l'API **Google Gemini** (via le SDK `@google/generative-ai`) pour le traitement du langage naturel et l'analyse stratégique.
 
 ### Modèles utilisés (Fallback Strategy)
-Pour garantir la disponibilité, le système tente d'appeler les modèles dans cet ordre :
-1.  **gemini-2.0-flash** (Priorité : Ultra-rapide et moderne)
-2.  **gemini-1.5-flash** (Stable et performant)
-3.  **gemini-1.5-pro** (Puissant, utilisé en dernier recours)
-
-### Coûts et Pricing
-*   **Tier Gratuit** : Actuellement, le projet utilise le "Free Tier" de Google AI Studio (jusqu'à 15 RPM).
-*   **Production** : Le modèle "Flash" est extrêmement peu coûteux (environ 0.10$ par million de tokens), ce qui rend le "Scan Stratégique" très rentable.
+1.  **gemini-2.0-flash** : Priorité haute (rapidité, coût réduit).
+2.  **gemini-1.5-flash** : Stable.
+3.  **gemini-1.5-pro** : Analyse complexe (Intelligence).
 
 ---
 
-## 2. Qui utilise l'IA ?
-L'IA n'est pas accessible aux utilisateurs finaux (clients/chauffeurs) directement pour éviter les coûts incontrôlés. Elle est réservée aux **utilisateurs internes** :
+## 2. Spécialisation des Flux IA (Modularité Marketing)
 
-*   **Rôle Admin** : Accès total pour la validation et la supervision.
-*   **Rôle Marketing** : Utilise l'IA pour transformer les "Prospects" (Demandes Site) en "Trajets Validés".
+L'IA n'est plus un bloc monolithique mais est divisée en 3 piliers dans le Cockpit Marketing :
 
----
+### A. IA Opérationnelle (Onglet Stratégie)
+*   **Approche Analytique d'abord** : Le scan ne déclenche plus l'IA systématiquement pour économiser les tokens.
+*   **Scan SQL (PostGIS)** : Identifie les correspondances géographiques réelles via `find_matching_trips`.
+*   **Action Cards** : Génère des cartes d'opportunités basées sur les données SQL. L'IA n'intervient qu'à la demande (Aide IA) pour générer le message final.
 
-## 3. Le "Scan Stratégique" (Bouton Marketing)
-Le bouton **Scan Stratégique** est le déclencheur manuel de l'intelligence. Voici ce qu'il fait réellement :
+### B. IA Stratégique (Onglet Intelligence)
+*   **Scan IA Global** : Analyse les statistiques de performance (Revenus, Conversion, Qualité).
+*   **Rapports Markdown** : Génère des analyses de haut niveau avec des conseils actionnables.
+*   **Mise à jour (Clean Refresh)** : Les nouveaux scans remplacent les anciens pour garantir la fraîcheur.
 
-1.  **Extraction des données (DB)** : Il récupère toutes les nouvelles demandes clients (Prospects) et les trajets disponibles.
-2.  **Analyse de Proximité (SQL)** : Il utilise des fonctions SQL PostGIS pour calculer les distances réelles entre les points de départ/arrivée.
-3.  **Génération de Recommandations (IA)** :
-    *   Pour chaque prospect, il envoie à Gemini : la route demandée + les 5 meilleurs trajets trouvés par le SQL.
-    *   Gemini génère un message marketing personnalisé (WhatsApp ready).
-4.  **Stockage** : Les résultats sont stockés dans `dash_ai_recommendations` pour affichage sous forme de cartes d'actions.
-
-**OUI**, le Scan Stratégique utilise massivement l'IA pour chaque prospect analysé.
+### C. IA Relationnelle (Onglet Mailing)
+*   **Scan Opportunités Mail** : Détecte les prospects à convertir et les utilisateurs inactifs.
+*   **Draft Generation** : Prépare des brouillons d'emails (Sujet + Corps) envoyables via Resend.
 
 ---
 
-## 4. Flux de Données (Data Flow)
-
-```mermaid
-graph TD
-    A[Prospect : Demande Site] --> B{Scan Stratégique}
-    B --> C[Calcul SQL : Distances km]
-    C --> D[Prompt Gemini : Contexte + Data]
-    D --> E[Gemini API]
-    E --> F[Recommandation Marketing]
-    F --> G[Dashboard Marketing : Cartes d'Actions]
-    G --> H[Action Admin : Valider / Envoyer]
-```
+## 3. Sécurité et Visibilité des Données (Klando-Gemini)
+L'IA fonctionne selon le principe du **"Besoin d'en connaître"** :
+*   **Anonymisation** : Pas de numéros de téléphone ni d'emails réels dans les prompts.
+*   **Contexte restreint** : Seules les données pertinentes (distances, horaires, ratings) sont envoyées.
+*   **Détails** : Voir [docs/Klando-Gemini.md](./Klando-Gemini.md).
 
 ---
 
-## 5. Structure des Prompts (lib/prompts.ts)
-Nous utilisons une approche de **Prompt Engineering** stricte pour garantir des réponses structurées :
-*   **System Context** : Définit la personnalité (Assistant Klando) et les contraintes (Français, emojis, format court).
-*   **Data Context** : Injection de JSON pur pour que l'IA ne "hallucine" pas sur les trajets.
-*   **Trigger Tag** : Utilisation du tag `[TRIP_ID]` dans la réponse pour permettre au Dashboard d'extraire automatiquement l'ID du trajet recommandé.
+## 4. Flux de Travail Unifié (UX)
+
+Le système suit une logique de progression pour l'utilisateur :
+1.  **Stratégie (Inbox)** : On identifie l'opportunité (SQL).
+2.  **Radar (Execution)** : On affine géographiquement, on utilise l'IA pour le message, on agit.
+3.  **Prospects (Library)** : On consulte l'historique et les données brutes.
 
 ---
 
-## 6. Sécurité et Limites
-*   **Isolation** : L'IA n'a jamais accès aux clés privées ou aux mots de passe des utilisateurs.
-*   **Vérification Humaine** : L'architecture impose toujours une validation humaine (bouton Valider) avant toute action réelle (envoi de message).
+## 5. Intégration Technique
+*   **ReactMarkdown** : Utilisé pour le rendu professionnel des rapports IA.
+*   **Resend** : Service d'envoi pour le mailing marketing.
+*   **SQL RPC** : `find_matching_trips` pour le calcul de proximité à haute performance.
