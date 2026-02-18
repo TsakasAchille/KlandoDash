@@ -22,9 +22,9 @@ import {
 } from "@/app/marketing/types";
 
 // Sub-components
-import { CommunicationTab } from "@/app/marketing/components/tabs/CommunicationTab";
-import { MailingTab } from "@/app/marketing/components/tabs/MailingTab";
-import { CalendarTab } from "./components/CalendarTab"; // Nouveau
+import { CommunicationTab } from "@/features/marketing/components/tabs/CommunicationTab";
+import { MailingTab } from "@/features/marketing/components/tabs/MailingTab";
+import { CalendarTab } from "@/features/marketing/components/tabs/CalendarTab";
 
 // UI / Icons
 import { Button } from "@/components/ui/button";

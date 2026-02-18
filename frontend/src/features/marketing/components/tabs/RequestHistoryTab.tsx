@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { SiteTripRequest } from "@/types/site-request";
-import { MarketingFlowStat } from "@/lib/queries/site-requests";
+import { MarketingFlowStat } from "@/app/marketing/types";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";

@@ -27,10 +27,10 @@ import {
 } from "./types";
 
 // Sub-components (extracted for SOLID)
-import { StrategyTab } from "./components/tabs/StrategyTab";
-import { IntelligenceTab } from "./components/tabs/IntelligenceTab";
-import { RequestHistoryTab } from "./components/tabs/RequestHistoryTab";
-import { InsightDetailModal } from "./components/shared/InsightDetailModal";
+import { StrategyTab } from "@/features/marketing/components/tabs/StrategyTab";
+import { IntelligenceTab } from "@/features/marketing/components/tabs/IntelligenceTab";
+import { RequestHistoryTab } from "@/features/marketing/components/tabs/RequestHistoryTab";
+import { InsightDetailModal } from "@/features/marketing/components/shared/InsightDetailModal";
 
 // Existing Site Requests Components
 import { SiteRequestTable } from "@/components/site-requests/site-request-table";

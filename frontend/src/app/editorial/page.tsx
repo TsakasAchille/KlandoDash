@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import { getMarketingEmailsAction } from "@/app/marketing/actions/mailing";
 import { getMarketingCommAction } from "@/app/marketing/actions/communication";
 import { EditorialClient } from "./editorial-client";
-import { PenTool, CheckCircle, Clock, Calendar as CalendarIcon, MessageSquare } from "lucide-react";
+import { PenTool, CheckCircle, Calendar as CalendarIcon } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 import { MiniStatCard } from "@/components/mini-stat-card";
+import { MarketingEmail, MarketingComm } from "@/app/marketing/types";
 
 export const dynamic = "force-dynamic";
 
@@ -20,13 +21,13 @@ export default async function EditorialPage() {
     getMarketingCommAction()
   ]);
 
-  const emails = emailResult.success ? emailResult.data : [];
-  const comms = commResult.success ? commResult.data : [];
+  const emails = (emailResult.success ? emailResult.data : []) as MarketingEmail[];
+  const comms = (commResult.success ? commResult.data : []) as MarketingComm[];
 
   // Stats simplifiées pour l'éditorial
-  const draftsCount = emails.filter((e: any) => e.status === 'DRAFT').length + comms.filter((c: any) => (c.status === 'DRAFT' || c.status === 'NEW') && c.type === 'POST').length;
-  const sentCount = emails.filter((e: any) => e.status === 'SENT').length;
-  const scheduledCount = comms.filter((c: any) => c.scheduled_at !== null).length;
+  const draftsCount = emails.filter(e => e.status === 'DRAFT').length + comms.filter(c => (c.status === 'DRAFT' || c.status === 'NEW') && c.type === 'POST').length;
+  const sentCount = emails.filter(e => e.status === 'SENT').length;
+  const scheduledCount = comms.filter(c => c.scheduled_at !== null).length;
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8">

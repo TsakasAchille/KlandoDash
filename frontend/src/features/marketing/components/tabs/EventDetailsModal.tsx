@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { getMarketingComments, addMarketingComment } from "../actions";
+import { getMarketingComments, addMarketingComment } from "@/app/editorial/actions";
 import { updateMarketingCommAction } from "@/app/marketing/actions/communication";
 import { updateMarketingEmailAction } from "@/app/marketing/actions/mailing";
 import { useSession } from "next-auth/react";
