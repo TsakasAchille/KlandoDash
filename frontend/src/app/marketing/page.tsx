@@ -9,6 +9,7 @@ import { getTripsForMap } from "@/lib/queries/trips";
 import { getStoredRecommendationsAction } from "@/app/admin/ai/actions";
 import { getMarketingInsightsAction } from "./actions";
 import { getMarketingEmailsAction } from "./mailing-actions";
+import { getMarketingCommAction } from "./comm-actions";
 import { MarketingClient } from "./marketing-client";
 import { LayoutGrid, CircleDot, Clock, CheckCircle, Globe, ShieldCheck, TrendingUp, Zap, Target } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
@@ -24,8 +25,8 @@ export default async function MarketingPage() {
     redirect("/login");
   }
 
-  const [requests, stats, publicPending, publicCompleted, tripsForMap, recoResult, insightResult, emailResult, flowStats] = await Promise.all([
-    getSiteTripRequests({ limit: 1000, hidePast: false }), // On prend tout pour l'observatoire
+  const [requests, stats, publicPending, publicCompleted, tripsForMap, recoResult, insightResult, emailResult, flowStats, commResult] = await Promise.all([
+    getSiteTripRequests({ limit: 1000, hidePast: false }),
     getSiteTripRequestsStats(),
     getPublicPendingTrips(),
     getPublicCompletedTrips(),
@@ -34,18 +35,20 @@ export default async function MarketingPage() {
     getMarketingInsightsAction(),
     getMarketingEmailsAction(),
     getMarketingFlowStats(),
+    getMarketingCommAction(),
   ]);
 
   const recommendations = recoResult.success ? recoResult.data : [];
   const insights = insightResult.success ? insightResult.data : [];
   const emails = emailResult.success ? emailResult.data : [];
+  const comms = commResult.success ? commResult.data : [];
   const pendingCount = recommendations.filter((r: any) => r.status === 'PENDING').length;
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/40 pb-6">
-        <div className="space-y-1">
+        <div className="space-y-1 text-left">
           <h1 className="text-3xl font-black tracking-tight uppercase flex items-center gap-3">
             <TrendingUp className="w-8 h-8 text-klando-gold" />
             Marketing & Croissance
@@ -96,6 +99,7 @@ export default async function MarketingPage() {
         initialRecommendations={recommendations}
         initialInsights={insights}
         initialEmails={emails}
+        initialComms={comms}
         publicPending={publicPending}
         publicCompleted={publicCompleted}
         tripsForMap={tripsForMap}

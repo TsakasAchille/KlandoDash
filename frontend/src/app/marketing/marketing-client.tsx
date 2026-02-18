@@ -28,10 +28,18 @@ import {
   sendMarketingEmailAction, 
   MarketingEmail 
 } from "./mailing-actions";
+import { 
+  generateCommIdeasAction, 
+  generateSocialPostAction, 
+  MarketingComm,
+  CommPlatform,
+  getMarketingCommAction
+} from "./comm-actions";
 
 // Sub-components (extracted for SOLID)
 import { StrategyTab } from "./components/tabs/StrategyTab";
 import { IntelligenceTab } from "./components/tabs/IntelligenceTab";
+import { CommunicationTab } from "./components/tabs/CommunicationTab";
 import { MailingTab } from "./components/tabs/MailingTab";
 import { RequestHistoryTab } from "./components/tabs/RequestHistoryTab";
 import { InsightDetailModal } from "./components/InsightDetailModal";
@@ -45,7 +53,7 @@ import { MatchingDialog } from "@/app/site-requests/components/MatchingDialog";
 import { Button } from "@/components/ui/button";
 import { 
   Zap, Users, Map as MapIcon, History, Sparkles, Loader2, 
-  RefreshCw, BarChart3, Mail, TrendingUp
+  RefreshCw, BarChart3, Mail, TrendingUp, Megaphone
 } from "lucide-react";
 
 interface MarketingClientProps {
@@ -53,6 +61,7 @@ interface MarketingClientProps {
   initialRecommendations: AIRecommendation[];
   initialInsights: MarketingInsight[];
   initialEmails: MarketingEmail[];
+  initialComms: MarketingComm[];
   publicPending: PublicTrip[];
   publicCompleted: PublicTrip[];
   tripsForMap: TripMapItem[];
@@ -64,6 +73,7 @@ export function MarketingClient({
   initialRecommendations,
   initialInsights,
   initialEmails,
+  initialComms,
   publicPending, 
   publicCompleted, 
   tripsForMap,
@@ -82,11 +92,13 @@ export function MarketingClient({
   const [recommendations, setRecommendations] = useState<AIRecommendation[]>(initialRecommendations);
   const [insights, setInsights] = useState<MarketingInsight[]>(initialInsights);
   const [emails, setEmails] = useState<MarketingEmail[]>(initialEmails);
+  const [comms, setComms] = useState<MarketingComm[]>(initialComms);
   
   // Loading states
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isScanningMarketing, setIsScanningMarketing] = useState(false);
   const [isScanningMailing, setIsScanningMailing] = useState(false);
+  const [isScanningComm, setIsScanningComm] = useState(false);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [scanningId, setScanningId] = useState<string | null>(null);
@@ -103,6 +115,7 @@ export function MarketingClient({
   useEffect(() => { setRecommendations(initialRecommendations); }, [initialRecommendations]);
   useEffect(() => { setInsights(initialInsights); }, [initialInsights]);
   useEffect(() => { setEmails(initialEmails); }, [initialEmails]);
+  useEffect(() => { setComms(initialComms); }, [initialComms]);
 
   // --- HANDLERS: NAVIGATION ---
   const handleTabChange = (value: string) => {
@@ -154,6 +167,26 @@ export function MarketingClient({
     setIsScanningMailing(false);
   };
 
+  const handleCommIdeasScan = async () => {
+    setIsScanningComm(true);
+    const res = await generateCommIdeasAction();
+    if (res.success) {
+      toast.success("Nouveaux angles de communication générés.");
+      router.refresh();
+    }
+    setIsScanningComm(false);
+  };
+
+  const handleGenerateSocialPost = async (platform: CommPlatform, topic: string) => {
+    setIsScanningComm(true);
+    const res = await generateSocialPostAction(platform, topic);
+    if (res.success) {
+      toast.success(`Publication ${platform} générée !`);
+      router.refresh();
+    }
+    setIsScanningComm(false);
+  };
+
   const handleSendEmail = async (id: string) => {
     setSendingEmailId(id);
     const res = await sendMarketingEmailAction(id);
@@ -198,10 +231,13 @@ export function MarketingClient({
     <div className="space-y-8">
       <Tabs value={tabParam} onValueChange={handleTabChange} className="space-y-8">
         {/* HEADER: TABS LIST & MAIN ACTIONS */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/30 p-2 rounded-3xl border border-white/5 backdrop-blur-sm">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/30 p-2 rounded-3xl border border-white/5 backdrop-blur-sm shadow-xl">
           <TabsList className="bg-transparent border-none p-0 h-auto gap-1">
             <TabsTrigger value="strategy" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
               <Zap className="w-3.5 h-3.5" /> Stratégie
+            </TabsTrigger>
+            <TabsTrigger value="comm" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
+              <Megaphone className="w-3.5 h-3.5" /> Communication
             </TabsTrigger>
             <TabsTrigger value="stats" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
               <BarChart3 className="w-3.5 h-3.5" /> Intelligence
@@ -242,7 +278,7 @@ export function MarketingClient({
           </div>
         </div>
 
-        {/* --- TABS CONTENT: DELEGATED TO SUB-COMPONENTS --- */}
+        {/* --- TABS CONTENT --- */}
 
         <TabsContent value="strategy" className="outline-none">
           <StrategyTab 
@@ -252,6 +288,15 @@ export function MarketingClient({
             onApply={handleApplyRecommendation}
             onDismiss={handleDismissRecommendation}
             onGlobalScan={handleGlobalScan}
+          />
+        </TabsContent>
+
+        <TabsContent value="comm" className="outline-none">
+          <CommunicationTab 
+            comms={comms}
+            isScanning={isScanningComm}
+            onGenerateIdeas={handleCommIdeasScan}
+            onGeneratePost={handleGenerateSocialPost}
           />
         </TabsContent>
 
