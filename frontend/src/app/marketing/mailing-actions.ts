@@ -19,68 +19,46 @@ export interface MarketingEmail {
   recipient_name: string | null;
   status: EmailStatus;
   is_ai_generated: boolean;
+  image_url?: string | null;
   created_at: string;
   sent_at: string | null;
 }
 
 /**
- * Génère des suggestions de mailing ciblées via IA
+ * Télécharge une capture d'écran de carte vers Supabase Storage
  */
-export async function generateMailingSuggestionsAction() {
+export async function uploadMarketingImageAction(base64Image: string) {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   const supabase = createAdminClient();
+  
+  // Extraire les données binaires du base64
+  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+  const buffer = Buffer.from(base64Data, 'base64');
+  
+  const fileName = `map-${Date.now()}.png`;
+  const filePath = `screenshots/${fileName}`;
 
-  const { data: prospects } = await supabase.from('site_trip_requests').select('*').eq('status', 'NEW').limit(10);
-  const { data: inactiveUsers } = await supabase.from('users').select('*').limit(10);
+  // Upload vers le bucket 'marketing' (Assurez-vous qu'il est public)
+  const { data, error } = await supabase.storage
+    .from('marketing')
+    .upload(filePath, buffer, {
+      contentType: 'image/png',
+      upsert: true
+    });
 
-  const dataContext = {
-    prospects: prospects?.map(p => ({ email: p.contact_info, from: p.origin_city, to: p.destination_city })),
-    inactive_users: inactiveUsers?.map(u => ({ name: u.display_name, email: u.email }))
-  };
-
-  const prompt = `
-    Analyse ces prospects et utilisateurs. Identifie 3 opportunités de mailing prioritaires.
-    Pour chaque opportunité, fournis un objet JSON STRICT avec cette structure exacte :
-    {
-      "opportunities": [
-        {
-          "category": "MATCH_FOUND" ou "RETENTION",
-          "recipient_email": "email",
-          "recipient_name": "nom",
-          "subject": "sujet accrocheur",
-          "content": "contenu en Markdown (chaleureux, professionnel, max 100 mots)"
-        }
-      ]
-    }
-  `;
-
-  try {
-    const aiResponse = await askKlandoAI(prompt, { context: dataContext });
-    
-    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("IA n'a pas renvoyé de JSON valide");
-    
-    const { opportunities } = JSON.parse(jsonMatch[0]);
-
-    if (opportunities && opportunities.length > 0) {
-      const { error } = await supabase.from('dash_marketing_emails').insert(
-        opportunities.map((o: any) => ({
-          ...o,
-          status: 'DRAFT',
-          is_ai_generated: true
-        }))
-      );
-      if (error) throw error;
-    }
-
-    revalidatePath("/marketing");
-    return { success: true, count: opportunities.length };
-  } catch (err) {
-    console.error("[Mailing AI] Failed:", err);
-    return { success: false, message: "Échec de la génération." };
+  if (error) {
+    console.error("[STORAGE ERROR]", error);
+    return { success: false };
   }
+
+  // Récupérer l'URL publique
+  const { data: { publicUrl } } = supabase.storage
+    .from('marketing')
+    .getPublicUrl(filePath);
+
+  return { success: true, url: publicUrl };
 }
 
 /**
@@ -99,12 +77,25 @@ export async function sendMarketingEmailAction(id: string) {
 
   if (fetchError || !email) return { success: false, message: "Email introuvable" };
 
+  // Construction du corps HTML avec image si présente
+  const htmlContent = `
+    <div style="font-family: sans-serif; padding: 20px; color: #333; line-height: 1.6;">
+      <div style="margin-bottom: 30px; white-space: pre-wrap;">${email.content}</div>
+      ${email.image_url ? `
+        <div style="margin-top: 20px; border: 1px solid #eee; border-radius: 12px; overflow: hidden; max-width: 600px;">
+          <img src="${email.image_url}" alt="Carte de votre trajet" style="width: 100%; display: block;" />
+        </div>
+      ` : ''}
+      <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-size: 12px; color: #999;">
+        L'équipe Klando
+      </div>
+    </div>
+  `;
+
   const res = await sendEmail({
     to: email.recipient_email,
     subject: email.subject,
-    react: React.createElement("div", { 
-      style: { fontFamily: 'sans-serif', padding: '20px', color: '#333' }
-    }, email.content)
+    react: React.createElement("div", { dangerouslySetInnerHTML: { __html: htmlContent } })
   });
 
   if (res.success) {
@@ -170,6 +161,7 @@ export async function createEmailDraftAction(data: {
   content: string;
   category: EmailCategory;
   is_ai_generated?: boolean;
+  image_url?: string;
 }) {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
@@ -181,6 +173,7 @@ export async function createEmailDraftAction(data: {
       ...data,
       status: 'DRAFT',
       is_ai_generated: data.is_ai_generated || false,
+      image_url: data.image_url || null,
       created_at: new Date().toISOString()
     }])
     .select()
@@ -208,4 +201,66 @@ export async function getMarketingEmailsAction() {
 
   if (error) return { success: false, data: [] };
   return { success: true, data: data as MarketingEmail[] };
+}
+
+/**
+ * Génère des suggestions de mailing ciblées via IA
+ */
+export async function generateMailingSuggestionsAction() {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
+  const supabase = createAdminClient();
+
+  // 1. Récupérer les données cibles pour l'IA
+  const { data: prospects } = await supabase.from('site_trip_requests').select('*').eq('status', 'NEW').limit(10);
+  const { data: inactiveUsers } = await supabase.from('users').select('*').limit(10);
+
+  const dataContext = {
+    prospects: prospects?.map(p => ({ email: p.contact_info, from: p.origin_city, to: p.destination_city })),
+    inactive_users: inactiveUsers?.map(u => ({ name: u.display_name, email: u.email }))
+  };
+
+  // 2. Demander à l'IA de suggérer des opportunités
+  const prompt = `
+    Analyse ces prospects et utilisateurs. Identifie 3 opportunités de mailing prioritaires.
+    Pour chaque opportunité, fournis un objet JSON STRICT avec cette structure exacte :
+    {
+      "opportunities": [
+        {
+          "category": "MATCH_FOUND" ou "RETENTION",
+          "recipient_email": "email",
+          "recipient_name": "nom",
+          "subject": "sujet accrocheur",
+          "content": "contenu en Markdown (chaleureux, professionnel, max 100 mots)"
+        }
+      ]
+    }
+  `;
+
+  try {
+    const aiResponse = await askKlandoAI(prompt, { context: dataContext });
+    
+    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("IA n'a pas renvoyé de JSON valide");
+    
+    const { opportunities } = JSON.parse(jsonMatch[0]);
+
+    if (opportunities && opportunities.length > 0) {
+      const { error } = await supabase.from('dash_marketing_emails').insert(
+        opportunities.map((o: any) => ({
+          ...o,
+          status: 'DRAFT',
+          is_ai_generated: true
+        }))
+      );
+      if (error) throw error;
+    }
+
+    revalidatePath("/marketing");
+    return { success: true, count: opportunities.length };
+  } catch (err) {
+    console.error("[Mailing AI] Failed:", err);
+    return { success: false, message: "Échec de la génération." };
+  }
 }

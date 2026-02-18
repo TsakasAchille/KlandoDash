@@ -14,11 +14,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { 
   Sparkles, Loader2, Send, History, Mail, FileText, 
   SendHorizontal, AlertCircle, Trash2, ChevronRight,
-  Search, Filter, Inbox, Clock, Plus, User, Tag, Edit3, Save, X, Image as ImageIcon
+  Search, Filter, Inbox, Clock, Plus, User, Tag, Edit3, Save, X, Image as ImageIcon, CheckCircle2
 } from "lucide-react";
 import { MarketingEmail, createEmailDraftAction, moveEmailToTrashAction, updateMarketingEmailAction } from "../../mailing-actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface MailingTabProps {
   emails: MarketingEmail[];
@@ -37,6 +38,9 @@ export function MailingTab({
   onScan, 
   onSendEmail 
 }: MailingTabProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
   const [activeFolder, setActiveFolder] = useState<MailFolder>('SUGGESTIONS');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
@@ -44,6 +48,25 @@ export function MailingTab({
   const [isTrashing, setIsTrashing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ subject: '', content: '' });
+
+  // --- AUTO-SELECTION DEPUIS L'URL ---
+  useEffect(() => {
+    const mailIdFromUrl = searchParams.get("mailId");
+    if (mailIdFromUrl) {
+        const mail = emails.find(e => e.id === mailIdFromUrl);
+        if (mail) {
+            setSelectedEmailId(mailIdFromUrl);
+            // Déterminer le dossier
+            if (mail.status === 'DRAFT') {
+                setActiveFolder(mail.is_ai_generated ? 'SUGGESTIONS' : 'DRAFTS');
+            } else if (mail.status === 'SENT') {
+                setActiveFolder('SENT');
+            } else if (mail.status === 'TRASH') {
+                setActiveFolder('TRASH');
+            }
+        }
+    }
+  }, [searchParams, emails]);
 
   // Form state for new draft
   const [newDraft, setNewDraft] = useState({
@@ -88,6 +111,7 @@ export function MailingTab({
             toast.success("Brouillon créé !");
             setIsComposeOpen(false);
             setNewDraft({ recipient_email: '', recipient_name: '', subject: '', content: '', category: 'GENERAL' });
+            setSelectedEmailId(res.id as string);
             setActiveFolder('DRAFTS');
         }
     } catch (e) {
@@ -119,6 +143,7 @@ export function MailingTab({
         if (res.success) {
             toast.success("Converti en brouillon !");
             setActiveFolder('DRAFTS');
+            setSelectedEmailId(id); // On garde la sélection
         }
     } catch (e) {
         toast.error("Erreur");
@@ -143,11 +168,19 @@ export function MailingTab({
     }
   };
 
+  const insertImage = () => {
+    const url = prompt("Entrez l'URL de l'image :");
+    if (url) {
+        const imgTag = `<img src="${url}" alt="image" style="max-width: 100%; border-radius: 8px; margin: 10px 0;" />`;
+        setEditForm(prev => ({...prev, content: prev.content + "\n" + imgTag + "\n"}));
+    }
+  };
+
   return (
     <div className="flex gap-6 h-[750px] animate-in fade-in duration-500">
       
       {/* 1. SIDEBAR */}
-      <div className="w-64 flex flex-col gap-2">
+      <div className="w-64 flex flex-col gap-2 text-left">
         <Button 
           onClick={() => setIsComposeOpen(true)}
           className="w-full h-12 rounded-2xl bg-white text-slate-950 hover:bg-slate-200 font-black uppercase text-[10px] tracking-widest gap-3 shadow-xl mb-2 border-none transition-all active:scale-95 group"
@@ -253,7 +286,7 @@ export function MailingTab({
           ) : (
             <div className="h-full flex flex-col items-center justify-center opacity-20 italic text-white">
               <Inbox className="w-12 h-12 mb-4" />
-              <p className="text-[10px] font-black uppercase tracking-widest">Dossier vide</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-center">Dossier vide</p>
             </div>
           )}
         </div>
@@ -265,7 +298,7 @@ export function MailingTab({
           {/* Header Editor */}
           <div className="p-6 border-b border-slate-200 bg-white flex items-center justify-between">
             <div className="flex items-center gap-4 text-left">
-              <div className="p-2.5 bg-purple-500/10 rounded-xl text-purple-600">
+              <div className="p-2.5 bg-purple-500/10 rounded-xl text-purple-600 border border-purple-100 shadow-sm">
                 <FileText className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -273,12 +306,12 @@ export function MailingTab({
                     <Input 
                         value={editForm.subject}
                         onChange={(e) => setEditForm({...editForm, subject: e.target.value})}
-                        className="h-8 text-sm font-black uppercase tracking-tight bg-slate-100 border-slate-200 text-slate-900 min-w-[300px]"
+                        className="h-8 text-sm font-black uppercase tracking-tight bg-slate-100 border-slate-200 text-slate-900 min-w-[300px] outline-none ring-0 focus:ring-0"
                     />
                 ) : (
                     <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight line-clamp-1">{selectedEmail.subject}</h4>
                 )}
-                <p className="text-[10px] font-bold text-slate-500 uppercase">À: {selectedEmail.recipient_email}</p>
+                <p className="text-[10px] font-bold text-slate-500 uppercase mt-0.5">À: {selectedEmail.recipient_email}</p>
               </div>
             </div>
             <button onClick={() => setSelectedEmailId(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 shrink-0">
@@ -289,22 +322,32 @@ export function MailingTab({
           {/* Content Area */}
           <div className="flex-1 p-8 overflow-y-auto custom-scrollbar text-left bg-white">
             {isEditing ? (
-                <div className="h-full flex flex-col gap-4">
+                <div className="h-full flex flex-col gap-4 text-left">
                     <div className="flex items-center gap-2 mb-2">
-                        <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold text-slate-600 gap-2 border-slate-200">
-                            <ImageIcon className="w-3 h-3" /> Ajouter Image
+                        <Button onClick={insertImage} variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold text-slate-600 gap-2 border-slate-200 hover:bg-slate-50">
+                            <ImageIcon className="w-3.5 h-3.5" /> Ajouter Image
                         </Button>
-                        <p className="text-[9px] text-slate-400 font-medium italic">Note: Le support HTML est activé pour les images.</p>
+                        <p className="text-[9px] text-slate-400 font-medium italic text-left">Note: HTML supporté pour les images.</p>
                     </div>
                     <Textarea 
                         value={editForm.content}
                         onChange={(e) => setEditForm({...editForm, content: e.target.value})}
-                        className="flex-1 min-h-[400px] bg-slate-50 border-slate-200 text-slate-800 p-6 rounded-2xl font-medium leading-relaxed resize-none outline-none focus:ring-2 focus:ring-purple-500/20"
+                        className="flex-1 min-h-[400px] bg-slate-50 border-slate-200 text-slate-800 p-6 rounded-2xl font-medium leading-relaxed resize-none outline-none focus:ring-2 focus:ring-purple-500/20 text-left"
                     />
                 </div>
             ) : (
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-8 text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap italic shadow-sm min-h-full">
-                    {selectedEmail.content}
+                <div className="space-y-6 text-left">
+                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-8 text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap italic shadow-sm text-left">
+                        {selectedEmail.content}
+                    </div>
+                    {selectedEmail.image_url && (
+                        <div className="rounded-2xl overflow-hidden border-2 border-slate-100 shadow-lg max-w-[500px] mx-auto group relative bg-white p-2">
+                            <img src={selectedEmail.image_url} alt="Aperçu du trajet" className="w-full h-auto object-cover rounded-xl" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none text-left">
+                                <span className="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-black uppercase text-white border border-white/30 shadow-2xl">Carte du trajet capturée</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
           </div>
@@ -318,19 +361,19 @@ export function MailingTab({
                         size="sm" 
                         disabled={isTrashing}
                         onClick={() => handleMoveToTrash(selectedEmail.id)}
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl uppercase font-black text-[10px] tracking-widest"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl uppercase font-black text-[10px] tracking-widest transition-colors"
                     >
-                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Supprimer
+                        <Trash2 className="w-3.5 h-3.5 mr-2 text-red-500" /> <span>Supprimer</span>
                     </Button>
                 )}
                 {!selectedEmail.is_ai_generated && selectedEmail.status === 'DRAFT' && (
                     <Button 
                         variant="ghost" 
-                        size="sm"
+                        size="sm" 
                         onClick={() => setIsEditing(!isEditing)}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl uppercase font-black text-[10px] tracking-widest"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl uppercase font-black text-[10px] tracking-widest transition-colors"
                     >
-                        {isEditing ? <><X className="w-3.5 h-3.5 mr-2" /> Annuler</> : <><Edit3 className="w-3.5 h-3.5 mr-2" /> Éditer</>}
+                        {isEditing ? <><X className="w-3.5 h-3.5 mr-2 text-blue-600" /> Annuler</> : <><Edit3 className="w-3.5 h-3.5 mr-2 text-blue-600" /> Éditer</>}
                     </Button>
                 )}
             </div>
@@ -340,9 +383,9 @@ export function MailingTab({
                     <Button 
                         onClick={handleUpdateContent}
                         disabled={isSaving}
-                        className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest px-8 h-11 gap-2 shadow-lg"
+                        className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest px-8 h-11 gap-2 shadow-lg transition-all"
                     >
-                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-white" />}
                         Enregistrer
                     </Button>
                 )}
@@ -352,9 +395,9 @@ export function MailingTab({
                         <Button 
                             onClick={() => handleConvertToDraft(selectedEmail.id)}
                             disabled={isSaving}
-                            className="rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-[10px] uppercase tracking-widest px-8 h-11 gap-2 shadow-lg shadow-purple-500/20"
+                            className="rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-[10px] uppercase tracking-widest px-8 h-11 gap-2 shadow-lg shadow-purple-500/20 transition-all active:scale-95"
                         >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Plus className="w-4 h-4 text-white" />}
                             Créer Brouillon
                         </Button>
                     ) : (
@@ -364,7 +407,7 @@ export function MailingTab({
                                 disabled={sendingEmailId === selectedEmail.id}
                                 className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-black text-[10px] uppercase tracking-widest px-10 h-11 gap-2 shadow-xl active:scale-95 transition-all"
                             >
-                                {sendingEmailId === selectedEmail.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                {sendingEmailId === selectedEmail.id ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white" />}
                                 Envoyer maintenant
                             </Button>
                         )
@@ -377,66 +420,66 @@ export function MailingTab({
 
       {/* --- COMPOSE DIALOG --- */}
       <Dialog open={isComposeOpen} onOpenChange={setIsComposeOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-slate-950 border-white/10 rounded-[2.5rem] p-0 overflow-hidden outline-none shadow-2xl">
+        <DialogContent className="sm:max-w-[600px] bg-slate-50 border-slate-200 rounded-[2.5rem] p-0 overflow-hidden outline-none shadow-2xl">
             <div className="flex flex-col h-[600px]">
-                <DialogHeader className="p-8 pb-6 bg-white/[0.02] border-b border-white/5 text-left">
-                    <DialogTitle className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                        <Plus className="w-5 h-5 text-purple-500" /> Nouveau Message
+                <DialogHeader className="p-8 pb-6 bg-white border-b border-slate-100 text-left">
+                    <DialogTitle className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3 text-left">
+                        <Plus className="w-5 h-5 text-purple-600" /> Nouveau Message
                     </DialogTitle>
-                    <DialogDescription className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Rédiger un mail de croissance</DialogDescription>
+                    <DialogDescription className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 text-left">Rédiger un mail de croissance</DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 p-8 space-y-4 overflow-y-auto custom-scrollbar text-left">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-muted-foreground uppercase pl-1 flex items-center gap-2"><User className="w-3 h-3 text-purple-400"/> Destinataire (Email)</label>
+                <div className="flex-1 p-8 space-y-4 overflow-y-auto custom-scrollbar text-left bg-white">
+                    <div className="grid grid-cols-2 gap-4 text-left">
+                        <div className="space-y-1.5 text-left text-left">
+                            <label className="text-[10px] font-black text-slate-500 uppercase pl-1 flex items-center gap-2"><User className="w-3 h-3 text-purple-500"/> Destinataire (Email)</label>
                             <Input 
                                 value={newDraft.recipient_email}
                                 onChange={(e) => setNewDraft({...newDraft, recipient_email: e.target.value})}
                                 placeholder="ex: client@mail.com" 
-                                className="bg-white/5 border-white/10 rounded-xl text-white h-11 placeholder:text-white/20 focus:border-purple-500/50 transition-all outline-none" 
+                                className="bg-slate-50 border-slate-200 rounded-xl text-slate-900 h-11 placeholder:text-slate-300 focus:border-purple-500/50 transition-all outline-none ring-0 text-left" 
                             />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-muted-foreground uppercase pl-1">Nom (Optionnel)</label>
+                        <div className="space-y-1.5 text-left text-left">
+                            <label className="text-[10px] font-black text-slate-500 uppercase pl-1">Nom (Optionnel)</label>
                             <Input 
                                 value={newDraft.recipient_name}
                                 onChange={(e) => setNewDraft({...newDraft, recipient_name: e.target.value})}
                                 placeholder="ex: Mamadou" 
-                                className="bg-white/5 border-white/10 rounded-xl text-white h-11 placeholder:text-white/20 focus:border-purple-500/50 transition-all outline-none" 
+                                className="bg-slate-50 border-slate-200 rounded-xl text-slate-900 h-11 placeholder:text-slate-300 focus:border-purple-500/50 transition-all outline-none ring-0 text-left" 
                             />
                         </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-muted-foreground uppercase pl-1 flex items-center gap-2"><Tag className="w-3 h-3 text-purple-400"/> Objet du mail</label>
+                    <div className="space-y-1.5 text-left text-left">
+                        <label className="text-[10px] font-black text-slate-500 uppercase pl-1 flex items-center gap-2"><Tag className="w-3 h-3 text-purple-500"/> Objet du mail</label>
                         <Input 
                             value={newDraft.subject}
                             onChange={(e) => setNewDraft({...newDraft, subject: e.target.value})}
                             placeholder="Sujet accrocheur..." 
-                            className="bg-white/5 border-white/10 rounded-xl text-white h-11 placeholder:text-white/20 focus:border-purple-500/50 transition-all outline-none" 
+                            className="bg-slate-50 border-slate-200 rounded-xl text-slate-900 h-11 placeholder:text-slate-300 focus:border-purple-500/50 transition-all outline-none ring-0 text-left" 
                         />
                     </div>
 
-                    <div className="space-y-1.5 flex-1 flex flex-col">
-                        <label className="text-[10px] font-black text-muted-foreground uppercase pl-1">Message</label>
+                    <div className="space-y-1.5 flex-1 flex flex-col text-left">
+                        <label className="text-[10px] font-black text-muted-foreground uppercase pl-1 text-left text-slate-500">Message</label>
                         <Textarea 
                             value={newDraft.content}
                             onChange={(e) => setNewDraft({...newDraft, content: e.target.value})}
                             placeholder="Bonjour, nous avons trouvé..." 
-                            className="flex-1 bg-white/5 border-white/10 rounded-2xl text-white min-h-[200px] placeholder:text-white/20 focus:border-purple-500/50 transition-all resize-none p-4 outline-none font-medium text-left" 
+                            className="flex-1 bg-slate-50 border-slate-200 rounded-2xl text-slate-800 min-h-[200px] placeholder:text-slate-300 focus:border-purple-500/50 transition-all resize-none p-4 outline-none font-medium text-left ring-0" 
                         />
                     </div>
                 </div>
 
-                <DialogFooter className="p-6 bg-white/[0.02] border-t border-white/5 gap-3">
-                    <Button variant="ghost" onClick={() => setIsComposeOpen(false)} className="rounded-xl text-white font-black text-[10px] uppercase hover:bg-white/5 transition-colors">Annuler</Button>
+                <DialogFooter className="p-6 bg-slate-50 border-t border-slate-100 gap-3">
+                    <Button variant="ghost" onClick={() => setIsComposeOpen(false)} className="rounded-xl text-slate-500 font-black text-[10px] uppercase hover:bg-slate-100 transition-colors">Annuler</Button>
                     <Button 
                         onClick={handleSaveManualDraft}
                         disabled={isSaving}
                         className="rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-[10px] uppercase tracking-widest px-8 h-11 shadow-lg shadow-purple-500/20 transition-all active:scale-95"
                     >
-                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Plus className="w-4 h-4 text-white" />}
                         Créer le brouillon
                     </Button>
                 </DialogFooter>
@@ -475,13 +518,5 @@ function FolderItem({ icon: Icon, label, active, onClick, count, color }: any) {
         )}>{count}</span>
       )}
     </button>
-  );
-}
-
-function CheckCircle2(props: any) {
-  return (
-    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
   );
 }

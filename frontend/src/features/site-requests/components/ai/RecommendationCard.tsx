@@ -9,6 +9,8 @@ import {
   Calendar, Clock, CheckSquare, Trash2
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export type RecommendationType = 'TRACTION' | 'STRATEGIC' | 'ENGAGEMENT' | 'QUALITY';
 
@@ -61,11 +63,19 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+    try {
+      return format(new Date(date), 'dd MMM', { locale: fr });
+    } catch (e) {
+      return "Date invalide";
+    }
   };
 
   const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    try {
+      return format(new Date(date), 'HH:mm');
+    } catch (e) {
+      return "--:--";
+    }
   };
 
   return (
@@ -100,7 +110,7 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
                     <Check className="w-2 h-2" /> Validé
                 </span>
             ) : (
-                <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tabular-nums tracking-tighter">
+                <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tabular-nums tracking-tighter text-right">
                    Scan: {formatDate(reco.created_at)}
                 </span>
             )}
@@ -134,14 +144,14 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
                     <tbody className="divide-y divide-white/5">
                         {reco.content.top_trips.map((trip: any) => (
                             <tr key={trip.id} className="hover:bg-white/5 transition-colors group/row">
-                                <td className="px-3 py-2 font-bold text-white">
-                                    <div className="flex flex-col">
+                                <td className="px-3 py-2 font-bold text-white text-left">
+                                    <div className="flex flex-col text-left">
                                         <span>{trip.id.split('-').pop()}</span>
                                         <span className="text-[8px] text-green-500">+{trip.dist.toFixed(1)}km</span>
                                     </div>
                                 </td>
-                                <td className="px-3 py-2 text-muted-foreground">
-                                    <div className="flex flex-col">
+                                <td className="px-3 py-2 text-muted-foreground text-left">
+                                    <div className="flex flex-col text-left">
                                         <span className="font-bold text-white/80">{formatTime(trip.time)}</span>
                                         <span className="text-[8px] uppercase">{formatDate(trip.time)}</span>
                                     </div>
@@ -169,8 +179,8 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
 
         {/* Other Types Content */}
         {!isTraction && (
-            <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <div className="bg-white/5 p-3 rounded-xl border border-white/5 text-left">
+                <p className="text-[11px] text-muted-foreground leading-relaxed text-left">
                     {reco.content.alert || reco.content.reason || "Action recommandée par le système."}
                 </p>
             </div>

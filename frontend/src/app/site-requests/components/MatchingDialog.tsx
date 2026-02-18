@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +16,8 @@ import { SiteTripRequest } from "@/types/site-request";
 import { PublicTrip } from "../hooks/useSiteRequestAI";
 import dynamic from "next/dynamic";
 import { GeocodingService } from "@/features/site-requests/services/geocoding.service";
-import { createEmailDraftAction } from "@/app/marketing/mailing-actions";
+import { createEmailDraftAction, uploadMarketingImageAction } from "@/app/marketing/mailing-actions";
+import html2canvas from "html2canvas";
 
 // IMPORT DU NOUVEAU COMPOSANT FEATURES (Architecture SOLID)
 const ComparisonMap = dynamic(() => import("@/features/site-requests/components/maps/ComparisonMap").then(mod => mod.ComparisonMap), { 
@@ -54,6 +55,7 @@ export function MatchingDialog({
 }: MatchingDialogProps) {
   const [clientPolyline, setClientPolyline] = useState<string | null>(null);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Calcul de l'itinéraire théorique du client (en pointillés sur la carte)
   useEffect(() => {
@@ -99,25 +101,49 @@ export function MatchingDialog({
   const handleSaveDraft = async () => {
     if (!aiMessage || !selectedRequest) return;
     setIsSavingDraft(true);
+    
+    let imageUrl = "";
+
     try {
+      // 1. CAPTURE DE LA CARTE
+      if (mapContainerRef.current) {
+        // Option useCORS indispensable pour les tuiles de carte externes
+        const canvas = await html2canvas(mapContainerRef.current, {
+          useCORS: true,
+          scale: 2, // Meilleure qualité
+          backgroundColor: '#f8fafc'
+        });
+        const base64Image = canvas.toDataURL("image/png");
+        
+        // 2. UPLOAD VERS STORAGE
+        const uploadRes = await uploadMarketingImageAction(base64Image);
+        if (uploadRes.success) {
+          imageUrl = uploadRes.url || "";
+        }
+      }
+
+      // 3. CRÉATION DU BROUILLON (Action manuelle -> Dossier Brouillons)
       const res = await createEmailDraftAction({
         recipient_email: selectedRequest.contact_info,
         recipient_name: "",
         subject: `Klando : Trajet trouvé pour ${selectedRequest.origin_city}`,
         content: aiMessage,
         category: 'MATCH_FOUND',
-        is_ai_generated: true
+        is_ai_generated: false, // On le met à false ici
+        image_url: imageUrl
       });
+
       if (res.success) {
-        toast.success("Brouillon enregistré !", {
+        toast.success("Brouillon enregistré avec la carte !", {
           action: {
             label: "Voir",
-            onClick: () => (window.location.href = "/marketing?tab=mailing")
+            onClick: () => (window.location.href = `/marketing?tab=mailing&mailId=${res.id}`)
           }
         });
       }
     } catch (error) {
-      toast.error("Erreur lors de la sauvegarde");
+      console.error("[MATCHING DIALOG] Error saving draft:", error);
+      toast.error("Erreur lors de la capture ou sauvegarde");
     } finally {
       setIsSavingDraft(false);
     }
@@ -127,12 +153,12 @@ export function MatchingDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { if(!o) onClose(); }}>
-      <DialogContent aria-describedby={undefined} className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-slate-50 border-border shadow-2xl p-0 gap-0">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-slate-50 border-border shadow-2xl p-0 gap-0 text-left">
         <div className="p-6 space-y-6">
           <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-klando-gold/10 rounded-xl shadow-inner"><Sparkles className="w-5 h-5 text-klando-gold" /></div>
-              <div>
+              <div className="text-left">
                 <DialogTitle className="text-xl font-black uppercase tracking-tight text-klando-dark">Yobé Matching</DialogTitle>
                 {matchedTrip && (
                   <div className="flex items-center gap-1.5 text-[9px] font-bold text-green-600 uppercase tracking-widest mt-0.5">
@@ -152,7 +178,7 @@ export function MatchingDialog({
           <div className="space-y-6">
             <div className="bg-white rounded-3xl p-6 border border-border relative overflow-hidden shadow-sm">
               <div className="absolute top-0 right-0 p-4 opacity-[0.03]"><Globe className="w-32 h-32 text-klando-dark" /></div>
-              <div className="relative z-10">
+              <div className="relative z-10 text-left">
                 <div className="text-[10px] font-black uppercase tracking-[0.3em] text-klando-burgundy mb-2">Fiche Client</div>
                 <div className="text-xl text-klando-dark font-black uppercase tracking-tight">{selectedRequest.origin_city} ➜ {selectedRequest.destination_city}</div>
                 <div className="flex gap-5 mt-4 text-xs font-black text-slate-600">
@@ -162,22 +188,24 @@ export function MatchingDialog({
               </div>
             </div>
 
-            {/* MAP COMPARISON */}
-            <ComparisonMap 
-              key={`${matchedTrip?.id || "no-trip"}-${clientPolyline ? 'route' : 'no-route'}`}
-              clientOrigin={mapProps?.clientOrigin || null}
-              clientDestination={mapProps?.clientDestination || null}
-              clientPolyline={clientPolyline}
-              driverTrip={mapProps?.driverTrip || null}
-              isLoading={aiLoading}
-            />
+            {/* MAP COMPARISON CONTAINER FOR SCREENSHOT */}
+            <div ref={mapContainerRef} className="rounded-3xl overflow-hidden border border-border shadow-inner bg-slate-100">
+                <ComparisonMap 
+                key={`${matchedTrip?.id || "no-trip"}-${clientPolyline ? 'route' : 'no-route'}`}
+                clientOrigin={mapProps?.clientOrigin || null}
+                clientDestination={mapProps?.clientDestination || null}
+                clientPolyline={clientPolyline}
+                driverTrip={mapProps?.driverTrip || null}
+                isLoading={aiLoading}
+                />
+            </div>
 
             {/* PROPOSED TRIP BOX */}
             {!aiLoading && matchedTrip && (
               <Card className="border-2 border-klando-gold bg-klando-gold/5 overflow-hidden shadow-md animate-in zoom-in-95 duration-300">
                 <div className="bg-klando-gold px-4 py-1.5 flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-klando-dark">Trajet Proposé par l&apos;IA</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-klando-dark text-left">Trajet Proposé par l&apos;IA</span>
                     {matchedTrip.origin_dist !== undefined && (
                       <Badge variant="outline" className={cn(
                         "text-[8px] font-black border-none px-1.5 py-0",
@@ -191,7 +219,7 @@ export function MatchingDialog({
                 </div>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start">
-                    <div className="space-y-3">
+                    <div className="space-y-3 text-left">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-klando-gold/20 flex items-center justify-center">
                           <MapPin className="w-4 h-4 text-klando-gold" />
@@ -224,17 +252,17 @@ export function MatchingDialog({
                 </div>
               ) : (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                  <div className="bg-white rounded-3xl p-6 border border-border shadow-sm">
+                  <div className="bg-white rounded-3xl p-6 border border-border shadow-sm text-left">
                     <div className="flex items-center gap-2 mb-4 text-blue-600">
                       <Info className="w-4 h-4" /><h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Analyse Interne</h4>
                     </div>
-                    <div className="prose prose-sm max-w-full text-slate-700 font-medium whitespace-pre-wrap">
+                    <div className="prose prose-sm max-w-full text-slate-700 font-medium whitespace-pre-wrap text-left">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{processedComment}</ReactMarkdown>
                     </div>
                   </div>
 
                   {aiMessage && (
-                    <div className="bg-green-50 rounded-3xl p-6 border border-green-100 shadow-sm border-l-4 border-l-green-500">
+                    <div className="bg-green-50 rounded-3xl p-6 border border-green-100 shadow-sm border-l-4 border-l-green-500 text-left">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2 text-green-700">
                           <MessageSquare className="w-4 h-4" /><h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Message WhatsApp Prêt</h4>
@@ -248,14 +276,14 @@ export function MatchingDialog({
                             className="h-8 bg-blue-100 text-blue-700 font-bold gap-2 text-[10px] uppercase hover:bg-blue-200 border border-blue-200 shadow-sm"
                           >
                             {isSavingDraft ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-                            Brouillon
+                            Brouillon + Photo
                           </Button>
                           <Button size="sm" variant="ghost" className="h-8 text-green-700 font-bold gap-2 text-[10px] uppercase hover:bg-green-100" onClick={() => { navigator.clipboard.writeText(aiMessage); toast.success("Copié !"); }}>
                             <Copy className="w-3.5 h-3.5" /> Copier
                           </Button>
                         </div>
                       </div>
-                      <div className="bg-white/60 p-4 rounded-2xl border border-green-100 text-sm font-medium text-slate-800 leading-relaxed italic whitespace-pre-wrap">{aiMessage}</div>
+                      <div className="bg-white/60 p-4 rounded-2xl border border-green-100 text-sm font-medium text-slate-800 leading-relaxed italic whitespace-pre-wrap text-left">{aiMessage}</div>
                     </div>
                   )}
                 </div>

@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const FlowMap = dynamic(() => import("../FlowMap"), { 
   ssr: false,
@@ -120,10 +122,10 @@ export function RequestHistoryTab({ requests, flowStats }: RequestHistoryTabProp
               {paginatedRequests.length > 0 ? (
                 paginatedRequests.map((req) => (
                   <TableRow key={req.id} className="border-slate-100 hover:bg-slate-50 transition-colors group">
-                    <TableCell className="text-[11px] font-bold text-slate-500 py-4 tabular-nums pl-8">
-                      {new Date(req.created_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    <TableCell className="text-[11px] font-bold text-slate-500 py-4 tabular-nums pl-8 text-left">
+                      {format(new Date(req.created_at), 'dd MMM, HH:mm', { locale: fr })}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-left">
                       <span className="text-xs font-black text-slate-900 uppercase">{req.contact_info}</span>
                     </TableCell>
                     <TableCell className="text-left">
@@ -133,7 +135,7 @@ export function RequestHistoryTab({ requests, flowStats }: RequestHistoryTabProp
                             </span>
                             <span className="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1 mt-0.5">
                                 <Clock className="w-2.5 h-2.5" /> 
-                                {req.desired_date ? new Date(req.desired_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' }) : "Dès que possible"}
+                                {req.desired_date ? format(new Date(req.desired_date), 'dd MMMM yyyy', { locale: fr }) : "Dès que possible"}
                             </span>
                         </div>
                     </TableCell>

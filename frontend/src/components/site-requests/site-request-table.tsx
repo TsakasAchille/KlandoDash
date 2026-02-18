@@ -44,7 +44,7 @@ interface SiteRequestTableProps {
 
 const ITEMS_PER_PAGE = 10;
 
-const statusConfig: Record<SiteTripRequestStatus, { label: string; color: string; background: string; }> = {
+const statusConfig: Record<string, { label: string; color: string; background: string; }> = {
   NEW: { label: "Nouveau", color: "text-blue-400", background: "bg-blue-500/10" },
   REVIEWED: { label: "Examiné", color: "text-purple-400", background: "bg-purple-500/10" },
   CONTACTED: { label: "Contacté", color: "text-green-400", background: "bg-green-500/10" },
@@ -65,31 +65,30 @@ export function SiteRequestTable({
   onSelectOnMap,
   scanningId,
 }: SiteRequestTableProps) {
-  const [showOnlyUpcoming, setShowOnlyUpcoming] = useState(false);
+  const [showOnlyUpcoming, setShowOnlyUpcoming] = useState(true); // Par défaut uniquement à venir
 
   // Stable Filter and Sort
   const filteredRequests = useMemo(() => {
     let result = [...requests];
 
-    // 1. Filtrer par statut (Insensible à la casse par sécurité)
+    // 1. Filtrer par statut
     if (statusFilter !== "all") {
-      result = result.filter((r) => r.status.toUpperCase() === statusFilter.toUpperCase());
+      result = result.filter((r) => r.status === statusFilter);
     }
 
     // 2. Filtrer par date (Si activé)
     if (showOnlyUpcoming) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      result = result.filter(r => !r.desired_date || new Date(r.desired_date) >= today);
+      // On garde si pas de date OU si date >= aujourd'hui
+      result = result.filter(r => !r.desired_date || new Date(r.desired_date).getTime() >= today.getTime());
     }
 
     // 3. Trier par date de soumission (Plus récent en premier)
     return result.sort((a, b) => {
       const timeA = new Date(a.created_at).getTime();
       const timeB = new Date(b.created_at).getTime();
-      if (timeB !== timeA) return timeB - timeA;
-      
-      return b.id.localeCompare(a.id);
+      return timeB - timeA;
     });
   }, [requests, statusFilter, showOnlyUpcoming]);
 
@@ -106,12 +105,20 @@ export function SiteRequestTable({
   const paginatedRequests = filteredRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: requests.length };
-    for (const status in statusConfig) {
-      counts[status] = requests.filter(r => r.status.toUpperCase() === status.toUpperCase()).length;
-    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // On calcule les compteurs en respectant le filtre de date actuel pour être cohérent
+    const baseRequests = showOnlyUpcoming 
+      ? requests.filter(r => !r.desired_date || new Date(r.desired_date).getTime() >= today.getTime())
+      : requests;
+
+    const counts: Record<string, number> = { all: baseRequests.length };
+    Object.keys(statusConfig).forEach(status => {
+      counts[status] = baseRequests.filter(r => r.status === status).length;
+    });
     return counts;
-  }, [requests]);
+  }, [requests, showOnlyUpcoming]);
 
   const formatRelativeDate = (date: string) => {
     try { return formatDistanceToNow(new Date(date), { addSuffix: true, locale: fr }); } 
@@ -137,7 +144,7 @@ export function SiteRequestTable({
                 {Object.entries(statusConfig).map(([status, { label }]) => (
                   <TabsTrigger key={status} value={status} className="flex items-center gap-2">
                     {label} 
-                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-bold", statusConfig[status as SiteTripRequestStatus].background, statusConfig[status as SiteTripRequestStatus].color)}>
+                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-bold", statusConfig[status].background, statusConfig[status].color)}>
                       {statusCounts[status]}
                     </span>
                   </TabsTrigger>
@@ -186,7 +193,7 @@ export function SiteRequestTable({
         )}
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50 hover:bg-slate-50">
+            <TableRow className="bg-slate-50 hover:bg-slate-50 border-b border-slate-200">
               <TableHead className="font-bold py-4 text-slate-600">Client</TableHead>
               <TableHead className="hidden sm:table-cell font-bold text-slate-600 text-left">Trajet</TableHead>
               <TableHead className="hidden lg:table-cell text-right font-bold text-slate-600">Soumis il y a</TableHead>
@@ -208,7 +215,7 @@ export function SiteRequestTable({
                 const isEmail = contact.includes('@');
                 const ContactIcon = isEmail ? Mail : Phone;
                 return (
-                  <TableRow key={request.id} className="transition-colors group hover:bg-slate-50 border-slate-100">
+                  <TableRow key={request.id} className="transition-colors group hover:bg-slate-50 border-b border-slate-100 last:border-0">
                     <TableCell className="py-4">
                       <div className="flex items-center gap-3 min-w-0">
                          <div className={cn("p-2 rounded-xl border shadow-sm transition-transform group-hover:scale-110", isEmail ? "bg-blue-50 text-blue-500 border-blue-100" : "bg-green-50 text-green-600 border-green-100")}>
@@ -216,7 +223,7 @@ export function SiteRequestTable({
                         </div>
                         <div className="flex flex-col min-w-0 text-left">
                           <div className="font-bold text-slate-900 truncate">{contact}</div>
-                           <div className="font-black uppercase text-[10px] sm:hidden mt-1 text-klando-gold truncate">
+                           <div className="font-black uppercase text-[10px] sm:hidden mt-1 text-klando-gold truncate text-left">
                             {request.origin_city} ➜ {request.destination_city}
                           </div>
                         </div>
@@ -248,7 +255,7 @@ export function SiteRequestTable({
                         </div>
 
                         {request.status === 'VALIDATED' ? (
-                          <div className="text-green-600 font-black uppercase text-[10px] pr-2 flex items-center gap-1.5 text-right">
+                          <div className="text-green-600 font-black uppercase text-[10px] pr-2 flex items-center gap-1.5 text-right font-black">
                             <CheckCircle className="w-3.5 h-3.5" /> Terminé
                           </div>
                         ) : (
