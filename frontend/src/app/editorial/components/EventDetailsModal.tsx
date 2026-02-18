@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { getMarketingComments, addMarketingComment } from "@/app/marketing/actions/editorial";
+import { getMarketingComments, addMarketingComment } from "../actions";
 import { useSession } from "next-auth/react";
 
 interface EventDetailsModalProps {

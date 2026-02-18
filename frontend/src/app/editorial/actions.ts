@@ -1,7 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/lib/supabase";
-import { MarketingComment } from "../types";
+import { MarketingComment } from "../marketing/types";
 import { revalidatePath } from "next/cache";
 
 /**
