@@ -50,7 +50,15 @@ export function ComparisonMap({
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
-    const map = L.map(mapContainerRef.current, { zoomControl: true, scrollWheelZoom: false }).setView([14.6928, -17.4467], 10);
+    
+    // preferCanvas: true est CRITIQUE pour html2canvas. 
+    // Cela dessine les polylines sur un canvas au lieu de SVG, ce qui évite les décalages d'offset à la capture.
+    const map = L.map(mapContainerRef.current, { 
+      zoomControl: true, 
+      scrollWheelZoom: false,
+      preferCanvas: true 
+    }).setView([14.6928, -17.4467], 10);
+    
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", { attribution: '&copy; CartoDB positron' }).addTo(map);
     mapRef.current = map;
     return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
