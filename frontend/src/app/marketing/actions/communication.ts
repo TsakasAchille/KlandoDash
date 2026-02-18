@@ -38,7 +38,7 @@ export async function generateCommIdeasAction() {
           content: i.content,
           visual_suggestion: i.visual,
           platform: 'GENERAL',
-          status: 'NEW'
+          status: 'DRAFT'
         }))
       );
     }
@@ -84,7 +84,7 @@ export async function generateSocialPostAction(platform: CommPlatform, topic: st
       content: data.content,
       hashtags: data.hashtags,
       visual_suggestion: data.visual,
-      status: 'NEW'
+      status: 'DRAFT'
     }]).select().single();
 
     if (error) throw error;
@@ -145,7 +145,7 @@ export async function generatePendingRequestsPostAction(platform: CommPlatform) 
       content: data.content,
       hashtags: data.hashtags,
       visual_suggestion: data.visual,
-      status: 'NEW'
+      status: 'DRAFT'
     }]).select().single();
 
     if (error) throw error;

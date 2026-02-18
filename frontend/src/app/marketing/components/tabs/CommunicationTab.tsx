@@ -46,7 +46,7 @@ export function CommunicationTab({
 }: CommunicationTabProps) {
   const [topic, setTopic] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<CommPlatform>("INSTAGRAM");
-  const [statusFilter, setStatusFilter] = useState<CommStatus | 'ALL'>('NEW');
+  const [statusFilter, setStatusFilter] = useState<CommStatus | 'ALL'>('DRAFT');
   
   // États de sélection et édition
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -64,6 +64,8 @@ export function CommunicationTab({
   const filteredComms = useMemo(() => {
     return comms.filter(c => {
         if (statusFilter === 'ALL') return true;
+        // Treat NEW as DRAFT for display consistency if any old NEW exist
+        if (statusFilter === 'DRAFT' && c.status === 'NEW') return true;
         return c.status === statusFilter;
     });
   }, [comms, statusFilter]);
@@ -158,6 +160,7 @@ export function CommunicationTab({
         const base64 = reader.result as string;
         const res = await uploadMarketingImageAction(base64);
         if (res.success && res.url) {
+            console.log("FILE UPLOADED SUCCESS. URL:", res.url);
             setEditForm(prev => ({ ...prev, image_url: res.url }));
             toast.success("Fichier attaché !");
         } else {
@@ -409,7 +412,7 @@ export function CommunicationTab({
 
                                 <Button onClick={handleSaveEdit} disabled={isUpdating} className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-2xl gap-2 font-black uppercase text-[10px] shadow-lg shadow-green-500/20 mt-4">
                                     {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                    Enregistrer et passer en Brouillon
+                                    Enregistrer le Brouillon
                                 </Button>
                             </div>
                         </div>
@@ -505,7 +508,6 @@ export function CommunicationTab({
             
             <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)} className="bg-white/5 p-1 rounded-xl border border-white/10">
                 <TabsList className="bg-transparent border-none h-8">
-                    <TabsTrigger value="NEW" className="text-[9px] font-black uppercase rounded-lg px-3 data-[state=active]:bg-blue-600">Nouveau</TabsTrigger>
                     <TabsTrigger value="DRAFT" className="text-[9px] font-black uppercase rounded-lg px-3 data-[state=active]:bg-purple-600">Brouillons</TabsTrigger>
                     <TabsTrigger value="PUBLISHED" className="text-[9px] font-black uppercase rounded-lg px-3 data-[state=active]:bg-green-600">Publiés</TabsTrigger>
                     <TabsTrigger value="TRASH" className="text-[9px] font-black uppercase rounded-lg px-3 data-[state=active]:bg-red-600">Corbeille</TabsTrigger>
@@ -553,12 +555,11 @@ export function CommunicationTab({
                                 <TableCell>
                                     <span className={cn(
                                         "text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border",
-                                        comm.status === 'NEW' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                                        comm.status === 'DRAFT' ? "bg-purple-50 text-purple-600 border-purple-100" :
+                                        (comm.status === 'DRAFT' || comm.status === 'NEW') ? "bg-purple-50 text-purple-600 border-purple-100" :
                                         comm.status === 'PUBLISHED' ? "bg-green-50 text-green-600 border-green-100" :
                                         "bg-red-50 text-red-600 border-red-100"
                                     )}>
-                                        {comm.status}
+                                        {comm.status === 'NEW' ? 'DRAFT' : comm.status}
                                     </span>
                                 </TableCell>
                                 <TableCell className="text-right pr-8">
