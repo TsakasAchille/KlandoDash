@@ -134,17 +134,24 @@ export function SiteRequestsMap({
   // Trajets réellement matchés pour la liste de droite avec enrichissement des distances
   const matchedTrips = useMemo(() => {
     const matches = selectedRequest?.matches || [];
+    const matchedIds = matches.map(m => m.trip_id);
+    
+    // On combine les matches du scanner et le match IA
+    if (aiMatchedTripId && !matchedIds.includes(aiMatchedTripId)) {
+      matchedIds.push(aiMatchedTripId);
+    }
+
     return trips
-      .filter(t => matches.some(m => m.trip_id === t.trip_id))
+      .filter(t => matchedIds.includes(t.trip_id))
       .map(t => {
         const matchInfo = matches.find(m => m.trip_id === t.trip_id);
         return {
           ...t,
-          origin_distance: (matchInfo as any)?.origin_distance,
-          destination_distance: (matchInfo as any)?.destination_distance
+          origin_distance: (matchInfo as any)?.origin_distance || 0,
+          destination_distance: (matchInfo as any)?.destination_distance || 0
         };
       });
-  }, [trips, selectedRequest]);
+  }, [trips, selectedRequest, aiMatchedTripId]);
 
   return (
     <div className="space-y-6">
