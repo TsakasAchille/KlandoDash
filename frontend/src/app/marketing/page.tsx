@@ -1,6 +1,7 @@
 import { getSiteTripRequests, getSiteTripRequestsStats, getPublicPendingTrips, getPublicCompletedTrips } from "@/lib/queries/site-requests";
 import { getTripsForMap } from "@/lib/queries/trips";
 import { getStoredRecommendationsAction } from "@/app/admin/ai/actions";
+import { getMarketingInsightsAction } from "./actions";
 import { MarketingClient } from "./marketing-client";
 import { LayoutGrid, CircleDot, Clock, CheckCircle, Globe, ShieldCheck, TrendingUp, Zap, Target } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
@@ -16,16 +17,18 @@ export default async function MarketingPage() {
     redirect("/login");
   }
 
-  const [requests, stats, publicPending, publicCompleted, tripsForMap, recoResult] = await Promise.all([
+  const [requests, stats, publicPending, publicCompleted, tripsForMap, recoResult, insightResult] = await Promise.all([
     getSiteTripRequests({ limit: 100 }),
     getSiteTripRequestsStats(),
     getPublicPendingTrips(),
     getPublicCompletedTrips(),
     getTripsForMap(100),
     getStoredRecommendationsAction(),
+    getMarketingInsightsAction(),
   ]);
 
   const recommendations = recoResult.success ? recoResult.data : [];
+  const insights = insightResult.success ? insightResult.data : [];
   const pendingCount = recommendations.filter((r: any) => r.status === 'PENDING').length;
 
   return (
@@ -81,6 +84,7 @@ export default async function MarketingPage() {
       <MarketingClient 
         initialRequests={requests} 
         initialRecommendations={recommendations}
+        initialInsights={insights}
         publicPending={publicPending}
         publicCompleted={publicCompleted}
         tripsForMap={tripsForMap}
