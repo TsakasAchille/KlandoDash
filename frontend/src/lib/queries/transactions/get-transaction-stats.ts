@@ -41,10 +41,7 @@ export async function getTransactionsStats(): Promise<TransactionStats> {
 /**
  * Cash flow : entrées vs sorties (uniquement transactions SUCCESS)
  */
-export async function getCashFlowStats(options: {
-  from?: string;
-  to?: string;
-} = {}): Promise<CashFlowStats> {
+export async function getCashFlowStats(): Promise<CashFlowStats> {
   const supabase = createServerClient();
 
   // On utilise la version finale simplifiée
@@ -61,10 +58,7 @@ export async function getCashFlowStats(options: {
 /**
  * Revenus Klando : marge sur les bookings avec transaction
  */
-export async function getRevenueStats(options: {
-  from?: string;
-  to?: string;
-} = {}): Promise<RevenueStats> {
+export async function getRevenueStats(): Promise<RevenueStats> {
   const supabase = createServerClient();
 
   const { data, error } = await supabase.rpc("get_klando_stats_final");
