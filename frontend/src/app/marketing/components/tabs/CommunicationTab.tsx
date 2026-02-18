@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import {
   Twitter, Send, Image as ImageIcon, History,
   PlusCircle, Target, Trash2, RotateCcw,
   Edit3, Save, X, MapPin, Wand2, Paperclip, FileText, CheckCircle2,
-  ExternalLink, Search, Filter, Inbox
+  ExternalLink, Search, Filter, Inbox, LayoutGrid, Type, ImagePlus
 } from "lucide-react";
 import { MarketingComm, CommPlatform, CommStatus } from "../../types";
 import { 
@@ -25,13 +25,14 @@ import { uploadMarketingImageAction } from "../../actions/mailing";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface CommunicationTabProps {
   comms: MarketingComm[];
   isScanning: boolean;
   onGenerateIdeas: () => void;
-  onGeneratePost: (platform: CommPlatform, topic: string) => void;
-  onPromotePending: (platform: CommPlatform) => void;
+  onGeneratePost: (platform: CommPlatform, topic: string) => Promise<MarketingComm | null>;
+  onPromotePending: (platform: CommPlatform) => Promise<MarketingComm | null>;
 }
 
 export function CommunicationTab({ 
@@ -49,6 +50,8 @@ export function CommunicationTab({
   // États de sélection et édition
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showGenerator, setShowGenerator] = useState(false);
+  const [createMode, setCreateMode] = useState<'TEXT' | 'IMAGE' | null>(null);
   
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
@@ -73,17 +76,22 @@ export function CommunicationTab({
     return null;
   }, [comms, selectedId]);
 
+  // Détection automatique : Si le contenu est très court (ou vide) mais qu'il y a une image -> C'est un post VISUEL
+  const isVisualPost = activePost && activePost.image_url && (!activePost.content || activePost.content.length < 50);
+
   const platforms: { id: CommPlatform; label: string; icon: any; color: string }[] = [
     { id: 'TIKTOK', label: 'TikTok', icon: Music, color: 'text-pink-500' },
     { id: 'INSTAGRAM', label: 'Instagram', icon: Instagram, color: 'text-purple-500' },
     { id: 'X', label: 'X / Twitter', icon: Twitter, color: 'text-blue-400' },
   ];
 
-  const handleStartManual = () => {
+  const handleStartManual = (mode: 'TEXT' | 'IMAGE') => {
     setEditingId("NEW_MANUAL");
     setSelectedId(null);
+    setShowGenerator(false);
+    setCreateMode(mode);
     setEditForm({ 
-        title: "Nouvelle publication", 
+        title: mode === 'IMAGE' ? "Nouveau Post Visuel" : "Nouvelle publication", 
         content: "", 
         hashtags: [],
         visual_suggestion: "",
@@ -94,6 +102,12 @@ export function CommunicationTab({
 
   const handleStartEdit = (comm: MarketingComm) => {
     setEditingId(comm.id);
+    setShowGenerator(false);
+    
+    // Détection du mode à l'édition
+    const isVis = comm.image_url && (!comm.content || comm.content.length < 50);
+    setCreateMode(isVis ? 'IMAGE' : 'TEXT');
+
     setEditForm({ 
         title: comm.title, 
         content: comm.content, 
@@ -108,15 +122,24 @@ export function CommunicationTab({
     if (!editingId) return;
     setIsUpdating(true);
     try {
+        // Pour un post image, on s'assure que le contenu reste vide
+        const finalData = { 
+            ...editForm, 
+            content: createMode === 'IMAGE' ? "" : editForm.content,
+            status: 'DRAFT' as CommStatus
+        };
+
         if (editingId === "NEW_MANUAL") {
-            const res = await createMarketingCommAction({ ...editForm, status: 'DRAFT' });
+            const res = await createMarketingCommAction(finalData);
             if (res.success && res.post) {
                 toast.success("Publication créée !");
-                setSelectedId(res.post.id);
+                setStatusFilter('DRAFT');
+                setTimeout(() => setSelectedId(res.post.id), 100);
                 setEditingId(null);
+                setCreateMode(null);
             }
         } else {
-            const res = await updateMarketingCommAction(editingId, { ...editForm, status: 'DRAFT' });
+            const res = await updateMarketingCommAction(editingId, finalData);
             if (res.success) {
                 toast.success("Publication mise à jour !");
                 setEditingId(null);
@@ -163,18 +186,102 @@ export function CommunicationTab({
     };
   };
 
+  // --- ACTIONS IA AVEC AUTO-SÉLECTION ---
+  const handleGenerate = async () => {
+    const post = await onGeneratePost(selectedPlatform, topic);
+    if (post) {
+        setStatusFilter('DRAFT');
+        setTimeout(() => setSelectedId(post.id), 100);
+        setShowGenerator(false);
+    }
+  };
+
+  const handlePromote = async () => {
+    const post = await onPromotePending(selectedPlatform);
+    if (post) {
+        setStatusFilter('DRAFT');
+        setTimeout(() => setSelectedId(post.id), 100);
+        setShowGenerator(false);
+    }
+  };
+
+  const handleTrash = async (id: string) => {
+    const res = await trashMarketingCommAction(id);
+    if (res.success) toast.success("Placé dans la corbeille");
+  };
+
+  const handleRestore = async (id: string) => {
+    const res = await restoreMarketingCommAction(id);
+    if (res.success) toast.success("Restauré en brouillon");
+  };
+
+  const handleDeletePerm = async (id: string) => {
+    if (!confirm("Supprimer définitivement ?")) return;
+    const res = await deleteMarketingCommAction(id);
+    if (res.success) {
+        toast.success("Supprimé définitivement");
+        if (selectedId === id) setSelectedId(null);
+    }
+  };
+
   return (
     <div className="flex gap-6 h-[800px] animate-in fade-in duration-500 text-left">
       
       {/* 1. LEFT SIDEBAR: LIST OF POSTS */}
       <div className="w-80 flex flex-col gap-4">
         <div className="space-y-3">
-            <Button 
-                onClick={handleStartManual}
-                className="w-full h-12 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[10px] tracking-widest gap-3 shadow-lg shadow-purple-200"
-            >
-                <PlusCircle className="w-4 h-4" /> Créer un post
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button className="h-12 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[9px] tracking-widest gap-2 shadow-lg shadow-purple-200">
+                            <PlusCircle className="w-3.5 h-3.5" /> Créer
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2 rounded-2xl border-slate-200 shadow-2xl" align="start">
+                        <div className="space-y-1">
+                            <button 
+                                onClick={() => handleStartManual('TEXT')}
+                                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group text-left"
+                            >
+                                <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                                    <Type className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase text-slate-900 leading-tight">Post Standard</p>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Texte prioritaire</p>
+                                </div>
+                            </button>
+                            <button 
+                                onClick={() => handleStartManual('IMAGE')}
+                                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group text-left"
+                            >
+                                <div className="p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
+                                    <ImagePlus className="w-4 h-4 text-purple-600" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase text-slate-900 leading-tight">Post Visuel</p>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Image / PNG Star</p>
+                                </div>
+                            </button>
+                        </div>
+                    </PopoverContent>
+                </Popover>
+
+                <Button 
+                    variant="outline"
+                    onClick={() => {
+                        setShowGenerator(true);
+                        setSelectedId(null);
+                        setEditingId(null);
+                    }}
+                    className={cn(
+                        "h-12 rounded-2xl font-black uppercase text-[9px] tracking-widest gap-2 border-2",
+                        showGenerator ? "border-purple-600 bg-purple-50 text-purple-700" : "border-slate-100 text-slate-400 hover:bg-slate-50"
+                    )}
+                >
+                    <Sparkles className="w-3.5 h-3.5" /> IA Radar
+                </Button>
+            </div>
             
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
@@ -206,6 +313,7 @@ export function CommunicationTab({
                             onClick={() => {
                                 setSelectedId(comm.id);
                                 setEditingId(null);
+                                setShowGenerator(false);
                             }}
                             className={cn(
                                 "p-3 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden",
@@ -221,7 +329,7 @@ export function CommunicationTab({
                                 <span className="text-[8px] font-black uppercase text-slate-400">{comm.platform}</span>
                             </div>
                             <p className="text-[10px] font-black text-slate-900 uppercase truncate">{comm.title}</p>
-                            <p className="text-[9px] text-slate-500 line-clamp-1 italic mt-0.5">{comm.content}</p>
+                            <p className="text-[9px] text-slate-500 line-clamp-1 italic mt-0.5">{comm.content || "(Visuel PNG)"}</p>
                             
                             {comm.image_url && (
                                 <div className="absolute right-2 bottom-2">
@@ -242,7 +350,7 @@ export function CommunicationTab({
         </div>
       </div>
 
-      {/* 2. MAIN WORKSPACE: EDITOR OR GENERATOR */}
+      {/* 2. MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col gap-6">
         
         {editingId ? (
@@ -254,54 +362,66 @@ export function CommunicationTab({
                             <Edit3 className="w-5 h-5" />
                         </div>
                         <div>
-                            <h4 className="text-sm font-black uppercase text-slate-900">Éditeur de Publication</h4>
-                            <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Contenu en cours de rédaction</p>
+                            <h4 className="text-sm font-black uppercase text-slate-900">Éditeur : {createMode === 'IMAGE' ? 'Post Visuel' : 'Post Standard'}</h4>
+                            <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Rédaction en cours</p>
                         </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => setEditingId(null)} className="rounded-full hover:bg-slate-100">
+                    <Button variant="ghost" size="icon" onClick={() => { setEditingId(null); setCreateMode(null); }} className="rounded-full hover:bg-slate-100">
                         <X className="w-5 h-5" />
                     </Button>
                 </div>
 
                 <div className="flex-1 p-8 overflow-y-auto custom-scrollbar space-y-6">
                     <div className="grid grid-cols-12 gap-6">
-                        <div className="col-span-8 space-y-4">
+                        <div className={cn("space-y-4", createMode === 'IMAGE' ? "col-span-4" : "col-span-8")}>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase text-slate-400 pl-1">Titre de la campagne</label>
+                                <label className="text-[10px] font-black uppercase text-slate-400 pl-1">Titre du post</label>
                                 <Input 
                                     value={editForm.title || ""} 
                                     onChange={(e) => setEditForm({...editForm, title: e.target.value})}
                                     className="h-12 bg-slate-50 border-slate-200 font-black uppercase text-sm rounded-xl focus:ring-purple-500/20"
-                                    placeholder="Ex: PROMO WEEKEND DAKAR"
+                                    placeholder={createMode === 'IMAGE' ? "Nom de l'affiche..." : "Ex: PROMO WEEKEND DAKAR"}
                                 />
                             </div>
-                            <div className="space-y-1.5 relative">
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className="text-[10px] font-black uppercase text-slate-400 pl-1">Légende / Texte du post</label>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        onClick={handleRefineContent}
-                                        disabled={isRefining || !editForm.content}
-                                        className="h-6 text-[8px] font-black uppercase text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-full gap-1"
-                                    >
-                                        {isRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                                        Magic Fix IA
-                                    </Button>
+                            
+                            {/* ON MASQUE LE TEXTE SI C'EST UN POST VISUEL */}
+                            {createMode !== 'IMAGE' && (
+                                <div className="space-y-1.5 relative animate-in fade-in slide-in-from-top-2">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 pl-1">Texte / Légende</label>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            onClick={handleRefineContent}
+                                            disabled={isRefining || !editForm.content}
+                                            className="h-6 text-[8px] font-black uppercase text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-full gap-1"
+                                        >
+                                            {isRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                                            Magic Fix IA
+                                        </Button>
+                                    </div>
+                                    <Textarea 
+                                        value={editForm.content || ""} 
+                                        onChange={(e) => setEditForm({...editForm, content: e.target.value})}
+                                        className="min-h-[350px] bg-slate-50 border-slate-200 leading-relaxed text-sm p-6 rounded-2xl resize-none focus:ring-purple-500/20"
+                                        placeholder="Écrivez votre message ici..."
+                                    />
                                 </div>
-                                <Textarea 
-                                    value={editForm.content || ""} 
-                                    onChange={(e) => setEditForm({...editForm, content: e.target.value})}
-                                    className="min-h-[300px] bg-slate-50 border-slate-200 leading-relaxed text-sm p-6 rounded-2xl resize-none focus:ring-purple-500/20"
-                                    placeholder="Écrivez votre message ici..."
-                                />
-                            </div>
+                            )}
+
+                            {createMode === 'IMAGE' && (
+                                <div className="p-10 bg-purple-50/30 border border-dashed border-purple-200 rounded-3xl text-center space-y-3 animate-in zoom-in-95">
+                                    <ImagePlus className="w-10 h-10 text-purple-300 mx-auto" />
+                                    <p className="text-[10px] font-black uppercase text-purple-600">Mode Visuel Activé</p>
+                                    <p className="text-[9px] text-slate-400 font-medium">Dans ce mode, seul le titre et l&apos;image sont conservés. Le texte est désactivé pour garantir un rendu PNG pur.</p>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="col-span-4 space-y-6">
+                        <div className={cn("space-y-6", createMode === 'IMAGE' ? "col-span-8" : "col-span-4")}>
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase text-slate-400 pl-1">Plateforme cible</label>
-                                <div className="grid grid-cols-1 gap-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 pl-1">Plateforme</label>
+                                <div className={cn("grid gap-2", createMode === 'IMAGE' ? "grid-cols-3" : "grid-cols-1")}>
                                     {platforms.map((p) => (
                                         <button
                                             key={p.id}
@@ -320,25 +440,31 @@ export function CommunicationTab({
                                 </div>
                             </div>
 
-                            <div className="p-6 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200 space-y-4 text-center">
-                                <label className="text-[10px] font-black uppercase text-slate-400">Visuel & Média</label>
+                            <div className={cn(
+                                "p-6 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200 space-y-4 text-center transition-all",
+                                createMode === 'IMAGE' ? "aspect-video bg-purple-50/20 border-purple-200" : "aspect-square"
+                            )}>
+                                <label className="text-[10px] font-black uppercase text-purple-600">Fichier PNG / Image Star</label>
                                 {editForm.image_url ? (
-                                    <div className="relative aspect-square rounded-2xl overflow-hidden shadow-lg group">
-                                        <img src={editForm.image_url} alt="Preview" className="w-full h-full object-cover" />
+                                    <div className="relative h-full w-full rounded-2xl overflow-hidden shadow-lg group bg-slate-900">
+                                        <img src={editForm.image_url} alt="Preview" className="w-full h-full object-contain" />
                                         <button 
                                             onClick={() => setEditForm({...editForm, image_url: null})}
-                                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
-                                            <X className="w-3 h-3" />
+                                            <X className="w-4 h-4" />
                                         </button>
                                     </div>
                                 ) : (
                                     <div 
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="aspect-square bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-slate-100 hover:border-purple-300 transition-all"
+                                        className="h-full w-full bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-slate-100 hover:border-purple-300 transition-all group"
                                     >
-                                        {isUploading ? <Loader2 className="w-6 h-6 animate-spin text-purple-600" /> : <Paperclip className="w-6 h-6 text-slate-300" />}
-                                        <span className="text-[9px] font-black uppercase text-slate-400">Ajouter Photo/PDF</span>
+                                        {isUploading ? <Loader2 className="w-10 h-10 text-purple-600 animate-spin" /> : <ImagePlus className="w-10 h-10 text-slate-300 group-hover:text-purple-400 transition-colors" />}
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black uppercase text-slate-900">Sélectionner l&apos;image</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest italic">PNG ou JPG recommandé</p>
+                                        </div>
                                     </div>
                                 )}
                                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*,application/pdf" />
@@ -350,18 +476,21 @@ export function CommunicationTab({
                 <div className="p-6 border-t border-slate-100 bg-white">
                     <Button 
                         onClick={handleSaveEdit} 
-                        disabled={isUpdating} 
+                        disabled={isUpdating || (createMode === 'IMAGE' && !editForm.image_url)} 
                         className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-2xl gap-2 font-black uppercase text-[11px] shadow-lg shadow-green-100"
                     >
                         {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        Enregistrer et passer en Brouillon
+                        {createMode === 'IMAGE' && !editForm.image_url ? "Attachez une image d'abord" : "Enregistrer le Brouillon"}
                     </Button>
                 </div>
             </Card>
         ) : activePost ? (
-            /* --- MODE APERÇU --- */
-            <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden">
-                <Card className="col-span-7 bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-y-auto custom-scrollbar p-10 space-y-8 relative">
+            /* --- MODE APERÇU (DISTINGUE VISUEL VS TEXTE) --- */
+            <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden animate-in zoom-in-95 duration-300">
+                <Card className={cn(
+                    "bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-y-auto custom-scrollbar p-10 space-y-8 relative transition-all",
+                    isVisualPost ? "col-span-4" : "col-span-7"
+                )}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-600">
@@ -372,14 +501,24 @@ export function CommunicationTab({
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{activePost.platform} • {activePost.status}</p>
                             </div>
                         </div>
-                        <Button variant="outline" onClick={() => handleStartEdit(activePost)} className="rounded-xl border-slate-200 font-black uppercase text-[10px] h-10 px-6 gap-2">
-                            <Edit3 className="w-3.5 h-3.5" /> Éditer le post
-                        </Button>
+                        {!isVisualPost && (
+                            <Button variant="outline" onClick={() => handleStartEdit(activePost)} className="rounded-xl border-slate-200 font-black uppercase text-[10px] h-10 px-6 gap-2">
+                                <Edit3 className="w-3.5 h-3.5" /> Éditer
+                            </Button>
+                        )}
                     </div>
 
-                    <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 relative">
+                    <div className={cn(
+                        "bg-slate-50 rounded-[2rem] p-8 border border-slate-100 relative",
+                        isVisualPost ? "p-4 border-dashed" : "p-8"
+                    )}>
                         <div className="absolute -top-3 -left-3 bg-blue-600 text-white p-1.5 rounded-lg shadow-lg z-10"><PlusCircle className="w-4 h-4" /></div>
-                        <p className="text-base text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">{activePost.content}</p>
+                        <p className={cn(
+                            "text-slate-800 leading-relaxed font-medium whitespace-pre-wrap text-left",
+                            isVisualPost ? "text-[10px] italic opacity-60 text-center" : "text-base"
+                        )}>
+                            {activePost.content || "Post visuel pur (aucune légende)"}
+                        </p>
                         
                         {activePost.hashtags && activePost.hashtags.length > 0 && (
                             <div className="mt-8 flex flex-wrap gap-2">
@@ -390,25 +529,30 @@ export function CommunicationTab({
                         )}
                     </div>
 
-                    {activePost.visual_suggestion && !activePost.image_url && (
-                        <div className="flex items-start gap-4 bg-orange-50/50 p-6 rounded-[2rem] border border-orange-100 border-l-4 border-l-orange-400">
-                            <ImageIcon className="w-5 h-5 text-orange-500 shrink-0 mt-1" />
-                            <p className="text-xs text-orange-800 italic leading-relaxed">
-                                <strong>Idée de visuel IA :</strong> {activePost.visual_suggestion}
-                            </p>
-                        </div>
+                    {isVisualPost && (
+                        <Button variant="outline" onClick={() => handleStartEdit(activePost)} className="w-full rounded-2xl border-slate-200 font-black uppercase text-[10px] h-12 gap-2">
+                            <Edit3 className="w-3.5 h-3.5" /> Modifier le visuel / titre
+                        </Button>
                     )}
                 </Card>
 
-                <div className="col-span-5 flex flex-col gap-6">
+                <div className={cn(
+                    "flex flex-col gap-6 transition-all",
+                    isVisualPost ? "col-span-8" : "col-span-5"
+                )}>
                     {activePost.image_url ? (
-                        <Card className="flex-1 bg-slate-900 border-none rounded-[2.5rem] shadow-2xl overflow-hidden relative group">
+                        <Card className="flex-1 bg-slate-900 border-none rounded-[3rem] shadow-2xl overflow-hidden relative group">
                             <img src={activePost.image_url} alt="Post Visual" className="w-full h-full object-contain" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                                 <Button size="sm" className="bg-white text-slate-900 hover:bg-white rounded-full font-black uppercase text-[10px] h-10 px-6 gap-2" asChild>
                                     <a href={activePost.image_url} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> Plein écran</a>
                                 </Button>
                             </div>
+                            {isVisualPost && (
+                                <div className="absolute top-6 left-6">
+                                    <span className="bg-purple-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase shadow-xl border border-white/20">Post Visuel (PNG)</span>
+                                </div>
+                            )}
                         </Card>
                     ) : (
                         <div className="flex-1 bg-slate-100 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center p-10 text-center gap-4 opacity-50">
@@ -420,65 +564,75 @@ export function CommunicationTab({
                 </div>
             </div>
         ) : (
-            /* --- MODE GÉNÉRATEUR IA (Default) --- */
-            <Card className="flex-1 bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col">
-                <div className="p-10 flex flex-col items-center justify-center text-center space-y-8 flex-1">
-                    <div className="w-20 h-20 bg-purple-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-purple-200 animate-bounce duration-[2000ms]">
-                        <Sparkles className="w-10 h-10 text-white" />
-                    </div>
-                    <div className="space-y-2 max-w-md">
-                        <h4 className="text-2xl font-black uppercase tracking-tight text-slate-900">Générateur de Posts IA</h4>
-                        <p className="text-sm font-medium text-slate-500 leading-relaxed italic">Sélectionnez un post à gauche ou utilisez le moteur IA ci-dessous pour créer du contenu viral.</p>
-                    </div>
-
-                    <div className="w-full max-w-xl grid grid-cols-3 gap-4 pt-4">
-                        {platforms.map(p => (
-                            <Button 
-                                key={p.id}
-                                variant="outline"
-                                onClick={() => setSelectedPlatform(p.id)}
-                                className={cn(
-                                    "h-24 flex flex-col gap-2 rounded-2xl border-2 transition-all",
-                                    selectedPlatform === p.id ? "bg-purple-50 border-purple-600 text-purple-700 shadow-inner" : "bg-white border-slate-100 text-slate-400 hover:border-purple-200 hover:bg-slate-50"
-                                )}
-                            >
-                                <p.icon className="w-6 h-6" />
-                                <span className="text-[10px] font-black uppercase">{p.label}</span>
-                            </Button>
-                        ))}
-                    </div>
-
-                    <div className="w-full max-w-xl space-y-4 pt-4">
-                        <div className="relative">
-                            <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
-                            <Input 
-                                value={topic}
-                                onChange={(e) => setTopic(e.target.value)}
-                                placeholder="Quel est le thème de votre post ?"
-                                className="h-14 pl-12 bg-slate-50 border-slate-200 rounded-2xl text-sm font-medium shadow-inner focus:ring-purple-500/20"
-                            />
+            /* --- MODE GÉNÉRATEUR IA --- */
+            <div className={cn("flex-1", !showGenerator && "hidden")}>
+                <Card className="h-full bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col animate-in fade-in duration-500">
+                    <div className="p-10 flex flex-col items-center justify-center text-center space-y-8 flex-1">
+                        <div className="w-20 h-20 bg-purple-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-purple-200 animate-bounce duration-[2000ms]">
+                            <Sparkles className="w-10 h-10 text-white" />
                         </div>
-                        <div className="flex gap-3">
-                            <Button 
-                                onClick={() => onGeneratePost(selectedPlatform, topic)}
-                                disabled={!topic || isScanning}
-                                className="flex-1 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl gap-3 font-black uppercase text-[11px] shadow-lg shadow-purple-200"
-                            >
-                                {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                                Générer via IA
-                            </Button>
-                            <Button 
-                                onClick={() => onPromotePending(selectedPlatform)}
-                                disabled={isScanning}
-                                variant="outline"
-                                className="h-14 px-6 rounded-2xl border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 gap-2 font-black uppercase text-[10px]"
-                            >
-                                <MapPin className="w-4 h-4" />
-                            </Button>
+                        <div className="space-y-2 max-w-md">
+                            <h4 className="text-2xl font-black uppercase tracking-tight text-slate-900">Générateur de Posts IA</h4>
+                            <p className="text-sm font-medium text-slate-500 leading-relaxed italic">Utilisez le moteur IA ci-dessous pour créer du contenu viral.</p>
+                        </div>
+
+                        <div className="w-full max-w-xl grid grid-cols-3 gap-4 pt-4">
+                            {platforms.map(p => (
+                                <Button 
+                                    key={p.id}
+                                    variant="outline"
+                                    onClick={() => setSelectedPlatform(p.id)}
+                                    className={cn(
+                                        "h-24 flex flex-col gap-2 rounded-2xl border-2 transition-all",
+                                        selectedPlatform === p.id ? "bg-purple-50 border-purple-600 text-purple-700 shadow-inner" : "bg-white border-slate-100 text-slate-400 hover:border-purple-200 hover:bg-slate-50"
+                                    )}
+                                >
+                                    <p.icon className="w-6 h-6" />
+                                    <span className="text-[10px] font-black uppercase">{p.label}</span>
+                                </Button>
+                            ))}
+                        </div>
+
+                        <div className="w-full max-w-xl space-y-4 pt-4">
+                            <div className="relative">
+                                <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
+                                <Input 
+                                    value={topic}
+                                    onChange={(e) => setTopic(e.target.value)}
+                                    placeholder="Quel est le thème de votre post ?"
+                                    className="h-14 pl-12 bg-slate-50 border-slate-200 rounded-2xl text-sm font-medium shadow-inner focus:ring-purple-500/20"
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <Button 
+                                    onClick={handleGenerate}
+                                    disabled={!topic || isScanning}
+                                    className="flex-1 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl gap-3 font-black uppercase text-[11px] shadow-lg shadow-purple-200"
+                                >
+                                    {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                                    Générer via IA
+                                </Button>
+                                <Button 
+                                    onClick={handlePromote}
+                                    disabled={isScanning}
+                                    variant="outline"
+                                    title="Promouvoir les trajets en attente"
+                                    className="h-14 px-6 rounded-2xl border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 gap-2 font-black uppercase text-[10px]"
+                                >
+                                    <MapPin className="w-4 h-4" />
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </Card>
+                </Card>
+            </div>
+        )}
+
+        {!editingId && !activePost && !showGenerator && (
+            <div className="flex-1 flex flex-col items-center justify-center opacity-20 text-slate-900 gap-4">
+                <LayoutGrid className="w-20 h-20" />
+                <p className="text-sm font-black uppercase tracking-[0.3em]">Sélectionnez un élément pour commencer</p>
+            </div>
         )}
       </div>
     </div>

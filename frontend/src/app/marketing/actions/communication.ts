@@ -44,6 +44,7 @@ export async function generateCommIdeasAction() {
     }
 
     revalidatePath("/marketing");
+    revalidatePath("/editorial");
     return { success: true, count: ideas.length };
   } catch (err) {
     console.error(err);
@@ -90,6 +91,7 @@ export async function generateSocialPostAction(platform: CommPlatform, topic: st
     if (error) throw error;
 
     revalidatePath("/marketing");
+    revalidatePath("/editorial");
     return { success: true, post };
   } catch (err) {
     return { success: false };
@@ -151,6 +153,7 @@ export async function generatePendingRequestsPostAction(platform: CommPlatform) 
     if (error) throw error;
 
     revalidatePath("/marketing");
+    revalidatePath("/editorial");
     return { success: true, post };
   } catch (err) {
     console.error(err);
@@ -187,6 +190,7 @@ export async function createMarketingCommAction(data: Partial<MarketingComm>) {
   }
   
   revalidatePath("/marketing");
+  revalidatePath("/editorial");
   return { success: true, post };
 }
 
@@ -233,6 +237,7 @@ export async function updateMarketingCommAction(id: string, updates: Partial<Mar
   }
   
   revalidatePath("/marketing");
+  revalidatePath("/editorial");
   return { success: true };
 }
 
@@ -266,6 +271,7 @@ export async function deleteMarketingCommAction(id: string) {
   if (error) return { success: false };
   
   revalidatePath("/marketing");
+  revalidatePath("/editorial");
   return { success: true };
 }
 

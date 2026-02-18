@@ -92,21 +92,29 @@ export function EditorialClient({
   const handleGenerateSocialPost = async (platform: CommPlatform, topic: string) => {
     setIsScanningComm(true);
     const res = await generateSocialPostAction(platform, topic);
-    if (res.success) {
+    if (res.success && res.post) {
       toast.success(`Publication ${platform} générée !`);
       router.refresh();
+      setIsScanningComm(false);
+      return res.post;
     }
     setIsScanningComm(false);
+    return null;
   };
 
   const handlePromotePending = async (platform: CommPlatform) => {
     setIsScanningComm(true);
     const res = await generatePendingRequestsPostAction(platform);
-    if (res.success) {
+    if (res.success && res.post) {
       toast.success(`Publication promotionnelle ${platform} générée !`);
       router.refresh();
+      setIsScanningComm(false);
+      return res.post;
+    } else {
+      toast.error(res?.message || "Échec de la génération.");
     }
     setIsScanningComm(false);
+    return null;
   };
 
   const handleSendEmail = async (id: string) => {
