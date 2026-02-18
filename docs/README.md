@@ -16,6 +16,7 @@ Ce dossier contient la documentation détaillée de l'architecture, des modules 
 - [WEBSITE_INTEGRATION.md](./WEBSITE_INTEGRATION.md) : **Guide Critique** pour l'agent du site vitrine (Lecture/Écriture Supabase).
 
 ### Spécifications Modules
+- [MARKETING_MODULE.md](./MARKETING_MODULE.md) : **Cockpit Marketing & Croissance** (Observatoire, IA Social, Mailing).
 - [MAP_PAGE_SPEC.md](./MAP_PAGE_SPEC.md) : Fonctionnement de la carte interactive.
 - [plan-support-technique.md](./plan-support-technique.md) : Plan de mise en œuvre du support.
 - [plan-authentification-google.md](./plan-authentification-google.md) : Détails du flux OAuth.
