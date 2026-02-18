@@ -18,6 +18,7 @@ export interface MarketingEmail {
   recipient_email: string;
   recipient_name: string | null;
   status: EmailStatus;
+  is_ai_generated: boolean;
   created_at: string;
   sent_at: string | null;
 }
@@ -31,16 +32,14 @@ export async function generateMailingSuggestionsAction() {
 
   const supabase = createAdminClient();
 
-  // 1. Récupérer les données cibles pour l'IA
   const { data: prospects } = await supabase.from('site_trip_requests').select('*').eq('status', 'NEW').limit(10);
-  const { data: inactiveUsers } = await supabase.from('users').select('*').limit(10); // Simplifié pour le test
+  const { data: inactiveUsers } = await supabase.from('users').select('*').limit(10);
 
   const dataContext = {
     prospects: prospects?.map(p => ({ email: p.contact_info, from: p.origin_city, to: p.destination_city })),
     inactive_users: inactiveUsers?.map(u => ({ name: u.display_name, email: u.email }))
   };
 
-  // 2. Demander à l'IA de suggérer des opportunités
   const prompt = `
     Analyse ces prospects et utilisateurs. Identifie 3 opportunités de mailing prioritaires.
     Pour chaque opportunité, fournis un objet JSON STRICT avec cette structure exacte :
@@ -60,7 +59,6 @@ export async function generateMailingSuggestionsAction() {
   try {
     const aiResponse = await askKlandoAI(prompt, { context: dataContext });
     
-    // Nettoyer la réponse pour extraire le JSON
     const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("IA n'a pas renvoyé de JSON valide");
     
@@ -70,7 +68,8 @@ export async function generateMailingSuggestionsAction() {
       const { error } = await supabase.from('dash_marketing_emails').insert(
         opportunities.map((o: any) => ({
           ...o,
-          status: 'DRAFT'
+          status: 'DRAFT',
+          is_ai_generated: true
         }))
       );
       if (error) throw error;
@@ -88,37 +87,41 @@ export async function generateMailingSuggestionsAction() {
  * Envoie un email marketing via Resend
  */
 export async function sendMarketingEmailAction(id: string) {
-  // ... existing code ...
-}
-
-/**
- * Crée un brouillon d'email manuellement (ou via Aide IA)
- */
-export async function createEmailDraftAction(data: {
-  recipient_email: string;
-  recipient_name?: string;
-  subject: string;
-  content: string;
-  category: EmailCategory;
-}) {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   const supabase = createAdminClient();
-  const { data: draft, error } = await supabase
+  const { data: email, error: fetchError } = await supabase
     .from('dash_marketing_emails')
-    .insert([{
-      ...data,
-      status: 'DRAFT',
-      created_at: new Date().toISOString()
-    }])
-    .select()
+    .select('*')
+    .eq('id', id)
     .single();
 
-  if (error) return { success: false, message: "Échec de sauvegarde" };
-  
-  revalidatePath("/marketing");
-  return { success: true, id: draft.id };
+  if (fetchError || !email) return { success: false, message: "Email introuvable" };
+
+  const res = await sendEmail({
+    to: email.recipient_email,
+    subject: email.subject,
+    react: React.createElement("div", { 
+      style: { fontFamily: 'sans-serif', padding: '20px', color: '#333' }
+    }, email.content)
+  });
+
+  if (res.success) {
+    await supabase.from('dash_marketing_emails').update({
+      status: 'SENT',
+      sent_at: new Date().toISOString(),
+      resend_id: res.id
+    }).eq('id', id);
+    revalidatePath("/marketing");
+    return { success: true };
+  } else {
+    await supabase.from('dash_marketing_emails').update({
+      status: 'FAILED',
+      error_message: JSON.stringify(res.error)
+    }).eq('id', id);
+    return { success: false, message: "Échec de l'envoi" };
+  }
 }
 
 /**
@@ -140,6 +143,56 @@ export async function moveEmailToTrashAction(id: string) {
 }
 
 /**
+ * Met à jour un email (contenu, sujet ou flag AI)
+ */
+export async function updateMarketingEmailAction(id: string, updates: Partial<MarketingEmail>) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from('dash_marketing_emails')
+    .update(updates)
+    .eq('id', id);
+
+  if (error) return { success: false };
+  revalidatePath("/marketing");
+  return { success: true };
+}
+
+/**
+ * Crée un brouillon d'email manuellement (ou via Aide IA)
+ */
+export async function createEmailDraftAction(data: {
+  recipient_email: string;
+  recipient_name?: string;
+  subject: string;
+  content: string;
+  category: EmailCategory;
+  is_ai_generated?: boolean;
+}) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
+  const supabase = createAdminClient();
+  const { data: draft, error } = await supabase
+    .from('dash_marketing_emails')
+    .insert([{
+      ...data,
+      status: 'DRAFT',
+      is_ai_generated: data.is_ai_generated || false,
+      created_at: new Date().toISOString()
+    }])
+    .select()
+    .single();
+
+  if (error) return { success: false, message: "Échec de sauvegarde" };
+  
+  revalidatePath("/marketing");
+  return { success: true, id: draft.id };
+}
+
+/**
  * Récupère l'historique de mailing
  */
 export async function getMarketingEmailsAction() {
@@ -151,7 +204,7 @@ export async function getMarketingEmailsAction() {
     .from('dash_marketing_emails')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(20);
+    .limit(50);
 
   if (error) return { success: false, data: [] };
   return { success: true, data: data as MarketingEmail[] };

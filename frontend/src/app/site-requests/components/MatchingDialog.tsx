@@ -105,7 +105,8 @@ export function MatchingDialog({
         recipient_name: "",
         subject: `Klando : Trajet trouvé pour ${selectedRequest.origin_city}`,
         content: aiMessage,
-        category: 'MATCH_FOUND'
+        category: 'MATCH_FOUND',
+        is_ai_generated: true
       });
       if (res.success) {
         toast.success("Brouillon enregistré !", {

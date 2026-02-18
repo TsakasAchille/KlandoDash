@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -14,9 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { 
   Sparkles, Loader2, Send, History, Mail, FileText, 
   SendHorizontal, AlertCircle, Trash2, ChevronRight,
-  Search, Filter, Inbox, Clock, Plus, User, Tag
+  Search, Filter, Inbox, Clock, Plus, User, Tag, Edit3, Save, X, Image as ImageIcon
 } from "lucide-react";
-import { MarketingEmail, createEmailDraftAction, moveEmailToTrashAction } from "../../mailing-actions";
+import { MarketingEmail, createEmailDraftAction, moveEmailToTrashAction, updateMarketingEmailAction } from "../../mailing-actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -42,6 +42,8 @@ export function MailingTab({
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTrashing, setIsTrashing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ subject: '', content: '' });
 
   // Form state for new draft
   const [newDraft, setNewDraft] = useState({
@@ -53,10 +55,8 @@ export function MailingTab({
   });
 
   const filteredEmails = emails.filter(e => {
-    // Les suggestions sont les DRAFT créés par l'IA (On peut les distinguer par la présence d'un flag ou la catégorie si on veut plus tard)
-    // Ici on affiche tous les DRAFT dans SUGGESTIONS par défaut
-    if (activeFolder === 'SUGGESTIONS') return e.status === 'DRAFT' && e.category !== 'GENERAL';
-    if (activeFolder === 'DRAFTS') return e.status === 'DRAFT' && e.category === 'GENERAL';
+    if (activeFolder === 'SUGGESTIONS') return e.status === 'DRAFT' && e.is_ai_generated;
+    if (activeFolder === 'DRAFTS') return e.status === 'DRAFT' && !e.is_ai_generated;
     if (activeFolder === 'SENT') return e.status === 'SENT';
     if (activeFolder === 'FAILED') return e.status === 'FAILED';
     if (activeFolder === 'TRASH') return e.status === 'TRASH';
@@ -65,6 +65,14 @@ export function MailingTab({
 
   const selectedEmail = emails.find(e => e.id === selectedEmailId);
 
+  // Initialiser le formulaire d'édition quand on sélectionne un mail
+  useEffect(() => {
+    if (selectedEmail) {
+        setEditForm({ subject: selectedEmail.subject, content: selectedEmail.content });
+        setIsEditing(false);
+    }
+  }, [selectedEmailId]);
+
   const handleSaveManualDraft = async () => {
     if (!newDraft.recipient_email || !newDraft.subject) {
         toast.error("Email et sujet obligatoires");
@@ -72,7 +80,10 @@ export function MailingTab({
     }
     setIsSaving(true);
     try {
-        const res = await createEmailDraftAction(newDraft);
+        const res = await createEmailDraftAction({
+            ...newDraft,
+            is_ai_generated: false
+        });
         if (res.success) {
             toast.success("Brouillon créé !");
             setIsComposeOpen(false);
@@ -101,10 +112,41 @@ export function MailingTab({
     }
   };
 
+  const handleConvertToDraft = async (id: string) => {
+    setIsSaving(true);
+    try {
+        const res = await updateMarketingEmailAction(id, { is_ai_generated: false });
+        if (res.success) {
+            toast.success("Converti en brouillon !");
+            setActiveFolder('DRAFTS');
+        }
+    } catch (e) {
+        toast.error("Erreur");
+    } finally {
+        setIsSaving(false);
+    }
+  };
+
+  const handleUpdateContent = async () => {
+    if (!selectedEmailId) return;
+    setIsSaving(true);
+    try {
+        const res = await updateMarketingEmailAction(selectedEmailId, editForm);
+        if (res.success) {
+            toast.success("Brouillon mis à jour");
+            setIsEditing(false);
+        }
+    } catch (e) {
+        toast.error("Erreur de mise à jour");
+    } finally {
+        setIsSaving(false);
+    }
+  };
+
   return (
-    <div className="flex gap-6 h-[700px] animate-in fade-in duration-500">
+    <div className="flex gap-6 h-[750px] animate-in fade-in duration-500">
       
-      {/* 1. GMAIL SIDEBAR */}
+      {/* 1. SIDEBAR */}
       <div className="w-64 flex flex-col gap-2">
         <Button 
           onClick={() => setIsComposeOpen(true)}
@@ -121,14 +163,14 @@ export function MailingTab({
           className="w-full h-10 rounded-xl border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 font-black uppercase text-[10px] tracking-widest gap-3 mb-4 transition-all"
         >
           {isScanning ? <Loader2 className="w-4 h-4 animate-spin text-purple-400" /> : <Sparkles className="w-4 h-4 text-purple-400" />}
-          <span className="text-purple-400 group-hover:text-purple-300">Scan Opportunités</span>
+          <span className="text-purple-400">Scan Opportunités</span>
         </Button>
 
         <div className="space-y-1">
           <FolderItem 
             icon={Sparkles} 
             label="Suggestions ✨" 
-            count={emails.filter(e => e.status === 'DRAFT' && e.category !== 'GENERAL').length}
+            count={emails.filter(e => e.status === 'DRAFT' && e.is_ai_generated).length}
             active={activeFolder === 'SUGGESTIONS'}
             onClick={() => setActiveFolder('SUGGESTIONS')}
             color="text-purple-400"
@@ -136,7 +178,7 @@ export function MailingTab({
           <FolderItem 
             icon={FileText} 
             label="Brouillons" 
-            count={emails.filter(e => e.status === 'DRAFT' && e.category === 'GENERAL').length}
+            count={emails.filter(e => e.status === 'DRAFT' && !e.is_ai_generated).length}
             active={activeFolder === 'DRAFTS'}
             onClick={() => setActiveFolder('DRAFTS')}
             color="text-blue-400"
@@ -167,14 +209,14 @@ export function MailingTab({
         </div>
       </div>
 
-      {/* 2. GMAIL LIST */}
+      {/* 2. LIST */}
       <div className={cn(
         "flex-1 bg-card/30 border border-white/5 rounded-[2rem] overflow-hidden flex flex-col transition-all duration-500 shadow-2xl",
         selectedEmailId ? "flex-[0.4]" : "flex-1"
       )}>
-        <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+        <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between text-left">
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground pl-2">{activeFolder}</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pr-2">
             <Search className="w-3.5 h-3.5 text-muted-foreground/40" />
             <Filter className="w-3.5 h-3.5 text-muted-foreground/40" />
           </div>
@@ -217,55 +259,118 @@ export function MailingTab({
         </div>
       </div>
 
-      {/* 3. GMAIL VIEW / EDITOR */}
+      {/* 3. EDITOR / VIEWER */}
       {selectedEmail && (
-        <div className="flex-1 bg-slate-900 border border-white/10 rounded-[2rem] overflow-hidden flex flex-col animate-in slide-in-from-right-4 duration-500 shadow-2xl">
-          <div className="p-6 border-b border-white/10 bg-white/[0.03] flex items-center justify-between">
+        <div className="flex-1 bg-slate-50 border border-white/10 rounded-[2rem] overflow-hidden flex flex-col animate-in slide-in-from-right-4 duration-500 shadow-2xl">
+          {/* Header Editor */}
+          <div className="p-6 border-b border-slate-200 bg-white flex items-center justify-between">
             <div className="flex items-center gap-4 text-left">
-              <div className="p-2.5 bg-purple-500/10 rounded-xl text-purple-500">
+              <div className="p-2.5 bg-purple-500/10 rounded-xl text-purple-600">
                 <FileText className="w-5 h-5" />
               </div>
-              <div>
-                <h4 className="text-sm font-black text-white uppercase tracking-tight line-clamp-1">{selectedEmail.subject}</h4>
-                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase">À: {selectedEmail.recipient_email}</p>
+              <div className="flex-1 min-w-0">
+                {isEditing ? (
+                    <Input 
+                        value={editForm.subject}
+                        onChange={(e) => setEditForm({...editForm, subject: e.target.value})}
+                        className="h-8 text-sm font-black uppercase tracking-tight bg-slate-100 border-slate-200 text-slate-900 min-w-[300px]"
+                    />
+                ) : (
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight line-clamp-1">{selectedEmail.subject}</h4>
+                )}
+                <p className="text-[10px] font-bold text-slate-500 uppercase">À: {selectedEmail.recipient_email}</p>
               </div>
             </div>
-            <button onClick={() => setSelectedEmailId(null)} className="p-2 hover:bg-white/5 rounded-full transition-colors text-white">
+            <button onClick={() => setSelectedEmailId(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 shrink-0">
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="flex-1 p-8 overflow-y-auto custom-scrollbar text-left">
-            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 text-sm text-white/80 leading-relaxed font-medium whitespace-pre-wrap italic shadow-inner">
-              {selectedEmail.content}
-            </div>
+          {/* Content Area */}
+          <div className="flex-1 p-8 overflow-y-auto custom-scrollbar text-left bg-white">
+            {isEditing ? (
+                <div className="h-full flex flex-col gap-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold text-slate-600 gap-2 border-slate-200">
+                            <ImageIcon className="w-3 h-3" /> Ajouter Image
+                        </Button>
+                        <p className="text-[9px] text-slate-400 font-medium italic">Note: Le support HTML est activé pour les images.</p>
+                    </div>
+                    <Textarea 
+                        value={editForm.content}
+                        onChange={(e) => setEditForm({...editForm, content: e.target.value})}
+                        className="flex-1 min-h-[400px] bg-slate-50 border-slate-200 text-slate-800 p-6 rounded-2xl font-medium leading-relaxed resize-none outline-none focus:ring-2 focus:ring-purple-500/20"
+                    />
+                </div>
+            ) : (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-8 text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap italic shadow-sm min-h-full">
+                    {selectedEmail.content}
+                </div>
+            )}
           </div>
 
-          <div className="p-6 bg-white/[0.03] border-t border-white/10 flex items-center justify-between">
-            {selectedEmail.status !== 'TRASH' ? (
-                <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    disabled={isTrashing}
-                    onClick={() => handleMoveToTrash(selectedEmail.id)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-xl uppercase font-black text-[10px] tracking-widest"
-                >
-                    <Trash2 className="w-3.5 h-3.5 mr-2 text-red-400" /> <span className="text-red-400">Supprimer</span>
-                </Button>
-            ) : (
-                <div className="text-[10px] font-black text-muted-foreground uppercase italic tracking-widest pl-4">Dans la corbeille</div>
-            )}
+          {/* Actions Bottom */}
+          <div className="p-6 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
+            <div className="flex gap-2">
+                {selectedEmail.status !== 'TRASH' && (
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        disabled={isTrashing}
+                        onClick={() => handleMoveToTrash(selectedEmail.id)}
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl uppercase font-black text-[10px] tracking-widest"
+                    >
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Supprimer
+                    </Button>
+                )}
+                {!selectedEmail.is_ai_generated && selectedEmail.status === 'DRAFT' && (
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setIsEditing(!isEditing)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl uppercase font-black text-[10px] tracking-widest"
+                    >
+                        {isEditing ? <><X className="w-3.5 h-3.5 mr-2" /> Annuler</> : <><Edit3 className="w-3.5 h-3.5 mr-2" /> Éditer</>}
+                    </Button>
+                )}
+            </div>
             
-            {selectedEmail.status === 'DRAFT' && (
-              <Button 
-                onClick={() => onSendEmail(selectedEmail.id)}
-                disabled={sendingEmailId === selectedEmail.id}
-                className="rounded-xl bg-white text-slate-950 hover:bg-slate-200 font-black text-[10px] uppercase tracking-widest px-8 h-11 gap-2 shadow-xl border-none transition-all active:scale-95 group"
-              >
-                {sendingEmailId === selectedEmail.id ? <Loader2 className="w-4 h-4 animate-spin text-slate-950" /> : <Send className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />}
-                <span className="text-slate-950">Envoyer maintenant</span>
-              </Button>
-            )}
+            <div className="flex gap-2">
+                {isEditing && (
+                    <Button 
+                        onClick={handleUpdateContent}
+                        disabled={isSaving}
+                        className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest px-8 h-11 gap-2 shadow-lg"
+                    >
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Enregistrer
+                    </Button>
+                )}
+
+                {selectedEmail.status === 'DRAFT' && (
+                    selectedEmail.is_ai_generated ? (
+                        <Button 
+                            onClick={() => handleConvertToDraft(selectedEmail.id)}
+                            disabled={isSaving}
+                            className="rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-[10px] uppercase tracking-widest px-8 h-11 gap-2 shadow-lg shadow-purple-500/20"
+                        >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                            Créer Brouillon
+                        </Button>
+                    ) : (
+                        !isEditing && (
+                            <Button 
+                                onClick={() => onSendEmail(selectedEmail.id)}
+                                disabled={sendingEmailId === selectedEmail.id}
+                                className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-black text-[10px] uppercase tracking-widest px-10 h-11 gap-2 shadow-xl active:scale-95 transition-all"
+                            >
+                                {sendingEmailId === selectedEmail.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                Envoyer maintenant
+                            </Button>
+                        )
+                    )
+                )}
+            </div>
           </div>
         </div>
       )}
@@ -274,11 +379,11 @@ export function MailingTab({
       <Dialog open={isComposeOpen} onOpenChange={setIsComposeOpen}>
         <DialogContent className="sm:max-w-[600px] bg-slate-950 border-white/10 rounded-[2.5rem] p-0 overflow-hidden outline-none shadow-2xl">
             <div className="flex flex-col h-[600px]">
-                <DialogHeader className="p-8 pb-6 bg-white/[0.02] border-b border-white/5">
-                    <DialogTitle className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3 text-left">
+                <DialogHeader className="p-8 pb-6 bg-white/[0.02] border-b border-white/5 text-left">
+                    <DialogTitle className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
                         <Plus className="w-5 h-5 text-purple-500" /> Nouveau Message
                     </DialogTitle>
-                    <DialogDescription className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1 text-left">Rédiger un mail de croissance</DialogDescription>
+                    <DialogDescription className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Rédiger un mail de croissance</DialogDescription>
                 </DialogHeader>
 
                 <div className="flex-1 p-8 space-y-4 overflow-y-auto custom-scrollbar text-left">
@@ -343,7 +448,6 @@ export function MailingTab({
 }
 
 function FolderItem({ icon: Icon, label, active, onClick, count, color }: any) {
-  // Déterminer la couleur de fond active basée sur la prop color (ex: text-purple-400 -> bg-purple-400/10)
   const activeBg = color ? color.replace('text-', 'bg-') + '/10' : 'bg-white/10';
   const hoverTextColor = color || "text-white";
 

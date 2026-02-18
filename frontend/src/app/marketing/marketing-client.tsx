@@ -33,7 +33,6 @@ import { StrategyTab } from "./components/tabs/StrategyTab";
 import { IntelligenceTab } from "./components/tabs/IntelligenceTab";
 import { MailingTab } from "./components/tabs/MailingTab";
 import { HistoryTab } from "./components/tabs/HistoryTab";
-import { AvertissementTab } from "./components/tabs/AvertissementTab";
 import { InsightDetailModal } from "./components/InsightDetailModal";
 
 // Existing Site Requests Components
@@ -45,7 +44,7 @@ import { MatchingDialog } from "@/app/site-requests/components/MatchingDialog";
 import { Button } from "@/components/ui/button";
 import { 
   Zap, Users, Map as MapIcon, History, Sparkles, Loader2, 
-  RefreshCw, BarChart3, Mail, TrendingUp, ShieldAlert
+  RefreshCw, BarChart3, Mail, TrendingUp
 } from "lucide-react";
 
 interface MarketingClientProps {
@@ -201,9 +200,6 @@ export function MarketingClient({
             <TabsTrigger value="strategy" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
               <Zap className="w-3.5 h-3.5" /> Stratégie
             </TabsTrigger>
-            <TabsTrigger value="avertissement" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-red-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest gap-2">
-              <ShieldAlert className="w-3.5 h-3.5" /> Avertissement
-            </TabsTrigger>
             <TabsTrigger value="stats" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
               <BarChart3 className="w-3.5 h-3.5" /> Intelligence
             </TabsTrigger>
@@ -254,10 +250,6 @@ export function MarketingClient({
             onDismiss={handleDismissRecommendation}
             onGlobalScan={handleGlobalScan}
           />
-        </TabsContent>
-
-        <TabsContent value="avertissement" className="outline-none">
-          <AvertissementTab />
         </TabsContent>
 
         <TabsContent value="stats" className="outline-none">
