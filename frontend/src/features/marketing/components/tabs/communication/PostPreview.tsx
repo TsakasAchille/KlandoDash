@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  Send, PlusCircle, Edit3, ImageIcon, ExternalLink
+  Send, PlusCircle, Edit3, Image as ImageIcon, ExternalLink, Trash2, RotateCcw
 } from "lucide-react";
 import { MarketingComm } from "../../../types";
 import { cn } from "@/lib/utils";
@@ -11,29 +11,43 @@ import { cn } from "@/lib/utils";
 interface PostPreviewProps {
   activePost: MarketingComm;
   onStartEdit: (comm: MarketingComm) => void;
+  onTrash: (id: string) => void;
+  onRestore: (id: string) => void;
+  onDeletePerm: (id: string) => void;
 }
 
-export function PostPreview({ activePost, onStartEdit }: PostPreviewProps) {
+export function PostPreview({ 
+    activePost, 
+    onStartEdit, 
+    onTrash, 
+    onRestore, 
+    onDeletePerm 
+}: PostPreviewProps) {
   // Détection automatique : Si le contenu est très court (ou vide) mais qu'il y a une image -> C'est un post VISUEL
   const isVisualPost = !!activePost.image_url && (!activePost.content || activePost.content.length < 50);
+  const isInTrash = activePost.status === 'TRASH';
 
   return (
-    <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden animate-in zoom-in-95 duration-300 h-full">
+    <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden animate-in zoom-in-95 duration-300 h-full text-left">
       <Card className={cn(
         "bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-y-auto custom-scrollbar p-10 space-y-8 relative transition-all",
         isVisualPost ? "col-span-4" : "col-span-7"
       )}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-left">
-            <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-600">
-              <Send className="w-6 h-6" />
+          <div className="flex items-center gap-3">
+            <div className={cn(
+                "p-3 rounded-2xl",
+                isInTrash ? "bg-red-50 text-red-600" : "bg-blue-500/10 text-blue-600"
+            )}>
+              {isInTrash ? <Trash2 className="w-6 h-6" /> : <Send className="w-6 h-6" />}
             </div>
             <div>
               <h4 className="text-xl font-black uppercase text-slate-900 tracking-tight">{activePost.title}</h4>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{activePost.platform} • {activePost.status}</p>
             </div>
           </div>
-          {!isVisualPost && (
+          
+          {!isInTrash && !isVisualPost && (
             <Button variant="outline" onClick={() => onStartEdit(activePost)} className="rounded-xl border-slate-200 font-black uppercase text-[10px] h-10 px-6 gap-2">
               <Edit3 className="w-3.5 h-3.5" /> Éditer
             </Button>
@@ -41,10 +55,10 @@ export function PostPreview({ activePost, onStartEdit }: PostPreviewProps) {
         </div>
 
         <div className={cn(
-          "bg-slate-50 rounded-[2rem] p-8 border border-slate-100 relative text-left",
+          "bg-slate-50 rounded-[2rem] p-8 border border-slate-100 relative",
           isVisualPost ? "p-4 border-dashed" : "p-8"
         )}>
-          <div className="absolute -top-3 -left-3 bg-blue-600 text-white p-1.5 rounded-lg shadow-lg z-10"><PlusCircle className="w-4 h-4" /></div>
+          {!isInTrash && <div className="absolute -top-3 -left-3 bg-blue-600 text-white p-1.5 rounded-lg shadow-lg z-10"><PlusCircle className="w-4 h-4" /></div>}
           <p className={cn(
             "text-slate-800 leading-relaxed font-medium whitespace-pre-wrap",
             isVisualPost ? "text-[10px] italic opacity-60 text-center" : "text-base"
@@ -61,11 +75,40 @@ export function PostPreview({ activePost, onStartEdit }: PostPreviewProps) {
           )}
         </div>
 
-        {isVisualPost && (
+        {isVisualPost && !isInTrash && (
           <Button variant="outline" onClick={() => onStartEdit(activePost)} className="w-full rounded-2xl border-slate-200 font-black uppercase text-[10px] h-12 gap-2">
             <Edit3 className="w-3.5 h-3.5" /> Modifier le visuel / titre
           </Button>
         )}
+
+        {/* --- BARRE D'ACTIONS BASSE --- */}
+        <div className="pt-4 flex items-center justify-between border-t border-slate-100">
+            {isInTrash ? (
+                <div className="flex gap-3 w-full">
+                    <Button 
+                        onClick={() => onRestore(activePost.id)}
+                        className="flex-1 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black uppercase text-[10px] gap-2 h-11"
+                    >
+                        <RotateCcw className="w-4 h-4" /> Restaurer
+                    </Button>
+                    <Button 
+                        onClick={() => onDeletePerm(activePost.id)}
+                        variant="destructive"
+                        className="flex-1 rounded-xl font-black uppercase text-[10px] gap-2 h-11"
+                    >
+                        <Trash2 className="w-4 h-4" /> Supprimer Définitif
+                    </Button>
+                </div>
+            ) : (
+                <Button 
+                    variant="ghost" 
+                    onClick={() => onTrash(activePost.id)}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl font-black uppercase text-[10px] gap-2"
+                >
+                    <Trash2 className="w-4 h-4" /> Placer dans la corbeille
+                </Button>
+            )}
+        </div>
       </Card>
 
       <div className={cn(
@@ -90,7 +133,9 @@ export function PostPreview({ activePost, onStartEdit }: PostPreviewProps) {
           <div className="flex-1 bg-slate-100 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center p-10 text-center gap-4 opacity-50 h-full">
             <ImageIcon className="w-12 h-12 text-slate-300" />
             <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Aucun visuel final attaché</p>
-            <Button variant="ghost" onClick={() => onStartEdit(activePost)} className="text-[10px] font-black uppercase text-purple-600 hover:bg-purple-50">Ajouter un média</Button>
+            {!isInTrash && (
+                <Button variant="ghost" onClick={() => onStartEdit(activePost)} className="text-[10px] font-black uppercase text-purple-600 hover:bg-purple-50">Ajouter un média</Button>
+            )}
           </div>
         )}
       </div>

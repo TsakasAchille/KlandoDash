@@ -6,7 +6,10 @@ import { MarketingComm, CommPlatform, CommStatus } from "@/app/marketing/types";
 import { 
     updateMarketingCommAction, 
     createMarketingCommAction,
-    refineMarketingContentAction
+    refineMarketingContentAction,
+    trashMarketingCommAction,
+    restoreMarketingCommAction,
+    deleteMarketingCommAction
 } from "@/app/marketing/actions/communication";
 import { uploadMarketingImageAction } from "@/app/marketing/actions/mailing";
 import { toast } from "sonner";
@@ -121,6 +124,7 @@ export function CommunicationTab({
             }
         }
     } catch (err) {
+        console.error(err);
         toast.error("Erreur de sauvegarde");
     } finally {
         setIsUpdating(false);
@@ -178,6 +182,33 @@ export function CommunicationTab({
     }
   };
 
+  // --- ACTIONS DE CORBEILLE ---
+  const handleTrash = async (id: string) => {
+    const res = await trashMarketingCommAction(id);
+    if (res.success) {
+        toast.success("Placé dans la corbeille");
+        setSelectedId(null);
+    }
+  };
+
+  const handleRestore = async (id: string) => {
+    const res = await restoreMarketingCommAction(id);
+    if (res.success) {
+        toast.success("Restauré en brouillon");
+        setStatusFilter('DRAFT');
+        setTimeout(() => setSelectedId(id), 100);
+    }
+  };
+
+  const handleDeletePerm = async (id: string) => {
+    if (!confirm("Supprimer définitivement ce post ? Cette action est irréversible.")) return;
+    const res = await deleteMarketingCommAction(id);
+    if (res.success) {
+        toast.success("Supprimé définitivement");
+        setSelectedId(null);
+    }
+  };
+
   return (
     <div className="flex gap-6 h-[750px] animate-in fade-in duration-500 text-left">
       {/* LEFT SIDEBAR */}
@@ -213,6 +244,9 @@ export function CommunicationTab({
               <PostPreview 
                   activePost={activePost}
                   onStartEdit={handleStartEdit}
+                  onTrash={handleTrash}
+                  onRestore={handleRestore}
+                  onDeletePerm={handleDeletePerm}
               />
           ) : (
               <AIGenerator 
@@ -225,7 +259,7 @@ export function CommunicationTab({
                   isScanning={isScanning}
                   ideas={ideas}
                   onGenerateIdeas={onGenerateIdeas}
-                  onUseTheme={(theme) => handleGenerate(theme)} // GÉNÉRATION DIRECTE
+                  onUseTheme={(theme) => handleGenerate(theme)}
               />
           )}
       </div>
