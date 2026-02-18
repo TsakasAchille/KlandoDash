@@ -1,95 +1,79 @@
 import { createAdminClient } from "@/lib/supabase";
-import { GeocodingService } from "./geocoding.service";
-import { AIMatchingService } from "./ai-matching.service";
 
 export const GlobalAIService = {
   /**
-   * Scan global ultra-complet : calcule les km ET génère les recommandations IA 
-   * pour chaque demande en attente.
+   * Scan stratégique analytique (SANS IA systématique)
+   * Identifie les opportunités de matching réelles via SQL.
    */
   async runGlobalIntelligenceScan() {
     const supabase = createAdminClient();
-    console.log("[AI Global] Starting deep intelligence scan...");
+    console.log("[Marketing Scan] Starting analytical opportunity scan...");
 
-    // 1. Récupérer les données
-    const { data: requests } = await supabase.from('site_trip_requests').select('*').eq('status', 'NEW');
-    const { data: trips } = await supabase.from('public_pending_trips').select('*');
-    const { data: allUsers } = await supabase.from('users').select('*').limit(100);
+    // 1. Récupérer les demandes en attente (Prospects)
+    const { data: requests } = await supabase
+      .from('site_trip_requests')
+      .select('id, origin_city, destination_city, desired_date, ai_recommendation, ai_updated_at')
+      .eq('status', 'NEW');
 
-    // 2. Nettoyer les anciennes reco PENDING
+    if (!requests || requests.length === 0) return 0;
+
+    // 2. Nettoyer les anciennes recommandations PENDING pour repartir sur du propre
     await supabase.from('dash_ai_recommendations').delete().eq('status', 'PENDING');
 
     const recommendations = [];
 
-    // MODULE 1 : TRACTION (Génération IA pour chaque demande)
-    if (requests && requests.length > 0) {
-      console.log(`[AI Global] Processing ${requests.length} requests with Gemini...`);
-      
-      for (const req of requests) {
-        try {
-          // A. Générer la recommandation IA complète
-          const aiResult = await AIMatchingService.generateRecommendation(
-            req.origin_city,
-            req.destination_city,
-            req.desired_date,
-            { 
-              lat: req.origin_lat!, 
-              lng: req.origin_lng!, 
-              destLat: req.destination_lat!, 
-              destLng: req.destination_lng! 
-            },
-            trips || []
-          );
+    // 3. Analyser chaque demande via SQL
+    for (const req of requests) {
+      try {
+        // Appeler la fonction de matching SQL (Rayon par défaut 15km pour le scan large)
+        const { data: matches, error: matchError } = await supabase.rpc('find_matching_trips', {
+          p_request_id: req.id,
+          p_radius_km: 15.0
+        });
 
-          // B. Sauvegarder directement dans la demande client
-          await supabase.from('site_trip_requests').update({
-            ai_recommendation: aiResult,
-            ai_updated_at: new Date().toISOString()
-          }).eq('id', req.id);
+        if (matchError) throw matchError;
 
-          // C. Extraire le Trip ID pour le dashboard IA
-          const tripIdMatch = aiResult.match(/\[TRIP_ID\][:\s]*([A-Za-z0-9-]+)/i);
-          let bestTripId = null;
-          if (tripIdMatch) bestTripId = tripIdMatch[1].trim();
-          
-          if (bestTripId && bestTripId.toUpperCase() !== 'NONE') {
-            recommendations.push({
-              type: 'TRACTION',
-              priority: 2,
-              title: `Prêt à envoyer : ${req.origin_city}`,
-              target_id: req.id,
-              content: {
-                route: `${req.origin_city} -> ${req.destination_city}`,
-                best_trip_id: bestTripId,
-                status: "Analyse IA terminée"
-              }
-            });
-          }
-        } catch (err) {
-          console.error(`[AI Global] Failed to process request ${req.id}:`, err);
+        // Si on a au moins un match, on crée une Action Card
+        if (matches && matches.length > 0) {
+          const topMatches = matches
+            .sort((a: any, b: any) => a.total_proximity_score - b.total_proximity_score)
+            .slice(0, 3); // On garde les 3 meilleurs
+
+          recommendations.push({
+            type: 'TRACTION',
+            priority: matches.length >= 3 ? 3 : 2, // Priorité haute si beaucoup de choix
+            title: `Opportunité : ${req.origin_city}`,
+            target_id: req.id,
+            content: {
+              request: {
+                id: req.id,
+                origin: req.origin_city,
+                destination: req.destination_city,
+                date: req.desired_date,
+                has_ai_scan: !!req.ai_recommendation,
+                last_ai_date: req.ai_updated_at
+              },
+              matches_count: matches.length,
+              top_trips: topMatches.map((m: any) => ({
+                id: m.trip_id,
+                departure: m.departure_city,
+                arrival: m.arrival_city,
+                time: m.departure_time,
+                score: m.total_proximity_score,
+                dist: m.origin_distance
+              }))
+            }
+          });
         }
+      } catch (err) {
+        console.error(`[Marketing Scan] Failed to analyze request ${req.id}:`, err);
       }
     }
 
-    // MODULE 2 : QUALITÉ & VALIDATION
-    const pendingValidation = (allUsers || []).filter(u => u.role === 'driver' && !u.is_driver_doc_validated);
-    for (const driver of pendingValidation.slice(0, 5)) {
-        recommendations.push({
-            type: 'QUALITY',
-            priority: 1,
-            title: `Chauffeur à certifier : ${driver.display_name}`,
-            target_id: driver.uid,
-            content: {
-                name: driver.display_name,
-                alert: "Documents en attente de vérification."
-            }
-        });
-    }
-
-    // 3. Sauvegarder les fiches de dashboard
+    // 4. Sauvegarder les cartes d'opportunités
     if (recommendations.length > 0) {
       const { error } = await supabase.from('dash_ai_recommendations').insert(recommendations);
-      if (error) console.error("[AI Global] Error inserting dashboard cards:", error);
+      if (error) console.error("[Marketing Scan] Error inserting action cards:", error);
     }
 
     return recommendations.length;

@@ -3,7 +3,8 @@
 import { SiteTripRequest } from "@/types/site-request";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Users, Radar, Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
+import { Users, Radar, Sparkles, Loader2, Eye, EyeOff, CheckCircle, Check } from "lucide-react";
+import { SiteTripRequestStatus } from "@/types/site-request";
 
 interface CompactRequestsListProps {
   requests: SiteTripRequest[];
@@ -15,6 +16,7 @@ interface CompactRequestsListProps {
   onHideAll: () => void;
   onScan: (id: string) => void;
   onOpenIA: (id: string) => void;
+  onUpdateStatus: (id: string, status: SiteTripRequestStatus) => void;
   scanningId: string | null;
 }
 
@@ -28,6 +30,7 @@ export function CompactRequestsList({
   onHideAll,
   onScan, 
   onOpenIA,
+  onUpdateStatus,
   scanningId 
 }: CompactRequestsListProps) {
   return (
@@ -64,6 +67,7 @@ export function CompactRequestsList({
           const isHidden = hiddenIds.has(req.id);
           const hasMatches = req.matches && req.matches.length > 0;
           const isScanning = scanningId === req.id;
+          const isValidated = req.status === 'VALIDATED';
 
           return (
             <div
@@ -93,43 +97,61 @@ export function CompactRequestsList({
                   >
                     {isHidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                   </button>
-                  <span className="text-[9px] font-black uppercase text-purple-500 truncate">
+                  <span className={cn("text-[9px] font-black uppercase truncate", isValidated ? "text-green-600" : "text-purple-500")}>
                     {req.contact_info}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {hasMatches && (
-                    <div className="flex items-center gap-1 text-[8px] font-black text-green-500 uppercase bg-green-500/10 px-1.5 py-0.5 rounded-full">
-                      <Sparkles className="w-2 h-2" />
-                      {req.matches?.length}
+                  {isValidated ? (
+                    <div className="p-1 text-green-600 bg-green-500/10 rounded-md">
+                      <CheckCircle className="w-3.5 h-3.5" />
                     </div>
+                  ) : (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onUpdateStatus(req.id, 'VALIDATED');
+                        }}
+                        className="p-1 rounded-md text-muted-foreground hover:text-green-600 hover:bg-green-500/10 transition-all"
+                        title="Valider la demande"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      {hasMatches && (
+                        <div className="flex items-center gap-1 text-[8px] font-black text-green-500 uppercase bg-green-500/10 px-1.5 py-0.5 rounded-full">
+                          <Sparkles className="w-2 h-2" />
+                          {req.matches?.length}
+                        </div>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onScan(req.id);
+                        }}
+                        className={cn(
+                          "p-1 rounded-md transition-colors",
+                          isScanning ? "text-blue-500 animate-spin" : "text-muted-foreground hover:text-blue-500"
+                        )}
+                        title="Scanner"
+                      >
+                        <Radar className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenIA(req.id);
+                        }}
+                        className={cn(
+                          "p-1 rounded-md transition-all",
+                          req.ai_recommendation ? "text-green-500 bg-green-500/10" : "text-klando-gold hover:bg-klando-gold/10"
+                        )}
+                        title="Aide IA"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                      </button>
+                    </>
                   )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onScan(req.id);
-                    }}
-                    className={cn(
-                      "p-1 rounded-md transition-colors",
-                      isScanning ? "text-blue-500 animate-spin" : "text-muted-foreground hover:text-blue-500"
-                    )}
-                    title="Scanner"
-                  >
-                    <Radar className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenIA(req.id);
-                    }}
-                    className={cn(
-                      "p-1 rounded-md transition-all",
-                      req.ai_recommendation ? "text-green-500 bg-green-500/10" : "text-klando-gold hover:bg-klando-gold/10"
-                    )}
-                    title="Aide IA"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                  </button>
                 </div>
               </div>
               <div className="text-[10px] font-black uppercase tracking-tight text-foreground truncate pl-1">

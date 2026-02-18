@@ -1,16 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { runGlobalScanAction, getStoredRecommendationsAction, updateRecommendationStatusAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, RefreshCw, Zap, Info, ShieldAlert, Target, TrendingUp, Sparkles } from "lucide-react";
+import { 
+  Loader2, RefreshCw, Zap, Info, ShieldAlert, Target, TrendingUp, Sparkles, 
+  History, CheckCircle2, XCircle, ArrowRight 
+} from "lucide-react";
+import { 
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+} from "@/components/ui/table";
 import { toast } from "sonner";
 import { RecommendationCard, AIRecommendation } from "@/features/site-requests/components/ai/RecommendationCard";
 import { cn } from "@/lib/utils";
 
 export function KlandoAIClient() {
   const [recommendations, setRecommendations] = useState<AIRecommendation[]>([]);
+  const [history, setHistory] = useState<AIRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -18,7 +25,11 @@ export function KlandoAIClient() {
     setIsLoading(true);
     const res = await getStoredRecommendationsAction();
     if (res.success) {
-      setRecommendations(res.data as AIRecommendation[]);
+      const all = res.data as AIRecommendation[];
+      setRecommendations(all.filter(r => r.status === 'PENDING'));
+      setHistory(all.filter(r => r.status === 'APPLIED').sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
     }
     setIsLoading(false);
   };
@@ -40,10 +51,14 @@ export function KlandoAIClient() {
   };
 
   const handleApply = async (id: string) => {
+    const reco = recommendations.find(r => r.id === id);
     const res = await updateRecommendationStatusAction(id, 'APPLIED');
     if (res.success) {
-      toast.success("Action enregistrée !");
-      setRecommendations(prev => prev.filter(r => r.id !== id));
+      toast.success("Action validée !");
+      if (reco) {
+        setHistory(prev => [{ ...reco, status: 'APPLIED' }, ...prev]);
+        setRecommendations(prev => prev.filter(r => r.id !== id));
+      }
     }
   };
 
@@ -55,7 +70,7 @@ export function KlandoAIClient() {
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-20">
+    <div className="space-y-12 max-w-6xl mx-auto pb-20">
       {/* Header Info avec CTA de scan */}
       <div className="grid md:grid-cols-12 gap-6 items-center bg-gradient-to-br from-klando-dark to-slate-900 p-8 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-5"><Sparkles className="w-48 h-48 text-klando-gold" /></div>
@@ -94,7 +109,7 @@ export function KlandoAIClient() {
         </div>
       </div>
 
-      {/* Grid de Recommandations */}
+      {/* Grid de Recommandations (Actions à Faire) */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-3">
@@ -135,8 +150,66 @@ export function KlandoAIClient() {
         )}
       </div>
 
-      {/* Guide des modules */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-700">
+      {/* Historique des Actions Validées */}
+      {history.length > 0 && (
+        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-1000">
+          <div className="flex items-center gap-3 px-2">
+            <div className="p-2 bg-green-500/10 rounded-xl">
+              <History className="w-4 h-4 text-green-500" />
+            </div>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Historique des Actions Validées</h3>
+          </div>
+
+          <Card className="bg-card/30 backdrop-blur-md border-white/5 overflow-hidden rounded-[2rem]">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/5 hover:bg-transparent">
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground py-5">Date</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Type</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Action</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cible</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground pr-8">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {history.map((reco) => (
+                  <TableRow key={reco.id} className="border-white/5 hover:bg-white/[0.02] transition-colors group">
+                    <TableCell className="text-[11px] font-medium text-muted-foreground py-4 tabular-nums">
+                      {new Date(reco.created_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </TableCell>
+                    <TableCell>
+                      <span className={cn(
+                        "text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter border",
+                        reco.type === 'TRACTION' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                        reco.type === 'STRATEGIC' ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                        reco.type === 'ENGAGEMENT' ? "bg-klando-gold/10 text-klando-gold border-klando-gold/20" :
+                        "bg-red-500/10 text-red-500 border-red-500/20"
+                      )}>
+                        {reco.type}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-white uppercase tracking-tight">
+                      {reco.title}
+                    </TableCell>
+                    <TableCell className="text-[10px] font-mono text-muted-foreground">
+                      {reco.target_id.slice(0, 8)}...
+                    </TableCell>
+                    <TableCell className="text-right pr-8">
+                      <div className="flex items-center justify-end gap-2 text-green-500 font-black text-[10px] uppercase">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Validé
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
+      )}
+
+      {/* Guide des modules (existant) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-700">
         <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center gap-2 text-center">
           <Target className="w-4 h-4 text-green-500" />
           <span className="text-[9px] font-black uppercase tracking-widest text-white">Traction</span>

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Calendar, Phone, Mail, Sparkles, Loader2, ChevronLeft, ChevronRight, Hash, Radar } from "lucide-react";
+import { Calendar, Phone, Mail, Sparkles, Loader2, ChevronLeft, ChevronRight, Hash, Radar, CheckCircle, Check } from "lucide-react";
 import { scanRequestMatchesAction } from "@/app/site-requests/actions";
 import { toast } from "sonner";
 import { ScanResultsDialog } from "@/app/site-requests/components/ScanResultsDialog";
@@ -38,6 +38,7 @@ interface SiteRequestTableProps {
   onOpenIA: (id: string) => void;
   onScan: (id: string) => void;
   scanningId: string | null;
+  selectedId?: string;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -47,6 +48,7 @@ const statusConfig: Record<SiteTripRequestStatus, { label: string; color: string
   REVIEWED: { label: "Examiné", color: "text-purple-400", background: "bg-purple-500/10" },
   CONTACTED: { label: "Contacté", color: "text-green-400", background: "bg-green-500/10" },
   IGNORED: { label: "Ignoré", color: "text-gray-400", background: "bg-gray-500/10" },
+  VALIDATED: { label: "Validé", color: "text-green-600", background: "bg-green-600/10" },
 };
 
 export function SiteRequestTable({
@@ -209,33 +211,54 @@ export function SiteRequestTable({
                       {formatRelativeDate(request.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex flex-col items-end gap-2">
-                        <Select value={request.status} onValueChange={(v) => onUpdateStatus(request.id, v as SiteTripRequestStatus)}>
-                          <SelectTrigger className={cn("w-36 h-8 text-[10px] font-black uppercase tracking-wider border-2 shadow-sm", statusConfig[request.status].background, statusConfig[request.status].color.replace('text-', 'border-'))}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(statusConfig).map(([status, { label }]) => (
-                              <SelectItem key={status} value={status} className="text-[10px] font-black uppercase">{label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => onScan(request.id)} 
-                            disabled={scanningId === request.id}
-                            className="h-8 w-8 p-0 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
-                            title="Scanner les trajets proches"
-                          >
-                            {scanningId === request.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radar className="w-3.5 h-3.5" />}
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => onOpenIA(request.id)} className={cn("gap-2 border-klando-gold/30 text-[10px] font-black uppercase tracking-widest px-3 h-8 shadow-sm", request.ai_recommendation ? "bg-green-50 text-green-600 border-green-200" : "bg-klando-gold/5 text-klando-gold")}>
-                            <Sparkles className="w-3 h-3" /> {request.ai_recommendation ? "Aide IA ✓" : "Aide IA"}
-                          </Button>
+                      {request.status === 'VALIDATED' ? (
+                        <div className="flex items-center justify-end gap-2 pr-2">
+                           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-600 font-black uppercase text-[10px] tracking-widest shadow-sm">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Validé
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="flex gap-2 items-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onUpdateStatus(request.id, 'VALIDATED')}
+                              className="h-8 text-[10px] font-black uppercase tracking-wider bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-500/30 hover:border-green-500/50 gap-1.5 shadow-sm"
+                              title="Marquer comme validé"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              Valider
+                            </Button>
+                            <Select value={request.status} onValueChange={(v) => onUpdateStatus(request.id, v as SiteTripRequestStatus)}>
+                              <SelectTrigger className={cn("w-32 h-8 text-[10px] font-black uppercase tracking-wider border-2 shadow-sm", statusConfig[request.status].background, statusConfig[request.status].color.replace('text-', 'border-'))}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(statusConfig).map(([status, { label }]) => (
+                                  <SelectItem key={status} value={status} className="text-[10px] font-black uppercase">{label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => onScan(request.id)} 
+                              disabled={scanningId === request.id}
+                              className="h-8 w-8 p-0 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                              title="Scanner les trajets proches"
+                            >
+                              {scanningId === request.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radar className="w-3.5 h-3.5" />}
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => onOpenIA(request.id)} className={cn("gap-2 border-klando-gold/30 text-[10px] font-black uppercase tracking-widest px-3 h-8 shadow-sm", request.ai_recommendation ? "bg-green-50 text-green-600 border-green-200" : "bg-klando-gold/5 text-klando-gold")}>
+                              <Sparkles className="w-3 h-3" /> {request.ai_recommendation ? "Aide IA ✓" : "Aide IA"}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 )

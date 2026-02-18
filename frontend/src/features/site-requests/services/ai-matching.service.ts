@@ -13,42 +13,31 @@ export const AIMatchingService = {
     destination: string,
     date: string | null,
     clientCoords: { lat: number, lng: number, destLat: number, destLng: number },
-    availableTrips: PublicTrip[]
+    availableTrips: any[] // Reçoit des trajets avec distances pré-calculées (origin_dist, dest_dist)
   ) {
-    // 1. Préparer le contexte enrichi avec les distances calculées
-    const tripsWithDistances = await Promise.all(availableTrips.map(async (t) => {
-      let dStart = 999;
-      let dEnd = 999;
-
-      // On récupère les coordonnées réelles pour un calcul précis
-      const fullTrip = await TripService.getById(t.id);
-      if (fullTrip && fullTrip.departure_latitude) {
-        dStart = GeocodingService.calculateDistance(
-          { lat: clientCoords.lat, lng: clientCoords.lng },
-          { lat: fullTrip.departure_latitude, lng: fullTrip.departure_longitude! }
-        );
-        dEnd = GeocodingService.calculateDistance(
-          { lat: clientCoords.destLat, lng: clientCoords.destLng },
-          { lat: fullTrip.destination_latitude!, lng: fullTrip.destination_longitude! }
-        );
-      }
-
-      return {
+    // 1. On utilise directement les distances fournies par le Scan SQL (plus rapide et précis)
+    // On ne garde que ceux qui ont des distances valides (normalement tous via findMatchingTrips)
+    const formattedTrips = availableTrips
+      .filter(t => t.origin_dist !== undefined)
+      .sort((a, b) => a.origin_dist - b.origin_dist)
+      .slice(0, 5) // On ne donne que les 5 meilleures options
+      .map(t => ({
         id: t.id,
         from: t.departure_city,
         to: t.arrival_city,
         time: t.departure_time,
         seats: t.seats_available,
-        client_to_driver_start_km: dStart.toFixed(1),
-        client_to_driver_end_km: dEnd.toFixed(1)
-      };
-    }));
+        client_to_driver_start_km: `${t.origin_dist.toFixed(1)} km`,
+        client_to_driver_end_km: `${t.dest_dist.toFixed(1)} km`
+      }));
+
+    console.log(`[AIMatchingService] Sending ${formattedTrips.length} SQL-filtered trips to AI.`);
 
     // 2. Construire le prompt
-    const prompt = MATCHING_PROMPTS.getMatchingPrompt(origin, destination, date, tripsWithDistances);
+    const prompt = MATCHING_PROMPTS.getMatchingPrompt(origin, destination, date, formattedTrips);
     const systemContext = MATCHING_PROMPTS.STRATEGY_SYSTEM;
 
-    // 3. Appeler l'IA avec le contexte complet
+    // 3. Appeler l'IA
     const response = await askKlandoAI(prompt, { context: systemContext });
 
     return response;

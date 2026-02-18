@@ -23,7 +23,10 @@ export const MATCHING_PROMPTS = {
        - Moins de 1.2 km : "C'est tout proche de votre point de départ ([Distance] km)."
        - Entre 1.2 km et 3.5 km : "Le départ se trouve à une distance raisonnable ([Distance] km), facilement joignable en quelques minutes."
        - Entre 3.5 km et 8 km : "Le départ est situé à environ [Distance] km. C'est une option solide pour rejoindre votre destination directement."
-       - Plus de 8 km : "Le point de départ est un peu plus éloigné ([Distance] km), mais c'est actuellement la meilleure option directe pour votre trajet."
+       - Entre 8 km et 15 km : "Le point de départ est un peu éloigné ([Distance] km), mais c'est l'option la plus proche actuellement disponible."
+       - PLUS DE 15 km : NE PROPOSE PAS CE TRAJET AU CLIENT. Réponds qu'aucun trajet n'est disponible à proximité pour le moment.
+
+    IMPORTANT : Si la liste des trajets fournis est vide ou si aucun trajet n'est à moins de 15km, réponds poliment que nous n'avons pas encore de départ proche de chez eux et que nous les recontacterons dès qu'un chauffeur se manifeste. Dans ce cas, [TRIP_ID] doit être NONE.
 
     3. MISE EN VALEUR DES ADRESSES (SQUELETTE OBLIGATOIRE) :
        Utilise exactement ce bloc visuel :

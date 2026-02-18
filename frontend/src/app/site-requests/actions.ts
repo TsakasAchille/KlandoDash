@@ -14,12 +14,21 @@ import { TripService } from "@/features/site-requests/services/trip.service";
 import { AIMatchingService } from "@/features/site-requests/services/ai-matching.service";
 
 export async function updateRequestStatusAction(id: string, status: SiteTripRequestStatus) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
   const success = await updateRequest(id, { status });
-  if (success) revalidatePath("/site-requests");
+  if (success) {
+    revalidatePath("/site-requests");
+    revalidatePath("/marketing");
+  }
   return { success };
 }
 
 export async function calculateAndSaveRequestRouteAction(requestId: string, originCity: string, destCity: string) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
   try {
     const [originCoords, destCoords] = await Promise.all([
       GeocodingService.getCoordinates(originCity),
@@ -39,6 +48,7 @@ export async function calculateAndSaveRequestRouteAction(requestId: string, orig
     };
 
     const success = await updateRequest(requestId, geometry);
+    if (success) revalidatePath("/marketing");
     return { success, data: geometry };
   } catch (error) {
     return { success: false, message: "Erreur serveur." };
@@ -53,7 +63,7 @@ export async function getAIMatchingAction(
   forceRefresh = false
 ) {
   const session = await auth();
-  if (!session || session.user.role !== "admin") throw new Error("Non autorisé");
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   try {
     const { createAdminClient } = await import("@/lib/supabase");
@@ -70,7 +80,21 @@ export async function getAIMatchingAction(
     let aiRecommendation = requestData.ai_recommendation;
     
     if (!aiRecommendation || forceRefresh) {
-      const relevantTrips = await getPublicPendingTrips();
+      // On utilise la fonction de scan locale (SQL RPC) pour ne donner à l'IA que des trajets pertinents
+      const { findMatchingTrips } = await import("@/lib/queries/site-requests");
+      const matches = await findMatchingTrips(requestId, 15); // Rayon de 15km max (départ ET arrivée)
+      
+      const relevantTrips = matches.map(m => ({
+        id: m.trip_id,
+        departure_city: m.departure_city,
+        arrival_city: m.arrival_city,
+        departure_time: m.departure_time,
+        seats_available: Number(m.seats_available),
+        // On injecte les distances déjà calculées par le SQL pour éviter les recalculs lents
+        origin_dist: m.origin_distance,
+        dest_dist: m.destination_distance
+      }));
+
       aiRecommendation = await AIMatchingService.generateRecommendation(
         origin, destination, date, 
         { 
@@ -87,6 +111,7 @@ export async function getAIMatchingAction(
         ai_updated_at: new Date().toISOString() 
       });
       revalidatePath("/site-requests");
+      revalidatePath("/marketing");
     }
 
     // EXTRACTION ROBUSTE DE L'ID
@@ -138,7 +163,7 @@ export async function getAIMatchingAction(
 
 export async function scanRequestMatchesAction(requestId: string, radiusKm: number = 5) {
   const session = await auth();
-  if (!session || session.user.role !== "admin") throw new Error("Non autorisé");
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   try {
     const supabase = (await import("@/lib/supabase")).createAdminClient();
@@ -167,6 +192,7 @@ export async function scanRequestMatchesAction(requestId: string, radiusKm: numb
       );
     }
     revalidatePath("/site-requests");
+    revalidatePath("/marketing");
     return { success: true, count: matches.length };
   } catch (error) {
     return { success: false };

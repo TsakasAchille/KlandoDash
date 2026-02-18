@@ -23,7 +23,7 @@ export async function getSiteTripRequestsStats(options: { hidePast?: boolean } =
 
   if (error) {
     console.error("getSiteTripRequestsStats error:", error);
-    return { total: 0, new: 0, reviewed: 0, contacted: 0 };
+    return { total: 0, new: 0, reviewed: 0, contacted: 0, validated: 0 };
   }
 
   const stats = {
@@ -31,6 +31,7 @@ export async function getSiteTripRequestsStats(options: { hidePast?: boolean } =
     new: data.filter(r => r.status === 'NEW').length,
     reviewed: data.filter(r => r.status === 'REVIEWED').length,
     contacted: data.filter(r => r.status === 'CONTACTED').length,
+    validated: data.filter(r => r.status === 'VALIDATED').length,
   };
 
   return stats;

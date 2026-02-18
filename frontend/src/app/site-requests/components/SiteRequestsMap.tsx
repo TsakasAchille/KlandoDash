@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { SiteTripRequest } from "@/types/site-request";
+import { SiteTripRequest, SiteTripRequestStatus } from "@/types/site-request";
 import { TripMapItem } from "@/types/trip";
 import { Card } from "@/components/ui/card";
 import { Loader2, Globe, Radar, X, Eye, EyeOff } from "lucide-react";
@@ -30,6 +30,7 @@ interface SiteRequestsMapProps {
   onSelectRequest: (id: string) => void;
   onScan: (id: string) => void;
   onOpenIA: (id: string) => void;
+  onUpdateStatus: (id: string, status: SiteTripRequestStatus) => void;
   scanningId: string | null;
   aiMatchedTripId?: string | null; // Nouveau : ID du trajet identifié par l'IA
 }
@@ -41,6 +42,7 @@ export function SiteRequestsMap({
   onSelectRequest,
   onScan,
   onOpenIA,
+  onUpdateStatus,
   scanningId,
   aiMatchedTripId,
 }: SiteRequestsMapProps) {
@@ -180,6 +182,7 @@ export function SiteRequestsMap({
             onHideAll={() => setHiddenSiteRequestIds(new Set(requests.map(r => r.id)))}
             onScan={onScan}
             onOpenIA={onOpenIA}
+            onUpdateStatus={onUpdateStatus}
             scanningId={scanningId}
           />
         </div>

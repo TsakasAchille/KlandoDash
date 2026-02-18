@@ -1,4 +1,4 @@
-export type SiteTripRequestStatus = 'NEW' | 'REVIEWED' | 'CONTACTED' | 'IGNORED';
+export type SiteTripRequestStatus = 'NEW' | 'REVIEWED' | 'CONTACTED' | 'IGNORED' | 'VALIDATED';
 
 export interface SiteTripRequest {
   id: string;
@@ -29,4 +29,5 @@ export interface SiteTripRequestsStats {
   new: number;
   reviewed: number;
   contacted: number;
+  validated: number;
 }

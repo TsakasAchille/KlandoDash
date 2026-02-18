@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe, CheckSquare, Sparkles, Loader2 } from "lucide-react";
+import { Home, Car, Users, BarChart3, Map, LifeBuoy, Shield, X, Banknote, Globe, CheckSquare, Sparkles, Loader2, TrendingUp } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
 import { useState, useEffect } from "react";
@@ -20,11 +20,13 @@ const navItems = [
 
 const supportItems = [
   { href: "/support", label: "Support", icon: LifeBuoy },
-  { href: "/site-requests", label: "Demandes Site", icon: Globe },
+];
+
+const marketingItems = [
+  { href: "/marketing", label: "Marketing", icon: TrendingUp },
 ];
 
 const adminItems = [
-  { href: "/admin/ai", label: "Yobé", icon: "/Yobe-removebg-preview.png" }, // Utilisation du chemin image
   { href: "/admin/validation", label: "Validation", icon: CheckSquare },
   { href: "/transactions", label: "Transactions", icon: Banknote },
   { href: "/stats", label: "Statistiques", icon: BarChart3 },
@@ -140,8 +142,8 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         <ul className="space-y-1">
           {navItems.map(renderNavItem)}
 
-          {/* --- Section Support / Admin --- */}
-          {(userRole === "admin" || userRole === "support") && (
+          {/* --- Section Marketing / Support / Admin --- */}
+          {(userRole === "admin" || userRole === "support" || userRole === "marketing") && (
             <>
               <li className={cn("pt-6 pb-2", isMobile && "pt-8 pb-3")}>
                 <span
@@ -150,12 +152,15 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                     isMobile && "text-xs px-4"
                   )}
                 >
-                  {userRole === "admin" ? "Administration" : "Support"}
+                  {userRole === "admin" ? "Administration" : userRole === "marketing" ? "Marketing" : "Support"}
                 </span>
               </li>
 
+              {/* Liens pour le rôle Marketing (et Admin) */}
+              {(userRole === "admin" || userRole === "marketing") && marketingItems.map(renderNavItem)}
+
               {/* Liens pour le rôle Support (et Admin) */}
-              {userRole && supportItems.map(renderNavItem)}
+              {(userRole === "admin" || userRole === "support") && supportItems.map(renderNavItem)}
 
               {/* Liens supplémentaires pour le rôle Admin */}
               {userRole === "admin" && adminItems.map(renderNavItem)}

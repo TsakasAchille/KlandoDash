@@ -27,17 +27,19 @@ export default auth((req) => {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
-    // Le rôle 'support' ne peut pas accéder à /stats (et 'user' non plus)
+    // Marketing role access
+    if (pathname.startsWith("/marketing") && userRole !== "admin" && userRole !== "marketing") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    // Le rôle 'support' et 'marketing' ne peuvent pas accéder à /stats
     if (pathname.startsWith("/stats") && userRole !== "admin") {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
-    // 'user' ne peut pas accéder à /support
-    if (
-      pathname.startsWith("/support") &&
-      userRole !== "admin" &&
-      userRole !== "support"
-    ) {
+    // 'marketing' can access support, users, map
+    const canAccessSupport = userRole === "admin" || userRole === "support" || userRole === "marketing";
+    if (pathname.startsWith("/support") && !canAccessSupport) {
       return NextResponse.redirect(new URL("/", req.url));
     }
   }
