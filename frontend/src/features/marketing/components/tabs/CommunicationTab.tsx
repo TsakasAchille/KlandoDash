@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { LayoutGrid } from "lucide-react";
 import { MarketingComm, CommPlatform, CommStatus } from "@/app/marketing/types";
 import { 
@@ -16,7 +16,6 @@ import { PostList } from "./communication/PostList";
 import { PostPreview } from "./communication/PostPreview";
 import { PostEditor } from "./communication/PostEditor";
 import { AIGenerator } from "./communication/AIGenerator";
-import { IdeasGrid } from "./communication/IdeasGrid";
 
 interface CommunicationTabProps {
   comms: MarketingComm[];
@@ -41,13 +40,21 @@ export function CommunicationTab({
   // États de sélection et édition
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [showGenerator, setShowGenerator] = useState(false);
-  const [createMode, setCreateMode] = useState<'TEXT' | 'IMAGE' | null>(null);
+  
+  // Le générateur est maintenant affiché par défaut si rien n'est sélectionné
+  const [showGenerator, setShowGenerator] = useState(true);
   
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [editForm, setEditForm] = useState<Partial<MarketingComm>>({});
+
+  // Synchronisation auto : si on sélectionne un post, on cache le générateur
+  useEffect(() => {
+    if (selectedId || editingId) {
+        setShowGenerator(false);
+    }
+  }, [selectedId, editingId]);
 
   // Filtrage intelligent
   const filteredComms = useMemo(() => {
@@ -71,7 +78,6 @@ export function CommunicationTab({
     setEditingId("NEW_MANUAL");
     setSelectedId(null);
     setShowGenerator(false);
-    setCreateMode(mode);
     setEditForm({ 
         title: mode === 'IMAGE' ? "Nouveau Post Visuel" : "Nouvelle publication", 
         content: "", 
@@ -85,8 +91,6 @@ export function CommunicationTab({
   const handleStartEdit = (comm: MarketingComm) => {
     setEditingId(comm.id);
     setShowGenerator(false);
-    const isVis = !!comm.image_url && (!comm.content || comm.content.length < 50);
-    setCreateMode(isVis ? 'IMAGE' : 'TEXT');
     setEditForm({ 
         title: comm.title, 
         content: comm.content, 
@@ -101,30 +105,22 @@ export function CommunicationTab({
     if (!editingId) return;
     setIsUpdating(true);
     try {
-        const finalData = { 
-            ...editForm, 
-            content: createMode === 'IMAGE' ? "" : editForm.content,
-            status: 'DRAFT' as CommStatus
-        };
-
         if (editingId === "NEW_MANUAL") {
-            const res = await createMarketingCommAction(finalData);
+            const res = await createMarketingCommAction({ ...editForm, status: 'DRAFT' });
             if (res.success && res.post) {
                 toast.success("Publication créée !");
                 setStatusFilter('DRAFT');
                 setTimeout(() => setSelectedId(res.post.id), 100);
                 setEditingId(null);
-                setCreateMode(null);
             }
         } else {
-            const res = await updateMarketingCommAction(editingId, finalData);
+            const res = await updateMarketingCommAction(editingId, { ...editForm, status: 'DRAFT' });
             if (res.success) {
                 toast.success("Publication mise à jour !");
                 setEditingId(null);
             }
         }
     } catch (err) {
-        console.error(err);
         toast.error("Erreur de sauvegarde");
     } finally {
         setIsUpdating(false);
@@ -164,8 +160,8 @@ export function CommunicationTab({
     };
   };
 
-  const handleGenerate = async () => {
-    const post = await onGeneratePost(selectedPlatform, topic);
+  const handleGenerate = async (forcedTopic?: string) => {
+    const post = await onGeneratePost(selectedPlatform, forcedTopic || topic);
     if (post) {
         setStatusFilter('DRAFT');
         setTimeout(() => setSelectedId(post.id), 100);
@@ -183,74 +179,55 @@ export function CommunicationTab({
   };
 
   return (
-    <div className="space-y-10 pb-20">
-      {/* 1. STRATEGIC IDEAS GRID (Utilise onGenerateIdeas) */}
-      <IdeasGrid 
-        ideas={ideas}
-        isScanning={isScanning}
-        onGenerateIdeas={onGenerateIdeas}
-        onUseTheme={(theme) => {
-            setTopic(theme);
-            setShowGenerator(true);
-            setSelectedId(null);
-            setEditingId(null);
-        }}
+    <div className="flex gap-6 h-[750px] animate-in fade-in duration-500 text-left">
+      {/* LEFT SIDEBAR */}
+      <PostList 
+          comms={filteredComms}
+          selectedId={selectedId}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          onSelect={(id) => { setSelectedId(id); setEditingId(null); }}
+          onStartManual={handleStartManual}
+          onShowGenerator={() => { setShowGenerator(true); setSelectedId(null); setEditingId(null); }}
+          isGeneratorActive={showGenerator}
       />
 
-      {/* 2. SPLIT WORKSPACE */}
-      <div className="flex gap-6 h-[800px] animate-in fade-in duration-500 text-left">
-        {/* LEFT SIDEBAR (PostList) */}
-        <PostList 
-            comms={filteredComms}
-            selectedId={selectedId}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            onSelect={(id) => { setSelectedId(id); setEditingId(null); setShowGenerator(false); }}
-            onStartManual={handleStartManual}
-            onShowGenerator={() => { setShowGenerator(true); setSelectedId(null); setEditingId(null); }}
-            isGeneratorActive={showGenerator}
-        />
-
-        {/* MAIN WORKSPACE */}
-        <div className="flex-1 flex flex-col gap-6">
-            {editingId ? (
-                <PostEditor 
-                    editingId={editingId}
-                    createMode={createMode}
-                    editForm={editForm}
-                    setEditForm={setEditForm}
-                    onClose={() => { setEditingId(null); setCreateMode(null); }}
-                    onSave={handleSaveEdit}
-                    onRefine={handleRefineContent}
-                    onFileUpload={handleFileUpload}
-                    isUpdating={isUpdating}
-                    isRefining={isRefining}
-                    isUploading={isUploading}
-                />
-            ) : activePost ? (
-                <PostPreview 
-                    activePost={activePost}
-                    onStartEdit={handleStartEdit}
-                />
-            ) : showGenerator ? (
-                <AIGenerator 
-                    selectedPlatform={selectedPlatform}
-                    setSelectedPlatform={setSelectedPlatform}
-                    topic={topic}
-                    setTopic={setTopic}
-                    onGenerate={handleGenerate}
-                    onPromote={handlePromote}
-                    isScanning={isScanning}
-                />
-            ) : (
-                <div className="flex-1 flex flex-col items-center justify-center opacity-20 text-slate-900 gap-4 bg-white border border-slate-200 rounded-[2.5rem]">
-                    <LayoutGrid className="w-20 h-20" />
-                    <p className="text-sm font-black uppercase tracking-[0.3em]">Sélectionnez un élément pour commencer</p>
-                </div>
-            )}
-        </div>
+      {/* MAIN WORKSPACE */}
+      <div className="flex-1 flex flex-col gap-6">
+          {editingId ? (
+              <PostEditor 
+                  createMode={editForm.image_url && (!editForm.content || editForm.content.length < 50) ? 'IMAGE' : 'TEXT'}
+                  editForm={editForm}
+                  setEditForm={setEditForm}
+                  onClose={() => { setEditingId(null); }}
+                  onSave={handleSaveEdit}
+                  onRefine={handleRefineContent}
+                  onFileUpload={handleFileUpload}
+                  isUpdating={isUpdating}
+                  isRefining={isRefining}
+                  isUploading={isUploading}
+              />
+          ) : activePost ? (
+              <PostPreview 
+                  activePost={activePost}
+                  onStartEdit={handleStartEdit}
+              />
+          ) : (
+              <AIGenerator 
+                  selectedPlatform={selectedPlatform}
+                  setSelectedPlatform={setSelectedPlatform}
+                  topic={topic}
+                  setTopic={setTopic}
+                  onGenerate={() => handleGenerate()}
+                  onPromote={handlePromote}
+                  isScanning={isScanning}
+                  ideas={ideas}
+                  onGenerateIdeas={onGenerateIdeas}
+                  onUseTheme={(theme) => handleGenerate(theme)} // GÉNÉRATION DIRECTE
+              />
+          )}
       </div>
     </div>
   );

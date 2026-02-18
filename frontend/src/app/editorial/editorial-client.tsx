@@ -130,10 +130,10 @@ export function EditorialClient({
   };
 
   return (
-    <div className="space-y-8">
-      <Tabs value={tabParam} onValueChange={handleTabChange} className="space-y-8">
-        {/* HEADER: TABS LIST & MAIN ACTIONS */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/30 p-2 rounded-3xl border border-white/5 backdrop-blur-sm shadow-xl">
+    <div className="space-y-6">
+      <Tabs value={tabParam} onValueChange={handleTabChange} className="space-y-6">
+        {/* HEADER: TABS LIST & MAIN ACTIONS (Non-sticky car le header de page est déjà sticky) */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/50 p-2 rounded-3xl border border-slate-200 backdrop-blur-sm shadow-sm">
           <TabsList className="bg-transparent border-none p-0 h-auto gap-1">
             <TabsTrigger value="comm" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest gap-2">
               <Megaphone className="w-3.5 h-3.5" /> Social Media
@@ -146,7 +146,7 @@ export function EditorialClient({
             </TabsTrigger>
           </TabsList>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pr-2">
             {tabParam === "mailing" && (
                 <Button onClick={handleMailingScan} disabled={isScanningMailing} size="sm" className="bg-purple-600 hover:bg-purple-700 text-white font-black rounded-2xl px-6 h-10 shadow-lg shadow-purple-500/20">
                     {isScanningMailing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
