@@ -352,10 +352,10 @@ export function MarketingClient({
                     </div>
                     <div className="mt-auto pt-4">
                       <Button 
-                        variant="outline" 
+                        variant="secondary" 
                         size="sm" 
                         onClick={() => setSelectedInsight(insight)}
-                        className="w-full rounded-xl border-white/10 hover:bg-blue-600 hover:text-white hover:border-transparent font-black text-[10px] uppercase tracking-widest h-9"
+                        className="w-full rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-600 hover:text-white border border-blue-500/20 font-black text-[10px] uppercase tracking-widest h-9 transition-all"
                       >
                         Lire le rapport <ArrowRightCircle className="w-3.5 h-3.5 ml-2" />
                       </Button>

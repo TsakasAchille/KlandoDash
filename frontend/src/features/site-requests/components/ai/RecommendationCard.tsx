@@ -183,9 +183,9 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
               <Button 
                 size="sm" 
                 onClick={() => handleGoToTool()}
-                className="flex-1 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-black text-[10px] uppercase tracking-wider gap-2 transition-all"
+                className="flex-1 h-10 rounded-xl bg-slate-950 hover:bg-slate-900 text-white border border-white/10 font-black text-[10px] uppercase tracking-wider gap-2 transition-all shadow-inner"
               >
-                <MapPin className="w-3.5 h-3.5" /> Voir Radar
+                <MapPin className="w-3.5 h-3.5 text-klando-gold" /> Voir Radar
               </Button>
               <Button 
                 size="sm" 
