@@ -2,46 +2,58 @@ import { createAdminClient } from "@/lib/supabase";
 
 export const GlobalAIService = {
   /**
-   * Scan stratégique analytique (SANS IA systématique)
-   * Identifie les opportunités de matching réelles via SQL.
+   * Scan stratégique analytique ultra-robuste
    */
   async runGlobalIntelligenceScan() {
     const supabase = createAdminClient();
-    console.log("[Marketing Scan] Starting analytical opportunity scan...");
+    console.log("[Marketing Scan] Starting deep analytical scan...");
 
-    // 1. Récupérer les demandes en attente (Prospects)
-    const { data: requests } = await supabase
+    // 1. Nettoyage immédiat et total des anciennes opportunités pour éviter les doublons/fantômes
+    await supabase.from('dash_ai_recommendations').delete().eq('status', 'PENDING');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 2. Récupérer toutes les demandes NEW
+    const { data: allRequests, error: reqError } = await supabase
       .from('site_trip_requests')
-      .select('id, origin_city, destination_city, desired_date, ai_recommendation, ai_updated_at')
+      .select('id, origin_city, destination_city, desired_date, ai_recommendation, ai_updated_at, origin_lat')
       .eq('status', 'NEW');
 
-    if (!requests || requests.length === 0) return 0;
+    if (reqError || !allRequests) return 0;
 
-    // 2. Nettoyer les anciennes recommandations PENDING pour repartir sur du propre
-    await supabase.from('dash_ai_recommendations').delete().eq('status', 'PENDING');
+    // 3. Filtrer en JS pour garantir la correspondance exacte avec le tableau des Prospects
+    const activeRequests = allRequests.filter(req => {
+      // Garder uniquement si : a des coordonnées GPS ET (pas de date OU date >= aujourd'hui)
+      const hasCoords = req.origin_lat !== null;
+      const isFutureOrNull = !req.desired_date || new Date(req.desired_date) >= today;
+      return hasCoords && isFutureOrNull;
+    });
+
+    console.log(`[Marketing Scan] Found ${activeRequests.length} active requests to analyze out of ${allRequests.length}.`);
+
+    if (activeRequests.length === 0) return 0;
 
     const recommendations = [];
 
-    // 3. Analyser chaque demande via SQL
-    for (const req of requests) {
+    // 4. Analyser chaque demande active
+    for (const req of activeRequests) {
       try {
-        // Appeler la fonction de matching SQL (Rayon par défaut 15km pour le scan large)
         const { data: matches, error: matchError } = await supabase.rpc('find_matching_trips', {
           p_request_id: req.id,
           p_radius_km: 15.0
         });
 
-        if (matchError) throw matchError;
+        if (matchError) continue;
 
-        // Si on a au moins un match, on crée une Action Card
         if (matches && matches.length > 0) {
           const topMatches = matches
             .sort((a: any, b: any) => a.total_proximity_score - b.total_proximity_score)
-            .slice(0, 3); // On garde les 3 meilleurs
+            .slice(0, 3);
 
           recommendations.push({
             type: 'TRACTION',
-            priority: matches.length >= 3 ? 3 : 2, // Priorité haute si beaucoup de choix
+            priority: matches.length >= 3 ? 3 : 2,
             title: `Opportunité : ${req.origin_city}`,
             target_id: req.id,
             content: {
@@ -66,14 +78,14 @@ export const GlobalAIService = {
           });
         }
       } catch (err) {
-        console.error(`[Marketing Scan] Failed to analyze request ${req.id}:`, err);
+        console.error(`[Marketing Scan] Error analyzing ${req.id}:`, err);
       }
     }
 
-    // 4. Sauvegarder les cartes d'opportunités
+    // 5. Sauvegarder les nouvelles cartes
     if (recommendations.length > 0) {
-      const { error } = await supabase.from('dash_ai_recommendations').insert(recommendations);
-      if (error) console.error("[Marketing Scan] Error inserting action cards:", error);
+      const { error: insertError } = await supabase.from('dash_ai_recommendations').insert(recommendations);
+      if (insertError) console.error("[Marketing Scan] Insert error:", insertError);
     }
 
     return recommendations.length;
