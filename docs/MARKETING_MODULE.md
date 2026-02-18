@@ -1,17 +1,32 @@
 # Cockpit Marketing & Croissance
 
-Ce module est le centre névralgique de la stratégie de croissance de Klando. Il combine analyse géographique, intelligence artificielle (Gemini) et outils de communication (Resend).
+Ce module est le centre névralgique de la stratégie de croissance de Klando. Il combine analyse géographique, intelligence artificielle (Gemini) et outils de communication (Resend). 
 
-## 🧭 Structure du Cockpit
+Depuis la v1.6, le module est divisé en deux domaines distincts pour respecter les principes SOLID : la **Stratégie** (/marketing) et la **Production Éditoriale** (/editorial).
 
-Le module est divisé en 6 piliers stratégiques :
+---
 
-1.  **Stratégie** : Recommandations IA immédiates basées sur le matching prospects/trajets.
-2.  **Communication** : Générateur de contenu social (TikTok, Instagram, X) et angles d'attaque marketing.
-3.  **Intelligence** : Rapports d'analyse approfondis sur les revenus, la conversion et la qualité de service.
-4.  **Prospects** : Gestion des intentions de voyage avec filtrage intelligent (Uniquement à venir).
-5.  **Radar** : Interface cartographique pour le matching manuel assisté par IA.
-6.  **Observatoire** : Visualisation des flux de demande et zones de chaleur (Heatmaps).
+## 🧭 1. Stratégie Marketing (/marketing)
+
+Ce sous-module se concentre sur l'analyse et la détection d'opportunités.
+
+1.  **Radar** : Interface cartographique pour le matching manuel assisté par IA.
+2.  **Intelligence** : Rapports d'analyse approfondis (Gemini) sur les revenus, la conversion et la qualité.
+3.  **Observatoire** : Visualisation des flux de demande et zones de chaleur (Heatmaps).
+4.  **Stratégie** : Recommandations IA immédiates basées sur le matching prospects/trajets.
+5.  **Prospects** : Gestion des intentions de voyage collectées sur le site.
+
+---
+
+## ✍️ 2. Centre Éditorial (/editorial)
+
+Ce sous-module gère la création de contenu, la planification et la collaboration interne.
+
+1.  **Calendrier** : Interface interactive pour planifier les publications sociales et les mailings.
+2.  **Social Media** : Générateur de contenu (TikTok, Instagram, X) avec aperçu et édition.
+3.  **Mailing** : Système de rédaction de mailings avec capture de carte intégrée.
+4.  **Collaboration** : Système de commentaires internes permettant aux utilisateurs du dashboard de discuter sur chaque contenu.
+5.  **Médiathèque** : Gestion des visuels et assets associés aux campagnes.
 
 ---
 
@@ -22,18 +37,18 @@ Le module est divisé en 6 piliers stratégiques :
 *   **Visualisation** : 
     *   **Flux** : Polylines Burgundy semi-transparentes avec épaisseur proportionnelle au volume.
     *   **Heatmap** : `CircleMarker` dorés dont le rayon varie selon la densité des points de départ.
-    *   **Carte** : Utilisation du layer `Voyager` (CartoDB) pour un contraste optimal en mode clair.
 
 ### 2. Moteur de Mailing & Capture de Carte
 *   **Workflow** : Scan IA -> Suggestion -> Brouillon -> Envoi.
 *   **Capture Visuelle** : Utilisation de `html2canvas` pour prendre une photo du trajet dans le Radar.
-*   **Stockage** : Les captures sont stockées dans le bucket Supabase `marketing/screenshots/`.
-*   **Insertion** : Lien public inséré dynamiquement via la colonne `image_url` de la table `dash_marketing_emails`.
+*   **Stockage** : Bucket Supabase `marketing/screenshots/`.
 
-### 3. Agence de Communication IA
-*   **Plateformes** : TikTok (Punchy), Instagram (Esthétique), X (Informatif).
-*   **Logic** : Adapte le ton et les emojis selon la cible.
-*   **Base de données** : Table `dash_marketing_communications`.
+### 3. Planification & Discussion
+*   **Base de données** : 
+    *   `dash_marketing_communications` : Posts et idées.
+    *   `dash_marketing_emails` : Brouillons et historique mails.
+    *   `dash_marketing_comments` : Discussion interne liée aux contenus.
+*   **Status Workflow** : `NEW` (IA) -> `DRAFT` (Édité/Enregistré) -> `PUBLISHED`/`SENT` (Finalisé).
 
 ---
 
@@ -41,13 +56,15 @@ Le module est divisé en 6 piliers stratégiques :
 
 Le module suit une structure modulaire stricte :
 
-*   **Actions** (`/app/marketing/actions/`) : Séparées par domaine (`communication.ts`, `intelligence.ts`, `mailing.ts`).
-*   **Composants** (`/app/marketing/components/`) :
-    *   `tabs/` : Un fichier par onglet fonctionnel.
-    *   `shared/` : Composants transverses (Carte de flux, Modales).
-*   **Types** (`/app/marketing/types.ts`) : Contrat de données unique pour tout le module.
+*   **Actions** : 
+    *   `/app/marketing/actions/` : Intelligence, Mailing, Communication.
+    *   `/app/editorial/actions.ts` : Commentaires et visuels.
+*   **Composants** :
+    *   `/app/marketing/components/tabs/` : Un fichier par onglet stratégique.
+    *   `/app/editorial/components/` : Calendrier et modales de détails.
+*   **Types** (`/app/marketing/types.ts`) : Contrat de données unique pour tout le domaine Marketing/Editorial.
 
 ## 🔒 Sécurité & Accès
 *   Accès réservé aux rôles `admin` et `marketing`.
 *   RLS activé sur toutes les tables `dash_marketing_*`.
-*   Anonymisation des données envoyées à Gemini (uniquement les noms de villes et les volumes, pas de données personnelles sensibles).
+*   Collaboration basée sur les profils de la table `dash_authorized_users`.

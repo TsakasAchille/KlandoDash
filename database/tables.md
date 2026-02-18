@@ -120,6 +120,52 @@ Demandes d'intentions collectées sur le site vitrine.
 
 ---
 
+## Tables Marketing & Éditorial
+
+### `dash_marketing_communications`
+Publications sociales et idées de contenu.
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `id` | uuid | **PK** |
+| `type` | comm_type | `IDEA` ou `POST` |
+| `platform` | platform | `TIKTOK`, `INSTAGRAM`, `X`, `GENERAL` |
+| `title` | text | Titre du post ou de l'idée |
+| `content` | text | Corps du texte (Markdown) |
+| `hashtags` | text[] | Liste de hashtags suggérés |
+| `visual_suggestion`| text | Description du visuel idéal |
+| `status` | text | `NEW`, `DRAFT`, `PUBLISHED`, `TRASH` |
+| `scheduled_at` | timestamptz | Date de planification calendrier |
+| `image_url` | text | Lien vers le visuel final (Storage) |
+| `created_at` | timestamptz | |
+
+### `dash_marketing_emails`
+Brouillons et historique du mailing direct.
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `id` | uuid | **PK** |
+| `recipient_email` | text | Email de la cible |
+| `subject` | text | Sujet du mail |
+| `content` | text | Corps du mail (HTML/Markdown) |
+| `status` | text | `DRAFT`, `SENT`, `FAILED` |
+| `image_url` | text | Capture de carte intégrée |
+| `sent_at` | timestamptz | |
+
+### `dash_marketing_comments`
+Discussion interne entre dashboard users.
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `id` | uuid | **PK** |
+| `comm_id` | uuid | **FK → dash_marketing_communications** |
+| `email_id` | uuid | **FK → dash_marketing_emails** |
+| `user_email` | text | **FK → dash_authorized_users.email** |
+| `content` | text | Texte du commentaire |
+| `created_at` | timestamptz | |
+
+---
+
 ## Fonctions RPC (Calculs Optimisés)
 
 ### `get_klando_stats_final()`

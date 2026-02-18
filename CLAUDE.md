@@ -58,11 +58,11 @@ npx supabase db dump --schema public -f schema.sql
 | `trips` | Trip listings | `trip_id` |
 | `bookings` | Reservations | `id` |
 | `transactions` | Payments (synced from Firebase) | `id` |
-| `dash_authorized_users` | Utilisateurs autorisés dashboard | `email` |
+| `dash_authorized_users` | Dashboard authorized users & Profiles | `email` |
 | `support_tickets` | Tickets de support | `ticket_id` |
-| `dash_ai_recommendations` | Opportunités marketing IA | `id` |
-| `dash_marketing_insights` | Rapports stratégiques IA | `id` |
-| `dash_marketing_emails` | Brouillons et historique mailing | `id` |
+| `dash_marketing_communications` | Social posts & ideas | `id` |
+| `dash_marketing_emails` | Mailing drafts & history | `id` |
+| `dash_marketing_comments` | Internal editorial collaboration | `id` |
 
 ## Authentication (NextAuth.js v5)
 
@@ -70,8 +70,8 @@ Le dashboard utilise NextAuth.js avec Google OAuth. Seuls les utilisateurs prés
 
 | Rôle | Accès |
 |------|-------|
-| `admin` | Accès total (Finance, Stats, Marketing, Admin) |
-| `marketing` | Accès Croissance (Prospects, IA Strategy, Mailing, Map, Support) |
+| `admin` | Accès total (Finance, Stats, Marketing, Editorial, Admin) |
+| `marketing` | Accès Croissance (IA Strategy, Radar, Editorial Center, Map) |
 | `support` | Accès Service Client (Tickets, Chats, Users, Map) |
 
 ## Theme Colors (Klando)
@@ -79,19 +79,20 @@ Le dashboard utilise NextAuth.js avec Google OAuth. Seuls les utilisateurs prés
 | Name | Hex | Usage |
 |------|-----|-------|
 | Gold | `#EBC33F` | Primary accents, titles |
-| Burgundy | `#7B1F2F` | Selected states |
+| Burgundy | `#7B1F2F` | Map flows, alerts |
 | Dark | `#081C36` | Backgrounds |
-| Light Blue | `#1B3A5F` | UI Elements |
+| Purple | `#9333ea` | Editorial Center primary color |
 
 ## Current Status
 
 ### Done ✅
-- [x] Unified Marketing Cockpit (Strategy, Intelligence, Prospects, Radar, Mailing)
-- [x] SOLID architecture for modular UI components
+- [x] Unified Marketing Cockpit (Strategy, Intelligence, Radar)
+- [x] Dedicated Editorial Center (Calendar, Planning, Social Media, Mailing)
+- [x] Internal Collaboration (User comments on content)
+- [x] SOLID architecture decoupling Strategy from Content Production
 - [x] Analytical Strategic Scan (SQL PostGIS) for cost-efficient matching
-- [x] AI Strategic Reports (Gemini) with premium Markdown rendering
+- [x] AI Social Post Generator (TikTok, Instagram, X)
 - [x] AI-driven Mailing system with Resend integration
 - [x] Role-based access control (Admin / Marketing / Support)
-- [x] Professional dark theme optimized for growth operations
+- [x] Professional light/high-contrast theme for growth operations
 - [x] High-precision map visualization with Leaflet
-- [x] Support ticket module with mentions and notifications

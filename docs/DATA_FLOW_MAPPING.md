@@ -9,7 +9,10 @@ This document details the relationship between the database (Tables/Views) and t
 | `trips` | Table | **Trajets** | `/trips` | Full management (Admin). Shows all statuses. |
 | `public_pending_trips` | View | **Site Requests** | `/site-requests` | Used by AI Matching & Landing Page. Only `PENDING` with seats. |
 | `site_trip_requests` | Table | **Site Requests** | `/site-requests` | Intentions collected from the landing page. |
-| `site_trip_request_matches`| Table | **Site Requests** | `/site-requests` | Persistent results from the proximity scanner. |
+| `dash_marketing_communications` | Table | **Editorial** | `/editorial` | Scheduled social posts and communication ideas. |
+| `dash_marketing_emails` | Table | **Editorial** | `/editorial` | Mailing drafts and history. |
+| `dash_marketing_comments` | Table | **Editorial** | `/editorial` | Internal user comments on marketing content. |
+| `dash_authorized_users` | Table | **Admin/All** | `/admin` | Whitelisted dashboard users with roles and profile sync. |
 | `users` | Table | **Utilisateurs** | `/users` | User profiles and driver documentation. |
 | `support_tickets` | Table | **Support** | `/support` | Chat-like interface for user issues. |
 | `transactions` | Table | **Transactions**| `/transactions` | Financial flows (Integrapay). |
@@ -19,13 +22,15 @@ This document details the relationship between the database (Tables/Views) and t
 ```text
 frontend/src/
 ├── app/
+│   ├── marketing/              # Strategic analysis & Opportunity detection
+│   │   ├── actions/            # Intelligence, Mailing, Comm generators
+│   │   └── components/tabs/    # Individual pillar tabs
+│   ├── editorial/              # Content production & Planning
+│   │   ├── actions.ts          # Internal collaboration logic (Comments)
+│   │   └── components/         # Calendar and Detail Modals
 │   ├── site-requests/          # Uses public_pending_trips for matching
 │   │   ├── actions.ts          # Server actions for AI Matching (Gemini)
-│   │   ├── site-requests-client.tsx # Main dashboard for intentions
-│   │   └── components/
-│   │       ├── MatchingDialog.tsx  # Logic for AI recommendation (Popup principal)
-│   │       ├── SiteRequestsMap.tsx # Visualizes matches on Leaflet (Grande carte)
-│   │       └── MatchedTripsList.tsx # List of found trips for a request
+│   │   └── site-requests-client.tsx
 ├── components/
 │   ├── site-requests/
 │   │   └── comparison-map.tsx  # Mini-carte de comparaison (Demande vs Offre) dans le MatchingDialog

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-KlandoDash is the administration dashboard for Klando, a carpooling service in Senegal. This full-stack project is built with a modern tech stack, providing a comprehensive interface for managing trips, users, support tickets, financial transactions, and marketing growth.
+KlandoDash is the administration dashboard for Klando, a carpooling service in Senegal. This full-stack project is built with a modern tech stack, providing a comprehensive interface for managing trips, users, support tickets, financial transactions, marketing strategy, and content production.
 
 - **Frontend**: Next.js 14 (App Router) + Shadcn/ui + TailwindCSS.
 - **Backend & Database**: Supabase (PostgreSQL) + SQL RPC functions for performance.
@@ -14,7 +14,7 @@ KlandoDash is the administration dashboard for Klando, a carpooling service in S
 ```
 KlandoDash/
 ├── frontend/          # Next.js 14 + Shadcn/ui
-│   ├── src/app/      # Pages (marketing, transactions, map, stats, support)
+│   ├── src/app/      # Pages (marketing, editorial, transactions, map, stats, support)
 │   ├── src/features/ # SOLID Business Logic (site-requests services)
 │   ├── src/components/ # Reusable UI components
 │   ├── src/lib/      # Supabase client, mail service, shared queries
@@ -26,33 +26,36 @@ KlandoDash/
 
 ## Architecture & Logic Flow
 
-### Unified Marketing Cockpit
-1.  **Strategy**: Analytical scan (SQL PostGIS) identifying matching opportunities.
-2.  **Communication**: AI Social Post generator (TikTok, Instagram, X) and strategic angles.
-3.  **Intelligence**: AI-generated strategic reports (Gemini) on Revenue and Conversion.
-4.  **Mailing**: Automated draft system with integrated map screenshot capture.
-5.  **Observatoire**: Geographical demand analysis via Heatmaps and Flow mapping.
+### Unified Marketing & Editorial Cockpit
+1.  **Strategy (/marketing)**: Analytical scan (SQL PostGIS) identifying matching opportunities.
+2.  **Intelligence (/marketing)**: AI-generated strategic reports (Gemini) on Revenue and Conversion.
+3.  **Observatoire (/marketing)**: Geographical demand analysis via Heatmaps and Flow mapping.
+4.  **Production (/editorial)**: AI Social Post generator (TikTok, Instagram, X) and unified mailing drafts.
+5.  **Planning (/editorial)**: Interactive calendar for scheduling content and collaborative comments.
 
 ### Data-Driven Workflows
 *   **Analytical First**: High-performance SQL queries for proximity and flow calculation.
 *   **Optional AI Finish**: Gemini used for language intelligence (posts, mailing, reports).
-*   **Visual Context**: Automated map capture (`html2canvas`) for professional customer outreach.
-*   **SOLID Principles**: Modular actions and tab components for maintainability.
+*   **Visual Context**: Integrated media library and map screenshot capture for customer outreach.
+*   **Collaboration**: Internal comment system for dashboard users on every piece of content.
+*   **SOLID Principles**: Modular actions and decoupled domains (Strategy vs Production).
 
 ## Key Performance Standards
 
 - **Honest AI Thresholds**: Strict km limits (15km max) for matching suggestions.
 - **Cost Efficiency**: SQL matching first, AI calls limited to text-based finalization.
-- **UX Excellence**: High-contrast light themes for operational tools, real-time map invalidation.
+- **UX Excellence**: High-contrast light themes for operational tools, real-time calendar updates.
 
 ## Current Status
 
 ### Done ✅
-- [x] Marketing Cockpit with 6 strategic pillars.
+- [x] Marketing Cockpit (Strategy, Radar, Observatory).
+- [x] Editorial Center (Calendar, Planning, Social Media, Mailing).
+- [x] Internal Collaboration (User Comments on content).
 - [x] Demand Observatory (Heatmap & Flows) via SQL RPC.
 - [x] AI Communication agency (Social Post Generator).
 - [x] Automated Mailing with map screenshot storage.
-- [x] SOLID Refactor of the marketing module (Actions/Tabs/Shared).
+- [x] SOLID Refactor of the marketing and editorial modules.
 - [x] High-precision Map Visualization (Directional arrows, auto-correction).
 - [x] Optimized stats via SQL RPC functions.
 
