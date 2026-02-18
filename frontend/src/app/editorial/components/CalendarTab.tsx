@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   Music, Instagram, Twitter, Mail, 
-  FileText, X as XIcon, Plus
+  FileText, X as XIcon, Plus, Image as ImageIcon
 } from "lucide-react";
 import { MarketingComm, MarketingEmail } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ import { fr } from "date-fns/locale";
 import { EventDetailsModal } from "./EventDetailsModal";
 import { PlanPostModal } from "./PlanPostModal";
 import { toast } from "sonner";
+import { updateMarketingCommAction } from "@/app/marketing/actions/communication";
 
 interface CalendarTabProps {
   comms: MarketingComm[];
@@ -35,6 +36,7 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
   const [selectedEventType, setSelectedEventType] = useState<'COMM' | 'EMAIL' | null>(null);
   
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState<string | null>(null);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -72,6 +74,30 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
+  // --- DRAG & DROP HANDLERS ---
+  const handleDragStart = (e: React.DragEvent, commId: string) => {
+    e.dataTransfer.setData("commId", commId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDrop = async (e: React.DragEvent, date: Date) => {
+    e.preventDefault();
+    setIsDraggingOver(null);
+    const commId = e.dataTransfer.getData("commId");
+    if (!commId) return;
+
+    const res = await updateMarketingCommAction(commId, {
+        scheduled_at: date.toISOString(),
+        status: 'DRAFT'
+    });
+
+    if (res.success) {
+        toast.success(`Post planifié pour le ${format(date, 'dd MMMM', { locale: fr })}`);
+    } else {
+        toast.error("Erreur de planification");
+    }
+  };
+
   return (
     <div className="grid lg:grid-cols-12 gap-8 animate-in fade-in duration-700 h-[800px] text-left">
       
@@ -104,16 +130,24 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
             {days.map((day, i) => {
               const dayEvents = events.filter(e => isSameDay(e.date, day));
               const isCurrentMonth = isSameMonth(day, currentMonth);
+              const dayId = format(day, 'yyyy-MM-dd');
               
               return (
                 <div 
                   key={i}
                   onClick={() => setSelectedDay(day)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDraggingOver(dayId);
+                  }}
+                  onDragLeave={() => setIsDraggingOver(null)}
+                  onDrop={(e) => handleDrop(e, day)}
                   className={cn(
                     "min-h-[120px] border-r border-b border-slate-100 p-3 transition-all hover:bg-slate-50/50 cursor-pointer group flex flex-col gap-2 relative",
                     !isCurrentMonth && "bg-slate-50/30 opacity-40",
                     isToday(day) && "bg-purple-50/50",
-                    selectedDay && isSameDay(day, selectedDay) && "ring-2 ring-purple-600 ring-inset bg-purple-50/30"
+                    selectedDay && isSameDay(day, selectedDay) && "ring-2 ring-purple-600 ring-inset bg-purple-50/30",
+                    isDraggingOver === dayId && "bg-blue-50 ring-2 ring-blue-400 ring-inset z-10"
                   )}
                 >
                   <div className="flex justify-between items-start">
@@ -175,17 +209,21 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
                     drafts.map(c => (
                         <div 
                             key={c.id} 
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, c.id)}
                             onClick={() => {
                                 setSelectedEventId(c.id);
                                 setSelectedEventType('COMM');
                             }}
-                            className="bg-white border border-slate-200 rounded-2xl p-4 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+                            className="bg-white border border-slate-200 rounded-2xl p-4 hover:border-purple-400 hover:shadow-md transition-all cursor-move active:scale-95 group relative overflow-hidden"
                         >
                             <div className="flex items-center gap-2 mb-2">
                                 <span className="text-[8px] font-black text-purple-600 uppercase bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">{c.platform}</span>
+                                {c.image_url && !c.image_url.endsWith('.pdf') && <ImageIcon className="w-3 h-3 text-slate-300" />}
                             </div>
                             <p className="text-[10px] font-black text-slate-900 uppercase truncate">{c.title}</p>
                             <p className="text-[9px] text-slate-500 line-clamp-2 mt-1 italic">&quot;{c.content}&quot;</p>
+                            <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/[0.01] transition-colors pointer-events-none" />
                         </div>
                     ))
                 ) : (

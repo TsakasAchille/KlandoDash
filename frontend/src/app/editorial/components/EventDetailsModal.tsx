@@ -10,12 +10,15 @@ import {
   Music, Instagram, Twitter, Mail, 
   Send, Calendar, Tag,
   Image as ImageIcon,
-  Loader2
+  Loader2, FileText, Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getMarketingComments, addMarketingComment } from "../actions";
+import { updateMarketingCommAction } from "@/app/marketing/actions/communication";
+import { updateMarketingEmailAction } from "@/app/marketing/actions/mailing";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface EventDetailsModalProps {
   event: any | null;
@@ -63,6 +66,24 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
       const refreshParams = event.eventType === 'COMM' ? { commId: event.id } : { emailId: event.id };
       const data = await getMarketingComments(refreshParams);
       setComments(data);
+    }
+    setSubmitting(false);
+  };
+
+  const handleUnplan = async () => {
+    if (!event) return;
+    if (!confirm("Voulez-vous vraiment retirer ce contenu du calendrier ?")) return;
+    
+    setSubmitting(true);
+    const res = event.eventType === 'COMM' 
+        ? await updateMarketingCommAction(event.id, { scheduled_at: null })
+        : await updateMarketingEmailAction(event.id, { sent_at: null });
+
+    if (res.success) {
+        toast.success("Contenu déplanifié");
+        onClose();
+    } else {
+        toast.error("Échec de l'opération");
     }
     setSubmitting(false);
   };
@@ -133,11 +154,21 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
                             {format(date, 'dd MMMM yyyy', { locale: fr })}
                         </span>
                     </div>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        disabled={submitting}
+                        onClick={handleUnplan}
+                        className="h-7 text-[9px] font-black uppercase text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full gap-1.5 px-3"
+                    >
+                        {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                        Déplanifier
+                    </Button>
                 </div>
               </div>
 
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                <p className="text-xs text-slate-600 leading-relaxed font-medium italic">
+                <p className="text-xs text-slate-600 leading-relaxed font-medium italic whitespace-pre-wrap">
                   &quot;{event.content}&quot;
                 </p>
               </div>
