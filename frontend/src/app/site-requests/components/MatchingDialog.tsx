@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Globe, Sparkles, Loader2, RefreshCw, Phone, MessageSquare, Copy, Info, Link2 } from "lucide-react";
+import { MapPin, Calendar, Globe, Sparkles, Loader2, RefreshCw, Phone, MessageSquare, Copy, Info, Link2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
@@ -16,6 +16,7 @@ import { SiteTripRequest } from "@/types/site-request";
 import { PublicTrip } from "../hooks/useSiteRequestAI";
 import dynamic from "next/dynamic";
 import { GeocodingService } from "@/features/site-requests/services/geocoding.service";
+import { createEmailDraftAction } from "@/app/marketing/mailing-actions";
 
 // IMPORT DU NOUVEAU COMPOSANT FEATURES (Architecture SOLID)
 const ComparisonMap = dynamic(() => import("@/features/site-requests/components/maps/ComparisonMap").then(mod => mod.ComparisonMap), { 
@@ -52,6 +53,7 @@ export function MatchingDialog({
   localAiResult
 }: MatchingDialogProps) {
   const [clientPolyline, setClientPolyline] = useState<string | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   // Calcul de l'itinéraire théorique du client (en pointillés sur la carte)
   useEffect(() => {
@@ -91,15 +93,34 @@ export function MatchingDialog({
       polyline: matchedTrip.polyline
     } : null;
 
-    console.log("[MatchingDialog] MapProps prepared:", { 
-      hasClientOrigin: !!clientOrigin, 
-      hasClientDest: !!clientDestination, 
-      hasDriverTrip: !!driverTrip,
-      driverPolylineLen: driverTrip?.polyline?.length || 0
-    });
-
     return { clientOrigin, clientDestination, driverTrip };
   }, [selectedRequest, matchedTrip]);
+
+  const handleSaveDraft = async () => {
+    if (!aiMessage || !selectedRequest) return;
+    setIsSavingDraft(true);
+    try {
+      const res = await createEmailDraftAction({
+        recipient_email: selectedRequest.contact_info,
+        recipient_name: "",
+        subject: `Klando : Trajet trouvé pour ${selectedRequest.origin_city}`,
+        content: aiMessage,
+        category: 'MATCH_FOUND'
+      });
+      if (res.success) {
+        toast.success("Brouillon enregistré !", {
+          action: {
+            label: "Voir",
+            onClick: () => (window.location.href = "/marketing?tab=mailing")
+          }
+        });
+      }
+    } catch (error) {
+      toast.error("Erreur lors de la sauvegarde");
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
 
   if (!selectedRequest) return null;
 
@@ -140,7 +161,7 @@ export function MatchingDialog({
               </div>
             </div>
 
-            {/* MAP COMPARISON - Stable memoized props */}
+            {/* MAP COMPARISON */}
             <ComparisonMap 
               key={`${matchedTrip?.id || "no-trip"}-${clientPolyline ? 'route' : 'no-route'}`}
               clientOrigin={mapProps?.clientOrigin || null}
@@ -217,9 +238,21 @@ export function MatchingDialog({
                         <div className="flex items-center gap-2 text-green-700">
                           <MessageSquare className="w-4 h-4" /><h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Message WhatsApp Prêt</h4>
                         </div>
-                        <Button size="sm" variant="ghost" className="h-8 text-green-700 font-bold gap-2 text-[10px] uppercase hover:bg-green-100" onClick={() => { navigator.clipboard.writeText(aiMessage); toast.success("Copié !"); }}>
-                          <Copy className="w-3.5 h-3.5" /> Copier
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="secondary" 
+                            disabled={isSavingDraft}
+                            onClick={handleSaveDraft}
+                            className="h-8 bg-blue-100 text-blue-700 font-bold gap-2 text-[10px] uppercase hover:bg-blue-200 border border-blue-200 shadow-sm"
+                          >
+                            {isSavingDraft ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                            Brouillon
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-8 text-green-700 font-bold gap-2 text-[10px] uppercase hover:bg-green-100" onClick={() => { navigator.clipboard.writeText(aiMessage); toast.success("Copié !"); }}>
+                            <Copy className="w-3.5 h-3.5" /> Copier
+                          </Button>
+                        </div>
                       </div>
                       <div className="bg-white/60 p-4 rounded-2xl border border-green-100 text-sm font-medium text-slate-800 leading-relaxed italic whitespace-pre-wrap">{aiMessage}</div>
                     </div>

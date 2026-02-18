@@ -7,7 +7,7 @@ import { askKlandoAI } from "@/lib/gemini";
 import { sendEmail } from "@/lib/mail";
 import React from "react";
 
-export type EmailStatus = 'DRAFT' | 'SENT' | 'FAILED';
+export type EmailStatus = 'DRAFT' | 'SENT' | 'FAILED' | 'TRASH';
 export type EmailCategory = 'WELCOME' | 'MATCH_FOUND' | 'RETENTION' | 'PROMO' | 'GENERAL';
 
 export interface MarketingEmail {
@@ -88,43 +88,55 @@ export async function generateMailingSuggestionsAction() {
  * Envoie un email marketing via Resend
  */
 export async function sendMarketingEmailAction(id: string) {
+  // ... existing code ...
+}
+
+/**
+ * Crée un brouillon d'email manuellement (ou via Aide IA)
+ */
+export async function createEmailDraftAction(data: {
+  recipient_email: string;
+  recipient_name?: string;
+  subject: string;
+  content: string;
+  category: EmailCategory;
+}) {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   const supabase = createAdminClient();
-  const { data: email, error: fetchError } = await supabase
+  const { data: draft, error } = await supabase
     .from('dash_marketing_emails')
-    .select('*')
-    .eq('id', id)
+    .insert([{
+      ...data,
+      status: 'DRAFT',
+      created_at: new Date().toISOString()
+    }])
+    .select()
     .single();
 
-  if (fetchError || !email) return { success: false, message: "Email introuvable" };
+  if (error) return { success: false, message: "Échec de sauvegarde" };
+  
+  revalidatePath("/marketing");
+  return { success: true, id: draft.id };
+}
 
-  // Note: On utilise React.createElement pour passer le texte brut Markdown (simplifié ici)
-  // Dans une vraie app, on utiliserait un parser Markdown -> React
-  const res = await sendEmail({
-    to: email.recipient_email,
-    subject: email.subject,
-    react: React.createElement("div", { 
-      style: { fontFamily: 'sans-serif', padding: '20px', color: '#333' }
-    }, email.content)
-  });
+/**
+ * Déplace un email vers la corbeille
+ */
+export async function moveEmailToTrashAction(id: string) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
-  if (res.success) {
-    await supabase.from('dash_marketing_emails').update({
-      status: 'SENT',
-      sent_at: new Date().toISOString(),
-      resend_id: res.id
-    }).eq('id', id);
-    revalidatePath("/marketing");
-    return { success: true };
-  } else {
-    await supabase.from('dash_marketing_emails').update({
-      status: 'FAILED',
-      error_message: JSON.stringify(res.error)
-    }).eq('id', id);
-    return { success: false, message: "Échec de l'envoi" };
-  }
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from('dash_marketing_emails')
+    .update({ status: 'TRASH' })
+    .eq('id', id);
+
+  if (error) return { success: false };
+  revalidatePath("/marketing");
+  return { success: true };
 }
 
 /**
