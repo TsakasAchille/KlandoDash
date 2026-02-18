@@ -137,7 +137,7 @@ export function MatchingDialog({
         toast.success("Brouillon enregistré avec la carte !", {
           action: {
             label: "Voir",
-            onClick: () => (window.location.href = `/marketing?tab=mailing&mailId=${res.id}`)
+            onClick: () => (window.location.href = `/editorial?tab=mailing&mailId=${res.id}`)
           }
         });
       }
