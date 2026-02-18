@@ -2,22 +2,25 @@
 
 ## Project Overview
 
-KlandoDash is the administration dashboard for Klando, a carpooling service in Senegal. This full-stack project is built with a modern tech stack, providing a comprehensive interface for managing trips, users, support tickets, financial transactions, marketing strategy, and content production.
+KlandoDash is the administration dashboard for Klando, a carpooling service in Senegal. This full-stack project is built with a modern tech stack, providing a comprehensive interface for managing trips, users, support tickets, financial transactions, and marketing growth.
 
 - **Frontend**: Next.js 14 (App Router) + Shadcn/ui + TailwindCSS.
 - **Backend & Database**: Supabase (PostgreSQL) + SQL RPC functions for performance.
 - **Authentication**: NextAuth.js (v5) + Google OAuth (Whitelisted access).
 - **Intelligence**: Integrated Google Gemini API for strategic and operational analysis.
 
-## Project Structure
+## Project Structure (SOLID Refactored)
 
 ```
 KlandoDash/
 ├── frontend/          # Next.js 14 + Shadcn/ui
-│   ├── src/app/      # Pages (marketing, editorial, transactions, map, stats, support)
-│   ├── src/features/ # SOLID Business Logic (site-requests services)
-│   ├── src/components/ # Reusable UI components
-│   ├── src/lib/      # Supabase client, mail service, shared queries
+│   ├── src/app/      # Routes (Pages) - Simplified, orchestrates features
+│   ├── src/features/ # Domain Business Logic & Components (SOLID)
+│   │   ├── marketing/# Strategy, Intelligence, Observatoire
+│   │   ├── editorial/# Production Center (Social Media, Mailing, Calendar)
+│   │   └── map/      # High-precision Visualization
+│   ├── src/components/ # Reusable UI (Shadcn, Shared)
+│   ├── src/lib/      # Supabase client, gemini, mail service, shared queries
 │   └── src/types/    # TypeScript definitions
 ├── database/          # SQL schemas & migrations (find_matching_trips, marketing tables)
 ├── docs/              # Technical Documentation
@@ -26,46 +29,36 @@ KlandoDash/
 
 ## Architecture & Logic Flow
 
-### Unified Marketing & Editorial Cockpit
-1.  **Strategy (/marketing)**: Analytical scan (SQL PostGIS) identifying matching opportunities.
-2.  **Intelligence (/marketing)**: AI-generated strategic reports (Gemini) on Revenue and Conversion.
-3.  **Observatoire (/marketing)**: Geographical demand analysis via Heatmaps and Flow mapping.
-4.  **Production (/editorial)**: AI Social Post generator (TikTok, Instagram, X) and unified mailing drafts.
-5.  **Planning (/editorial)**: Interactive calendar for scheduling content and collaborative comments.
+### 1. Feature-Driven Design (SOLID)
+Les composants lourds (`CommunicationTab`, `MailingTab`, `MapClient`) sont découpés en sous-composants spécialisés (List, Editor, Preview, Sidebar) isolés dans le dossier `features/`.
 
-### Data-Driven Workflows
-*   **Analytical First**: High-performance SQL queries for proximity and flow calculation.
-*   **Optional AI Finish**: Gemini used for language intelligence (posts, mailing, reports).
-*   **Visual Context**: Integrated media library and map screenshot capture for customer outreach.
-*   **Collaboration**: Internal comment system for dashboard users on every piece of content.
-*   **SOLID Principles**: Modular actions and decoupled domains (Strategy vs Production).
+### 2. Centre Éditorial (Production Focus)
+- **Interface Split-View** : Navigation à gauche, zone de production à droite (750px fixe pour zéro scroll).
+- **IA Radar Intégrée** : Générateur IA affiché par défaut avec accès direct aux Angles Stratégiques (Génération en 1 clic).
+- **Dual-Mode Social Media** : Support natif des "Posts Visuels" (PNG pur) vs "Posts Standards" (Texte + Media).
+- **Gestion de Corbeille** : Système complet de suppression, restauration et suppression définitive.
 
-## Key Performance Standards
-
-- **Honest AI Thresholds**: Strict km limits (15km max) for matching suggestions.
-- **Cost Efficiency**: SQL matching first, AI calls limited to text-based finalization.
-- **UX Excellence**: High-contrast light themes for operational tools, real-time calendar updates.
+### 3. Radar de Matching & Capture
+- **Haute Fidélité** : Utilisation de `preferCanvas: true` dans Leaflet pour garantir un alignement parfait des tracés lors des captures `html2canvas` pour les brouillons.
+- **Auto-Correction** : Les polylines de trajets sont automatiquement inversées si le sens de saisie ne correspond pas au trajet conducteur.
 
 ## Current Status
 
 ### Done ✅
-- [x] Marketing Cockpit (Strategy, Radar, Observatory).
-- [x] Editorial Center (Calendar, Planning, Social Media, Mailing).
-- [x] Internal Collaboration (User Comments on content).
-- [x] Demand Observatory (Heatmap & Flows) via SQL RPC.
-- [x] AI Communication agency (Social Post Generator).
-- [x] Automated Mailing with map screenshot storage.
-- [x] SOLID Refactor of the marketing and editorial modules.
-- [x] High-precision Map Visualization (Directional arrows, auto-correction).
-- [x] Optimized stats via SQL RPC functions.
+- [x] Refactorisation SOLID complète (Features directory).
+- [x] Centre Éditorial avec Navigation Collante (Sticky Header).
+- [x] Social Media Workspace (Visual Posts & Trash).
+- [x] Automated Mailing avec capture de carte alignée.
+- [x] High-precision Map Visualization (Directional arrows).
+- [x] Optimisation de l'IA Radar (Inspiration -> Génération immédiate).
 
 ### TODO 🚧
-- [ ] Implement inter-user Chats module.
-- [ ] Add audit logs for significant admin actions.
-- [ ] Comprehensive testing for AI matching edge cases.
+- [ ] Implémentation du module de Chat inter-utilisateurs.
+- [ ] Ajout de journaux d'audit (Audit Logs) pour les actions admin.
+- [ ] Tests exhaustifs sur les cas limites de matching PostGIS.
 
 ## Useful Documentation
 - [docs/MARKETING_MODULE.md](./docs/MARKETING_MODULE.md) : **Detailed Marketing Cockpit Guide.**
-- [docs/README.md](./docs/README.md) : Index.
+- [docs/WEBSITE_INTEGRATION.md](./docs/WEBSITE_INTEGRATION.md) : Guide d'intégration Klando.site.
 - [docs/AI_ARCHITECTURE.md](./docs/AI_ARCHITECTURE.md) : AI & Architecture Guide.
 - [docs/AI_MATCHING_SYSTEM.md](./docs/AI_MATCHING_SYSTEM.md) : Technical matching details.

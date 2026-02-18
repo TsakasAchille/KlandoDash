@@ -1,70 +1,49 @@
-# Cockpit Marketing & Croissance
+# Marketing Module Guide (v1.6 - SOLID Refactor)
 
-Ce module est le centre névralgique de la stratégie de croissance de Klando. Il combine analyse géographique, intelligence artificielle (Gemini) et outils de communication (Resend). 
+## Overview
+Le module marketing est divisé en deux domaines distincts pour séparer la réflexion stratégique de la production de contenu.
 
-Depuis la v1.6, le module est divisé en deux domaines distincts pour respecter les principes SOLID : la **Stratégie** (/marketing) et la **Production Éditoriale** (/editorial).
+### 1. Marketing Stratégique (`/marketing`)
+*Focus : Analyse, Détection, Intelligence.*
+- **Radar de Matching** : Scan PostGIS (max 15km) pour identifier les clients dont le trajet croise celui d'un conducteur.
+- **Observatoire** : Visualisation des flux de demande (Heatmap) et des trajets récurrents.
+- **Intelligence IA** : Rapports périodiques Gemini sur les opportunités de revenus et les conversions.
 
----
+### 2. Centre Éditorial (`/editorial`)
+*Focus : Production, Planification, Engagement.*
+- **Social Media** : Création de posts TikTok, Instagram, X via IA ou manuelle.
+  - **Mode Visuel** : Optimisé pour les affiches PNG (texte masqué).
+  - **Mode Standard** : Texte optimisé par IA (Magic Fix).
+- **Mailing** : Gestion des brouillons automatisés avec capture de carte.
+- **Calendrier** : Planning par Drag & Drop des publications.
 
-## 🧭 1. Stratégie Marketing (/marketing)
+## Key Features & UI Standards
 
-Ce sous-module se concentre sur l'analyse et la détection d'opportunités.
+### Production Focus Interface
+L'espace de travail est conçu pour éliminer le scroll :
+- **Header Sticky** : Statistiques et navigation toujours visibles.
+- **Split View** : Liste à gauche (320px), Travail à droite (Flexible).
+- **Fixed Height** : Zone de travail fixée à 750px pour une visibilité totale sans défilement.
 
-1.  **Radar** : Interface cartographique pour le matching manuel assisté par IA.
-2.  **Intelligence** : Rapports d'analyse approfondis (Gemini) sur les revenus, la conversion et la qualité.
-3.  **Observatoire** : Visualisation des flux de demande et zones de chaleur (Heatmaps).
-4.  **Stratégie** : Recommandations IA immédiates basées sur le matching prospects/trajets.
-5.  **Prospects** : Gestion des intentions de voyage collectées sur le site.
+### IA Radar Workflow
+1.  **Inspiration** : Les 3 meilleurs angles stratégiques s'affichent en haut du générateur.
+2.  **Génération** : Un clic sur "Utiliser ce thème" lance la rédaction IA.
+3.  **Validation** : Le post est automatiquement ajouté aux brouillons et sélectionné pour prévisualisation.
 
----
+### Map Capture Excellence
+Les captures de trajets envoyées aux clients via mail sont garanties sans décalage (offset fix) grâce à :
+- `preferCanvas: true` dans Leaflet.
+- Délai de rendu de 300ms avant capture.
+- Dimensions de capture alignées sur le conteneur réel.
 
-## ✍️ 2. Centre Éditorial (/editorial)
+## Technical Structure (SOLID)
+Les composants sont situés dans `src/features/marketing/components/tabs/` :
+- `communication/` : PostList, PostEditor, PostPreview, AIGenerator, IdeasGrid.
+- `mailing/` : MailSidebar, MailList, MailViewer, MailCompose.
+- `shared/` : InsightDetailModal, FlowMap.
 
-Ce sous-module gère la création de contenu, la planification et la collaboration interne.
-
-1.  **Calendrier** : Interface interactive pour planifier les publications sociales et les mailings.
-2.  **Social Media** : Générateur de contenu (TikTok, Instagram, X) avec aperçu et édition.
-3.  **Mailing** : Système de rédaction de mailings avec capture de carte intégrée.
-4.  **Collaboration** : Système de commentaires internes permettant aux utilisateurs du dashboard de discuter sur chaque contenu.
-5.  **Médiathèque** : Gestion des visuels et assets associés aux campagnes.
-
----
-
-## 🛠 Spécifications Techniques
-
-### 1. Observatoire de la Demande
-*   **Données** : Agrégation via la fonction SQL RPC `get_marketing_flow_stats`.
-*   **Visualisation** : 
-    *   **Flux** : Polylines Burgundy semi-transparentes avec épaisseur proportionnelle au volume.
-    *   **Heatmap** : `CircleMarker` dorés dont le rayon varie selon la densité des points de départ.
-
-### 2. Moteur de Mailing & Capture de Carte
-*   **Workflow** : Scan IA -> Suggestion -> Brouillon -> Envoi.
-*   **Capture Visuelle** : Utilisation de `html2canvas` pour prendre une photo du trajet dans le Radar.
-*   **Stockage** : Bucket Supabase `marketing/screenshots/`.
-
-### 3. Planification & Discussion
-*   **Base de données** : 
-    *   `dash_marketing_communications` : Posts et idées.
-    *   `dash_marketing_emails` : Brouillons et historique mails.
-    *   `dash_marketing_comments` : Discussion interne liée aux contenus.
-*   **Status Workflow** : `NEW` (IA) -> `DRAFT` (Édité/Enregistré) -> `PUBLISHED`/`SENT` (Finalisé).
-
----
-
-## 🏛 Architecture SOLID
-
-Le module suit une structure modulaire stricte :
-
-*   **Actions** : 
-    *   `/app/marketing/actions/` : Intelligence, Mailing, Communication.
-    *   `/app/editorial/actions.ts` : Commentaires et visuels.
-*   **Composants** :
-    *   `/app/marketing/components/tabs/` : Un fichier par onglet stratégique.
-    *   `/app/editorial/components/` : Calendrier et modales de détails.
-*   **Types** (`/app/marketing/types.ts`) : Contrat de données unique pour tout le domaine Marketing/Editorial.
-
-## 🔒 Sécurité & Accès
-*   Accès réservé aux rôles `admin` et `marketing`.
-*   RLS activé sur toutes les tables `dash_marketing_*`.
-*   Collaboration basée sur les profils de la table `dash_authorized_users`.
+## Data Statuses
+- **DRAFT** : Nouveau contenu, modifiable.
+- **PUBLISHED / SENT** : Contenu finalisé.
+- **TRASH** : Contenu supprimé (récupérable ou suppression définitive).
+- **NEW** (Legacy) : Automatiquement traité comme DRAFT dans l'interface.
