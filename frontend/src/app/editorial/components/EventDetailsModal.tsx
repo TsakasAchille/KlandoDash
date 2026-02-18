@@ -87,13 +87,20 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
           {/* LEFT: VISUAL & INFO */}
           <div className="flex flex-col bg-white overflow-y-auto custom-scrollbar">
             {/* Visual Area */}
-            <div className="relative h-64 bg-slate-100 flex items-center justify-center border-b border-slate-100">
+            <div className="relative min-h-[300px] bg-slate-100 flex items-center justify-center border-b border-slate-100 group">
               {event.image_url ? (
-                <img 
-                  src={event.image_url} 
-                  alt={title} 
-                  className="w-full h-full object-cover"
-                />
+                event.image_url.endsWith('.pdf') ? (
+                    <div className="flex flex-col items-center gap-3 text-slate-400">
+                        <FileText className="w-16 h-16 text-red-500 opacity-50" />
+                        <p className="text-[10px] font-black uppercase">Document PDF attaché</p>
+                    </div>
+                ) : (
+                    <img 
+                        src={event.image_url} 
+                        alt={title} 
+                        className="w-full h-full object-contain bg-slate-900"
+                    />
+                )
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400">
                   <ImageIcon className="w-12 h-12 opacity-20" />

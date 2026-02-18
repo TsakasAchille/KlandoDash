@@ -159,6 +159,62 @@ export async function generatePendingRequestsPostAction(platform: CommPlatform) 
 }
 
 /**
+ * Crée manuellement une communication
+ */
+export async function createMarketingCommAction(data: Partial<MarketingComm>) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
+  const supabase = createAdminClient();
+  const { data: post, error } = await supabase
+    .from('dash_marketing_communications')
+    .insert([{
+      type: 'POST',
+      platform: data.platform || 'GENERAL',
+      title: data.title,
+      content: data.content,
+      hashtags: data.hashtags || [],
+      visual_suggestion: data.visual_suggestion || '',
+      image_url: data.image_url || null,
+      status: 'DRAFT'
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[COMM CREATE ERROR]", error);
+    return { success: false };
+  }
+  
+  revalidatePath("/marketing");
+  return { success: true, post };
+}
+
+/**
+ * Utilise l'IA pour corriger et améliorer un texte de post
+ */
+export async function refineMarketingContentAction(content: string, platform: CommPlatform) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
+  const prompt = `
+    En tant qu'expert en communication pour Klando au Sénégal, corrige les fautes d'orthographe et améliore le style de ce brouillon pour ${platform}.
+    Conserve les informations essentielles mais rends le texte plus engageant et punchy.
+    Brouillon : "${content}"
+    
+    Réponds uniquement avec le texte corrigé et amélioré (pas de JSON, pas de blabla).
+  `;
+
+  try {
+    const aiResponse = await askKlandoAI(prompt, { content, platform });
+    return { success: true, refinedContent: aiResponse.trim() };
+  } catch (err) {
+    console.error("[REFINE ERROR]", err);
+    return { success: false };
+  }
+}
+
+/**
  * Met à jour une communication (Titre, contenu, plateforme, statut)
  */
 export async function updateMarketingCommAction(id: string, updates: Partial<MarketingComm>) {

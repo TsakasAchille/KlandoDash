@@ -9,26 +9,36 @@ import React from "react";
 import { EmailCategory, EmailStatus, MarketingEmail } from "../types";
 
 /**
- * Télécharge une capture d'écran de carte vers Supabase Storage
+ * Télécharge un fichier (image ou doc) vers Supabase Storage
  */
-export async function uploadMarketingImageAction(base64Image: string) {
+export async function uploadMarketingImageAction(base64DataWithHeader: string) {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   const supabase = createAdminClient();
   
-  // Extraire les données binaires du base64
-  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+  // Extraire le type mime et les données
+  const matches = base64DataWithHeader.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.*)$/);
+  if (!matches || matches.length !== 3) return { success: false, error: "Format invalide" };
+
+  const contentType = matches[1];
+  const base64Data = matches[2];
   const buffer = Buffer.from(base64Data, 'base64');
   
-  const fileName = `map-${Date.now()}.png`;
-  const filePath = `screenshots/${fileName}`;
+  // Déterminer l'extension
+  let extension = 'bin';
+  if (contentType.includes('image/png')) extension = 'png';
+  else if (contentType.includes('image/jpeg')) extension = 'jpg';
+  else if (contentType.includes('image/webp')) extension = 'webp';
+  else if (contentType.includes('application/pdf')) extension = 'pdf';
 
-  // Upload vers le bucket 'marketing' (Assurez-vous qu'il est public)
+  const fileName = `${Date.now()}.${extension}`;
+  const filePath = `uploads/${fileName}`;
+
   const { error } = await supabase.storage
     .from('marketing')
     .upload(filePath, buffer, {
-      contentType: 'image/png',
+      contentType,
       upsert: true
     });
 
@@ -37,7 +47,6 @@ export async function uploadMarketingImageAction(base64Image: string) {
     return { success: false };
   }
 
-  // Récupérer l'URL publique
   const { data: { publicUrl } } = supabase.storage
     .from('marketing')
     .getPublicUrl(filePath);

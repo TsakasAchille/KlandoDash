@@ -130,11 +130,11 @@ export function EditorialClient({
             <TabsTrigger value="comm" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest gap-2">
               <Megaphone className="w-3.5 h-3.5" /> Social Media
             </TabsTrigger>
-            <TabsTrigger value="mailing" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest gap-2">
-              <Mail className="w-3.5 h-3.5" /> Mailing
-            </TabsTrigger>
             <TabsTrigger value="calendar" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest gap-2">
               <CalendarIcon className="w-3.5 h-3.5" /> Calendrier
+            </TabsTrigger>
+            <TabsTrigger value="mailing" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest gap-2">
+              <Mail className="w-3.5 h-3.5" /> Mailing
             </TabsTrigger>
           </TabsList>
           

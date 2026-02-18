@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   Music, Instagram, Twitter, Mail, 
-  FileText, Upload, X as XIcon, Plus
+  FileText, X as XIcon, Plus
 } from "lucide-react";
 import { MarketingComm, MarketingEmail } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
@@ -75,6 +75,7 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
   return (
     <div className="grid lg:grid-cols-12 gap-8 animate-in fade-in duration-700 h-[800px] text-left">
       
+      {/* 1. CALENDAR GRID (Left) */}
       <div className="lg:col-span-9 flex flex-col space-y-6">
         <div className="flex items-center justify-between bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm">
           <div className="flex items-center gap-4 pl-4">
@@ -139,6 +140,9 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
                           ev.eventType === 'EMAIL' ? "bg-green-50 text-green-600 border-green-100" : "bg-blue-50 text-blue-600 border-blue-100"
                         )}
                       >
+                        {('image_url' in ev) && ev.image_url && !ev.image_url.endsWith('.pdf') && (
+                            <img src={ev.image_url} alt="mini" className="w-3 h-3 rounded-sm object-cover border border-blue-200" />
+                        )}
                         {('platform' in ev) && ev.platform === 'TIKTOK' && <Music className="w-2.5 h-2.5" />}
                         {('platform' in ev) && ev.platform === 'INSTAGRAM' && <Instagram className="w-2.5 h-2.5" />}
                         {('platform' in ev) && ev.platform === 'X' && <Twitter className="w-2.5 h-2.5" />}
@@ -154,17 +158,10 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
         </div>
       </div>
 
+      {/* 2. SIDEBAR (Right) - UNPLANNED */}
       <div className="lg:col-span-3 space-y-6 flex flex-col h-full">
-        <Card className="bg-white border-2 border-dashed border-purple-200 rounded-3xl p-8 text-center group hover:bg-purple-50 hover:border-purple-400 transition-all cursor-pointer shadow-sm">
-            <div className="flex flex-col items-center gap-3">
-                <div className="p-3 bg-purple-100 rounded-full group-hover:scale-110 transition-transform"><Upload className="w-6 h-6 text-purple-600" /></div>
-                <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Médiathèque</p>
-                    <p className="text-[9px] text-slate-400 font-medium">Déposez vos fichiers ici</p>
-                </div>
-            </div>
-        </Card>
-
+        
+        {/* UNPLANNED DRAFTS */}
         <div className="flex-1 flex flex-col space-y-4 min-h-0">
             <div className="flex items-center gap-2 px-2">
                 <div className="p-1.5 bg-orange-50 rounded-lg">
@@ -200,6 +197,7 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
             </div>
         </div>
 
+        {/* DAY PREVIEW (if selected) */}
         {selectedDay && (
             <Card className="bg-slate-900 border-none rounded-3xl p-6 shadow-2xl animate-in slide-in-from-right-4 duration-500 text-left">
                 <div className="flex justify-between items-center mb-4">
@@ -210,7 +208,6 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
                     <Button 
                         onClick={() => {
                             console.log("Planifier post clicked for date:", selectedDay);
-                            toast.info(`Ouverture du planificateur pour le ${selectedDay ? format(selectedDay, 'dd MMMM', { locale: fr }) : ''}`);
                             setIsPlanModalOpen(true);
                         }}
                         className="w-full h-10 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[10px] gap-2"

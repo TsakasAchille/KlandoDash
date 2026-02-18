@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,19 @@ import {
   Sparkles, Loader2, Megaphone, Music, Instagram, 
   Twitter, Send, Image as ImageIcon, History,
   PlusCircle, Target, ArrowRightCircle, Trash2, RotateCcw,
-  Edit3, Save, X, MapPin
+  Edit3, Save, X, MapPin, Wand2, Paperclip, FileText, CheckCircle2,
+  AlertCircle, ExternalLink
 } from "lucide-react";
 import { MarketingComm, CommPlatform, CommStatus } from "../../types";
-import { updateMarketingCommAction, trashMarketingCommAction, restoreMarketingCommAction, deleteMarketingCommAction } from "../../actions/communication";
+import { 
+    updateMarketingCommAction, 
+    trashMarketingCommAction, 
+    restoreMarketingCommAction, 
+    deleteMarketingCommAction,
+    createMarketingCommAction,
+    refineMarketingContentAction
+} from "../../actions/communication";
+import { uploadMarketingImageAction } from "../../actions/mailing";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,9 +47,17 @@ export function CommunicationTab({
   const [topic, setTopic] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<CommPlatform>("INSTAGRAM");
   const [statusFilter, setStatusFilter] = useState<CommStatus | 'ALL'>('NEW');
+  
+  // États de sélection et édition
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [editForm, setEditForm] = useState<Partial<MarketingComm>>({});
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ideas = comms.filter(c => c.type === 'IDEA' && c.status !== 'TRASH');
   
@@ -51,11 +68,30 @@ export function CommunicationTab({
     });
   }, [comms, statusFilter]);
 
+  // Définir le post à afficher (soit le sélectionné, soit le premier de la liste)
+  const activePost = useMemo(() => {
+    if (selectedId) return comms.find(c => c.id === selectedId) || null;
+    const posts = comms.filter(c => c.type === 'POST' && c.status !== 'TRASH');
+    return posts.length > 0 ? posts[0] : null;
+  }, [comms, selectedId]);
+
   const platforms: { id: CommPlatform; label: string; icon: any; color: string }[] = [
     { id: 'TIKTOK', label: 'TikTok', icon: Music, color: 'text-pink-500' },
     { id: 'INSTAGRAM', label: 'Instagram', icon: Instagram, color: 'text-purple-500' },
     { id: 'X', label: 'X / Twitter', icon: Twitter, color: 'text-blue-400' },
   ];
+
+  const handleStartManual = () => {
+    setEditingId("NEW_MANUAL");
+    setEditForm({ 
+        title: "Nouvelle publication", 
+        content: "", 
+        hashtags: [],
+        visual_suggestion: "",
+        platform: selectedPlatform,
+        image_url: null
+    });
+  };
 
   const handleStartEdit = (comm: MarketingComm) => {
     setEditingId(comm.id);
@@ -64,7 +100,8 @@ export function CommunicationTab({
         content: comm.content, 
         hashtags: comm.hashtags || [],
         visual_suggestion: comm.visual_suggestion || '',
-        platform: comm.platform
+        platform: comm.platform,
+        image_url: comm.image_url || null
     });
   };
 
@@ -72,10 +109,19 @@ export function CommunicationTab({
     if (!editingId) return;
     setIsUpdating(true);
     try {
-        const res = await updateMarketingCommAction(editingId, { ...editForm, status: 'DRAFT' });
-        if (res.success) {
-            toast.success("Publication mise à jour (Brouillon)");
-            setEditingId(null);
+        if (editingId === "NEW_MANUAL") {
+            const res = await createMarketingCommAction({ ...editForm, status: 'DRAFT' });
+            if (res.success && res.post) {
+                toast.success("Publication créée !");
+                setSelectedId(res.post.id);
+                setEditingId(null);
+            }
+        } else {
+            const res = await updateMarketingCommAction(editingId, { ...editForm, status: 'DRAFT' });
+            if (res.success) {
+                toast.success("Publication mise à jour !");
+                setEditingId(null);
+            }
         }
     } catch (err) {
         console.error(err);
@@ -83,6 +129,42 @@ export function CommunicationTab({
     } finally {
         setIsUpdating(false);
     }
+  };
+
+  const handleRefineContent = async () => {
+    if (!editForm.content) return;
+    setIsRefining(true);
+    try {
+        const res = await refineMarketingContentAction(editForm.content, editForm.platform || 'GENERAL');
+        if (res.success && res.refinedContent) {
+            setEditForm({ ...editForm, content: res.refinedContent });
+            toast.success("Texte amélioré par l'IA !");
+        }
+    } catch (err) {
+        toast.error("Échec de l'amélioration");
+    } finally {
+        setIsRefining(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+        const base64 = reader.result as string;
+        const res = await uploadMarketingImageAction(base64);
+        if (res.success && res.url) {
+            setEditForm(prev => ({ ...prev, image_url: res.url }));
+            toast.success("Fichier attaché !");
+        } else {
+            toast.error("Échec de l'upload");
+        }
+        setIsUploading(false);
+    };
   };
 
   const handleTrash = async (id: string) => {
@@ -98,7 +180,10 @@ export function CommunicationTab({
   const handleDeletePerm = async (id: string) => {
     if (!confirm("Supprimer définitivement ?")) return;
     const res = await deleteMarketingCommAction(id);
-    if (res.success) toast.success("Supprimé définitivement");
+    if (res.success) {
+        toast.success("Supprimé définitivement");
+        if (selectedId === id) setSelectedId(null);
+    }
   };
 
   return (
@@ -156,19 +241,27 @@ export function CommunicationTab({
         </div>
       </div>
 
-      {/* 2. SOCIAL POST GENERATOR */}
+      {/* 2. SOCIAL POST GENERATOR & EDITOR */}
       <div className="space-y-6">
-        <div className="flex items-center gap-3 px-2">
-            <div className="p-2 bg-blue-500/10 rounded-xl">
-                <PlusCircle className="w-4 h-4 text-blue-500" />
+        <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-xl">
+                    <PlusCircle className="w-4 h-4 text-blue-500" />
+                </div>
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Générateur & Éditeur</h3>
             </div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Générateur de Publications</h3>
+            <Button 
+                onClick={handleStartManual}
+                className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest gap-2 shadow-lg shadow-blue-500/20"
+            >
+                <PlusCircle className="w-3.5 h-3.5" /> Créer manuellement
+            </Button>
         </div>
 
         <Card className="bg-slate-50 border-slate-200 rounded-[2.5rem] overflow-hidden shadow-2xl">
             <div className="grid md:grid-cols-12 h-[700px]">
                 {/* Selector */}
-                <div className="md:col-span-4 border-r border-slate-200 p-8 space-y-6 bg-white overflow-y-auto">
+                <div className="md:col-span-4 border-r border-slate-200 p-8 space-y-6 bg-white overflow-y-auto custom-scrollbar">
                     <div className="space-y-4">
                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 pl-1">1. Choisir la plateforme</label>
                         <div className="grid grid-cols-1 gap-2">
@@ -225,68 +318,167 @@ export function CommunicationTab({
                         className="w-full h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
                     >
                         {isScanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                        Générer via thème
+                        Générer via IA
                     </Button>
                 </div>
 
-                {/* Post Display Area */}
-                <div className="md:col-span-8 p-10 bg-slate-100/50 flex flex-col items-center justify-center text-left">
+                {/* Editor/Preview Display Area */}
+                <div className="md:col-span-8 p-10 bg-slate-100/50 flex flex-col items-center justify-center text-left relative overflow-y-auto custom-scrollbar">
                     {editingId ? (
-                        <div className="w-full max-w-xl space-y-4 animate-in fade-in duration-300 bg-white p-8 rounded-3xl border border-slate-200 shadow-xl">
+                        <div className="w-full max-w-xl space-y-4 animate-in fade-in duration-300 bg-white p-8 rounded-[2rem] border border-slate-200 shadow-xl relative">
+                            {/* Toolbar Editor */}
                             <div className="flex justify-between items-center mb-4">
-                                <h4 className="text-xs font-black uppercase text-slate-900 flex items-center gap-2"><Edit3 className="w-4 h-4" /> Édition en cours</h4>
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-[10px] font-black uppercase text-slate-900 flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full"><Edit3 className="w-3.5 h-3.5" /> Éditeur</h4>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        onClick={handleRefineContent}
+                                        disabled={isRefining || !editForm.content}
+                                        className="h-7 text-[9px] font-black uppercase text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-full gap-1.5"
+                                    >
+                                        {isRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                                        Magic Fix IA
+                                    </Button>
+                                </div>
                                 <Button variant="ghost" size="sm" onClick={() => setEditingId(null)} className="h-8 rounded-lg"><X className="w-4 h-4" /></Button>
                             </div>
-                            <Input 
-                                value={editForm.title || ""} 
-                                onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                                className="bg-slate-50 border-slate-200 font-bold"
-                                placeholder="Titre de la publication"
-                            />
-                            <Textarea 
-                                value={editForm.content || ""} 
-                                onChange={(e) => setEditForm({...editForm, content: e.target.value})}
-                                className="min-h-[150px] bg-slate-50 border-slate-200 leading-relaxed"
-                                placeholder="Corps de la publication..."
-                            />
-                            <Input 
-                                value={editForm.visual_suggestion || ""} 
-                                onChange={(e) => setEditForm({...editForm, visual_suggestion: e.target.value})}
-                                className="bg-slate-50 border-slate-200 text-[10px]"
-                                placeholder="Suggestion de visuel"
-                            />
-                            <Button onClick={handleSaveEdit} disabled={isUpdating} className="w-full h-11 bg-green-600 hover:bg-green-700 text-white rounded-xl gap-2 font-black uppercase text-[10px]">
-                                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                Enregistrer les modifications
-                            </Button>
+
+                            <div className="space-y-4">
+                                <Input 
+                                    value={editForm.title || ""} 
+                                    onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                                    className="bg-slate-50 border-slate-200 font-bold h-12 text-sm"
+                                    placeholder="Titre de la publication"
+                                />
+                                <div className="relative">
+                                    <Textarea 
+                                        value={editForm.content || ""} 
+                                        onChange={(e) => setEditForm({...editForm, content: e.target.value})}
+                                        className="min-h-[250px] bg-slate-50 border-slate-200 leading-relaxed text-sm p-6"
+                                        placeholder="Rédigez votre texte ici..."
+                                    />
+                                </div>
+
+                                {/* Preview Image if uploaded while editing */}
+                                {editForm.image_url && (
+                                    <div className="relative h-48 rounded-xl overflow-hidden border-2 border-purple-200 bg-slate-900">
+                                        <img 
+                                            src={editForm.image_url} 
+                                            alt="Prévisualisation" 
+                                            className="w-full h-full object-contain"
+                                        />
+                                        <div className="absolute top-2 right-2 bg-green-600 text-white p-1.5 rounded-full shadow-lg z-10"><CheckCircle2 className="w-4 h-4" /></div>
+                                    </div>
+                                )}
+
+                                {/* Media & Visual Suggestion */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase text-slate-400">Visuel suggéré</label>
+                                        <Input 
+                                            value={editForm.visual_suggestion || ""} 
+                                            onChange={(e) => setEditForm({...editForm, visual_suggestion: e.target.value})}
+                                            className="bg-slate-50 border-slate-200 text-[10px]"
+                                            placeholder="Suggestion de visuel"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase text-slate-400">Fichier joint</label>
+                                        <div className="flex items-center gap-2">
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                disabled={isUploading}
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="w-full h-10 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 gap-2 text-[9px] font-bold"
+                                            >
+                                                {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Paperclip className="w-3.5 h-3.5" />}
+                                                {editForm.image_url ? "Changer" : "Attacher Photo/Doc"}
+                                            </Button>
+                                        </div>
+                                        <input 
+                                            type="file" 
+                                            ref={fileInputRef} 
+                                            onChange={handleFileUpload} 
+                                            className="hidden" 
+                                            accept="image/*,application/pdf"
+                                        />
+                                    </div>
+                                </div>
+
+                                <Button onClick={handleSaveEdit} disabled={isUpdating} className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-2xl gap-2 font-black uppercase text-[10px] shadow-lg shadow-green-500/20 mt-4">
+                                    {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    Enregistrer et passer en Brouillon
+                                </Button>
+                            </div>
                         </div>
-                    ) : comms.filter(c => c.type === 'POST').length > 0 ? (
+                    ) : activePost ? (
                         <div className="w-full max-w-xl space-y-6 animate-in slide-in-from-right-4 duration-700">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-blue-500/20 rounded-lg"><Send className="w-4 h-4 text-blue-600" /></div>
-                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{comms.filter(c => c.type === 'POST')[0].title}</h4>
+                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{activePost.title}</h4>
                                 </div>
-                                <Button variant="outline" size="sm" onClick={() => handleStartEdit(comms.filter(c => c.type === 'POST')[0])} className="h-8 rounded-xl border-slate-200 text-slate-600 font-bold text-[9px] uppercase hover:bg-white transition-all shadow-sm">
+                                <Button variant="outline" size="sm" onClick={() => handleStartEdit(activePost)} className="h-8 rounded-xl border-slate-200 text-slate-600 font-bold text-[9px] uppercase hover:bg-white transition-all shadow-sm">
                                     <Edit3 className="w-3 h-3 mr-2" /> Éditer
                                 </Button>
                             </div>
                             <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-2xl relative">
                                 <div className="absolute -top-3 -left-3 bg-blue-600 text-white p-1.5 rounded-lg shadow-lg"><PlusCircle className="w-4 h-4" /></div>
-                                <p className="text-sm text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">{comms.filter(c => c.type === 'POST')[0].content}</p>
+                                <p className="text-sm text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">{activePost.content}</p>
                                 
-                                {comms.filter(c => c.type === 'POST')[0].hashtags && comms.filter(c => c.type === 'POST')[0].hashtags!.length > 0 && (
+                                {activePost.hashtags && activePost.hashtags.length > 0 && (
                                     <div className="mt-6 flex flex-wrap gap-2">
-                                        {comms.filter(c => c.type === 'POST')[0].hashtags!.map((tag, i) => (
+                                        {activePost.hashtags.map((tag, i) => (
                                             <span key={i} className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">#{tag}</span>
                                         ))}
                                     </div>
                                 )}
                             </div>
-                            {comms.filter(c => c.type === 'POST')[0].visual_suggestion && (
+                            
+                            {/* Visual/Media Display */}
+                            {activePost.image_url ? (
+                                <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative group">
+                                    {activePost.image_url.endsWith('.pdf') ? (
+                                        <div className="flex flex-col items-center justify-center h-48 bg-slate-50 rounded-2xl border border-slate-100 gap-3">
+                                            <FileText className="w-8 h-8 text-red-500" />
+                                            <span className="text-xs font-black uppercase text-slate-400 tracking-widest">Document PDF attaché</span>
+                                            <Button variant="ghost" size="sm" className="h-7 text-[9px] uppercase gap-2" asChild>
+                                                <a href={activePost.image_url} target="_blank" rel="noreferrer"><ExternalLink className="w-3 h-3" /> Voir le PDF</a>
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="relative group">
+                                            <div className="relative h-[400px] w-full bg-slate-900 rounded-2xl overflow-hidden">
+                                                <img 
+                                                    src={activePost.image_url} 
+                                                    alt="Attaché" 
+                                                    className="w-full h-full object-contain"
+                                                    onError={(e) => {
+                                                        console.error("ERREUR CHARGEMENT IMAGE:", activePost.image_url);
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button size="sm" className="bg-white/90 text-slate-900 hover:bg-white rounded-full h-8 gap-2 font-black uppercase text-[9px]" asChild>
+                                                    <a href={activePost.image_url} target="_blank" rel="noreferrer"><ExternalLink className="w-3 h-3" /> Plein écran</a>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="p-3 flex items-center justify-between bg-white">
+                                        <div className="flex items-center gap-2">
+                                            <ImageIcon className="w-3 h-3 text-slate-400" />
+                                            <span className="text-[9px] font-black uppercase text-slate-400">Visuel attaché</span>
+                                        </div>
+                                        <span className="text-[8px] font-mono text-slate-300 truncate max-w-[200px]">{activePost.image_url}</span>
+                                    </div>
+                                </div>
+                            ) : activePost.visual_suggestion && (
                                 <div className="flex items-start gap-3 bg-white p-4 rounded-2xl border border-slate-200 border-l-4 border-l-klando-gold shadow-sm">
                                     <ImageIcon className="w-4 h-4 text-klando-gold shrink-0 mt-0.5" />
-                                    <p className="text-[10px] text-slate-500 italic leading-relaxed text-left"><strong>Idée Visuel :</strong> {comms.filter(c => c.type === 'POST')[0].visual_suggestion}</p>
+                                    <p className="text-[10px] text-slate-500 italic leading-relaxed text-left"><strong>Idée Visuel :</strong> {activePost.visual_suggestion}</p>
                                 </div>
                             )}
                         </div>
@@ -335,7 +527,14 @@ export function CommunicationTab({
                 <TableBody>
                     {filteredComms.length > 0 ? (
                         filteredComms.map((comm) => (
-                            <TableRow key={comm.id} className="border-slate-50 hover:bg-slate-50/50 group transition-colors">
+                            <TableRow 
+                                key={comm.id} 
+                                onClick={() => setSelectedId(comm.id)}
+                                className={cn(
+                                    "border-slate-50 hover:bg-slate-50/50 group transition-colors cursor-pointer",
+                                    selectedId === comm.id && "bg-blue-50/30"
+                                )}
+                            >
                                 <TableCell className="pl-8">
                                     <div className="flex items-center gap-3">
                                         {comm.platform === 'TIKTOK' && <Music className="w-4 h-4 text-pink-500" />}
@@ -366,13 +565,13 @@ export function CommunicationTab({
                                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         {comm.status === 'TRASH' ? (
                                             <>
-                                                <Button size="icon" variant="ghost" onClick={() => handleRestore(comm.id)} className="h-8 w-8 text-blue-600 hover:bg-blue-50" title="Restaurer"><RotateCcw className="w-3.5 h-3.5" /></Button>
-                                                <Button size="icon" variant="ghost" onClick={() => handleDeletePerm(comm.id)} className="h-8 w-8 text-red-600 hover:bg-red-50" title="Supprimer définitivement"><X className="w-3.5 h-3.5" /></Button>
+                                                <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleRestore(comm.id); }} className="h-8 w-8 text-blue-600 hover:bg-blue-50" title="Restaurer"><RotateCcw className="w-3.5 h-3.5" /></Button>
+                                                <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDeletePerm(comm.id); }} className="h-8 w-8 text-red-600 hover:bg-red-50" title="Supprimer définitivement"><X className="w-3.5 h-3.5" /></Button>
                                             </>
                                         ) : (
                                             <>
-                                                <Button size="icon" variant="ghost" onClick={() => handleStartEdit(comm)} className="h-8 w-8 text-purple-600 hover:bg-purple-50" title="Éditer"><Edit3 className="w-3.5 h-3.5" /></Button>
-                                                <Button size="icon" variant="ghost" onClick={() => handleTrash(comm.id)} className="h-8 w-8 text-red-600 hover:bg-red-50" title="Mettre à la corbeille"><Trash2 className="w-3.5 h-3.5" /></Button>
+                                                <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleStartEdit(comm); }} className="h-8 w-8 text-purple-600 hover:bg-purple-50" title="Éditer"><Edit3 className="w-3.5 h-3.5" /></Button>
+                                                <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleTrash(comm.id); }} className="h-8 w-8 text-red-600 hover:bg-red-50" title="Mettre à la corbeille"><Trash2 className="w-3.5 h-3.5" /></Button>
                                             </>
                                         )}
                                     </div>
