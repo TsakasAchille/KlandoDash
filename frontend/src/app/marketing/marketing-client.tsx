@@ -66,10 +66,23 @@ export function MarketingClient({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Tabs state from URL
+  // --- URL STATE MANAGEMENT ---
   const tabParam = searchParams.get("tab") || "strategy";
+  const subTabParam = searchParams.get("sub") || "to-treat";
+  const statusParam = searchParams.get("status") || "all";
+  const pageParam = parseInt(searchParams.get("page") || "1");
   const selectedRequestId = searchParams.get("id");
   const aiMatchedTripId = searchParams.get("selectedTrip");
+
+  // Helper to update URL params without reload
+  const updateParams = (updates: Record<string, string | number | null>) => {
+    const url = new URL(window.location.href);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) url.searchParams.delete(key);
+      else url.searchParams.set(key, String(value));
+    });
+    router.replace(url.pathname + url.search, { scroll: false });
+  };
 
   // Data state
   const [requests, setRequests] = useState<SiteTripRequest[]>(initialRequests);
@@ -84,9 +97,6 @@ export function MarketingClient({
 
   // UI state
   const [selectedInsight, setSelectedInsight] = useState<MarketingInsight | null>(null);
-  const [strategyTab, setStrategyTab] = useState<string>("to-treat");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [aiDialogOpenId, setAiDialogOpenId] = useState<string | null>(null);
 
   // --- EFFECT: SYNC PROPS ---
@@ -94,32 +104,13 @@ export function MarketingClient({
   useEffect(() => { setRecommendations(initialRecommendations); }, [initialRecommendations]);
   useEffect(() => { setInsights(initialInsights); }, [initialInsights]);
 
-  // --- HANDLERS: NAVIGATION ---
-  const handleTabChange = (value: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", value);
-    router.replace(url.pathname + url.search, { scroll: false });
-  };
-
-  const handleSelectRequestOnMap = (id: string) => {
-    const url = new URL(window.location.href);
-    if (id) {
-        url.searchParams.set("id", id);
-        url.searchParams.set("tab", "radar");
-    } else {
-        url.searchParams.delete("id");
-        url.searchParams.delete("selectedTrip");
-    }
-    router.replace(url.pathname + url.search, { scroll: false });
-  };
-
   // --- HANDLERS: ACTIONS ---
   const handleGlobalScan = async () => {
     setIsRefreshing(true);
     const res = await runGlobalScanAction();
     if (res.success) {
       toast.success(`${res.count} nouvelles opportunités identifiées.`);
-      setStrategyTab("to-treat");
+      updateParams({ sub: "to-treat" });
     }
     setIsRefreshing(false);
   };
@@ -164,7 +155,7 @@ export function MarketingClient({
 
   return (
     <div className="space-y-8">
-      <Tabs value={tabParam} onValueChange={handleTabChange} className="space-y-8">
+      <Tabs value={tabParam} onValueChange={(v) => updateParams({ tab: v })} className="space-y-8">
         {/* HEADER: TABS LIST & MAIN ACTIONS */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/30 p-2 rounded-3xl border border-white/5 backdrop-blur-sm shadow-xl">
           <TabsList className="bg-transparent border-none p-0 h-auto gap-1">
@@ -206,8 +197,8 @@ export function MarketingClient({
         <TabsContent value="strategy" className="outline-none">
           <StrategyTab 
             recommendations={recommendations}
-            strategyTab={strategyTab}
-            onStrategyTabChange={setStrategyTab}
+            strategyTab={subTabParam}
+            onStrategyTabChange={(v) => updateParams({ sub: v })}
             onApply={handleApplyRecommendation}
             onDismiss={handleDismissRecommendation}
             onGlobalScan={handleGlobalScan}
@@ -228,13 +219,13 @@ export function MarketingClient({
             requests={requests} 
             onUpdateStatus={handleUpdateStatus}
             updatingId={updatingId}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
+            currentPage={pageParam}
+            setCurrentPage={(v) => updateParams({ page: v })}
+            statusFilter={statusParam}
+            setStatusFilter={(v) => updateParams({ status: v, page: 1 })}
             onOpenIA={(id) => setAiDialogOpenId(id)}
             onScan={handleScanRequest}
-            onSelectOnMap={handleSelectRequestOnMap}
+            onSelectOnMap={(id) => updateParams({ id, tab: "radar" })}
             scanningId={scanningId}
             selectedId={selectedRequestId || undefined}
           />
@@ -245,7 +236,7 @@ export function MarketingClient({
             requests={requests}
             trips={tripsForMap}
             selectedRequestId={selectedRequestId}
-            onSelectRequest={handleSelectRequestOnMap}
+            onSelectRequest={(id) => updateParams({ id })}
             onScan={handleScanRequest}
             onOpenIA={(id) => setAiDialogOpenId(id)}
             onUpdateStatus={handleUpdateStatus}
