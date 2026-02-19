@@ -210,7 +210,7 @@ export function MarketingClient({
             insights={insights}
             isScanning={isScanningMarketing}
             onScan={handleMarketingScan}
-            onSelectInsight={setSelectedInsight}
+            onSelect={setSelectedInsight}
           />
         </TabsContent>
 
