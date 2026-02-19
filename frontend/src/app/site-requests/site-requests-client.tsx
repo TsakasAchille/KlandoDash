@@ -84,7 +84,7 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
       setRequests(prev => prev.map(r => (r.id === id ? { ...r, status } : r)));
       const result = await updateRequestStatusAction(id, status);
       if (!result.success) {
-        toast.error(result.message || "Erreur lors de la mise à jour.");
+        toast.error("Erreur lors de la mise à jour.");
         setRequests(initialRequests); 
       }
       setUpdatingId(null);
@@ -137,6 +137,7 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
             onSelectRequest={handleSelectRequestOnMap}
             onScan={handleScan}
             onOpenIA={(id) => setAiDialogOpenId(id)}
+            onUpdateStatus={handleUpdateStatus}
             scanningId={scanningId}
             aiMatchedTripId={aiMatchedTripId}
           />

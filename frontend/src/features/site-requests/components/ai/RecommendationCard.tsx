@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { 
   Target, TrendingUp, Zap, ShieldAlert, MapPin, 
-  ArrowRight, CheckCircle2, Check, Sparkles, 
-  Calendar, Clock, CheckSquare, Trash2
+  ArrowRight, Check, Sparkles, 
+  CheckSquare, Trash2
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -19,10 +19,30 @@ interface RecommendationCardProps {
   onDismiss: (id: string) => void;
 }
 
+interface TripMatch {
+  id: string;
+  dist: number;
+  time: string;
+}
+
+interface RecommendationContent {
+  request?: {
+    origin: string;
+    destination: string;
+    has_ai_scan?: boolean;
+    last_ai_date?: string;
+  };
+  top_trips?: TripMatch[];
+  matches_count?: number;
+  alert?: string;
+  reason?: string;
+}
+
 export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationCardProps) {
   const router = useRouter();
   const isApplied = reco.status === 'APPLIED';
   const isTraction = reco.type === 'TRACTION';
+  const content = reco.content as unknown as RecommendationContent;
 
   const getIcon = () => {
     switch (reco.type) {
@@ -50,18 +70,20 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
     }
   };
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: string | undefined) => {
+    if (!date) return "--";
     try {
       return format(new Date(date), 'dd MMM', { locale: fr });
-    } catch (e) {
+    } catch {
       return "Date invalide";
     }
   };
 
-  const formatTime = (date: string) => {
+  const formatTime = (date: string | undefined) => {
+    if (!date) return "--:--";
     try {
       return format(new Date(date), 'HH:mm');
-    } catch (e) {
+    } catch {
       return "--:--";
     }
   };
@@ -96,22 +118,22 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
                     <Check className="w-2 h-2" /> Validé
                 </span>
             ) : (
-                <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tabular-nums tracking-tighter text-right text-right">
+                <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tabular-nums tracking-tighter text-right">
                    Scan: {formatDate(reco.created_at)}
                 </span>
             )}
           </div>
         </div>
 
-        {isTraction && reco.content.top_trips && (
+        {isTraction && content?.top_trips && content?.request && (
           <div className="space-y-3">
              <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <MapPin className="w-3 h-3 text-klando-gold" />
-                    <span className="text-[11px] font-bold text-white uppercase tracking-tight">{reco.content.request.origin} ➜ {reco.content.request.destination}</span>
+                    <span className="text-[11px] font-bold text-white uppercase tracking-tight">{content.request.origin} ➜ {content.request.destination}</span>
                 </div>
-                {reco.content.request.has_ai_scan && (
-                    <div className="flex items-center gap-1 text-[8px] font-black text-blue-400 uppercase bg-blue-500/10 px-1.5 py-0.5 rounded-md border border-blue-500/20" title={`Dernier scan IA: ${formatDate(reco.content.request.last_ai_date)}`}>
+                {content.request.has_ai_scan && (
+                    <div className="flex items-center gap-1 text-[8px] font-black text-blue-400 uppercase bg-blue-500/10 px-1.5 py-0.5 rounded-md border border-blue-500/20" title={`Dernier scan IA: ${formatDate(content.request.last_ai_date)}`}>
                         <Sparkles className="w-2.5 h-2.5" /> IA OK
                     </div>
                 )}
@@ -127,7 +149,7 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        {reco.content.top_trips.map((trip: any) => (
+                        {content.top_trips.map((trip: TripMatch) => (
                             <tr key={trip.id} className="hover:bg-white/5 transition-colors group/row">
                                 <td className="px-3 py-2 font-bold text-white text-left">
                                     <div className="flex flex-col text-left">
@@ -157,7 +179,7 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
                 </table>
              </div>
              <p className="text-[9px] text-center text-muted-foreground font-bold uppercase tracking-widest py-1">
-                {reco.content.matches_count} trajet(s) correspondent au total
+                {content.matches_count} trajet(s) correspondent au total
              </p>
           </div>
         )}
@@ -165,7 +187,7 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
         {!isTraction && (
             <div className="bg-white/5 p-3 rounded-xl border border-white/5 text-left">
                 <p className="text-[11px] text-muted-foreground leading-relaxed text-left font-medium">
-                    {reco.content.alert || reco.content.reason || "Action recommandée par le système."}
+                    {content?.alert || content?.reason || "Action recommandée par le système."}
                 </p>
             </div>
         )}

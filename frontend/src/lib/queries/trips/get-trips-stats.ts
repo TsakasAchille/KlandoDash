@@ -1,6 +1,11 @@
 import { createServerClient } from "../../supabase";
 import { TripStats } from "@/types/trip";
 
+interface StatusCount {
+  status: string;
+  count: number;
+}
+
 /**
  * Statistiques globales des trajets (Optimisé via RPC)
  */
@@ -20,9 +25,9 @@ export async function getTripsStats(): Promise<TripStats> {
     };
   }
 
-  const byStatus = data.trips.byStatus || [];
-  const activeCount = byStatus.find((s: any) => s.status === 'ACTIVE')?.count || 0;
-  const completedCount = byStatus.find((s: any) => s.status === 'COMPLETED')?.count || 0;
+  const byStatus: StatusCount[] = data.trips.byStatus || [];
+  const activeCount = byStatus.find((s) => s.status === 'ACTIVE')?.count || 0;
+  const completedCount = byStatus.find((s) => s.status === 'COMPLETED')?.count || 0;
 
   return {
     total_trips: data.trips.total,

@@ -7,7 +7,7 @@ import {
   Search, PlusCircle, Sparkles, Inbox, Music, Instagram, Twitter
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MarketingComm, CommStatus } from "../../../types";
+import { MarketingComm, CommStatus } from "@/app/marketing/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Type, ImagePlus } from "lucide-react";
 

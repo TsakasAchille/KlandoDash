@@ -1,8 +1,15 @@
 import { askKlandoAI } from "@/lib/gemini";
 import { MATCHING_PROMPTS } from "./prompts";
-import { GeocodingService } from "./geocoding.service";
-import { TripService } from "./trip.service";
-import { PublicTrip } from "@/app/site-requests/hooks/useSiteRequestAI";
+
+interface TripWithDistances {
+  id: string;
+  departure_city: string;
+  arrival_city: string;
+  departure_time: string;
+  seats_available: number;
+  origin_dist: number;
+  dest_dist: number;
+}
 
 export const AIMatchingService = {
   /**
@@ -13,7 +20,7 @@ export const AIMatchingService = {
     destination: string,
     date: string | null,
     clientCoords: { lat: number, lng: number, destLat: number, destLng: number },
-    availableTrips: any[] // Reçoit des trajets avec distances pré-calculées (origin_dist, dest_dist)
+    availableTrips: TripWithDistances[] // Reçoit des trajets avec distances pré-calculées (origin_dist, dest_dist)
   ) {
     // 1. On utilise directement les distances fournies par le Scan SQL (plus rapide et précis)
     // On ne garde que ceux qui ont des distances valides (normalement tous via findMatchingTrips)

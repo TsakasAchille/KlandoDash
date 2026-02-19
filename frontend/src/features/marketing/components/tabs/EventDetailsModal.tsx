@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MarketingComment } from "@/app/marketing/types";
+import { MarketingComment, MarketingComm, MarketingEmail } from "@/app/marketing/types";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,13 @@ import { updateMarketingEmailAction } from "@/app/marketing/actions/mailing";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
+export type CalendarEvent = (MarketingComm | MarketingEmail) & {
+  eventType: 'COMM' | 'EMAIL';
+  date: Date;
+};
+
 interface EventDetailsModalProps {
-  event: any | null;
+  event: CalendarEvent | null;
   onClose: () => void;
 }
 
@@ -90,8 +95,17 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
 
   if (!event) return null;
 
-  const title = event.title || event.subject || "Détails du contenu";
-  const date = event.date ? new Date(event.date) : new Date();
+  // Type narrowing for safer access
+  const isComm = event.eventType === 'COMM';
+  const comm = isComm ? event as MarketingComm : null;
+  const email = !isComm ? event as MarketingEmail : null;
+
+  const title = comm?.title || email?.subject || "Détails du contenu";
+  const content = comm?.content || email?.content || "";
+  const imageUrl = comm?.image_url || email?.image_url;
+  const platform = isComm ? comm?.platform : 'EMAIL';
+  const hashtags = comm?.hashtags || [];
+  const date = event.date;
 
   return (
     <Dialog open={!!event} onOpenChange={(open) => !open && onClose()}>
@@ -109,15 +123,15 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
           <div className="flex flex-col bg-white overflow-y-auto custom-scrollbar md:h-full border-b md:border-b-0">
             {/* Visual Area */}
             <div className="relative h-[250px] md:h-[350px] bg-slate-100 flex items-center justify-center border-b border-slate-100 group shrink-0">
-              {event.image_url ? (
-                event.image_url.endsWith('.pdf') ? (
+              {imageUrl ? (
+                imageUrl.endsWith('.pdf') ? (
                     <div className="flex flex-col items-center gap-3 text-slate-400">
                         <FileText className="w-10 h-10 text-red-500 opacity-50" />
                         <p className="text-[9px] font-black uppercase">Document PDF</p>
                     </div>
                 ) : (
                     <img 
-                        src={event.image_url} 
+                        src={imageUrl} 
                         alt={title} 
                         className="w-full h-full object-cover md:object-contain bg-slate-900"
                     />
@@ -131,12 +145,12 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
               
               {/* Platform Tag */}
               <div className="absolute top-3 left-3 flex items-center gap-2 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg shadow-sm border border-slate-200">
-                {event.platform === 'TIKTOK' && <Music className="w-3 h-3 text-black" />}
-                {event.platform === 'INSTAGRAM' && <Instagram className="w-3 h-3 text-pink-600" />}
-                {event.platform === 'X' && <Twitter className="w-3 h-3 text-blue-400" />}
+                {platform === 'TIKTOK' && <Music className="w-3 h-3 text-black" />}
+                {platform === 'INSTAGRAM' && <Instagram className="w-3 h-3 text-pink-600" />}
+                {platform === 'X' && <Twitter className="w-3 h-3 text-blue-400" />}
                 {event.eventType === 'EMAIL' && <Mail className="w-3 h-3 text-green-500" />}
                 <span className="text-[9px] font-black uppercase tracking-tight text-slate-900">
-                  {event.platform || 'EMAIL'}
+                  {platform}
                 </span>
               </div>
             </div>
@@ -169,13 +183,13 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
 
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                 <p className="text-[11px] text-slate-600 leading-relaxed font-medium italic whitespace-pre-wrap">
-                  &quot;{event.content}&quot;
+                  &quot;{content}&quot;
                 </p>
               </div>
 
-              {event.hashtags && event.hashtags.length > 0 && (
+              {hashtags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                    {event.hashtags.map((tag: string, i: number) => (
+                    {hashtags.map((tag: string, i: number) => (
                         <div key={i} className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-50 text-purple-600 border border-purple-100 rounded-md">
                             <Tag className="w-2.5 h-2.5" />
                             <span className="text-[8px] font-bold">#{tag}</span>

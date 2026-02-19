@@ -42,7 +42,7 @@ export const MATCHING_PROMPTS = {
     6. Appel à l'action : "Vous pouvez réserver directement sur l'application Klando."
   `,
 
-  getMatchingPrompt: (origin: string, destination: string, date: string | null, tripsContext: any) => `
+  getMatchingPrompt: (origin: string, destination: string, date: string | null, tripsContext: unknown) => `
     DEMANDE CLIENT :
     - Départ : ${origin}
     - Arrivée : ${destination}

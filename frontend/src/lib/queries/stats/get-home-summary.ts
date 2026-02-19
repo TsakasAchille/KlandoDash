@@ -91,8 +91,7 @@ export async function getHomeSummary(): Promise<HomeSummary> {
   }
 
   // Transformer les trajets pour correspondre au type Trip
-  const recentTrips = (recentTripsData as any[]).map((t: unknown) => {
-    const trip = t as TripRaw;
+  const recentTrips = (recentTripsData as unknown as TripRaw[]).map((trip) => {
     return {
       trip_id: trip.trip_id,
       departure_city: trip.departure_name?.split(",")[0] || "N/A",

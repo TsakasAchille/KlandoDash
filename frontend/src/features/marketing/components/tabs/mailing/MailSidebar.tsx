@@ -90,7 +90,16 @@ export function MailSidebar({
   );
 }
 
-function FolderItem({ icon: Icon, label, active, onClick, count, color }: any) {
+interface FolderItemProps {
+  icon: React.ElementType;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  count?: number;
+  color?: string;
+}
+
+function FolderItem({ icon: Icon, label, active, onClick, count, color }: FolderItemProps) {
   const activeBg = color ? color.replace('text-', 'bg-') + '/15' : 'bg-slate-100';
   const hoverTextColor = color || "text-slate-900";
 
@@ -114,7 +123,7 @@ function FolderItem({ icon: Icon, label, active, onClick, count, color }: any) {
       {count !== undefined && count > 0 && (
         <span className={cn(
             "text-[9px] font-black px-1.5 py-0.5 rounded-md transition-all border",
-            active ? color.replace('text-', 'bg-') + '/20 ' + color + ' border-' + color.split('-')[1] + '-200' : `bg-slate-50 text-slate-400 border-slate-100 group-hover:${hoverTextColor}`
+            active && color ? color.replace('text-', 'bg-') + '/20 ' + color + ' border-' + color.split('-')[1] + '-200' : `bg-slate-50 text-slate-400 border-slate-100 group-hover:${hoverTextColor}`
         )}>{count}</span>
       )}
     </button>

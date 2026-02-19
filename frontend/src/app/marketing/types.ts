@@ -52,7 +52,7 @@ export interface MarketingAsset {
   file_url: string;
   file_name?: string;
   file_type?: 'IMAGE' | 'VIDEO';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 
@@ -77,7 +77,7 @@ export interface AIRecommendation {
   type: RecommendationType;
   priority: number;
   title: string;
-  content: any;
+  content: Record<string, unknown>; // Complex nested object from AI matching
   target_id: string;
   status: RecommendationStatus;
   created_at: string;

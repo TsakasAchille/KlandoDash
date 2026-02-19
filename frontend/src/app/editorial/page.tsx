@@ -63,7 +63,14 @@ export default async function EditorialPage() {
   );
 }
 
-function HeaderStat({ icon: Icon, label, value, color }: any) {
+interface HeaderStatProps {
+  icon: React.ElementType;
+  label: string;
+  value: number;
+  color: string;
+}
+
+function HeaderStat({ icon: Icon, label, value, color }: HeaderStatProps) {
     return (
         <div className="flex items-center gap-2">
             <div className={cn("p-1.5 rounded-lg bg-slate-50", color.replace('text-', 'bg-') + '/10')}>

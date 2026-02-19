@@ -74,9 +74,21 @@ export function MailingTab({
   }), [emails]);
 
   const handleCreateDraft = async (data: Partial<MarketingEmail>) => {
+    if (!data.recipient_email || !data.subject || !data.content || !data.category) {
+        toast.error("Veuillez remplir tous les champs obligatoires");
+        return;
+    }
     setIsSaving(true);
     try {
-        const res = await createEmailDraftAction({ ...data, is_ai_generated: false });
+        const res = await createEmailDraftAction({
+            recipient_email: data.recipient_email,
+            recipient_name: data.recipient_name || undefined,
+            subject: data.subject,
+            content: data.content,
+            category: data.category,
+            is_ai_generated: false,
+            image_url: data.image_url || undefined
+        });
         if (res.success) {
             toast.success("Brouillon créé !");
             setIsComposeOpen(false);

@@ -7,12 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { 
   FileText, ChevronRight, ImageIcon, Trash2, X, Edit3, Save, Loader2, Plus, Send
 } from "lucide-react";
-import { MarketingEmail } from "../../../types";
+import { MarketingEmail } from "@/app/marketing/types";
 
 interface MailViewerProps {
   email: MarketingEmail;
   onClose: () => void;
-  onUpdate: (id: string, data: any) => Promise<void>;
+  onUpdate: (id: string, data: { subject: string; content: string }) => Promise<void>;
   onTrash: (id: string) => void;
   onConvertToDraft: (id: string) => void;
   onSend: (id: string) => void;

@@ -1,6 +1,32 @@
 import { createAdminClient } from "@/lib/supabase";
 import { TripDetail } from "@/types/trip";
 
+interface RawTripData {
+  trip_id: string;
+  departure_name: string;
+  departure_description: string;
+  departure_latitude: number;
+  departure_longitude: number;
+  destination_name: string;
+  destination_description: string;
+  destination_latitude: number;
+  destination_longitude: number;
+  departure_schedule: string;
+  distance: number;
+  polyline: string;
+  seats_available: number;
+  seats_published: number;
+  seats_booked: number;
+  passenger_price: number;
+  driver_price: number;
+  status: string;
+  auto_confirmation: boolean;
+  created_at: string;
+  driver_id: string;
+  driver?: any; // Sub-query result
+  bookings?: any[]; // Sub-query result
+}
+
 export const TripService = {
   /**
    * Récupère un trajet par son ID avec une robustesse maximale (gestion des préfixes)
@@ -22,7 +48,7 @@ export const TripService = {
       .eq("trip_id", cleanId)
       .maybeSingle();
 
-    if (exactData) return this.mapToTripDetail(exactData);
+    if (exactData) return this.mapToTripDetail(exactData as unknown as RawTripData);
 
     // 2. Tentative de recherche par préfixe (si l'IA a tronqué le hash)
     // On cherche tout ce qui commence par l'ID fourni
@@ -40,7 +66,7 @@ export const TripService = {
 
     if (prefixData) {
       console.log(`[TripService] Trip found via prefix: ${prefixData.trip_id}`);
-      return this.mapToTripDetail(prefixData);
+      return this.mapToTripDetail(prefixData as unknown as RawTripData);
     }
 
     console.warn(`[TripService] Trip NOT FOUND: ${cleanId}`);
@@ -50,15 +76,20 @@ export const TripService = {
   /**
    * Helper pour mapper les données brute vers le type TripDetail
    */
-  mapToTripDetail(data: any): TripDetail {
+  mapToTripDetail(data: RawTripData): TripDetail {
     const driver = Array.isArray(data.driver) ? data.driver[0] : data.driver;
     const bookings = (data.bookings || [])
         .filter((b: any) => ["CONFIRMED", "COMPLETED"].includes(b.status))
         .map((b: any) => {
             const u = Array.isArray(b.user) ? b.user[0] : b.user;
-            return u ? { uid: u.uid, display_name: u.display_name, photo_url: u.photo_url } : null;
+            if (!u) return null;
+            return { 
+              uid: u.uid as string, 
+              display_name: (u.display_name as string) || null, 
+              photo_url: (u.photo_url as string) || null 
+            };
         })
-        .filter(Boolean);
+        .filter((u: any): u is { uid: string; display_name: string | null; photo_url: string | null } => u !== null);
 
     return {
       trip_id: data.trip_id,

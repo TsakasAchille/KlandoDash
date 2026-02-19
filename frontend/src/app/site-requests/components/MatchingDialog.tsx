@@ -113,14 +113,10 @@ export function MatchingDialog({
         // Option useCORS indispensable pour les tuiles de carte externes
         const canvas = await html2canvas(mapContainerRef.current, {
           useCORS: true,
-          scale: 2, // Meilleure qualité
-          backgroundColor: '#f8fafc',
+          background: '#f8fafc',
           logging: false,
           width: mapContainerRef.current.offsetWidth,
-          height: mapContainerRef.current.offsetHeight,
-          onclone: (clonedDoc) => {
-            // Optionnel: On peut forcer des styles sur le clone si besoin
-          }
+          height: mapContainerRef.current.offsetHeight
         });
         const base64Image = canvas.toDataURL("image/png");
         

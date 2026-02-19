@@ -2,10 +2,11 @@
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { 
   Send, PlusCircle, Edit3, Image as ImageIcon, ExternalLink, Trash2, RotateCcw
 } from "lucide-react";
-import { MarketingComm } from "../../../types";
+import { MarketingComm } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
 
 interface PostPreviewProps {
@@ -78,7 +79,7 @@ export function PostPreview({
               
               {activePost.hashtags && activePost.hashtags.length > 0 && (
                 <div className="mt-8 flex flex-wrap gap-2 justify-center lg:justify-start">
-                  {activePost.hashtags.map((tag, i) => (
+                  {activePost.hashtags.map((tag: string, i: number) => (
                     <span key={i} className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">#{tag}</span>
                   ))}
                 </div>
@@ -104,7 +105,12 @@ export function PostPreview({
                 "relative bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden group border-4 border-white",
                 isVisualPost ? "aspect-square" : "aspect-[4/5]"
               )}>
-                <img src={activePost.image_url} alt="Preview" className="w-full h-full object-contain" />
+                <Image 
+                  src={activePost.image_url} 
+                  alt="Preview" 
+                  fill
+                  className="object-contain" 
+                />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Button size="sm" className="bg-white text-slate-900 hover:bg-white rounded-full font-black uppercase text-[10px] h-10 px-6 gap-2" asChild>
                     <a href={activePost.image_url} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> Voir plein écran</a>

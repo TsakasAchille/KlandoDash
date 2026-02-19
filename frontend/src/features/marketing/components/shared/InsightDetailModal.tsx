@@ -9,7 +9,7 @@ import remarkGfm from "remark-gfm";
 import { 
   BarChart3, Calendar, Clock, Sparkles 
 } from "lucide-react";
-import { MarketingInsight } from "../../types";
+import { MarketingInsight } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
 
 interface InsightDetailModalProps {
@@ -55,20 +55,20 @@ export function InsightDetailModal({ insight, onClose }: InsightDetailModalProps
                 <ReactMarkdown 
                   remarkPlugins={[remarkGfm]}
                   components={{
-                    h1: ({node, ...props}) => <h1 className="text-xl font-black text-white uppercase tracking-tight mt-8 mb-4 border-l-4 border-klando-gold pl-4 text-left" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-lg font-bold text-white uppercase tracking-tight mt-6 mb-3 text-left" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-md font-bold text-blue-400 uppercase tracking-wide mt-4 mb-2 text-left" {...props} />,
-                    p: ({node, ...props}) => <p className="text-sm text-muted-foreground leading-relaxed mb-4 font-medium text-left" {...props} />,
-                    ul: ({node, ...props}) => <ul className="list-none space-y-2 mb-6 text-left" {...props} />,
-                    li: ({node, ...props}) => (
+                    h1: ({node: _node, ...props}) => <h1 className="text-xl font-black text-white uppercase tracking-tight mt-8 mb-4 border-l-4 border-klando-gold pl-4 text-left" {...props} />,
+                    h2: ({node: _node, ...props}) => <h2 className="text-lg font-bold text-white uppercase tracking-tight mt-6 mb-3 text-left" {...props} />,
+                    h3: ({node: _node, ...props}) => <h3 className="text-md font-bold text-blue-400 uppercase tracking-wide mt-4 mb-2 text-left" {...props} />,
+                    p: ({node: _node, ...props}) => <p className="text-sm text-muted-foreground leading-relaxed mb-4 font-medium text-left" {...props} />,
+                    ul: ({node: _node, ...props}) => <ul className="list-none space-y-2 mb-6 text-left" {...props} />,
+                    li: ({node: _node, ...props}) => (
                       <li className="flex gap-3 text-sm text-muted-foreground font-medium items-start text-left">
                         <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-klando-gold shrink-0" />
                         <span {...props} />
                       </li>
                     ),
-                    strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
-                    code: ({node, ...props}) => <code className="bg-white/5 px-1.5 py-0.5 rounded text-blue-300 font-mono text-xs" {...props} />,
-                    blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-white/10 pl-4 italic text-muted-foreground/80 my-6 bg-white/[0.02] p-4 rounded-r-xl text-left" {...props} />,
+                    strong: ({node: _node, ...props}) => <strong className="font-bold text-white" {...props} />,
+                    code: ({node: _node, ...props}) => <code className="bg-white/5 px-1.5 py-0.5 rounded text-blue-300 font-mono text-xs" {...props} />,
+                    blockquote: ({node: _node, ...props}) => <blockquote className="border-l-4 border-white/10 pl-4 italic text-muted-foreground/80 my-6 bg-white/[0.02] p-4 rounded-r-xl text-left" {...props} />,
                   }}
                 >
                   {insight.content}

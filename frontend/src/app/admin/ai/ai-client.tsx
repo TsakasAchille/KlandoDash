@@ -12,7 +12,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { RecommendationCard, AIRecommendation } from "@/features/site-requests/components/ai/RecommendationCard";
+import { RecommendationCard } from "@/features/site-requests/components/ai/RecommendationCard";
+import { AIRecommendation } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
 
 export function KlandoAIClient() {

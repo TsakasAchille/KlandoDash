@@ -30,9 +30,15 @@ export async function generateCommIdeasAction() {
     
     const { ideas } = JSON.parse(jsonMatch[0]);
 
-    if (ideas && ideas.length > 0) {
+    interface IdeaRaw {
+      title: string;
+      content: string;
+      visual: string;
+    }
+
+    if (ideas && (ideas as IdeaRaw[]).length > 0) {
       await supabase.from('dash_marketing_communications').insert(
-        ideas.map((i: any) => ({
+        (ideas as IdeaRaw[]).map((i) => ({
           type: 'IDEA',
           title: i.title,
           content: i.content,

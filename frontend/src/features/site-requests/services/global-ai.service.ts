@@ -1,5 +1,14 @@
 import { createAdminClient } from "@/lib/supabase";
 
+interface TripMatchRow {
+  trip_id: string;
+  departure_city: string;
+  arrival_city: string;
+  departure_time: string;
+  total_proximity_score: number;
+  origin_distance: number;
+}
+
 export const GlobalAIService = {
   /**
    * Scan stratégique analytique ultra-robuste
@@ -46,14 +55,14 @@ export const GlobalAIService = {
 
         if (matchError) continue;
 
-        if (matches && matches.length > 0) {
-          const topMatches = matches
-            .sort((a: any, b: any) => a.total_proximity_score - b.total_proximity_score)
+        if (matches && (matches as TripMatchRow[]).length > 0) {
+          const topMatches = (matches as TripMatchRow[])
+            .sort((a, b) => a.total_proximity_score - b.total_proximity_score)
             .slice(0, 3);
 
           recommendations.push({
             type: 'TRACTION',
-            priority: matches.length >= 3 ? 3 : 2,
+            priority: (matches as TripMatchRow[]).length >= 3 ? 3 : 2,
             title: `Opportunité : ${req.origin_city}`,
             target_id: req.id,
             content: {
@@ -65,8 +74,8 @@ export const GlobalAIService = {
                 has_ai_scan: !!req.ai_recommendation,
                 last_ai_date: req.ai_updated_at
               },
-              matches_count: matches.length,
-              top_trips: topMatches.map((m: any) => ({
+              matches_count: (matches as TripMatchRow[]).length,
+              top_trips: topMatches.map((m) => ({
                 id: m.trip_id,
                 departure: m.departure_city,
                 arrival: m.arrival_city,

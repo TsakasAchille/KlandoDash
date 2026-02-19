@@ -239,9 +239,17 @@ export async function generateMailingSuggestionsAction() {
     
     const { opportunities } = JSON.parse(jsonMatch[0]);
 
-    if (opportunities && opportunities.length > 0) {
+    interface MailingOpportunity {
+      category: string;
+      recipient_email: string;
+      recipient_name: string;
+      subject: string;
+      content: string;
+    }
+
+    if (opportunities && (opportunities as MailingOpportunity[]).length > 0) {
       const { error } = await supabase.from('dash_marketing_emails').insert(
-        opportunities.map((o: any) => ({
+        (opportunities as MailingOpportunity[]).map((o) => ({
           ...o,
           status: 'DRAFT',
           is_ai_generated: true

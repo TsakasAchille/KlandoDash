@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { 
   Sparkles, Loader2, Target, MapPin, Music, Instagram, Twitter
 } from "lucide-react";
-import { CommPlatform, MarketingComm } from "../../../types";
+import { CommPlatform, MarketingComm } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
 import { IdeasGrid } from "./IdeasGrid";
 
@@ -35,7 +35,7 @@ export function AIGenerator({
   onGenerateIdeas,
   onUseTheme
 }: AIGeneratorProps) {
-  const platforms: { id: CommPlatform; label: string; icon: any }[] = [
+  const platforms: { id: CommPlatform; label: string; icon: React.ElementType }[] = [
     { id: 'TIKTOK', label: 'TikTok', icon: Music },
     { id: 'INSTAGRAM', label: 'Instagram', icon: Instagram },
     { id: 'X', label: 'X / Twitter', icon: Twitter },

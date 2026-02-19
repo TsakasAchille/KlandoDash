@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Megaphone, Loader2, Sparkles, ImageIcon, ArrowRightCircle
 } from "lucide-react";
-import { MarketingComm } from "../../../types";
+import { MarketingComm } from "@/app/marketing/types";
 
 interface IdeasGridProps {
   ideas: MarketingComm[];

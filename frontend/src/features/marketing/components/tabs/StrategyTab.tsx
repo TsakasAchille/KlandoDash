@@ -20,6 +20,15 @@ interface StrategyTabProps {
   onGlobalScan: () => void;
 }
 
+interface TractionContent {
+  request: {
+    origin: string;
+    destination: string;
+  };
+  matches_count: number;
+  message?: string;
+}
+
 export function StrategyTab({
   recommendations,
   strategyTab,
@@ -39,8 +48,10 @@ export function StrategyTab({
       return <p className="text-[11px] text-muted-foreground leading-relaxed text-left">{reco.content}</p>;
     }
 
-    if (reco.type === 'TRACTION' && reco.content?.request) {
-      const { request, matches_count } = reco.content;
+    const content = reco.content as unknown as TractionContent;
+
+    if (reco.type === 'TRACTION' && content?.request) {
+      const { request, matches_count } = content;
       return (
         <div className="space-y-3">
           <div className="flex items-center gap-2 bg-white/5 p-2.5 rounded-xl border border-white/5">
@@ -66,7 +77,7 @@ export function StrategyTab({
 
     return (
       <p className="text-[11px] text-muted-foreground leading-relaxed text-left">
-        {reco.content?.message || "Données analytiques non disponibles"}
+        {(content?.message as string) || "Données analytiques non disponibles"}
       </p>
     );
   };

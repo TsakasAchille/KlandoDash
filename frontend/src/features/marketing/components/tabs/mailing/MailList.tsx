@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Search, Filter, Mail, CheckCircle2, Inbox } from "lucide-react";
-import { MarketingEmail } from "../../../types";
+import { MarketingEmail } from "@/app/marketing/types";
 
 interface MailListProps {
   emails: MarketingEmail[];

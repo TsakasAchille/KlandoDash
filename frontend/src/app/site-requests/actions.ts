@@ -182,7 +182,7 @@ export async function scanRequestMatchesAction(requestId: string, radiusKm: numb
     await supabase.from("site_trip_request_matches").delete().eq("request_id", requestId);
     if (matches.length > 0) {
       await supabase.from("site_trip_request_matches").insert(
-        matches.map((m: any) => ({
+        (matches as any[]).map((m) => ({
           request_id: requestId,
           trip_id: m.trip_id,
           proximity_score: m.total_proximity_score,

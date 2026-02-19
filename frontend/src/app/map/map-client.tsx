@@ -73,8 +73,8 @@ export function MapClient({
       const result = await scanRequestMatchesAction(id, radius);
       setScanResults(result);
       setShowScanDialog(true);
-      if (result.success && result.count > 0) {
-        toast.success(result.message);
+      if (result.success && result.count !== undefined && result.count > 0) {
+        toast.success(`${result.count} trajets trouvés à proximité.`);
       }
     } catch (error) {
       console.error(error);

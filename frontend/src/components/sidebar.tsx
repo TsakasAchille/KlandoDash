@@ -63,10 +63,11 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
     }
   };
 
-  const renderNavItem = (item: { href: string, label: string, icon: any }) => {
+  const renderNavItem = (item: { href: string, label: string, icon: React.ElementType | string }) => {
     const isActive = pathname === item.href;
     const isLoading = loadingHref === item.href;
     const isImageIcon = typeof item.icon === "string";
+    const Icon = item.icon as React.ElementType;
 
     return (
       <li key={item.href}>
@@ -90,7 +91,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
               {isImageIcon ? (
                 <div className="w-full h-full relative transition-transform duration-300 group-hover:scale-110 flex items-center justify-center">
                   <Image 
-                    src={item.icon} 
+                    src={item.icon as string} 
                     alt={item.label} 
                     fill 
                     className={cn(
@@ -100,7 +101,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                   />
                 </div>
               ) : (
-                <item.icon className={cn(
+                <Icon className={cn(
                   "w-5 h-5 transition-transform duration-300 group-hover:scale-110", 
                   isMobile && "w-6 h-6",
                   isActive && "text-klando-gold"
