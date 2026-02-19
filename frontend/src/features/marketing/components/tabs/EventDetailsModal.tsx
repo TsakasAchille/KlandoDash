@@ -95,7 +95,7 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
 
   return (
     <Dialog open={!!event} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden bg-slate-50 border-none rounded-[2.5rem] shadow-2xl">
+      <DialogContent className="max-w-[700px] p-0 overflow-hidden bg-slate-50 border-none rounded-[2.5rem] shadow-2xl w-[95vw] md:w-[700px] h-auto md:h-[700px] flex flex-col">
         <DialogHeader className="sr-only">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
@@ -103,54 +103,54 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid md:grid-cols-2 h-[600px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 overflow-y-auto md:overflow-hidden flex-1 h-full">
           
           {/* LEFT: VISUAL & INFO */}
-          <div className="flex flex-col bg-white overflow-y-auto custom-scrollbar">
+          <div className="flex flex-col bg-white overflow-y-auto custom-scrollbar md:h-full border-b md:border-b-0">
             {/* Visual Area */}
-            <div className="relative min-h-[300px] bg-slate-100 flex items-center justify-center border-b border-slate-100 group">
+            <div className="relative h-[250px] md:h-[350px] bg-slate-100 flex items-center justify-center border-b border-slate-100 group shrink-0">
               {event.image_url ? (
                 event.image_url.endsWith('.pdf') ? (
                     <div className="flex flex-col items-center gap-3 text-slate-400">
-                        <FileText className="w-16 h-16 text-red-500 opacity-50" />
-                        <p className="text-[10px] font-black uppercase">Document PDF attaché</p>
+                        <FileText className="w-10 h-10 text-red-500 opacity-50" />
+                        <p className="text-[9px] font-black uppercase">Document PDF</p>
                     </div>
                 ) : (
                     <img 
                         src={event.image_url} 
                         alt={title} 
-                        className="w-full h-full object-contain bg-slate-900"
+                        className="w-full h-full object-cover md:object-contain bg-slate-900"
                     />
                 )
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400">
-                  <ImageIcon className="w-12 h-12 opacity-20" />
-                  <p className="text-[10px] font-black uppercase tracking-widest italic">Aucun visuel</p>
+                  <ImageIcon className="w-10 h-10 opacity-20" />
+                  <p className="text-[9px] font-black uppercase tracking-widest italic">Aucun visuel</p>
                 </div>
               )}
               
               {/* Platform Tag */}
-              <div className="absolute top-4 left-4 flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-sm border border-slate-200">
-                {event.platform === 'TIKTOK' && <Music className="w-3.5 h-3.5 text-black" />}
-                {event.platform === 'INSTAGRAM' && <Instagram className="w-3.5 h-3.5 text-pink-600" />}
-                {event.platform === 'X' && <Twitter className="w-3.5 h-3.5 text-blue-400" />}
-                {event.eventType === 'EMAIL' && <Mail className="w-3.5 h-3.5 text-green-500" />}
-                <span className="text-[10px] font-black uppercase tracking-tight text-slate-900">
+              <div className="absolute top-3 left-3 flex items-center gap-2 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg shadow-sm border border-slate-200">
+                {event.platform === 'TIKTOK' && <Music className="w-3 h-3 text-black" />}
+                {event.platform === 'INSTAGRAM' && <Instagram className="w-3 h-3 text-pink-600" />}
+                {event.platform === 'X' && <Twitter className="w-3 h-3 text-blue-400" />}
+                {event.eventType === 'EMAIL' && <Mail className="w-3 h-3 text-green-500" />}
+                <span className="text-[9px] font-black uppercase tracking-tight text-slate-900">
                   {event.platform || 'EMAIL'}
                 </span>
               </div>
             </div>
 
             {/* Content Area */}
-            <div className="p-8 space-y-6 text-left">
-              <div className="space-y-2">
-                <h2 className="text-xl font-black uppercase tracking-tight text-slate-900 leading-tight">
+            <div className="p-5 md:p-6 space-y-4 text-left">
+              <div className="space-y-1.5">
+                <h2 className="text-lg font-black uppercase tracking-tight text-slate-900 leading-tight">
                   {title}
                 </h2>
-                <div className="flex items-center gap-4 text-slate-400">
+                <div className="flex flex-wrap items-center gap-3 text-slate-400">
                     <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-black uppercase tracking-widest italic">
+                        <Calendar className="w-3 h-3" />
+                        <span className="text-[9px] font-black uppercase tracking-widest italic">
                             {format(date, 'dd MMMM yyyy', { locale: fr })}
                         </span>
                     </div>
@@ -159,26 +159,26 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
                         size="sm" 
                         disabled={submitting}
                         onClick={handleUnplan}
-                        className="h-7 text-[9px] font-black uppercase text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full gap-1.5 px-3"
+                        className="h-6 text-[8px] font-black uppercase text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full gap-1.2 px-2.5"
                     >
-                        {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                        Déplanifier
+                        {submitting ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Trash2 className="w-2.5 h-2.5" />}
+                        Retirer
                     </Button>
                 </div>
               </div>
 
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                <p className="text-xs text-slate-600 leading-relaxed font-medium italic whitespace-pre-wrap">
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                <p className="text-[11px] text-slate-600 leading-relaxed font-medium italic whitespace-pre-wrap">
                   &quot;{event.content}&quot;
                 </p>
               </div>
 
               {event.hashtags && event.hashtags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                     {event.hashtags.map((tag: string, i: number) => (
-                        <div key={i} className="flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-600 border border-purple-100 rounded-lg">
-                            <Tag className="w-3 h-3" />
-                            <span className="text-[9px] font-bold">#{tag}</span>
+                        <div key={i} className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-50 text-purple-600 border border-purple-100 rounded-md">
+                            <Tag className="w-2.5 h-2.5" />
+                            <span className="text-[8px] font-bold">#{tag}</span>
                         </div>
                     ))}
                 </div>
@@ -187,65 +187,65 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
           </div>
 
           {/* RIGHT: COMMENTS */}
-          <div className="flex flex-col bg-slate-50 border-l border-slate-200">
-            <div className="p-6 border-b border-slate-200 bg-white">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+          <div className="flex flex-col bg-slate-50 md:border-l border-slate-200 min-h-[300px] md:min-h-0 md:max-h-full overflow-hidden">
+            <div className="p-4 md:p-5 border-b border-slate-200 bg-white shrink-0">
+                <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
                     Commentaires <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-400">{comments.length}</span>
                 </h3>
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 custom-scrollbar">
               {loading ? (
                 <div className="flex flex-col items-center justify-center h-40 opacity-20">
-                  <Loader2 className="w-8 h-8 animate-spin" />
+                  <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : comments.length > 0 ? (
                 comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <Avatar className="w-8 h-8 border border-white shadow-sm">
+                  <div key={comment.id} className="flex gap-3 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                    <Avatar className="w-7 h-7 border border-white shadow-sm shrink-0">
                       <AvatarImage src={comment.author?.avatar_url || ""} />
-                      <AvatarFallback className="bg-purple-100 text-purple-600 font-bold text-[10px]">
+                      <AvatarFallback className="bg-purple-100 text-purple-600 font-bold text-[9px]">
                         {comment.user_email.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-slate-900">
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[9px] font-black text-slate-900 truncate">
                           {comment.author?.display_name || comment.user_email.split('@')[0]}
                         </span>
-                        <span className="text-[8px] font-bold text-slate-400">
+                        <span className="text-[7px] font-bold text-slate-400 shrink-0">
                           {format(new Date(comment.created_at), 'HH:mm', { locale: fr })}
                         </span>
                       </div>
-                      <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm">
-                        <p className="text-[11px] text-slate-600 leading-relaxed">{comment.content}</p>
+                      <div className="bg-white p-2.5 rounded-xl rounded-tl-none border border-slate-200 shadow-sm">
+                        <p className="text-[10px] text-slate-600 leading-tight break-words">{comment.content}</p>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="h-40 flex flex-col items-center justify-center opacity-30 italic text-slate-400">
-                  <p className="text-[9px] font-black uppercase text-center">Aucun commentaire pour le moment</p>
+                <div className="h-32 flex flex-col items-center justify-center opacity-30 italic text-slate-400">
+                  <p className="text-[8px] font-black uppercase text-center">Aucun commentaire</p>
                 </div>
               )}
             </div>
 
             {/* Input */}
-            <div className="p-6 bg-white border-t border-slate-200">
-              <form onSubmit={handleAddComment} className="flex items-center gap-3">
+            <div className="p-4 md:p-5 bg-white border-t border-slate-200 shrink-0">
+              <form onSubmit={handleAddComment} className="flex items-center gap-2.5">
                 <Input 
                   placeholder="Votre avis..." 
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  className="flex-1 h-12 bg-slate-50 border-none rounded-xl text-[11px] font-medium px-4 focus-visible:ring-purple-400"
+                  className="flex-1 h-9 md:h-10 bg-slate-50 border-none rounded-lg text-[10px] font-medium px-3 focus-visible:ring-purple-400"
                 />
                 <Button 
                   type="submit" 
                   disabled={submitting || !newComment.trim()}
-                  className="w-12 h-12 rounded-xl bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-200 transition-all flex items-center justify-center"
+                  className="w-9 h-9 md:w-10 md:h-10 shrink-0 rounded-lg bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-200 transition-all flex items-center justify-center"
                 >
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-white" />}
+                  {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-white" />}
                 </Button>
               </form>
             </div>

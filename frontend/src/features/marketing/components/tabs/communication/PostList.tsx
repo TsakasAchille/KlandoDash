@@ -37,7 +37,7 @@ export function PostList({
   isGeneratorActive
 }: PostListProps) {
   return (
-    <div className="w-80 flex flex-col gap-4">
+    <div className="w-80 flex-none flex flex-col gap-4">
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <Popover>
@@ -129,8 +129,8 @@ export function PostList({
                   {comm.platform === 'X' && <Twitter className="w-3 h-3 text-blue-400" />}
                   <span className="text-[8px] font-black uppercase text-slate-400">{comm.platform}</span>
                 </div>
-                <p className="text-[10px] font-black text-slate-900 uppercase truncate">{comm.title}</p>
-                <p className="text-[9px] text-slate-500 line-clamp-1 italic mt-0.5">{comm.content || "(Visuel PNG)"}</p>
+                <p className="text-[10px] font-black text-slate-900 uppercase truncate max-w-[200px]">{comm.title}</p>
+                <p className="text-[9px] text-slate-500 line-clamp-1 italic mt-0.5 max-w-[220px]">{comm.content || "(Visuel PNG)"}</p>
                 
                 {comm.image_url && (
                   <div className="absolute right-2 bottom-2">

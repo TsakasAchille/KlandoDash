@@ -28,117 +28,133 @@ export function PostPreview({
   const isInTrash = activePost.status === 'TRASH';
 
   return (
-    <div className="flex-1 grid grid-cols-12 gap-6 overflow-hidden animate-in zoom-in-95 duration-300 h-full text-left">
-      <Card className={cn(
-        "bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-y-auto custom-scrollbar p-10 space-y-8 relative transition-all",
-        isVisualPost ? "col-span-4" : "col-span-7"
-      )}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={cn(
-                "p-3 rounded-2xl",
-                isInTrash ? "bg-red-50 text-red-600" : "bg-blue-500/10 text-blue-600"
-            )}>
-              {isInTrash ? <Trash2 className="w-6 h-6" /> : <Send className="w-6 h-6" />}
-            </div>
-            <div>
-              <h4 className="text-xl font-black uppercase text-slate-900 tracking-tight">{activePost.title}</h4>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{activePost.platform} • {activePost.status}</p>
-            </div>
-          </div>
-          
-          {!isInTrash && !isVisualPost && (
-            <Button variant="outline" onClick={() => onStartEdit(activePost)} className="rounded-xl border-slate-200 font-black uppercase text-[10px] h-10 px-6 gap-2">
-              <Edit3 className="w-3.5 h-3.5" /> Éditer
-            </Button>
-          )}
-        </div>
-
-        <div className={cn(
-          "bg-slate-50 rounded-[2rem] p-8 border border-slate-100 relative",
-          isVisualPost ? "p-4 border-dashed" : "p-8"
-        )}>
-          {!isInTrash && <div className="absolute -top-3 -left-3 bg-blue-600 text-white p-1.5 rounded-lg shadow-lg z-10"><PlusCircle className="w-4 h-4" /></div>}
-          <p className={cn(
-            "text-slate-800 leading-relaxed font-medium whitespace-pre-wrap",
-            isVisualPost ? "text-[10px] italic opacity-60 text-center" : "text-base"
+    <Card className="flex-1 bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col text-left animate-in zoom-in-95 duration-300">
+      {/* 1. HEADER (Même style que l'Editor) */}
+      <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className={cn(
+              "p-2 rounded-xl text-white shadow-lg",
+              isInTrash ? "bg-red-500 shadow-red-100" : "bg-blue-600 shadow-blue-100"
           )}>
-            {activePost.content || "Post visuel pur (aucune légende)"}
-          </p>
-          
-          {activePost.hashtags && activePost.hashtags.length > 0 && (
-            <div className="mt-8 flex flex-wrap gap-2">
-              {activePost.hashtags.map((tag, i) => (
-                <span key={i} className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">#{tag}</span>
-              ))}
-            </div>
-          )}
+            {isInTrash ? <Trash2 className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+          </div>
+          <div>
+            <h4 className="text-sm font-black uppercase text-slate-900">{activePost.title}</h4>
+            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{activePost.platform} • {activePost.status}</p>
+          </div>
         </div>
-
-        {isVisualPost && !isInTrash && (
-          <Button variant="outline" onClick={() => onStartEdit(activePost)} className="w-full rounded-2xl border-slate-200 font-black uppercase text-[10px] h-12 gap-2">
-            <Edit3 className="w-3.5 h-3.5" /> Modifier le visuel / titre
+        
+        {!isInTrash && (
+          <Button variant="outline" size="sm" onClick={() => onStartEdit(activePost)} className="rounded-full border-slate-200 font-black uppercase text-[10px] h-9 px-5 gap-2">
+            <Edit3 className="w-3.5 h-3.5" /> Éditer
           </Button>
         )}
+      </div>
 
-        {/* --- BARRE D'ACTIONS BASSE --- */}
-        <div className="pt-4 flex items-center justify-between border-t border-slate-100">
-            {isInTrash ? (
-                <div className="flex gap-3 w-full">
-                    <Button 
-                        onClick={() => onRestore(activePost.id)}
-                        className="flex-1 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black uppercase text-[10px] gap-2 h-11"
-                    >
-                        <RotateCcw className="w-4 h-4" /> Restaurer
-                    </Button>
-                    <Button 
-                        onClick={() => onDeletePerm(activePost.id)}
-                        variant="destructive"
-                        className="flex-1 rounded-xl font-black uppercase text-[10px] gap-2 h-11"
-                    >
-                        <Trash2 className="w-4 h-4" /> Supprimer Définitif
+      {/* 2. CONTENT AREA (Scrollable) */}
+      <div className="p-8 md:p-10 space-y-10 overflow-y-auto custom-scrollbar">
+        
+        <div className={cn(
+            "flex flex-col gap-10 items-start",
+            isVisualPost ? "max-w-2xl mx-auto w-full" : "lg:flex-row"
+        )}>
+          
+          {/* Left/Main: Content */}
+          <div className={cn(
+            "space-y-6",
+            isVisualPost ? "w-full" : "w-full lg:w-[60%]"
+          )}>
+            <div className={cn(
+              "bg-slate-50 rounded-[2.5rem] border border-slate-100 relative shadow-inner",
+              isVisualPost ? "p-6 border-dashed text-center" : "p-10"
+            )}>
+              {!isInTrash && <div className="absolute -top-3 -left-3 bg-blue-600 text-white p-1.5 rounded-lg shadow-lg z-10"><PlusCircle className="w-4 h-4" /></div>}
+              <p className={cn(
+                "text-slate-800 leading-relaxed font-medium whitespace-pre-wrap",
+                isVisualPost ? "text-[10px] italic opacity-60" : "text-base"
+              )}>
+                {activePost.content || "Post visuel pur (aucune légende)"}
+              </p>
+              
+              {activePost.hashtags && activePost.hashtags.length > 0 && (
+                <div className="mt-8 flex flex-wrap gap-2 justify-center lg:justify-start">
+                  {activePost.hashtags.map((tag, i) => (
+                    <span key={i} className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">#{tag}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {isVisualPost && !isInTrash && (
+                <div className="flex justify-center">
+                    <Button variant="ghost" onClick={() => onStartEdit(activePost)} className="text-[10px] font-black uppercase text-purple-600 hover:bg-purple-50 rounded-full px-8">
+                        Changer le visuel ou le titre
                     </Button>
                 </div>
+            )}
+          </div>
+
+          {/* Right/Side: Image */}
+          <div className={cn(
+            "space-y-4",
+            isVisualPost ? "w-full max-w-[500px] mx-auto" : "w-full lg:w-[40%]"
+          )}>
+            {activePost.image_url ? (
+              <div className={cn(
+                "relative bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden group border-4 border-white",
+                isVisualPost ? "aspect-square" : "aspect-[4/5]"
+              )}>
+                <img src={activePost.image_url} alt="Preview" className="w-full h-full object-contain" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Button size="sm" className="bg-white text-slate-900 hover:bg-white rounded-full font-black uppercase text-[10px] h-10 px-6 gap-2" asChild>
+                    <a href={activePost.image_url} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> Voir plein écran</a>
+                  </Button>
+                </div>
+              </div>
             ) : (
+              <div className="aspect-[4/5] bg-slate-50 border-2 border-dashed border-slate-200 rounded-[3rem] flex flex-col items-center justify-center p-8 text-center gap-4 opacity-40">
+                <ImageIcon className="w-10 h-10 text-slate-300" />
+                <p className="text-[10px] font-black uppercase text-slate-400">Aucun visuel attaché</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. FOOTER (Actions de corbeille) */}
+      <div className="p-8 border-t border-slate-100 bg-white shrink-0 mt-auto">
+        {isInTrash ? (
+            <div className="flex gap-4">
+                <Button 
+                    onClick={() => onRestore(activePost.id)}
+                    className="flex-1 h-12 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black uppercase text-[10px] gap-2 shadow-lg shadow-green-100"
+                >
+                    <RotateCcw className="w-4 h-4" /> Restaurer le post
+                </Button>
+                <Button 
+                    onClick={() => onDeletePerm(activePost.id)}
+                    variant="destructive"
+                    className="flex-1 h-12 rounded-xl font-black uppercase text-[10px] gap-2 shadow-lg shadow-red-100"
+                >
+                    <Trash2 className="w-4 h-4" /> Supprimer définitivement
+                </Button>
+            </div>
+        ) : (
+            <div className="flex justify-between items-center">
                 <Button 
                     variant="ghost" 
                     onClick={() => onTrash(activePost.id)}
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl font-black uppercase text-[10px] gap-2"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl font-black uppercase text-[10px] gap-2 px-6 h-12"
                 >
                     <Trash2 className="w-4 h-4" /> Placer dans la corbeille
                 </Button>
-            )}
-        </div>
-      </Card>
-
-      <div className={cn(
-        "flex flex-col gap-6 transition-all",
-        isVisualPost ? "col-span-8" : "col-span-5"
-      )}>
-        {activePost.image_url ? (
-          <Card className="flex-1 bg-slate-900 border-none rounded-[3rem] shadow-2xl overflow-hidden relative group">
-            <img src={activePost.image_url} alt="Post Visual" className="w-full h-full object-contain" />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-              <Button size="sm" className="bg-white text-slate-900 hover:bg-white rounded-full font-black uppercase text-[10px] h-10 px-6 gap-2" asChild>
-                <a href={activePost.image_url} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /> Plein écran</a>
-              </Button>
+                
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">
+                    Dernière modification : {new Date().toLocaleDateString()}
+                </p>
             </div>
-            {isVisualPost && (
-              <div className="absolute top-6 left-6">
-                <span className="bg-purple-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase shadow-xl border border-white/20">Post Visuel (PNG)</span>
-              </div>
-            )}
-          </Card>
-        ) : (
-          <div className="flex-1 bg-slate-100 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center p-10 text-center gap-4 opacity-50 h-full">
-            <ImageIcon className="w-12 h-12 text-slate-300" />
-            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Aucun visuel final attaché</p>
-            {!isInTrash && (
-                <Button variant="ghost" onClick={() => onStartEdit(activePost)} className="text-[10px] font-black uppercase text-purple-600 hover:bg-purple-50">Ajouter un média</Button>
-            )}
-          </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

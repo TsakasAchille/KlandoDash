@@ -43,6 +43,7 @@ export function CommunicationTab({
   // États de sélection et édition
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [creationMode, setCreationMode] = useState<'TEXT' | 'IMAGE' | null>(null);
   
   // Le générateur est maintenant affiché par défaut si rien n'est sélectionné
   const [showGenerator, setShowGenerator] = useState(true);
@@ -79,6 +80,7 @@ export function CommunicationTab({
 
   const handleStartManual = (mode: 'TEXT' | 'IMAGE') => {
     setEditingId("NEW_MANUAL");
+    setCreationMode(mode);
     setSelectedId(null);
     setShowGenerator(false);
     setEditForm({ 
@@ -93,6 +95,7 @@ export function CommunicationTab({
 
   const handleStartEdit = (comm: MarketingComm) => {
     setEditingId(comm.id);
+    setCreationMode(null);
     setShowGenerator(false);
     setEditForm({ 
         title: comm.title, 
@@ -115,12 +118,14 @@ export function CommunicationTab({
                 setStatusFilter('DRAFT');
                 setTimeout(() => setSelectedId(res.post.id), 100);
                 setEditingId(null);
+                setCreationMode(null);
             }
         } else {
             const res = await updateMarketingCommAction(editingId, { ...editForm, status: 'DRAFT' });
             if (res.success) {
                 toast.success("Publication mise à jour !");
                 setEditingId(null);
+                setCreationMode(null);
             }
         }
     } catch (err) {
@@ -147,8 +152,8 @@ export function CommunicationTab({
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
+    const file = e instanceof File ? e : e.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
     const reader = new FileReader();
@@ -210,29 +215,31 @@ export function CommunicationTab({
   };
 
   return (
-    <div className="flex gap-6 h-[750px] animate-in fade-in duration-500 text-left">
+    <div className="flex flex-col lg:flex-row gap-10 animate-in fade-in duration-500 text-left items-start">
       {/* LEFT SIDEBAR */}
-      <PostList 
-          comms={filteredComms}
-          selectedId={selectedId}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          onSelect={(id) => { setSelectedId(id); setEditingId(null); }}
-          onStartManual={handleStartManual}
-          onShowGenerator={() => { setShowGenerator(true); setSelectedId(null); setEditingId(null); }}
-          isGeneratorActive={showGenerator}
-      />
+      <div className="w-[320px] shrink-0">
+        <PostList 
+            comms={filteredComms}
+            selectedId={selectedId}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            onSelect={(id) => { setSelectedId(id); setEditingId(null); }}
+            onStartManual={handleStartManual}
+            onShowGenerator={() => { setShowGenerator(true); setSelectedId(null); setEditingId(null); }}
+            isGeneratorActive={showGenerator}
+        />
+      </div>
 
-      {/* MAIN WORKSPACE */}
-      <div className="flex-1 flex flex-col gap-6">
+      {/* MAIN WORKSPACE (Production Zone - Responsive with max-width) */}
+      <div className="flex-1 w-full min-w-0 max-w-[1100px] flex flex-col gap-6">
           {editingId ? (
               <PostEditor 
-                  createMode={editForm.image_url && (!editForm.content || editForm.content.length < 50) ? 'IMAGE' : 'TEXT'}
+                  createMode={editingId === "NEW_MANUAL" ? creationMode : (editForm.image_url && (!editForm.content || editForm.content.length < 50) ? 'IMAGE' : 'TEXT')}
                   editForm={editForm}
                   setEditForm={setEditForm}
-                  onClose={() => { setEditingId(null); }}
+                  onClose={() => { setEditingId(null); setCreationMode(null); }}
                   onSave={handleSaveEdit}
                   onRefine={handleRefineContent}
                   onFileUpload={handleFileUpload}
