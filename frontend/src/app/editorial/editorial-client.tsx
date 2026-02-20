@@ -156,30 +156,36 @@ export function EditorialClient({
           </div>
         </div>
 
-        {/* --- TABS CONTENT --- */}
+        {/* --- TABS CONTENT: SMART LOADING --- */}
 
         <TabsContent value="comm" className="outline-none">
-          <CommunicationTab 
-            comms={comms}
-            isScanning={isScanningComm}
-            onGenerateIdeas={handleCommIdeasScan}
-            onGeneratePost={handleGenerateSocialPost}
-            onPromotePending={handlePromotePending}
-          />
+          {tabParam === "comm" && (
+            <CommunicationTab 
+              comms={comms}
+              isScanning={isScanningComm}
+              onGenerateIdeas={handleCommIdeasScan}
+              onGeneratePost={handleGenerateSocialPost}
+              onPromotePending={handlePromotePending}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="mailing" className="outline-none">
-          <MailingTab 
-            emails={emails}
-            isScanning={isScanningMailing}
-            sendingEmailId={sendingEmailId}
-            onScan={handleMailingScan}
-            onSendEmail={handleSendEmail}
-          />
+          {tabParam === "mailing" && (
+            <MailingTab 
+              emails={emails}
+              isScanning={isScanningMailing}
+              sendingEmailId={sendingEmailId}
+              onScan={handleMailingScan}
+              onSendEmail={handleSendEmail}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="calendar" className="outline-none">
-          <CalendarTab comms={comms} emails={emails} />
+          {tabParam === "calendar" && (
+            <CalendarTab comms={comms} emails={emails} />
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -10,12 +10,21 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditorialPage() {
+interface Props {
+  searchParams: Promise<{ 
+    tab?: string;
+  }>;
+}
+
+export default async function EditorialPage({ searchParams }: Props) {
+  const { tab = "comm" } = await searchParams;
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) {
     redirect("/login");
   }
 
+  // On récupère toujours les deux pour les stats du header, 
+  // mais on pourrait optimiser ici plus tard avec une requête de comptage légère.
   const [emailResult, commResult] = await Promise.all([
     getMarketingEmailsAction(),
     getMarketingCommAction()

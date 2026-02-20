@@ -192,61 +192,71 @@ export function MarketingClient({
           </div>
         </div>
 
-        {/* --- TABS CONTENT: DELEGATED TO SUB-COMPONENTS --- */}
+        {/* --- TABS CONTENT: SMART LOADING --- */}
 
         <TabsContent value="strategy" className="outline-none">
-          <StrategyTab 
-            recommendations={recommendations}
-            strategyTab={subTabParam}
-            onStrategyTabChange={(v) => updateParams({ sub: v })}
-            onApply={handleApplyRecommendation}
-            onDismiss={handleDismissRecommendation}
-            onGlobalScan={handleGlobalScan}
-          />
+          {tabParam === "strategy" && (
+            <StrategyTab 
+              recommendations={recommendations}
+              strategyTab={subTabParam}
+              onStrategyTabChange={(v) => updateParams({ sub: v })}
+              onApply={handleApplyRecommendation}
+              onDismiss={handleDismissRecommendation}
+              onGlobalScan={handleGlobalScan}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="stats" className="outline-none">
-          <IntelligenceTab 
-            insights={insights}
-            isScanning={isScanningMarketing}
-            onScan={handleMarketingScan}
-            onSelect={setSelectedInsight}
-          />
+          {tabParam === "stats" && (
+            <IntelligenceTab 
+              insights={insights}
+              isScanning={isScanningMarketing}
+              onScan={handleMarketingScan}
+              onSelect={setSelectedInsight}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="prospects" className="outline-none">
-          <SiteRequestTable 
-            requests={requests} 
-            onUpdateStatus={handleUpdateStatus}
-            updatingId={updatingId}
-            currentPage={pageParam}
-            setCurrentPage={(v) => updateParams({ page: v })}
-            statusFilter={statusParam}
-            setStatusFilter={(v) => updateParams({ status: v, page: 1 })}
-            onOpenIA={(id) => setAiDialogOpenId(id)}
-            onScan={handleScanRequest}
-            onSelectOnMap={(id) => updateParams({ id, tab: "radar" })}
-            scanningId={scanningId}
-            selectedId={selectedRequestId || undefined}
-          />
+          {tabParam === "prospects" && (
+            <SiteRequestTable 
+              requests={requests} 
+              onUpdateStatus={handleUpdateStatus}
+              updatingId={updatingId}
+              currentPage={pageParam}
+              setCurrentPage={(v) => updateParams({ page: v })}
+              statusFilter={statusParam}
+              setStatusFilter={(v) => updateParams({ status: v, page: 1 })}
+              onOpenIA={(id) => setAiDialogOpenId(id)}
+              onScan={handleScanRequest}
+              onSelectOnMap={(id) => updateParams({ id, tab: "radar" })}
+              scanningId={scanningId}
+              selectedId={selectedRequestId || undefined}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="radar" className="outline-none">
-          <SiteRequestsMap 
-            requests={requests}
-            trips={tripsForMap}
-            selectedRequestId={selectedRequestId}
-            onSelectRequest={(id) => updateParams({ id })}
-            onScan={handleScanRequest}
-            onOpenIA={(id) => setAiDialogOpenId(id)}
-            onUpdateStatus={handleUpdateStatus}
-            scanningId={scanningId}
-            aiMatchedTripId={aiMatchedTripId}
-          />
+          {tabParam === "radar" && (
+            <SiteRequestsMap 
+              requests={requests}
+              trips={tripsForMap}
+              selectedRequestId={selectedRequestId}
+              onSelectRequest={(id) => updateParams({ id })}
+              onScan={handleScanRequest}
+              onOpenIA={(id) => setAiDialogOpenId(id)}
+              onUpdateStatus={handleUpdateStatus}
+              scanningId={scanningId}
+              aiMatchedTripId={aiMatchedTripId}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="history" className="outline-none">
-          <RequestHistoryTab requests={requests} flowStats={flowStats} />
+          {tabParam === "history" && (
+            <RequestHistoryTab requests={requests} flowStats={flowStats} />
+          )}
         </TabsContent>
       </Tabs>
 
