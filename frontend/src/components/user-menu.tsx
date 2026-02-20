@@ -20,49 +20,70 @@ export function UserMenu() {
   const roleLabel = role === "admin" ? "Administrateur" : "Utilisateur";
 
   return (
-    <div className="p-4 border-t border-border">
-      <div className="flex items-center gap-3">
-        {/* Avatar */}
-        {image ? (
-          <Image
-            src={image}
-            alt={name || "Avatar"}
-            width={40}
-            height={40}
-            className="w-10 h-10 rounded-full"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-klando-burgundy flex items-center justify-center text-white font-medium">
-            {initials || "?"}
+    <div className="space-y-4">
+      {/* Profil Card */}
+      <div className="relative group/user">
+        <div className="absolute -inset-2 bg-gradient-to-r from-klando-gold/10 to-transparent rounded-2xl opacity-0 group-hover/user:opacity-100 transition-all duration-500" />
+        
+        <div className="relative flex items-center gap-3 p-2">
+          {/* Avatar avec Ring Glow */}
+          <div className="relative shrink-0">
+            <div className={cn(
+              "w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden border-2 transition-all duration-500",
+              role === "admin" ? "border-klando-gold/30 group-hover/user:border-klando-gold shadow-lg shadow-klando-gold/5" : "border-white/10 group-hover/user:border-white/30"
+            )}>
+              {image ? (
+                <Image
+                  src={image}
+                  alt={name || "Avatar"}
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover/user:scale-110"
+                  sizes="44px"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-klando-burgundy to-[#9b2c3d] flex items-center justify-center text-white text-xs font-black">
+                  {initials || "?"}
+                </div>
+              )}
+            </div>
+            {/* Status Indicator */}
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#061428] rounded-full flex items-center justify-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            </div>
           </div>
-        )}
 
-        {/* Infos utilisateur */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate text-white">{name}</p>
-          <p className="text-xs text-muted-foreground truncate">{email}</p>
+          {/* User Infos */}
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-black text-white truncate tracking-tight group-hover/user:text-klando-gold transition-colors">
+              {name}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-md",
+                role === "admin" ? "bg-klando-gold/10 text-klando-gold" : "bg-white/5 text-slate-400"
+              )}>
+                {roleLabel}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Badge rôle + Déconnexion */}
-      <div className="mt-3 flex items-center justify-between">
-        <span
-          className={`text-xs px-2 py-1 rounded-full ${
-            role === "admin"
-              ? "bg-klando-gold/20 text-klando-gold"
-              : "bg-secondary text-muted-foreground"
-          }`}
-        >
-          {roleLabel}
-        </span>
+      {/* Action Bar */}
+      <div className="flex items-center justify-between px-2">
+        <div className="flex flex-col">
+          <p className="text-[10px] font-medium text-slate-500 truncate max-w-[120px]">
+            {email}
+          </p>
+        </div>
 
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-1 text-xs text-white hover:text-klando-gold transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all duration-300 group/logout"
+          title="Déconnexion"
         >
-          <LogOut className="w-3 h-3" />
-          <span className="hidden sm:inline">Déconnexion</span>
-          <span className="sm:hidden">Déco</span>
+          <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">Quitter</span>
+          <LogOut className="w-3.5 h-3.5 transition-transform group-hover/logout:translate-x-0.5" />
         </button>
       </div>
     </div>
