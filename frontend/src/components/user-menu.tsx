@@ -48,7 +48,7 @@ export function UserMenu() {
               )}
             </div>
             {/* Status Indicator */}
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#061428] rounded-full flex items-center justify-center">
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#0f172a] rounded-full flex items-center justify-center">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             </div>
           </div>

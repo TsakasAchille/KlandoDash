@@ -137,14 +137,14 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
 
   return (
     <aside className={cn(
-      "bg-[#061428] border-r border-white/5 flex flex-col shadow-[10px_0_30px_-5px_rgba(0,0,0,0.3)] relative",
+      "bg-gradient-to-b from-[#1e293b] to-[#0f172a] border-r border-white/5 flex flex-col shadow-[10px_0_30px_-5px_rgba(0,0,0,0.2)] relative",
       isMobile ? "w-full h-full" : "w-64"
     )}>
       {/* Visual Depth Overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(123,31,47,0.08),transparent_40%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(123,31,47,0.1),transparent_50%)] pointer-events-none" />
       
       {/* Header Area */}
-      <div className="p-8 border-b border-white/5 flex justify-center items-center relative bg-black/10 backdrop-blur-md">
+      <div className="p-8 border-b border-white/5 flex justify-center items-center relative bg-white/[0.02] backdrop-blur-md">
         <div className="relative group/logo cursor-pointer">
             <div className="absolute -inset-4 bg-klando-gold/10 rounded-full blur-xl opacity-0 group-hover/logo:opacity-100 transition-opacity duration-700" />
             <Logo size={isMobile ? "large" : "xlarge"} />
@@ -191,7 +191,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       </nav>
       
       {/* User Menu */}
-      <div className={cn("border-t border-white/5 bg-klando-dark/40 backdrop-blur-xl relative z-10", isMobile ? "p-6" : "p-4")}>
+      <div className={cn("border-t border-white/5 bg-white/[0.02] backdrop-blur-xl relative z-10", isMobile ? "p-6" : "p-4")}>
         <UserMenu />
         <div className="mt-4 px-4 flex justify-between items-center group/version">
           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">KlandoDash Core</span>
