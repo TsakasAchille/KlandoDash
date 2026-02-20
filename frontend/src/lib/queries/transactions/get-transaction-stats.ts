@@ -13,26 +13,25 @@ export async function getTransactionsStats(): Promise<TransactionStats> {
 
   const { data, error } = await supabase.rpc("get_klando_stats_final");
 
-  if (error) {
-    console.error("Erreur getTransactionsStats:", error.message);
+  if (error || !data) {
+    if (error) console.error("Erreur getTransactionsStats:", error.message);
     return { total: 0, totalAmount: 0, byStatus: {}, byType: {} };
   }
 
-  // Transformation du format tableau [{status, count}, ...] en objet {status: count, ...}
   const byStatus: Record<string, number> = {};
   const byType: Record<string, number> = {};
 
-  (data.transactions.byStatus || []).forEach((item: { status: string; count: number }) => {
+  (data.transactions?.byStatus || []).forEach((item: { status: string; count: number }) => {
     byStatus[item.status] = item.count;
   });
 
-  (data.transactions.byType || []).forEach((item: { type: string; count: number }) => {
+  (data.transactions?.byType || []).forEach((item: { type: string; count: number }) => {
     byType[item.type] = item.count;
   });
 
   return {
-    total: data.transactions.total,
-    totalAmount: data.transactions.totalAmount,
+    total: data.transactions?.total || 0,
+    totalAmount: data.transactions?.totalAmount || 0,
     byStatus,
     byType
   };
@@ -44,11 +43,10 @@ export async function getTransactionsStats(): Promise<TransactionStats> {
 export async function getCashFlowStats(): Promise<CashFlowStats> {
   const supabase = createServerClient();
 
-  // On utilise la version finale simplifiée
   const { data, error } = await supabase.rpc("get_klando_stats_final");
 
-  if (error) {
-    console.error("Erreur getCashFlowStats:", error.message);
+  if (error || !data || !data.cashFlow) {
+    if (error) console.error("Erreur getCashFlowStats:", error.message);
     return { totalIn: 0, totalOut: 0, solde: 0, countIn: 0, countOut: 0 };
   }
 
@@ -63,8 +61,8 @@ export async function getRevenueStats(): Promise<RevenueStats> {
 
   const { data, error } = await supabase.rpc("get_klando_stats_final");
 
-  if (error) {
-    console.error("Erreur getRevenueStats:", error.message);
+  if (error || !data || !data.revenue) {
+    if (error) console.error("Erreur getRevenueStats:", error.message);
     return { totalPassengerPaid: 0, totalDriverPrice: 0, klandoMargin: 0, transactionCount: 0 };
   }
 
