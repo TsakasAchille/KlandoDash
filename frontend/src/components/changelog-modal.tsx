@@ -34,8 +34,8 @@ export function ChangelogModal({ version }: { version: string }) {
   return (
     <Dialog onOpenChange={(open) => open && loadChangelog()}>
       <DialogTrigger asChild>
-        <button className="flex items-center gap-2 text-slate-500 hover:text-klando-gold transition-all duration-300 group/btn">
-          <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 group-hover/btn:border-klando-gold/30 transition-colors">
+        <button className="flex items-center gap-2 text-slate-400 hover:text-klando-gold transition-all duration-300 group/btn">
+          <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 group-hover/btn:border-klando-gold/30 transition-colors">
             <span className="text-[10px] font-mono font-bold">v{version}</span>
           </div>
           <ExternalLink className="w-3 h-3 opacity-0 group-hover/btn:opacity-100 transition-all -translate-x-1 group-hover/btn:translate-x-0" />

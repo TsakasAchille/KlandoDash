@@ -73,14 +73,14 @@ export function UserMenu() {
       {/* Action Bar */}
       <div className="flex items-center justify-between px-2">
         <div className="flex flex-col">
-          <p className="text-[10px] font-medium text-slate-500 truncate max-w-[120px]">
+          <p className="text-[10px] font-bold text-slate-400 truncate max-w-[120px]">
             {email}
           </p>
         </div>
 
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all duration-300 group/logout"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 text-slate-200 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all duration-300 group/logout"
           title="Déconnexion"
         >
           <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">Quitter</span>

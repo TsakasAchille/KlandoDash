@@ -79,7 +79,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             "flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-500 group relative overflow-hidden mb-1.5",
             isActive
               ? "bg-gradient-to-r from-klando-burgundy via-[#9b2c3d] to-klando-burgundy text-white shadow-[0_8px_20px_-4px_rgba(123,31,47,0.4)]"
-              : "text-slate-400 hover:bg-white/[0.03] hover:text-white hover:translate-x-1",
+              : "text-indigo-100/80 hover:bg-white/[0.05] hover:text-white hover:translate-x-1",
             isMobile ? "text-base py-4" : "text-sm py-2.5",
             isLoading && "opacity-70 pointer-events-none bg-white/5"
           )}
@@ -92,7 +92,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
           <div className="flex items-center gap-3 relative z-10">
             <div className={cn(
               "w-9 h-9 flex items-center justify-center shrink-0 rounded-xl transition-all duration-500",
-              isActive ? "bg-white/20 shadow-inner" : "bg-white/[0.02] group-hover:bg-white/10",
+              isActive ? "bg-white/20 shadow-inner" : "bg-white/[0.03] group-hover:bg-white/10",
               isMobile && "w-10 h-10"
             )}>
               {isImageIcon ? (
@@ -103,7 +103,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                     fill 
                     className={cn(
                       "object-contain scale-125", 
-                      !isActive && "grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+                      !isActive && "grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
                     )}
                     sizes="36px"
                   />
@@ -112,14 +112,14 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                 <Icon className={cn(
                   "w-[18px] h-[18px] transition-all duration-500 group-hover:rotate-[10deg] group-hover:scale-110", 
                   isMobile && "w-5 h-5",
-                  isActive ? "text-klando-gold drop-shadow-[0_0_8px_rgba(235,195,63,0.5)]" : "text-slate-500 group-hover:text-white"
+                  isActive ? "text-klando-gold drop-shadow-[0_0_8px_rgba(235,195,63,0.5)]" : "text-indigo-200/60 group-hover:text-white"
                 )} />
               )}
             </div>
             <span className={cn(
               "transition-all duration-500 tracking-tight",
               isMobile && "text-lg", 
-              isActive ? "font-black text-white" : "font-semibold group-hover:translate-x-0.5"
+              isActive ? "font-black text-white" : "font-bold"
             )}>{item.label}</span>
           </div>
           
@@ -169,16 +169,16 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             <>
               <li className={cn("pt-8 pb-3", isMobile && "pt-10 pb-4")}>
                 <div className="flex items-center gap-3 px-4">
-                  <div className="h-px flex-1 bg-white/5" />
+                  <div className="h-px flex-1 bg-white/10" />
                   <span
                     className={cn(
-                      "text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] whitespace-nowrap",
+                      "text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] whitespace-nowrap",
                       isMobile && "text-xs"
                     )}
                   >
                     {userRole === "admin" ? "Espace Admin" : userRole === "marketing" ? "Espace Marketing" : "Espace Support"}
                   </span>
-                  <div className="h-px flex-1 bg-white/5" />
+                  <div className="h-px flex-1 bg-white/10" />
                 </div>
               </li>
 
@@ -194,7 +194,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       <div className={cn("border-t border-white/5 bg-white/[0.02] backdrop-blur-xl relative z-10", isMobile ? "p-6" : "p-4")}>
         <UserMenu />
         <div className="mt-4 px-4 flex justify-between items-center group/version">
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">KlandoDash Core</span>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">KlandoDash Core</span>
           <ChangelogModal version={packageInfo.version} />
         </div>
       </div>
