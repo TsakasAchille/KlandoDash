@@ -120,7 +120,7 @@ export function TripDetails({ trip }: TripDetailsProps) {
             <div className="flex items-center gap-3">
               {trip.driver_photo ? (
                 <div className="relative w-10 h-10 flex-shrink-0">
-                  <Image src={trip.driver_photo} alt="" fill className="rounded-lg object-cover border border-border/50" />
+                  <Image src={trip.driver_photo} alt="" fill className="rounded-lg object-cover border border-border/50" sizes="40px" />
                 </div>
               ) : (
                 <div className="w-10 h-10 rounded-lg bg-klando-burgundy flex items-center justify-center text-white text-sm font-black flex-shrink-0">
@@ -159,7 +159,7 @@ export function TripDetails({ trip }: TripDetailsProps) {
                   <div className="flex items-center gap-2 min-w-0">
                     {p.photo_url ? (
                       <div className="relative w-8 h-8 flex-shrink-0">
-                        <Image src={p.photo_url} alt="" fill className="rounded-lg object-cover border border-border/50" />
+                        <Image src={p.photo_url} alt="" fill className="rounded-lg object-cover border border-border/50" sizes="32px" />
                       </div>
                     ) : (
                       <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground text-[10px] font-black flex-shrink-0 border border-border/50">

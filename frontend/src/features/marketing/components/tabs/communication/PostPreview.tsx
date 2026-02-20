@@ -110,6 +110,7 @@ export function PostPreview({
                   alt="Preview" 
                   fill
                   className="object-contain" 
+                  sizes="(max-width: 768px) 100vw, 500px"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Button size="sm" className="bg-white text-slate-900 hover:bg-white rounded-full font-black uppercase text-[10px] h-10 px-6 gap-2" asChild>

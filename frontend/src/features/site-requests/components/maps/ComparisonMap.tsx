@@ -131,9 +131,13 @@ export function ComparisonMap({
       }
     }
 
-    if (bounds.isValid()) {
-      map.invalidateSize();
-      map.fitBounds(bounds, { padding: [40, 40], animate: false });
+    if (bounds.isValid() && mapRef.current) {
+      try {
+        mapRef.current.invalidateSize();
+        mapRef.current.fitBounds(bounds, { padding: [40, 40], animate: false });
+      } catch (e) {
+        console.warn("Leaflet fitBounds error:", e);
+      }
     }
   }, [clientOrigin, clientDestination, clientPolyline, driverTrip]);
 

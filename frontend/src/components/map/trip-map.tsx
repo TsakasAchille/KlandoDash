@@ -505,8 +505,9 @@ export function TripMap({
       
       if (allLayers.length > 0) {
         const group = new L.FeatureGroup(allLayers);
-        if (group.getBounds().isValid()) {
-          mapRef.current.fitBounds(group.getBounds(), { padding: [50, 50] });
+        const bounds = group.getBounds();
+        if (bounds.isValid()) {
+          mapRef.current.fitBounds(bounds, { padding: [50, 50] });
         }
       }
     }

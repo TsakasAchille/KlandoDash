@@ -19,6 +19,7 @@ export function Logo({ size = "medium" }: { size?: "small" | "medium" | "large" 
         height={150}
         className="w-full h-auto object-contain"
         priority
+        sizes="(max-width: 768px) 100vw, 300px"
       />
     </div>
   );

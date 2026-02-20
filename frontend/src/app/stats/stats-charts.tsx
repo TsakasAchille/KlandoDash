@@ -41,28 +41,30 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
     ];
 
     return (
-      <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0} debounce={50}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={80}
-            paddingAngle={5}
-            dataKey="value"
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip 
-            contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: "8px", color: "#fff" }}
-            itemStyle={{ color: "#fff" }}
-          />
-          <Legend verticalAlign="bottom" height={36}/>
-        </PieChart>
-      </ResponsiveContainer>
+      <div className="w-full h-full min-h-[250px]">
+        <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0} debounce={50}>
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={80}
+              paddingAngle={5}
+              dataKey="value"
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip 
+              contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: "8px", color: "#fff" }}
+              itemStyle={{ color: "#fff" }}
+            />
+            <Legend verticalAlign="bottom" height={36}/>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
     );
   }
 
@@ -73,32 +75,34 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
     }));
 
     return (
-      <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0} debounce={50}>
-        <BarChart
-          layout="vertical"
-          data={chartData}
-          margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" />
-          <XAxis type="number" hide />
-          <YAxis 
-            dataKey="name" 
-            type="category" 
-            tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: "bold" }}
-            width={100}
-          />
-          <Tooltip 
-            cursor={{ fill: "rgba(255,255,255,0.05)" }}
-            contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: "8px", color: "#fff" }}
-          />
-          <Bar 
-            dataKey="count" 
-            fill={type === "orphan-cities" ? "#EF4444" : "#D4AF37"} 
-            radius={[0, 4, 4, 0]}
-            barSize={20}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="w-full h-full min-h-[250px]">
+        <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0} debounce={50}>
+          <BarChart
+            layout="vertical"
+            data={chartData}
+            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" />
+            <XAxis type="number" hide />
+            <YAxis 
+              dataKey="name" 
+              type="category" 
+              tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: "bold" }}
+              width={100}
+            />
+            <Tooltip 
+              cursor={{ fill: "rgba(255,255,255,0.05)" }}
+              contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: "8px", color: "#fff" }}
+            />
+            <Bar 
+              dataKey="count" 
+              fill={type === "orphan-cities" ? "#EF4444" : "#D4AF37"} 
+              radius={[0, 4, 4, 0]}
+              barSize={20}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     );
   }
 

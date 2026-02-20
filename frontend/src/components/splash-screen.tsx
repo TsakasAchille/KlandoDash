@@ -36,6 +36,7 @@ export function SplashScreen() {
             fill
             className="object-contain"
             priority
+            sizes="(max-width: 768px) 256px, 320px"
           />
         </div>
 
@@ -47,6 +48,7 @@ export function SplashScreen() {
             fill
             className="object-contain"
             priority
+            sizes="(max-width: 768px) 256px, 320px"
           />
         </div>
       </div>

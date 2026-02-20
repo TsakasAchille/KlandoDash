@@ -96,7 +96,13 @@ export function TripMapPopup({ trip, onClose }: TripMapPopupProps) {
                 <div className="flex items-center gap-3">
                   <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-border/50">
                     {trip.driver.photo_url ? (
-                      <Image src={trip.driver.photo_url} alt="" fill className="object-cover" />
+                      <Image 
+                        src={trip.driver.photo_url} 
+                        alt="" 
+                        fill 
+                        className="object-cover" 
+                        sizes="40px"
+                      />
                     ) : (
                       <div className="w-full h-full bg-klando-burgundy flex items-center justify-center text-sm font-black text-white">
                         {trip.driver.display_name?.charAt(0)}
@@ -127,7 +133,13 @@ export function TripMapPopup({ trip, onClose }: TripMapPopupProps) {
                     <Link key={p.uid} href={`/users?selected=${p.uid}`} title={p.display_name || ""}>
                       <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-border/40 hover:border-klando-gold transition-all group">
                         {p.photo_url ? (
-                          <Image src={p.photo_url} alt="" fill className="object-cover group-hover:scale-110 transition-transform" />
+                          <Image 
+                            src={p.photo_url} 
+                            alt="" 
+                            fill 
+                            className="object-cover group-hover:scale-110 transition-transform" 
+                            sizes="32px"
+                          />
                         ) : (
                           <div className="w-full h-full bg-secondary flex items-center justify-center text-[10px] font-black">
                             {p.display_name?.charAt(0)}
