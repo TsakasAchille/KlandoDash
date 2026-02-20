@@ -11,14 +11,17 @@ import { toast } from "sonner";
 // Actions & Types
 import { 
   updateRequestStatusAction, 
-  scanRequestMatchesAction 
+  scanRequestMatchesAction,
+  getMarketingSiteRequestsAction
 } from "@/app/site-requests/actions";
 import { 
   runGlobalScanAction, 
   updateRecommendationStatusAction 
 } from "@/app/admin/ai/actions";
 import { 
-  runMarketingAIScanAction 
+  runMarketingAIScanAction,
+  getMarketingMapTripsAction,
+  getMarketingFlowStatsAction
 } from "./actions/intelligence";
 import { 
   MarketingInsight, 
@@ -45,23 +48,13 @@ import {
 } from "lucide-react";
 
 interface MarketingClientProps {
-  initialRequests: SiteTripRequest[];
   initialRecommendations: AIRecommendation[];
   initialInsights: MarketingInsight[];
-  publicPending: PublicTrip[];
-  publicCompleted: PublicTrip[];
-  tripsForMap: TripMapItem[];
-  flowStats: MarketingFlowStat[];
 }
 
 export function MarketingClient({ 
-  initialRequests, 
   initialRecommendations,
   initialInsights,
-  publicPending, 
-  publicCompleted, 
-  tripsForMap,
-  flowStats
 }: MarketingClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -85,10 +78,17 @@ export function MarketingClient({
   };
 
   // Data state
-  const [requests, setRequests] = useState<SiteTripRequest[]>(initialRequests);
   const [recommendations, setRecommendations] = useState<AIRecommendation[]>(initialRecommendations);
   const [insights, setInsights] = useState<MarketingInsight[]>(initialInsights);
   
+  // DEFERRED DATA (Smart Loading)
+  const [requests, setRequests] = useState<SiteTripRequest[]>([]);
+  const [tripsForMap, setTripsForMap] = useState<TripMapItem[]>([]);
+  const [flowStats, setFlowStats] = useState<MarketingFlowStat[]>([]);
+  const [publicPending, setPublicPending] = useState<PublicTrip[]>([]);
+  const [publicCompleted, setPublicCompleted] = useState<PublicTrip[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(false);
+
   // Loading states
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isScanningMarketing, setIsScanningMarketing] = useState(false);
@@ -100,9 +100,45 @@ export function MarketingClient({
   const [aiDialogOpenId, setAiDialogOpenId] = useState<string | null>(null);
 
   // --- EFFECT: SYNC PROPS ---
-  useEffect(() => { setRequests(initialRequests); }, [initialRequests]);
   useEffect(() => { setRecommendations(initialRecommendations); }, [initialRecommendations]);
   useEffect(() => { setInsights(initialInsights); }, [initialInsights]);
+
+  // --- EFFECT: DEFERRED LOADING (SMART LOAD) ---
+  useEffect(() => {
+    const loadData = async () => {
+      // 1. Charger les prospects si on est sur l'onglet Prospects, Radar ou si le dialogue IA est ouvert
+      if ((tabParam === "prospects" || tabParam === "radar" || aiDialogOpenId) && requests.length === 0 && !isDataLoading) {
+        setIsDataLoading(true);
+        const res = await getMarketingSiteRequestsAction({ limit: 1000 });
+        if (res.success) setRequests(res.data);
+        
+        // Charger aussi les trajets pour la carte si on est sur Radar
+        if (tabParam === "radar") {
+          const mapRes = await getMarketingMapTripsAction(100);
+          if (mapRes.success) setTripsForMap(mapRes.data);
+        }
+        setIsDataLoading(false);
+      }
+
+      // 2. Charger les trajets publics SI le dialogue IA est ouvert (Besoin du hook useSiteRequestAI)
+      if (aiDialogOpenId && publicPending.length === 0 && !isDataLoading) {
+        const { getPublicPendingTrips, getPublicCompletedTrips } = await import("@/lib/queries/site-requests");
+        const [pending, completed] = await Promise.all([getPublicPendingTrips(), getPublicCompletedTrips()]);
+        setPublicPending(pending);
+        setPublicCompleted(completed);
+      }
+
+      // 3. Charger les stats de flux si on est sur Observatoire
+      if (tabParam === "history" && flowStats.length === 0 && !isDataLoading) {
+        setIsDataLoading(true);
+        const res = await getMarketingFlowStatsAction();
+        if (res.success) setFlowStats(res.data);
+        setIsDataLoading(false);
+      }
+    };
+
+    loadData();
+  }, [tabParam, requests.length, flowStats.length, isDataLoading, aiDialogOpenId, publicPending.length]);
 
   // --- HANDLERS: ACTIONS ---
   const handleGlobalScan = async () => {

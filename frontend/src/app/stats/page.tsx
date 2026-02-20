@@ -1,7 +1,7 @@
 import { getDashboardStats } from "@/lib/queries/stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatPrice, formatDistance } from "@/lib/utils";
+import { formatPrice, formatDistance, cn } from "@/lib/utils";
 import {
   BarChart3,
   Users,
@@ -23,12 +23,24 @@ import {
 import { RefreshButton } from "@/components/refresh-button";
 import { MiniStatCard } from "@/components/mini-stat-card";
 import { StatsCharts } from "@/app/stats/stats-charts";
+import { StatsAIAssistant } from "./stats-assistant";
 import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
 export default async function StatsPage() {
   const stats = await getDashboardStats();
+
+  // Calcul du ratio Passager/Conducteur
+  const totalDrivers = (stats?.users?.typology?.drivers || 0) + (stats?.users?.typology?.mixed || 0);
+  const totalPassengers = (stats?.users?.typology?.passengers || 0) + (stats?.users?.typology?.mixed || 0);
+  const ratio = totalDrivers > 0 ? (totalPassengers / totalDrivers).toFixed(1) : "0";
+  const ratioValue = parseFloat(ratio);
+  
+  // État de santé (Cible 1:3)
+  let healthStatus = { label: "Équilibré", color: "text-green-500", bgColor: "bg-green-500/10", iconColor: "text-green-500" };
+  if (ratioValue < 2) healthStatus = { label: "Sur-offre", color: "text-blue-500", bgColor: "bg-blue-500/10", iconColor: "text-blue-500" };
+  if (ratioValue > 4) healthStatus = { label: "Sous-offre", color: "text-red-500", bgColor: "bg-red-500/10", iconColor: "text-red-500" };
 
   // Debug (sera visible dans les logs serveur)
   console.log("Stats received:", stats ? "Object present" : "null/undefined");
@@ -124,12 +136,35 @@ export default async function StatsPage() {
             <MiniStatCard title="Transactions" value={stats.transactions?.total ?? 0} icon={Banknote} color="green" />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <MiniStatCard title="Distance" value={formatDistance(stats.trips?.totalDistance ?? 0)} icon={MapPin} color="blue" />
             <MiniStatCard title="Intentions Site" value={stats.marketing?.siteRequestsTotal ?? 0} icon={UserPlus} color="gold" />
             <MiniStatCard title="Taux Annulation" value={`${stats.trips?.cancellationRate ?? 0}%`} icon={XCircle} color="red" />
             <MiniStatCard title="Nouveaux" value={stats.users?.newThisMonth ?? 0} icon={CalendarPlus} color="purple" />
+            
+            {/* Market Health Card (Ratio 1:3) */}
+            <Card className="rounded-2xl border-none shadow-sm bg-card/50 overflow-hidden group">
+              <CardContent className="p-4 flex flex-col justify-between h-full">
+                <div className="flex items-center justify-between">
+                  <div className={cn("p-2 rounded-xl", healthStatus.bgColor)}>
+                    <TrendingUp className={cn("w-4 h-4", healthStatus.iconColor)} />
+                  </div>
+                  <span className={cn("text-[9px] font-black uppercase tracking-tighter", healthStatus.color)}>
+                    {healthStatus.label}
+                  </span>
+                </div>
+                <div className="mt-3">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Ratio P/C</p>
+                  <div className="flex items-baseline gap-1">
+                    <h3 className="text-2xl font-black tracking-tight text-foreground">1:{ratio}</h3>
+                    <span className="text-[9px] font-bold text-muted-foreground italic">cible 1:3</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
+
+          <StatsAIAssistant />
 
           <Card className="rounded-2xl border-none shadow-sm bg-card/50">
             <CardHeader>

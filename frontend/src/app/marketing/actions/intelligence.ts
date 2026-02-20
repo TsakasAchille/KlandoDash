@@ -9,6 +9,29 @@ import { InsightCategory, MarketingInsight } from "../types";
 import fs from "fs/promises";
 import path from "path";
 
+import { getMarketingFlowStats } from "@/lib/queries/site-requests";
+import { getTripsForMap } from "@/lib/queries/trips";
+
+/**
+ * Récupère les trajets pour la carte (chargement différé)
+ */
+export async function getMarketingMapTripsAction(limit: number = 100) {
+  const session = await auth();
+  if (!session) return { success: false, data: [] };
+  const trips = await getTripsForMap(limit);
+  return { success: true, data: trips };
+}
+
+/**
+ * Récupère les stats de flux pour l'observatoire (chargement différé)
+ */
+export async function getMarketingFlowStatsAction() {
+  const session = await auth();
+  if (!session) return { success: false, data: [] };
+  const stats = await getMarketingFlowStats();
+  return { success: true, data: stats };
+}
+
 /**
  * Sauvegarde le feedback sur une analyse stratégique et met à jour les mémoires IA
  */

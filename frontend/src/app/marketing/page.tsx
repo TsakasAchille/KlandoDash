@@ -23,15 +23,11 @@ export default async function MarketingPage() {
     redirect("/login");
   }
 
-  const [requests, stats, publicPending, publicCompleted, tripsForMap, recoResult, insightResult, flowStats] = await Promise.all([
-    getSiteTripRequests({ limit: 1000, hidePast: false }),
+  // On ne charge QUE ce qui est vital pour l'affichage immédiat (Stats + Premier onglet)
+  const [stats, recoResult, insightResult] = await Promise.all([
     getSiteTripRequestsStats(),
-    getPublicPendingTrips(),
-    getPublicCompletedTrips(),
-    getTripsForMap(100),
     getStoredRecommendationsAction(),
     getMarketingInsightsAction(),
-    getMarketingFlowStats(),
   ]);
 
   const recommendations = recoResult.success ? recoResult.data : [];
@@ -56,46 +52,17 @@ export default async function MarketingPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <MiniStatCard 
-          title="Prospects" 
-          value={stats.total} 
-          icon={Globe} 
-          color="purple" 
-        />
-        <MiniStatCard 
-          title="Nouveaux" 
-          value={stats.new} 
-          icon={CircleDot} 
-          color="red" 
-        />
-        <MiniStatCard 
-          title="À Traiter (IA)" 
-          value={pendingCount} 
-          icon={Zap} 
-          color="gold" 
-        />
-        <MiniStatCard 
-          title="Matchs Validés" 
-          value={stats.validated} 
-          icon={ShieldCheck} 
-          color="green" 
-        />
-        <MiniStatCard 
-          title="Contactés" 
-          value={stats.contacted} 
-          icon={CheckCircle} 
-          color="blue" 
-        />
+        <MiniStatCard title="Prospects" value={stats.total} icon={Globe} color="purple" />
+        <MiniStatCard title="Nouveaux" value={stats.new} icon={CircleDot} color="red" />
+        <MiniStatCard title="À Traiter (IA)" value={pendingCount} icon={Zap} color="gold" />
+        <MiniStatCard title="Matchs Validés" value={stats.validated} icon={ShieldCheck} color="green" />
+        <MiniStatCard title="Contactés" value={stats.contacted} icon={CheckCircle} color="blue" />
       </div>
 
       <MarketingClient 
-        initialRequests={requests} 
         initialRecommendations={recommendations}
         initialInsights={insights}
-        publicPending={publicPending}
-        publicCompleted={publicCompleted}
-        tripsForMap={tripsForMap}
-        flowStats={flowStats}
+        // Les autres données seront chargées de manière différée (Smart Loading)
       />
     </div>
   );

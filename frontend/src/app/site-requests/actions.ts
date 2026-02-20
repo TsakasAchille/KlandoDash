@@ -198,3 +198,18 @@ export async function scanRequestMatchesAction(requestId: string, radiusKm: numb
     return { success: false };
   }
 }
+
+export async function getMarketingSiteRequestsAction(options: { 
+  limit?: number; 
+  status?: SiteTripRequestStatus | 'ALL' 
+} = {}) {
+  const session = await auth();
+  if (!session) return { success: false, data: [] };
+  
+  const requests = await getSiteTripRequests({ 
+    limit: options.limit || 1000, 
+    status: options.status,
+    hidePast: false 
+  });
+  return { success: true, data: requests };
+}
