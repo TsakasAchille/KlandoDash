@@ -485,15 +485,18 @@ export function TripMap({
   useEffect(() => {
     if (!mapRef.current) return;
 
+    // On force Leaflet à recalculer la taille du conteneur avant de bouger
+    mapRef.current.invalidateSize();
+
     if (selectedTrip) {
       const line = polylinesRef.current.get(selectedTrip.trip_id);
-      if (line) mapRef.current.fitBounds(line.getBounds(), { padding: [100, 100] });
+      if (line) mapRef.current.fitBounds(line.getBounds(), { padding: [100, 100], animate: false });
     } else if (selectedRequest) {
       const line = requestPolylinesRef.current.get(selectedRequest.id);
       if (line) {
-        mapRef.current.fitBounds(line.getBounds(), { padding: [100, 100] });
+        mapRef.current.fitBounds(line.getBounds(), { padding: [100, 100], animate: false });
       } else if (selectedRequest.origin_lat && selectedRequest.origin_lng) {
-        mapRef.current.setView([selectedRequest.origin_lat, selectedRequest.origin_lng], 13);
+        mapRef.current.setView([selectedRequest.origin_lat, selectedRequest.origin_lng], 13, { animate: false });
       }
     } else if (polylinesRef.current.size > 0 || requestPolylinesRef.current.size > 0 || markersRef.current.length > 0) {
       const allLayers = [
@@ -507,7 +510,7 @@ export function TripMap({
         const group = new L.FeatureGroup(allLayers);
         const bounds = group.getBounds();
         if (bounds.isValid()) {
-          mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+          mapRef.current.fitBounds(bounds, { padding: [50, 50], animate: false });
         }
       }
     }

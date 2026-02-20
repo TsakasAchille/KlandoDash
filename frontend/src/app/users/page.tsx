@@ -1,6 +1,6 @@
 import { getUsers, getUserById, getUsersStats } from "@/lib/queries/users";
 import { UsersPageClient } from "./users-client";
-import { Users, ShieldCheck, Star } from "lucide-react";
+import { Users, ShieldCheck, Star, CalendarPlus } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 import { MiniStatCard } from "@/components/mini-stat-card";
 

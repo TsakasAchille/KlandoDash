@@ -21,10 +21,13 @@ export function useSiteRequestRoutes(requests: SiteTripRequest[]) {
       
       if (needsCalculation.length === 0) return;
 
+      // On vérifie si on a vraiment des nouveaux IDs à traiter par rapport à la dernière exécution
+      const newIds = needsCalculation.map(r => r.id);
+      
       console.log(`[useSiteRequestRoutes] Requesting server-side calculation for ${needsCalculation.length} requests`);
       
-      // On marque immédiatement comme "en cours/traité" pour éviter le trigger du prochain render
-      needsCalculation.forEach(r => processedIds.current.add(r.id));
+      // On marque immédiatement comme "en cours/traité"
+      newIds.forEach(id => processedIds.current.add(id));
 
       // On traite les requêtes en parallèle via les Server Actions
       const results = await Promise.all(

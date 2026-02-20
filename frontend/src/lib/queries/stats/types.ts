@@ -34,6 +34,10 @@ export interface DashboardStats {
       mixed: number;
     };
   };
+  geo?: {
+    topRoutes: { origin: string; destination: string; volume: number; revenue: number }[];
+    orphanCities: { city: string; demand_count: number }[];
+  };
   bookings: {
     total: number;
   };
