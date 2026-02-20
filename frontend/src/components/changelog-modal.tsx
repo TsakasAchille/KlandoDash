@@ -9,7 +9,6 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { History, Loader2, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -43,7 +42,7 @@ export function ChangelogModal({ version }: { version: string }) {
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="pr-4 mt-4 h-[60vh]">
+        <div className="pr-4 mt-4 h-[60vh] overflow-y-auto custom-scrollbar">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-4">
               <Loader2 className="w-10 h-10 text-klando-gold animate-spin" />
@@ -56,7 +55,7 @@ export function ChangelogModal({ version }: { version: string }) {
               </ReactMarkdown>
             </div>
           )}
-        </ScrollArea>
+        </div>
         
         <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-muted-foreground">
           <span>KlandoDash Core</span>
