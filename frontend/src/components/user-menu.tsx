@@ -3,6 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 export function UserMenu() {
   const { data: session } = useSession();

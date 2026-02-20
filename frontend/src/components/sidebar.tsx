@@ -64,6 +64,12 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
     }
   };
 
+  const renderNavItem = (item: { href: string, label: string, icon: React.ElementType | string }) => {
+    const isActive = pathname === item.href;
+    const isLoading = loadingHref === item.href;
+    const isImageIcon = typeof item.icon === "string";
+    const Icon = item.icon as React.ElementType;
+
     return (
       <li key={item.href}>
         <Link
@@ -97,7 +103,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                     fill 
                     className={cn(
                       "object-contain scale-125", 
-                      !isActive && "grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+                      !isActive && "grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
                     )}
                     sizes="36px"
                   />
@@ -143,6 +149,16 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             <div className="absolute -inset-4 bg-klando-gold/10 rounded-full blur-xl opacity-0 group-hover/logo:opacity-100 transition-opacity duration-700" />
             <Logo size={isMobile ? "large" : "xlarge"} />
         </div>
+        {isMobile && onClose && (
+          <button
+            onClick={onClose}
+            className="absolute right-4 p-2 text-white/50 hover:text-klando-gold transition-colors rounded-xl bg-white/5"
+            aria-label="Fermer le menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
       
       <nav className={cn("flex-1 overflow-y-auto scrollbar-none relative z-10", isMobile ? "p-4" : "p-4")}>
         <ul className="space-y-1">
