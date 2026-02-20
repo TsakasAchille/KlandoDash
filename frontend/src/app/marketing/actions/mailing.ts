@@ -7,6 +7,54 @@ import { askKlandoAI } from "@/lib/gemini";
 import { sendEmail } from "@/lib/mail";
 import React from "react";
 import { EmailCategory, EmailStatus, MarketingEmail } from "../types";
+import fs from "fs/promises";
+import path from "path";
+
+/**
+ * Sauvegarde le feedback de l'utilisateur (Like/Commentaire) et met à jour les mémoires IA
+ */
+export async function saveMailingFeedbackAction(id: string, isLiked: boolean, feedback?: string) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
+  const supabase = createAdminClient();
+  
+  // 1. Mise à jour en base
+  const { data: email, error } = await supabase
+    .from('dash_marketing_emails')
+    .update({ 
+      is_liked: isLiked, 
+      admin_feedback: feedback 
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) return { success: false };
+
+  // 2. Si un feedback est donné ou si c'est liké, on met à jour le fichier mémoire
+  try {
+    const memoryPath = path.join(process.cwd(), "docs/MARKETING_MEMORIES.md");
+    let content = await fs.readFile(memoryPath, "utf-8");
+
+    if (feedback) {
+      const feedbackEntry = `\n*   **Feedback (${new Date().toLocaleDateString()})** : "${feedback}" (Sur le mail: "${email.subject}")`;
+      content = content.replace("## 2. Historique des Retours Admin (Apprentissage)", `## 2. Historique des Retours Admin (Apprentissage)${feedbackEntry}`);
+    }
+
+    if (isLiked) {
+      const likeEntry = `\n*   **Exemple Liké** : Objet "${email.subject}" - Contenu: "${email.content.substring(0, 50)}..."`;
+      content = content.replace("## 3. Exemples de Succès (Liked)", `## 3. Exemples de Succès (Liked)${likeEntry}`);
+    }
+
+    await fs.writeFile(memoryPath, content, "utf-8");
+  } catch (err) {
+    console.error("[MEMORY UPDATE ERROR]", err);
+  }
+
+  revalidatePath("/marketing");
+  return { success: true };
+}
 
 /**
  * Télécharge un fichier (image ou doc) vers Supabase Storage
@@ -205,27 +253,40 @@ export async function generateMailingSuggestionsAction() {
 
   const supabase = createAdminClient();
 
-  // 1. Récupérer les données cibles pour l'IA
+  // 1. Charger les mémoires marketing
+  let marketingMemories = "";
+  try {
+    const memoryPath = path.join(process.cwd(), "docs/MARKETING_MEMORIES.md");
+    marketingMemories = await fs.readFile(memoryPath, "utf-8");
+  } catch (e) {
+    console.warn("No memories found yet.");
+  }
+
+  // 2. Récupérer les données cibles pour l'IA
   const { data: prospects } = await supabase.from('site_trip_requests').select('*').eq('status', 'NEW').limit(10);
   const { data: inactiveUsers } = await supabase.from('users').select('*').limit(10);
 
   const dataContext = {
     prospects: prospects?.map(p => ({ email: p.contact_info, from: p.origin_city, to: p.destination_city })),
-    inactive_users: inactiveUsers?.map(u => ({ name: u.display_name, email: u.email }))
+    inactive_users: inactiveUsers?.map(u => ({ name: u.display_name, email: u.email })),
+    preferences: marketingMemories
   };
 
-  // 2. Demander à l'IA de suggérer des opportunités
+  // 3. Demander à l'IA de suggérer des opportunités avec raisonnement
   const prompt = `
-    Analyse ces prospects et utilisateurs. Identifie 3 opportunités de mailing prioritaires.
-    Pour chaque opportunité, fournis un objet JSON STRICT avec cette structure exacte :
+    En te basant sur nos préférences marketing et sur les données fournies, identifie 3 opportunités de mailing.
+    IMPORTANT : Pour chaque mail, explique précisément POURQUOI tu suggères cette approche dans le champ "ai_reasoning".
+    
+    Structure JSON attendue :
     {
       "opportunities": [
         {
-          "category": "MATCH_FOUND" ou "RETENTION",
+          "category": "MATCH_FOUND" | "RETENTION" | "WELCOME" | "PROMO",
           "recipient_email": "email",
           "recipient_name": "nom",
-          "subject": "sujet accrocheur",
-          "content": "contenu en Markdown (chaleureux, professionnel, max 100 mots)"
+          "subject": "sujet",
+          "content": "contenu Markdown",
+          "ai_reasoning": "Explication de la stratégie choisie"
         }
       ]
     }
@@ -239,17 +300,9 @@ export async function generateMailingSuggestionsAction() {
     
     const { opportunities } = JSON.parse(jsonMatch[0]);
 
-    interface MailingOpportunity {
-      category: string;
-      recipient_email: string;
-      recipient_name: string;
-      subject: string;
-      content: string;
-    }
-
-    if (opportunities && (opportunities as MailingOpportunity[]).length > 0) {
+    if (opportunities && opportunities.length > 0) {
       const { error } = await supabase.from('dash_marketing_emails').insert(
-        (opportunities as MailingOpportunity[]).map((o) => ({
+        opportunities.map((o: any) => ({
           ...o,
           status: 'DRAFT',
           is_ai_generated: true

@@ -5,9 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  FileText, ChevronRight, ImageIcon, Trash2, X, Edit3, Save, Loader2, Plus, Send
+  FileText, ChevronRight, ImageIcon, Trash2, X, Edit3, Save, Loader2, Plus, Send,
+  ThumbsUp, MessageSquare, HelpCircle, Sparkles
 } from "lucide-react";
 import { MarketingEmail } from "@/app/marketing/types";
+import { saveMailingFeedbackAction } from "@/app/marketing/actions/mailing";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface MailViewerProps {
   email: MarketingEmail;
@@ -33,12 +37,34 @@ export function MailViewer({
   sendingEmailId
 }: MailViewerProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [showReasoning, setShowReasoning] = useState(false);
+  const [isLiked, setIsLiked] = useState(email.is_liked || false);
+  const [feedback, setFeedback] = useState(email.admin_feedback || '');
+  const [isSavingFeedback, setIsSavingFeedback] = useState(false);
   const [editForm, setEditForm] = useState({ subject: '', content: '' });
 
   useEffect(() => {
     setEditForm({ subject: email.subject, content: email.content });
     setIsEditing(false);
+    setShowReasoning(false);
+    setIsLiked(email.is_liked || false);
+    setFeedback(email.admin_feedback || '');
   }, [email]);
+
+  const handleSaveFeedback = async () => {
+    setIsSavingFeedback(true);
+    const res = await saveMailingFeedbackAction(email.id, isLiked, feedback);
+    if (res.success) {
+      toast.success("Feedback enregistré. L'IA apprendra de ce retour.");
+    }
+    setIsSavingFeedback(false);
+  };
+
+  const toggleLike = async () => {
+    const newLike = !isLiked;
+    setIsLiked(newLike);
+    await saveMailingFeedbackAction(email.id, newLike, feedback);
+  };
 
   const handleSave = async () => {
     await onUpdate(email.id, editForm);
@@ -73,12 +99,40 @@ export function MailViewer({
             <p className="text-[10px] font-bold text-slate-600 uppercase mt-0.5">À: {email.recipient_email}</p>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 shrink-0">
-          <ChevronRight className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+            {email.is_ai_generated && (
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowReasoning(!showReasoning)}
+                    className={cn(
+                        "h-8 text-[10px] uppercase font-black tracking-widest gap-2 rounded-xl",
+                        showReasoning ? "bg-purple-100 text-purple-700" : "text-slate-500 hover:bg-slate-100"
+                    )}
+                >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    Pourquoi ce mail ?
+                </Button>
+            )}
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 shrink-0">
+                <ChevronRight className="w-5 h-5" />
+            </button>
+        </div>
       </div>
 
       <div className="flex-1 p-8 overflow-y-auto custom-scrollbar text-left bg-white">
+        {showReasoning && email.ai_reasoning && (
+            <div className="mb-8 p-6 bg-purple-50 border border-purple-100 rounded-2xl animate-in slide-in-from-top-4 duration-300">
+                <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-purple-600" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-purple-700">Raisonnement de l'IA</span>
+                </div>
+                <p className="text-sm text-purple-900 font-medium leading-relaxed italic">
+                    "{email.ai_reasoning}"
+                </p>
+            </div>
+        )}
+
         {isEditing ? (
             <div className="h-full flex flex-col gap-4 text-left">
                 <div className="flex items-center gap-2 mb-2">
@@ -105,6 +159,42 @@ export function MailViewer({
             </div>
         )}
       </div>
+
+      {/* FEEDBACK BAR (Uniquement pour suggestions IA) */}
+      {email.is_ai_generated && email.status === 'DRAFT' && (
+          <div className="px-8 py-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                      <button 
+                        onClick={toggleLike}
+                        className={cn(
+                            "flex items-center gap-2 px-4 py-2 rounded-xl border transition-all font-black text-[10px] uppercase tracking-widest",
+                            isLiked ? "bg-green-100 border-green-200 text-green-700" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                        )}
+                      >
+                          <ThumbsUp className={cn("w-3.5 h-3.5", isLiked && "fill-green-700")} />
+                          {isLiked ? "J'aime bien" : "Liker"}
+                      </button>
+                      <div className="flex items-center gap-2 text-slate-400">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Feedback IA</span>
+                      </div>
+                  </div>
+                  {feedback !== email.admin_feedback && (
+                      <Button onClick={handleSaveFeedback} disabled={isSavingFeedback} size="sm" className="h-8 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase">
+                          {isSavingFeedback ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Save className="w-3 h-3 mr-2" />}
+                          Enregistrer Feedback
+                      </Button>
+                  )}
+              </div>
+              <Input 
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="Dis à l'IA ce qui pourrait être amélioré..."
+                className="bg-white border-slate-200 text-xs h-10 rounded-xl"
+              />
+          </div>
+      )}
 
       <div className="p-6 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
         <div className="flex gap-2">

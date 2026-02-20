@@ -21,6 +21,9 @@ export interface MarketingEmail {
   recipient_name: string | null;
   status: EmailStatus;
   is_ai_generated: boolean;
+  ai_reasoning?: string | null;
+  is_liked?: boolean;
+  admin_feedback?: string | null;
   image_url?: string | null;
   asset_id?: string | null;
   created_at: string;
