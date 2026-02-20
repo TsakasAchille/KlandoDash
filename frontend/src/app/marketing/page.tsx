@@ -1,12 +1,6 @@
 import { 
-  getSiteTripRequests, 
   getSiteTripRequestsStats, 
-  getPublicPendingTrips, 
-  getPublicCompletedTrips,
-  getMarketingFlowStats
 } from "@/lib/queries/site-requests";
-import { getTripsForMap } from "@/lib/queries/trips";
-import { getStoredRecommendationsAction } from "@/app/admin/ai/actions";
 import { getMarketingInsightsAction } from "./actions/intelligence";
 import { MarketingClient } from "./marketing-client";
 import { CircleDot, CheckCircle, Globe, ShieldCheck, TrendingUp, Zap } from "lucide-react";
@@ -24,15 +18,13 @@ export default async function MarketingPage() {
   }
 
   // On ne charge QUE ce qui est vital pour l'affichage immédiat (Stats + Premier onglet)
-  const [stats, recoResult, insightResult] = await Promise.all([
+  const [stats, insightResult] = await Promise.all([
     getSiteTripRequestsStats(),
-    getStoredRecommendationsAction(),
     getMarketingInsightsAction(),
   ]);
 
-  const recommendations = recoResult.success ? recoResult.data : [];
   const insights = insightResult.success ? insightResult.data : [];
-  const pendingCount = recommendations.filter((r: any) => r.status === 'PENDING').length;
+  const pendingCount = 0; // Temporairement désactivé avec l'onglet stratégie
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8">
@@ -60,7 +52,6 @@ export default async function MarketingPage() {
       </div>
 
       <MarketingClient 
-        initialRecommendations={recommendations}
         initialInsights={insights}
         // Les autres données seront chargées de manière différée (Smart Loading)
       />

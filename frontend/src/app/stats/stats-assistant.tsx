@@ -122,7 +122,7 @@ export function StatsAIAssistant() {
           {!analysis && !isLoading ? (
             <div className="py-10 text-center space-y-4">
               <p className="text-sm text-purple-900/60 font-medium italic">
-                "Cliquez sur le bouton pour que j'analyse vos chiffres en temps réel."
+                &quot;Cliquez sur le bouton pour que j&apos;analyse vos chiffres en temps réel.&quot;
               </p>
             </div>
           ) : isLoading ? (

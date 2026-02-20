@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
+import { Suspense } from "react";
 
 // Configuration de NProgress
 NProgress.configure({ 
@@ -12,7 +13,7 @@ NProgress.configure({
   minimum: 0.3
 });
 
-export function ProgressProvider({ children }: { children: React.ReactNode }) {
+function ProgressHandler() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -21,6 +22,10 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     NProgress.done();
   }, [pathname, searchParams]);
 
+  return null;
+}
+
+export function ProgressProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Intercepter tous les clics sur les liens Link de Next.js
     const handleAnchorClick = (event: MouseEvent) => {
@@ -48,5 +53,12 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("click", handleAnchorClick);
   }, []);
 
-  return <>{children}</>;
+  return (
+    <>
+      <Suspense fallback={null}>
+        <ProgressHandler />
+      </Suspense>
+      {children}
+    </>
+  );
 }

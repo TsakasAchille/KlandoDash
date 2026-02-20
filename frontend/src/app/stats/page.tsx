@@ -65,7 +65,7 @@ export default async function StatsPage() {
           </div>
           <h2 className="text-red-500 font-black uppercase tracking-tight text-lg">Données Incomplètes</h2>
           <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-            La réponse de l'API Supabase ne contient pas toutes les clés nécessaires (trips, users, transactions, etc.).
+            La réponse de l&apos;API Supabase ne contient pas toutes les clés nécessaires (trips, users, transactions, etc.).
           </p>
           <div className="mt-6 p-4 bg-black/20 rounded-lg text-left overflow-hidden">
             <p className="text-[10px] font-mono text-muted-foreground mb-2 uppercase font-bold">Solution :</p>
@@ -73,7 +73,7 @@ export default async function StatsPage() {
               <li>Ouvrez <code className="text-klando-gold">database/migrations/019_optimize_dashboard_stats.sql</code></li>
               <li>Copiez tout le contenu</li>
               <li>Collez et exécutez-le dans le <code className="text-klando-gold">SQL Editor</code> de Supabase</li>
-              <li>Cliquez sur "Rafraîchir" ci-dessous</li>
+              <li>Cliquez sur &quot;Rafraîchir&quot; ci-dessous</li>
             </ol>
           </div>
         </div>
@@ -102,7 +102,7 @@ export default async function StatsPage() {
         <TabsList className="bg-secondary/50 p-1 h-auto grid grid-cols-2 md:grid-cols-5 gap-2">
           <TabsTrigger value="overview" className="data-[state=active]:bg-klando-gold data-[state=active]:text-black font-bold uppercase text-[10px] tracking-widest py-3 text-center">
             <LayoutGrid className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Vue d'Ensemble</span>
+            <span className="hidden md:inline">Vue d&apos;Ensemble</span>
             <span className="md:hidden">Vue</span>
           </TabsTrigger>
           <TabsTrigger value="drivers" className="data-[state=active]:bg-klando-gold data-[state=active]:text-black font-bold uppercase text-[10px] tracking-widest py-3 text-center">

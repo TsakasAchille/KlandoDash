@@ -2,7 +2,8 @@ import { getTripsForMap, getTripsStats, getDriversList } from "@/lib/queries/tri
 import { getSiteTripRequests } from "@/lib/queries/site-requests";
 import { MapClient } from "./map-client";
 import { RefreshButton } from "@/components/refresh-button";
-import { Map as MapIcon, Users } from "lucide-react";
+import { Map as MapIcon, Users, Loader2 } from "lucide-react";
+import { Suspense } from "react";
 
 interface MapPageProps {
   searchParams: Promise<{
@@ -69,16 +70,23 @@ export default async function MapPage({ searchParams }: MapPageProps) {
 
       {/* Client Component - Map prend tout l'espace restant */}
       <div className="flex-1 relative overflow-hidden h-[calc(100vh-140px)]">
-        <MapClient
-          trips={trips}
-          drivers={drivers}
-          siteRequests={siteRequests}
-          initialSelectedTrip={initialSelectedTrip}
-          initialSelectedRequest={initialSelectedRequest}
-          initialStatusFilter={statusFilter}
-          initialDriverFilter={driverFilter}
-          initialShowRequests={showRequestsFilter}
-        />
+        <Suspense fallback={
+          <div className="w-full h-full flex flex-col items-center justify-center bg-card/50 backdrop-blur-md">
+            <Loader2 className="w-10 h-10 text-klando-gold animate-spin mb-4" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-klando-gold animate-pulse">Initialisation des systèmes de géolocalisation...</p>
+          </div>
+        }>
+          <MapClient
+            trips={trips}
+            drivers={drivers}
+            siteRequests={siteRequests}
+            initialSelectedTrip={initialSelectedTrip}
+            initialSelectedRequest={initialSelectedRequest}
+            initialStatusFilter={statusFilter}
+            initialDriverFilter={driverFilter}
+            initialShowRequests={showRequestsFilter}
+          />
+        </Suspense>
       </div>
     </div>
   );

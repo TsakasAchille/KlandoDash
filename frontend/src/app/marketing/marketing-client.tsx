@@ -15,22 +15,16 @@ import {
   getMarketingSiteRequestsAction
 } from "@/app/site-requests/actions";
 import { 
-  runGlobalScanAction, 
-  updateRecommendationStatusAction 
-} from "@/app/admin/ai/actions";
-import { 
   runMarketingAIScanAction,
   getMarketingMapTripsAction,
   getMarketingFlowStatsAction
 } from "./actions/intelligence";
 import { 
   MarketingInsight, 
-  MarketingFlowStat,
-  AIRecommendation
+  MarketingFlowStat
 } from "./types";
 
 // Sub-components (extracted for SOLID)
-import { StrategyTab } from "@/features/marketing/components/tabs/StrategyTab";
 import { IntelligenceTab } from "@/features/marketing/components/tabs/IntelligenceTab";
 import { RequestHistoryTab } from "@/features/marketing/components/tabs/RequestHistoryTab";
 import { InsightDetailModal } from "@/features/marketing/components/shared/InsightDetailModal";
@@ -43,24 +37,22 @@ import { MatchingDialog } from "@/app/site-requests/components/MatchingDialog";
 // UI / Icons
 import { Button } from "@/components/ui/button";
 import { 
-  Zap, Users, Map as MapIcon, History, Sparkles, Loader2, 
-  RefreshCw, BarChart3, TrendingUp
+  Users, Map as MapIcon, History, Sparkles, Loader2, 
+  BarChart3, TrendingUp
 } from "lucide-react";
 
 interface MarketingClientProps {
-  initialRecommendations: AIRecommendation[];
   initialInsights: MarketingInsight[];
 }
 
 export function MarketingClient({ 
-  initialRecommendations,
   initialInsights,
 }: MarketingClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // --- URL STATE MANAGEMENT ---
-  const tabParam = searchParams.get("tab") || "strategy";
+  const tabParam = searchParams.get("tab") || "stats";
   const subTabParam = searchParams.get("sub") || "to-treat";
   const statusParam = searchParams.get("status") || "all";
   const pageParam = parseInt(searchParams.get("page") || "1");
@@ -78,7 +70,6 @@ export function MarketingClient({
   };
 
   // Data state
-  const [recommendations, setRecommendations] = useState<AIRecommendation[]>(initialRecommendations);
   const [insights, setInsights] = useState<MarketingInsight[]>(initialInsights);
   
   // DEFERRED DATA (Smart Loading)
@@ -90,7 +81,6 @@ export function MarketingClient({
   const [isDataLoading, setIsDataLoading] = useState(false);
 
   // Loading states
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isScanningMarketing, setIsScanningMarketing] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [scanningId, setScanningId] = useState<string | null>(null);
@@ -100,7 +90,6 @@ export function MarketingClient({
   const [aiDialogOpenId, setAiDialogOpenId] = useState<string | null>(null);
 
   // --- EFFECT: SYNC PROPS ---
-  useEffect(() => { setRecommendations(initialRecommendations); }, [initialRecommendations]);
   useEffect(() => { setInsights(initialInsights); }, [initialInsights]);
 
   // --- EFFECT: DEFERRED LOADING (SMART LOAD) ---
@@ -141,16 +130,6 @@ export function MarketingClient({
   }, [tabParam, requests.length, flowStats.length, isDataLoading, aiDialogOpenId, publicPending.length]);
 
   // --- HANDLERS: ACTIONS ---
-  const handleGlobalScan = async () => {
-    setIsRefreshing(true);
-    const res = await runGlobalScanAction();
-    if (res.success) {
-      toast.success(`${res.count} nouvelles opportunités identifiées.`);
-      updateParams({ sub: "to-treat" });
-    }
-    setIsRefreshing(false);
-  };
-
   const handleMarketingScan = async () => {
     setIsScanningMarketing(true);
     const res = await runMarketingAIScanAction();
@@ -159,16 +138,6 @@ export function MarketingClient({
       router.refresh();
     }
     setIsScanningMarketing(false);
-  };
-
-  const handleApplyRecommendation = async (id: string) => {
-    const res = await updateRecommendationStatusAction(id, 'APPLIED');
-    if (res.success) toast.success("Action marketing validée !");
-  };
-
-  const handleDismissRecommendation = async (id: string) => {
-    const res = await updateRecommendationStatusAction(id, 'DISMISSED');
-    if (res.success) setRecommendations(prev => prev.filter(r => r.id !== id));
   };
 
   const handleUpdateStatus = async (id: string, status: SiteTripRequestStatus) => {
@@ -195,9 +164,6 @@ export function MarketingClient({
         {/* HEADER: TABS LIST & MAIN ACTIONS */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/30 p-2 rounded-3xl border border-white/5 backdrop-blur-sm shadow-xl">
           <TabsList className="bg-transparent border-none p-0 h-auto gap-1">
-            <TabsTrigger value="strategy" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
-              <Zap className="w-3.5 h-3.5" /> Stratégie
-            </TabsTrigger>
             <TabsTrigger value="stats" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
               <BarChart3 className="w-3.5 h-3.5" /> Intelligence
             </TabsTrigger>
@@ -213,12 +179,6 @@ export function MarketingClient({
           </TabsList>
           
           <div className="flex items-center gap-2">
-            {tabParam === "strategy" && (
-                <Button onClick={handleGlobalScan} disabled={isRefreshing} size="sm" className="bg-klando-gold hover:bg-klando-gold/90 text-klando-dark font-black rounded-2xl px-6 h-10 shadow-lg shadow-klando-gold/10">
-                    {isRefreshing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                    Scan Opportunités
-                </Button>
-            )}
             {tabParam === "stats" && (
                 <Button onClick={handleMarketingScan} disabled={isScanningMarketing} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl px-6 h-10 shadow-lg shadow-blue-500/20">
                     {isScanningMarketing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
@@ -229,19 +189,6 @@ export function MarketingClient({
         </div>
 
         {/* --- TABS CONTENT: SMART LOADING --- */}
-
-        <TabsContent value="strategy" className="outline-none">
-          {tabParam === "strategy" && (
-            <StrategyTab 
-              recommendations={recommendations}
-              strategyTab={subTabParam}
-              onStrategyTabChange={(v) => updateParams({ sub: v })}
-              onApply={handleApplyRecommendation}
-              onDismiss={handleDismissRecommendation}
-              onGlobalScan={handleGlobalScan}
-            />
-          )}
-        </TabsContent>
 
         <TabsContent value="stats" className="outline-none">
           {tabParam === "stats" && (
