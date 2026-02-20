@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.7.0] - 2026-02-20
+
+### Added
+- **AI Learning Loop & Feedback**:
+  - Implementation of a long-term memory framework (`MARKETING_MEMORIES.md`).
+  - Added "Like" and "Feedback" features for AI-generated emails and insights.
+  - AI reasoning storage: The AI now explains its strategic choices.
+- **Smart Loading & Performance**:
+  - Conditional rendering for heavy tabs (Editorial, Marketing).
+  - Lazy loading for Prospects, Map data, and Observatoire stats.
+  - Faster Users page: Direct database queries instead of heavy global RPC for counts.
+- **Market Health Metrics**:
+  - New "Passenger/Driver Ratio" (Target 1:3) visualization in Stats.
+  - Detection of "Orphan Cities" (demand without available supply).
+- **Persistent AI Assistant**:
+  - Stats AI analyses are now stored in the database (`GLOBAL_STATS`).
+  - History tracking with "Last Updated" timestamps.
+- **Animated Splash Screen**:
+  - New premium onboarding experience with an animated Klando logo filling effect.
+
+### Security & Technical
+- **Upgrade to Next.js 16.1.6**: Core framework update for better performance and stability.
+- **Vulnerability Patch**: Resolved 20 security advisories (including 1 critical).
+- **Turbopack Optimization**: Explicit workspace root configuration.
+- **Improved Map Stability**: Fixed `_leaflet_pos` errors and infinite calculation loops.
+- **Production Ready**: Full build validation for Render deployment (Standalone mode).
+
 ## [1.6.0] - 2026-02-15
 
 ### Added

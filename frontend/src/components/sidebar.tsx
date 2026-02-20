@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
+import { ChangelogModal } from "@/components/changelog-modal";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import packageInfo from "../../package.json";
@@ -171,9 +172,9 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       {/* User Menu */}
       <div className={cn("border-t border-border bg-klando-dark/50 backdrop-blur-sm", isMobile ? "p-4" : "p-4")}>
         <UserMenu />
-        <div className="mt-4 px-4 flex justify-between items-center opacity-30">
+        <div className="mt-4 px-4 flex justify-between items-center opacity-30 hover:opacity-100 transition-opacity">
           <span className="text-[10px] font-black uppercase tracking-widest text-white">Version</span>
-          <span className="text-[10px] font-mono text-white">v{packageInfo.version}</span>
+          <ChangelogModal version={packageInfo.version} />
         </div>
       </div>
     </aside>
