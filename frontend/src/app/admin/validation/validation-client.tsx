@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { UserListItem } from "@/types/user";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ValidationFilters } from "./components/ValidationFilters";
 import { UserList } from "./components/UserList";
@@ -17,7 +18,7 @@ interface ValidationClientProps {
   currentStatus: string;
 }
 
-export function ValidationClient({ 
+function ValidationClientContent({ 
   pendingUsers, 
   totalCount, 
   currentPage, 
@@ -106,5 +107,18 @@ export function ValidationClient({
         </div>
       </div>
     </div>
+  );
+}
+
+export function ValidationClient(props: ValidationClientProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Loader2 className="w-10 h-10 text-klando-gold animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Chargement des validations...</p>
+      </div>
+    }>
+      <ValidationClientContent {...props} />
+    </Suspense>
   );
 }
