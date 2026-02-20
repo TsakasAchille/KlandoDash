@@ -40,6 +40,14 @@ DECLARE
     cf_out bigint;
     cf_c_in bigint;
     cf_c_out bigint;
+    
+    -- Nouvelles variables pour les statistiques avancées
+    drivers_verif_status json;
+    top_drivers_list json;
+    users_typology json;
+    site_requests_total bigint;
+    cancel_rate numeric;
+    avg_seats_per_trip numeric;
 BEGIN
     -- SECTION: TRIPS
     SELECT count(*) INTO trips_total FROM trips;
@@ -48,6 +56,13 @@ BEGIN
     ) t;
     SELECT coalesce(sum(distance), 0) INTO trips_dist FROM trips;
     SELECT coalesce(sum(seats_booked), 0) INTO trips_seats FROM trips;
+    
+    -- Calcul du taux d'annulation et sièges moyens
+    SELECT 
+        round((count(*) FILTER (WHERE status = 'CANCELLED')::numeric / NULLIF(count(*), 0)::numeric) * 100, 2),
+        round(avg(seats_available + seats_booked), 1)
+    INTO cancel_rate, avg_seats_per_trip
+    FROM trips;
     
     -- SECTION: USERS
     SELECT count(*) INTO users_total FROM users;
@@ -79,6 +94,50 @@ BEGIN
     -- SECTION: PROFILES (Buyer Persona)
     typical_gender := 'Homme'; 
     typical_age := '26-35';
+    
+    -- SECTION: DRIVER ACQUISITION
+    -- 1. Driver Verification Status (Pipeline)
+    SELECT json_agg(t) INTO drivers_verif_status FROM (
+        SELECT 
+            CASE 
+                WHEN is_driver_doc_validated = true THEN 'Vérifié'
+                WHEN driver_license_url IS NOT NULL AND is_driver_doc_validated = false THEN 'En attente'
+                ELSE 'Non initié'
+            END as status,
+            count(*) as count
+        FROM users
+        WHERE role = 'driver' OR driver_license_url IS NOT NULL
+        GROUP BY status
+    ) t;
+
+    -- 2. Top Drivers
+    SELECT json_agg(t) INTO top_drivers_list FROM (
+        SELECT 
+            u.uid,
+            u.display_name,
+            u.photo_url,
+            count(t.trip_id) as trips_count,
+            avg(u.rating) as rating,
+            sum(t.driver_price * t.seats_booked) as revenue
+        FROM users u
+        JOIN trips t ON u.uid = t.driver_id
+        WHERE t.status = 'COMPLETED'
+        GROUP BY u.uid, u.display_name, u.photo_url
+        ORDER BY trips_count DESC
+        LIMIT 5
+    ) t;
+    
+    -- SECTION: USER TYPOLOGY
+    WITH driver_stats AS (
+        SELECT DISTINCT driver_id FROM trips
+    ), passenger_stats AS (
+        SELECT DISTINCT user_id FROM bookings
+    )
+    SELECT json_build_object(
+        'drivers', (SELECT count(*) FROM driver_stats),
+        'passengers', (SELECT count(*) FROM passenger_stats),
+        'mixed', (SELECT count(*) FROM driver_stats d JOIN passenger_stats p ON d.driver_id = p.user_id)
+    ) INTO users_typology;
 
     -- SECTION: BOOKINGS
     SELECT count(*) INTO bookings_total_val FROM bookings;
@@ -110,6 +169,9 @@ BEGIN
     INTO cf_in, cf_out, cf_c_in, cf_c_out 
     FROM transactions 
     WHERE status = 'SUCCESS';
+    
+    -- SECTION: SITE REQUESTS (Intentions)
+    SELECT count(*) INTO site_requests_total FROM site_trip_requests;
 
     -- CONSTRUCTION DE L'OBJET FINAL COMPLET (Mapping exact avec DashboardStats type)
     RETURN json_build_object(
@@ -117,7 +179,9 @@ BEGIN
             'total', coalesce(trips_total, 0), 
             'byStatus', coalesce(trips_by_status, '[]'::json), 
             'totalDistance', coalesce(trips_dist, 0), 
-            'totalSeatsBooked', coalesce(trips_seats, 0)
+            'totalSeatsBooked', coalesce(trips_seats, 0),
+            'cancellationRate', coalesce(cancel_rate, 0),
+            'avgSeatsPerTrip', coalesce(avg_seats_per_trip, 0)
         ),
         'users', json_build_object(
             'total', coalesce(users_total, 0), 
@@ -125,7 +189,12 @@ BEGIN
             'newThisMonth', coalesce(users_new, 0), 
             'avgRating', coalesce(avg_rating_val, 0),
             'typicalProfile', json_build_object('gender', typical_gender, 'ageGroup', typical_age),
-            'demographics', json_build_object('gender', coalesce(gender_dist, '[]'::json), 'age', coalesce(age_dist, '[]'::json))
+            'demographics', json_build_object('gender', coalesce(gender_dist, '[]'::json), 'age', coalesce(age_dist, '[]'::json)),
+            'acquisition', json_build_object(
+                'verificationStatus', coalesce(drivers_verif_status, '[]'::json),
+                'topDrivers', coalesce(top_drivers_list, '[]'::json)
+            ),
+            'typology', coalesce(users_typology, '{"drivers": 0, "passengers": 0, "mixed": 0}'::json)
         ),
         'bookings', json_build_object('total', coalesce(bookings_total_val, 0)),
         'transactions', json_build_object(
@@ -146,6 +215,9 @@ BEGIN
             'solde', coalesce(cf_in, 0) - coalesce(cf_out, 0), 
             'countIn', coalesce(cf_c_in, 0), 
             'countOut', coalesce(cf_c_out, 0)
+        ),
+        'marketing', json_build_object(
+            'siteRequestsTotal', coalesce(site_requests_total, 0)
         )
     );
 END;

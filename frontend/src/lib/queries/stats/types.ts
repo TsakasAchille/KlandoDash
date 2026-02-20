@@ -9,6 +9,8 @@ export interface DashboardStats {
     byStatus: { status: string; count: number }[];
     totalDistance: number;
     totalSeatsBooked: number;
+    cancellationRate?: number;
+    avgSeatsPerTrip?: number;
   };
   users: {
     total: number;
@@ -22,6 +24,15 @@ export interface DashboardStats {
       gender: string;
       ageGroup: string;
     };
+    acquisition?: {
+      verificationStatus: { status: string; count: number }[];
+      topDrivers: { uid: string; display_name: string; photo_url: string; trips_count: number; rating: number; revenue: number }[];
+    };
+    typology?: {
+      drivers: number;
+      passengers: number;
+      mixed: number;
+    };
   };
   bookings: {
     total: number;
@@ -34,6 +45,9 @@ export interface DashboardStats {
   };
   revenue: RevenueStats;
   cashFlow: CashFlowStats;
+  marketing?: {
+    siteRequestsTotal: number;
+  };
 }
 
 export interface PublicTrip {
