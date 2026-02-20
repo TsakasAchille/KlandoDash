@@ -1,4 +1,4 @@
-export type InsightCategory = 'REVENUE' | 'CONVERSION' | 'USER_QUALITY' | 'GROWTH' | 'GENERAL';
+export type InsightCategory = 'REVENUE' | 'CONVERSION' | 'USER_QUALITY' | 'GROWTH' | 'GENERAL' | 'GLOBAL_STATS';
 
 export interface MarketingInsight {
   id: string;
@@ -6,6 +6,8 @@ export interface MarketingInsight {
   title: string;
   content: string;
   summary: string;
+  is_liked?: boolean;
+  admin_feedback?: string | null;
   created_at: string;
 }
 

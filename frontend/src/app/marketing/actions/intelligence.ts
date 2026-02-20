@@ -6,6 +6,55 @@ import { auth } from "@/lib/auth";
 import { getDashboardStats } from "@/lib/queries/stats";
 import { askKlandoAI } from "@/lib/gemini";
 import { InsightCategory, MarketingInsight } from "../types";
+import fs from "fs/promises";
+import path from "path";
+
+/**
+ * Sauvegarde le feedback sur une analyse stratégique et met à jour les mémoires IA
+ */
+export async function saveInsightFeedbackAction(id: string, isLiked: boolean, feedback?: string) {
+  const session = await auth();
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+
+  const supabase = createAdminClient();
+  
+  // 1. Mise à jour en base
+  const { data: insight, error } = await supabase
+    .from('dash_marketing_insights')
+    .update({ 
+      is_liked: isLiked, 
+      admin_feedback: feedback 
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) return { success: false };
+
+  // 2. Mise à jour du fichier mémoire
+  try {
+    const memoryPath = path.join(process.cwd(), "docs/MARKETING_MEMORIES.md");
+    let content = await fs.readFile(memoryPath, "utf-8");
+
+    if (feedback) {
+      const feedbackEntry = `\n*   **Feedback Stratégique (${new Date().toLocaleDateString()})** : "${feedback}" (Sur l'analyse: "${insight.title}")`;
+      content = content.replace("## 2. Historique des Retours Admin (Apprentissage)", `## 2. Historique des Retours Admin (Apprentissage)${feedbackEntry}`);
+    }
+
+    if (isLiked) {
+      const likeEntry = `\n*   **Analyse Approuvée** : "${insight.title}" - Aperçu: "${insight.content.substring(0, 50)}..."`;
+      content = content.replace("## 3. Exemples de Succès (Liked)", `## 3. Exemples de Succès (Liked)${likeEntry}`);
+    }
+
+    await fs.writeFile(memoryPath, content, "utf-8");
+  } catch (err) {
+    console.error("[MEMORY UPDATE ERROR]", err);
+  }
+
+  revalidatePath("/stats");
+  revalidatePath("/marketing");
+  return { success: true };
+}
 
 /**
  * Lance l'analyse IA des statistiques marketing
@@ -91,4 +140,80 @@ export async function getMarketingInsightsAction(): Promise<{ success: boolean; 
 
   if (error) return { success: false, data: [] };
   return { success: true, data: data as MarketingInsight[] };
+}
+
+/**
+ * Génère une analyse flash pour la page Stats (Vue d'ensemble) et la sauvegarde
+ */
+export async function generateGlobalStatsInsightAction() {
+  const session = await auth();
+  if (!session || session.user.role !== "admin") throw new Error("Non autorisé");
+
+  const stats = await getDashboardStats();
+  const supabase = createAdminClient();
+
+  // 1. Charger les mémoires marketing
+  let marketingMemories = "";
+  try {
+    const memoryPath = path.join(process.cwd(), "docs/MARKETING_MEMORIES.md");
+    marketingMemories = await fs.readFile(memoryPath, "utf-8");
+  } catch (e) {
+    console.warn("No memories found yet.");
+  }
+  
+  const prompt = `
+    En tant qu'analyste data senior pour Klando (covoiturage au Sénégal), analyse ces chiffres : ${JSON.stringify(stats)}.
+    
+    PRENDS EN COMPTE NOS PRÉFÉRENCES ET HISTORIQUE :
+    ${marketingMemories}
+
+    Donne-moi :
+    1. Un commentaire court (2 phrases) sur la performance actuelle.
+    2. Trois recommandations PRIORITAIRES et CONCRÈTES pour booster la plateforme cette semaine.
+    
+    Réponds en Markdown percutant avec des emojis.
+  `;
+
+  try {
+    const aiResponse = await askKlandoAI(prompt, { context: stats });
+    
+    // Sauvegarde en base (on supprime l'ancien rapport GLOBAL_STATS d'abord)
+    await supabase.from('dash_marketing_insights').delete().eq('category', 'GLOBAL_STATS');
+    
+    const { error } = await supabase.from('dash_marketing_insights').insert([{
+      category: 'GLOBAL_STATS',
+      title: 'Analyse Flash Performance',
+      content: aiResponse,
+      summary: aiResponse.substring(0, 150),
+      metadata: { stats_snapshot: stats }
+    }]);
+
+    if (error) throw error;
+
+    revalidatePath("/stats");
+    return { success: true, analysis: aiResponse };
+  } catch (err) {
+    console.error(err);
+    return { success: false };
+  }
+}
+
+/**
+ * Récupère la dernière analyse globale enregistrée
+ */
+export async function getLatestGlobalInsightAction() {
+  const session = await auth();
+  if (!session) return { success: false };
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('dash_marketing_insights')
+    .select('*')
+    .eq('category', 'GLOBAL_STATS')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data) return { success: false };
+  return { success: true, data: data as MarketingInsight };
 }
