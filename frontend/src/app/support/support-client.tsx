@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import type {
   SupportTicketWithUser,
   TicketDetail,
@@ -15,7 +16,7 @@ interface SupportPageClientProps {
   initialSelectedTicket: TicketDetail | null;
 }
 
-export function SupportPageClient({
+function SupportPageClientContent({
   tickets,
   initialSelectedId,
   initialSelectedTicket,
@@ -151,5 +152,18 @@ export function SupportPageClient({
         </div>
       </div>
     </div>
+  );
+}
+
+export function SupportPageClient(props: SupportPageClientProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Loader2 className="w-10 h-10 text-klando-gold animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Chargement du support...</p>
+      </div>
+    }>
+      <SupportPageClientContent {...props} />
+    </Suspense>
   );
 }

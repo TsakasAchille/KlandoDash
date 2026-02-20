@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition, useEffect, useMemo } from "react";
+import { useState, useTransition, useEffect, useMemo, Suspense } from "react";
 import { SiteTripRequest, SiteTripRequestStatus } from "@/types/site-request";
 import { SiteRequestTable } from "@/components/site-requests/site-request-table";
 import { updateRequestStatusAction } from "./actions";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSiteRequestAI, PublicTrip } from "./hooks/useSiteRequestAI";
@@ -23,7 +24,7 @@ interface SiteRequestsClientProps {
   tripsForMap: TripMapItem[];
 }
 
-export function SiteRequestsClient({ initialRequests, publicPending, publicCompleted, tripsForMap }: SiteRequestsClientProps) {
+function SiteRequestsClientContent({ initialRequests, publicPending, publicCompleted, tripsForMap }: SiteRequestsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -155,5 +156,18 @@ export function SiteRequestsClient({ initialRequests, publicPending, publicCompl
         {...aiMatching}
       />
     </>
+  );
+}
+
+export function SiteRequestsClient(props: SiteRequestsClientProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Loader2 className="w-10 h-10 text-klando-gold animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Chargement des prospects...</p>
+      </div>
+    }>
+      <SiteRequestsClientContent {...props} />
+    </Suspense>
   );
 }

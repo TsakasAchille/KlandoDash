@@ -16,6 +16,7 @@ export interface DashboardStats {
     total: number;
     verifiedDrivers: number;
     newThisMonth: number;
+    avgRating?: number;
     demographics: {
       gender: { label: string; count: number }[];
       age: { label: string; count: number }[];

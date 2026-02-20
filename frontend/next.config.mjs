@@ -1,11 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // Config Turbopack pour éviter l'avertissement sur les lockfiles multiples
+  transpilePackages: ["lucide-react"],
   experimental: {
     serverActions: {
       bodySizeLimit: '4mb',

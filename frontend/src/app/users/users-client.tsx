@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { UserListItem } from "@/types/user";
 import { UserTable } from "@/components/users/user-table";
 import { UserDetails } from "@/components/users/user-details";
@@ -28,7 +29,7 @@ function scrollToRow(id: string, prefix: string = "user") {
   }
 }
 
-export function UsersPageClient({
+function UsersPageClientContent({
   users,
   totalCount,
   currentPage,
@@ -121,6 +122,19 @@ export function UsersPageClient({
         </div>
       </div>
     </div>
+  );
+}
+
+export function UsersPageClient(props: UsersPageClientProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Loader2 className="w-10 h-10 text-klando-gold animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Chargement de l&apos;annuaire...</p>
+      </div>
+    }>
+      <UsersPageClientContent {...props} />
+    </Suspense>
   );
 }
 

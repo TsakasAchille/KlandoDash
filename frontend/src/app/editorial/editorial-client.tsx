@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -38,7 +38,7 @@ interface EditorialClientProps {
   initialComms: MarketingComm[];
 }
 
-export function EditorialClient({ 
+function EditorialClientContent({ 
   initialEmails, 
   initialComms
 }: EditorialClientProps) {
@@ -189,5 +189,18 @@ export function EditorialClient({
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export function EditorialClient(props: EditorialClientProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Loader2 className="w-10 h-10 text-klando-gold animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Chargement de l&apos;espace éditorial...</p>
+      </div>
+    }>
+      <EditorialClientContent {...props} />
+    </Suspense>
   );
 }

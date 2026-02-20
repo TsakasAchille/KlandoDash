@@ -5,16 +5,17 @@ import { ShieldCheck } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     status?: string;
-  };
+  }>;
 }
 
 export default async function ValidationPage({ searchParams }: PageProps) {
-  const currentPage = Number(searchParams.page) || 1;
+  const params = await searchParams;
+  const currentPage = Number(params.page) || 1;
   const pageSize = 10;
-  const statusFilter = searchParams.status || "pending";
+  const statusFilter = params.status || "pending";
 
   const { users: pendingUsers, totalCount } = await getUsers(currentPage, pageSize, {
     verified: statusFilter

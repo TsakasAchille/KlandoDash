@@ -16,7 +16,7 @@ const supabaseAdmin = createClient(
 );
 
 interface RouteParams {
-  params: { ticketId: string };
+  params: Promise<{ ticketId: string }>;
 }
 
 /**
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const { ticketId } = params;
+    const { ticketId } = await params;
     const body = await request.json();
     const { text } = body as { text: string };
 

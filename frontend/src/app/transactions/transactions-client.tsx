@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { TransactionWithUser, TransactionWithBooking } from "@/types/transaction";
 import { TransactionTable } from "@/components/transactions/transaction-table";
 import { TransactionDetails } from "@/components/transactions/transaction-details";
@@ -23,7 +24,7 @@ function scrollToRow(id: string) {
   }
 }
 
-export function TransactionsPageClient({
+function TransactionsPageClientContent({
   transactions,
   initialSelectedId,
   initialSelectedTransaction,
@@ -75,5 +76,18 @@ export function TransactionsPageClient({
         )}
       </div>
     </div>
+  );
+}
+
+export function TransactionsPageClient(props: TransactionsPageClientProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Loader2 className="w-10 h-10 text-klando-gold animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Chargement des transactions...</p>
+      </div>
+    }>
+      <TransactionsPageClientContent {...props} />
+    </Suspense>
   );
 }

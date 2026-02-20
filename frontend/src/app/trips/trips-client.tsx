@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { Trip, TripDetail } from "@/types/trip";
 import { TripTable } from "@/components/trips/trip-table";
 import { TripDetails } from "@/components/trips/trip-details";
@@ -28,7 +29,7 @@ function scrollToRow(id: string, prefix: string = "trip") {
   }
 }
 
-export function TripsPageClient({
+function TripsPageClientContent({
   trips,
   totalCount,
   currentPage,
@@ -89,6 +90,19 @@ export function TripsPageClient({
         )}
       </div>
     </div>
+  );
+}
+
+export function TripsPageClient(props: TripsPageClientProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Loader2 className="w-10 h-10 text-klando-gold animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Chargement des trajets...</p>
+      </div>
+    }>
+      <TripsPageClientContent {...props} />
+    </Suspense>
   );
 }
 

@@ -40,12 +40,13 @@ import {
   Users, Map as MapIcon, History, Sparkles, Loader2, 
   BarChart3, TrendingUp
 } from "lucide-react";
+import { Suspense } from "react";
 
 interface MarketingClientProps {
   initialInsights: MarketingInsight[];
 }
 
-export function MarketingClient({ 
+function MarketingClientContent({ 
   initialInsights,
 }: MarketingClientProps) {
   const router = useRouter();
@@ -253,5 +254,18 @@ export function MarketingClient({
         {...aiMatching}
       />
     </div>
+  );
+}
+
+export function MarketingClient(props: MarketingClientProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Loader2 className="w-10 h-10 text-klando-gold animate-spin" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Chargement du radar...</p>
+      </div>
+    }>
+      <MarketingClientContent {...props} />
+    </Suspense>
   );
 }
