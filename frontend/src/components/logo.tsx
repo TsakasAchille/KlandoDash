@@ -6,8 +6,8 @@ export function Logo({ size = "medium" }: { size?: "small" | "medium" | "large" 
   const sizeClasses = {
     small: "w-24",
     medium: "w-32", 
-    large: "w-48",
-    xlarge: "w-[300px]"
+    large: "w-40",
+    xlarge: "w-44"
   };
 
   return (
