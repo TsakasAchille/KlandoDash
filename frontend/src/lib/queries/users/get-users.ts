@@ -32,11 +32,7 @@ export async function getUsers(
       rating_count,
       role,
       gender,
-      bio,
-      birth,
       is_driver_doc_validated,
-      driver_license_url,
-      id_card_url,
       created_at
     `, { count: "exact" });
 

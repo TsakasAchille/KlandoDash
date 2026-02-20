@@ -73,6 +73,12 @@ export default async function UsersPage({ searchParams }: Props) {
           icon={Star} 
           color="gold" 
         />
+        <MiniStatCard 
+          title="Nouveaux" 
+          value={stats.new_this_month} 
+          icon={CalendarPlus} 
+          color="red" 
+        />
       </div>
 
       {/* Contenu principal */}

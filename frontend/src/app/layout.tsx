@@ -4,7 +4,8 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { LayoutContent } from "@/components/layout-content";
 import { ProgressProvider } from "@/components/progress-provider";
-import { Toaster } from "sonner"; // Import Toaster
+import { Toaster } from "sonner"; 
+import { SplashScreen } from "@/components/splash-screen";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
+        <SplashScreen />
         <Providers>
           <ProgressProvider>
             <LayoutContent>{children}</LayoutContent>
