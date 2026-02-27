@@ -35,10 +35,9 @@ function IAToolsContent() {
     if (urlDest) setSearchDest(urlDest);
     
     if (urlOrigin && urlDest) {
-      // Trigger search automatically after a short delay
       const timer = setTimeout(() => {
         handleSearch(null, urlOrigin, urlDest);
-      }, 500);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [searchParams]);
@@ -57,7 +56,6 @@ function IAToolsContent() {
         const info = await getUserInfo(trimmedTarget);
         setTargetUserInfo(info);
       } catch (e) {
-        console.error("Error fetching user info:", e);
         setTargetUserInfo(null);
       } finally {
         setIsLoadingUser(false);
@@ -67,19 +65,32 @@ function IAToolsContent() {
     return () => clearTimeout(timer);
   }, [contactTarget]);
 
+  // Helper to get value from state OR direct DOM (crucial for AI automation)
+  const getRobustValue = (stateValue: string, elementId: string) => {
+    if (stateValue.trim()) return stateValue.trim();
+    if (typeof document !== 'undefined') {
+      const el = document.getElementById(elementId) as HTMLInputElement;
+      return el?.value?.trim() || "";
+    }
+    return "";
+  };
+
   const handleSearch = async (e: React.FormEvent | null, manualOrigin?: string, manualDest?: string) => {
     if (e) e.preventDefault();
     
-    const origin = manualOrigin || searchOrigin.trim();
-    const dest = manualDest || searchDest.trim();
+    const origin = manualOrigin || getRobustValue(searchOrigin, "ia-search-origin");
+    const dest = manualDest || getRobustValue(searchDest, "ia-search-dest");
     
-    if (!origin || !dest) return;
+    if (!origin || !dest) {
+      toast.error("Veuillez saisir un départ et une destination.");
+      return;
+    }
     
     setIsSearching(true);
     try {
       const results = await searchHistoricalDrivers(origin, dest);
       setSearchResults(results);
-      if (results.length === 0 && !manualOrigin) toast.info("Aucun conducteur trouvé pour ce trajet.");
+      if (results.length === 0 && !manualOrigin) toast.info("Aucun conducteur trouvé.");
     } catch (error) {
       toast.error("Erreur lors de la recherche.");
     } finally {
@@ -89,17 +100,27 @@ function IAToolsContent() {
 
   const handleCreateDraft = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contactMessage.trim() || !contactSubject.trim()) {
+    
+    // Robust value collection (State or DOM)
+    const finalTarget = getRobustValue(contactTarget, "ia-contact-target");
+    const finalSubject = getRobustValue(contactSubject, "ia-contact-subject");
+    const finalMessage = getRobustValue(contactMessage, "ia-contact-message");
+
+    if (!finalMessage || !finalSubject) {
       toast.error("L'objet et le message sont obligatoires.");
       return;
     }
     
     setIsSending(true);
     try {
-      const result = await createPropositionDraft(contactTarget.trim(), contactSubject, contactMessage);
+      const result = await createPropositionDraft(finalTarget, finalSubject, finalMessage);
       if (result.success) {
         toast.success("Brouillon créé dans le Centre Éditorial !");
         setContactMessage("");
+        // Also clear DOM if needed
+        if (typeof document !== 'undefined') {
+          (document.getElementById('ia-contact-message') as HTMLTextAreaElement).value = "";
+        }
       } else {
         toast.error(result.error || "Échec de la création.");
       }
@@ -175,6 +196,7 @@ function IAToolsContent() {
                   </div>
                   <button 
                     id={`ia-select-driver-${driver.uid}`}
+                    type="button"
                     onClick={() => setContactTarget(driver.uid)}
                     className="text-[10px] font-bold text-klando-burgundy hover:underline uppercase"
                   >
