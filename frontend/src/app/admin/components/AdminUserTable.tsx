@@ -18,6 +18,7 @@ import {
   Trash2,
   LifeBuoy,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 
 interface AdminUserTableProps {
@@ -87,6 +88,8 @@ export function AdminUserTable({
                       ? "bg-blue-500/20 text-blue-400"
                       : user.role === "marketing"
                       ? "bg-purple-500/20 text-purple-400"
+                      : user.role === "ia"
+                      ? "bg-emerald-500/20 text-emerald-400"
                       : "bg-secondary text-muted-foreground"
                   }`}
                 >
@@ -96,6 +99,8 @@ export function AdminUserTable({
                     <LifeBuoy className="w-3 h-3" />
                   ) : user.role === "marketing" ? (
                     <TrendingUp className="w-3 h-3" />
+                  ) : user.role === "ia" ? (
+                    <Sparkles className="w-3 h-3" />
                   ) : (
                     <User className="w-3 h-3" />
                   )}
@@ -105,6 +110,8 @@ export function AdminUserTable({
                     ? "Support"
                     : user.role === "marketing"
                     ? "Marketing"
+                    : user.role === "ia"
+                    ? "IA"
                     : "User"}
                 </span>
               </TableCell>
@@ -150,6 +157,7 @@ export function AdminUserTable({
                     <option value="user">User</option>
                     <option value="support">Support</option>
                     <option value="marketing">Marketing</option>
+                    <option value="ia">Profil IA</option>
                     <option value="admin">Admin</option>
                   </select>
 

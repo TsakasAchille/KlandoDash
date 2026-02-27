@@ -39,6 +39,8 @@ const adminItems = [
   { href: "/admin", label: "Administration", icon: Shield },
 ];
 
+const iaItem = { href: "/ia", label: "IA Data Hub", icon: Sparkles };
+
 interface SidebarProps {
   onClose?: () => void;
   isMobile?: boolean;
@@ -64,7 +66,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
     }
   };
 
-  const renderNavItem = (item: { href: string, label: string, icon: React.ElementType | string }) => {
+  const renderNavItem = (item: { href: string, label: string, icon: React.ElementType | string }, isSmall = false) => {
     const isActive = pathname === item.href;
     const isLoading = loadingHref === item.href;
     const isImageIcon = typeof item.icon === "string";
@@ -80,7 +82,7 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             isActive
               ? "bg-gradient-to-r from-klando-burgundy via-[#9b2c3d] to-klando-burgundy text-white shadow-[0_8px_20px_-4px_rgba(123,31,47,0.4)]"
               : "text-indigo-100/80 hover:bg-white/[0.05] hover:text-white hover:translate-x-1",
-            isMobile ? "text-base py-4" : "text-sm py-2.5",
+            isMobile ? "text-base py-4" : isSmall ? "text-[11px] py-2" : "text-sm py-2.5",
             isLoading && "opacity-70 pointer-events-none bg-white/5"
           )}
         >
@@ -91,7 +93,8 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
 
           <div className="flex items-center gap-3 relative z-10">
             <div className={cn(
-              "w-9 h-9 flex items-center justify-center shrink-0 rounded-xl transition-all duration-500",
+              "flex items-center justify-center shrink-0 rounded-xl transition-all duration-500",
+              isSmall ? "w-7 h-7" : "w-9 h-9",
               isActive ? "bg-white/20 shadow-inner" : "bg-white/[0.03] group-hover:bg-white/10",
               isMobile && "w-10 h-10"
             )}>
@@ -110,7 +113,8 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                 </div>
               ) : (
                 <Icon className={cn(
-                  "w-[18px] h-[18px] transition-all duration-500 group-hover:rotate-[10deg] group-hover:scale-110", 
+                  "transition-all duration-500 group-hover:rotate-[10deg] group-hover:scale-110", 
+                  isSmall ? "w-3.5 h-3.5" : "w-[18px] h-[18px]",
                   isMobile && "w-5 h-5",
                   isActive ? "text-klando-gold drop-shadow-[0_0_8px_rgba(235,195,63,0.5)]" : "text-indigo-200/60 group-hover:text-white"
                 )} />
@@ -119,7 +123,8 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             <span className={cn(
               "transition-all duration-500 tracking-tight",
               isMobile && "text-lg", 
-              isActive ? "font-black text-white" : "font-bold"
+              isActive ? "font-black text-white" : "font-bold",
+              isSmall && "uppercase tracking-widest opacity-70 group-hover:opacity-100"
             )}>{item.label}</span>
           </div>
           
@@ -162,7 +167,9 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       
       <nav className={cn("flex-1 overflow-y-auto scrollbar-none relative z-10", isMobile ? "p-4" : "p-4")}>
         <ul className="space-y-1">
-          {navItems.map(renderNavItem)}
+          {/* Menu principal filtré pour le profil IA */}
+          {userRole !== "ia" && navItems.map((item) => renderNavItem(item))}
+          {userRole === "ia" && renderNavItem(navItems[0])} {/* Seul l'accueil est visible pour IA */}
 
           {/* --- Section Marketing / Support / Admin --- */}
           {(userRole === "admin" || userRole === "support" || userRole === "marketing") && (
@@ -182,9 +189,19 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                 </div>
               </li>
 
-              {(userRole === "admin" || userRole === "marketing") && marketingItems.map(renderNavItem)}
-              {(userRole === "admin" || userRole === "support") && supportItems.map(renderNavItem)}
-              {userRole === "admin" && adminItems.map(renderNavItem)}
+              {(userRole === "admin" || userRole === "marketing") && marketingItems.map((item) => renderNavItem(item))}
+              {(userRole === "admin" || userRole === "support") && supportItems.map((item) => renderNavItem(item))}
+              {userRole === "admin" && adminItems.map((item) => renderNavItem(item))}
+            </>
+          )}
+
+          {/* Espace IA - Tout en bas pour Admin ou IA */}
+          {(userRole === "admin" || userRole === "ia") && (
+            <>
+              <li className="pt-8 pb-2">
+                <div className="h-px bg-white/5 mx-4" />
+              </li>
+              {renderNavItem(iaItem, true)}
             </>
           )}
         </ul>

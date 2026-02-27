@@ -21,6 +21,20 @@ export function formatDate(dateString: string): string {
 }
 
 /**
+ * Format date in French locale (short version)
+ */
+export function formatDateShort(dateString: string): string {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
  * Format distance in km
  */
 export function formatDistance(km: number): string {

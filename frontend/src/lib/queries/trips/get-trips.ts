@@ -163,7 +163,7 @@ export async function getTripsWithDriver(options: {
   }
 
   if (search) {
-    query = query.or(`departure_name.ilike.%${search}%,destination_name.ilike.%${search}%`);
+    query = query.or(`departure_name.ilike.%${search}%,destination_name.ilike.%${search}%,trip_id.ilike.%${search}%`);
   }
 
   if (minPrice !== undefined) {

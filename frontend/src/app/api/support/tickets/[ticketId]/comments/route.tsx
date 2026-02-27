@@ -5,9 +5,8 @@ export const dynamic = "force-dynamic";
 
 import { addComment, getTicketDetail } from "@/lib/queries/support";
 import { createClient } from "@supabase/supabase-js";
-import { Resend } from "resend";
+import { sendEmail } from "@/lib/mail";
 import { MentionNotificationEmail } from "@/components/emails/mention-notification";
-import { render } from "@react-email/render";
 
 // Initialize services
 const supabaseAdmin = createClient(
@@ -74,30 +73,24 @@ async function sendMentionNotifications(
 
     // 3. Send an email to each mentioned user
     for (const user of usersToNotify) {
-      // Manually render React component to HTML using @react-email/render
-      const emailHtml = await render(
-        <MentionNotificationEmail
-          mentionedBy={commenterName}
-          ticketId={ticket.ticket_id}
-          ticketSubject={ticket.subject || "Sans sujet"}
-          commentText={commentText}
-          dashboardUrl={process.env.NEXTAUTH_URL || "http://localhost:3000"}
-        />,
-        { pretty: true }
-      );
-      console.log(`Rendering email for ${user.email}. HTML length: ${emailHtml.length}`);
-
-      const { data, error: sendError } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || "KlandoDash <onboarding@resend.dev>",
+      const res = await sendEmail({
         to: user.email,
         subject: `Nouvelle mention de ${commenterName} sur le ticket #${ticket.ticket_id}`,
-        html: emailHtml,
+        react: (
+          <MentionNotificationEmail
+            mentionedBy={commenterName}
+            ticketId={ticket.ticket_id}
+            ticketSubject={ticket.subject || "Sans sujet"}
+            commentText={commentText}
+            dashboardUrl={process.env.NEXTAUTH_URL || "http://localhost:3000"}
+          />
+        ),
       });
 
-      if (sendError) {
-        console.error(`Resend error for ${user.email}:`, sendError);
+      if (!res.success) {
+        console.error(`SendEmail error for ${user.email}:`, res.error);
       } else {
-        console.log(`Email sent to ${user.email} for ticket ${ticket.ticket_id}. Resend ID: ${data?.id}`);
+        console.log(`Email sent to ${user.email} for ticket ${ticket.ticket_id}. MessageId: ${res.id}`);
       }
     }
   } catch (error) {

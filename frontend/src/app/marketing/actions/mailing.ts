@@ -143,7 +143,7 @@ export async function sendMarketingEmailAction(id: string) {
     await supabase.from('dash_marketing_emails').update({
       status: 'SENT',
       sent_at: new Date().toISOString(),
-      resend_id: res.id
+      message_id: res.id
     }).eq('id', id);
     revalidatePath("/marketing");
     return { success: true };

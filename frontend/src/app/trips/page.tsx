@@ -2,7 +2,7 @@ import { getTripsWithDriver, getTripById, getTripsStats } from "@/lib/queries/tr
 import { getPublicPendingTrips } from "@/lib/queries/site-requests";
 import { toTrip } from "@/types/trip";
 import { TripsPageClient } from "./trips-client";
-import { Car, CheckCircle2, Play, Globe } from "lucide-react";
+import { Car, CheckCircle2, Play, Globe, Clock, XCircle } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 import { MiniStatCard } from "@/components/mini-stat-card";
 
@@ -23,7 +23,7 @@ interface Props {
 export default async function TripsPage({ searchParams }: Props) {
   const { selected, page, status, search, driverId, minPrice, maxPrice } = await searchParams;
   const currentPage = parseInt(page || "1", 10);
-  const pageSize = 5;
+  const pageSize = 20;
 
   // Pre-fetch data with filters and pagination
   const [{ trips: tripsData, totalCount }, stats, selectedTripData, publicPending] = await Promise.all([
@@ -61,7 +61,7 @@ export default async function TripsPage({ searchParams }: Props) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <MiniStatCard 
           title="Total" 
           value={stats.total_trips} 
@@ -69,11 +69,10 @@ export default async function TripsPage({ searchParams }: Props) {
           color="gold" 
         />
         <MiniStatCard 
-          title="Visibles (Site)" 
-          value={publicPending.length} 
-          icon={Globe} 
+          title="En attente" 
+          value={stats.pending_trips} 
+          icon={Clock} 
           color="blue" 
-          description="En attente sur le site"
         />
         <MiniStatCard 
           title="Actifs" 
@@ -86,6 +85,19 @@ export default async function TripsPage({ searchParams }: Props) {
           value={stats.completed_trips} 
           icon={CheckCircle2} 
           color="green" 
+        />
+        <MiniStatCard 
+          title="Annulés" 
+          value={stats.cancelled_trips} 
+          icon={XCircle} 
+          color="red" 
+        />
+        <MiniStatCard 
+          title="Visibles (Site)" 
+          value={publicPending.length} 
+          icon={Globe} 
+          color="blue" 
+          description="En attente sur le site"
         />
       </div>
 

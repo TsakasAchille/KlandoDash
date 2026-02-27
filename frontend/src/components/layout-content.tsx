@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/sidebar";
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
+  const isIAPage = pathname === "/ia";
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -24,8 +25,8 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Page de login: pas de sidebar
-  if (isLoginPage) {
+  // Page de login ou IA: pas de sidebar
+  if (isLoginPage || isIAPage) {
     return <>{children}</>;
   }
 

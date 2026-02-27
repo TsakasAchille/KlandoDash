@@ -73,6 +73,8 @@ export interface TripStats {
   total_trips: number;
   active_trips: number;
   completed_trips: number;
+  pending_trips: number;
+  cancelled_trips: number;
   total_distance: number;
   total_seats_booked: number;
 }

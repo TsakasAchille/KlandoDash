@@ -1,7 +1,6 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import React from 'react';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { render } from '@react-email/render';
 
 interface SendEmailOptions {
   to: string | string[];
@@ -11,28 +10,42 @@ interface SendEmailOptions {
 }
 
 /**
- * Service universel d'envoi d'emails via Resend
+ * Service d'envoi d'emails via Google SMTP (Gmail/Workspace)
+ * Avantages : Gratuit, haute limite quotidienne (500-2000), meilleure délivrabilité avec votre domaine.
  */
 export async function sendEmail({ to, subject, react, from }: SendEmailOptions) {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn("[MAIL] Envoi annulé : RESEND_API_KEY manquante.");
-    return { success: false, error: 'API Key missing' };
+  // On récupère les identifiants Google
+  const user = process.env.GOOGLE_EMAIL_USER; // ex: contact@klando-sn.com
+  const pass = process.env.GOOGLE_EMAIL_APP_PASSWORD; // Mot de passe d'application 16 caractères
+
+  if (!user || !pass) {
+    console.warn("[MAIL] Envoi annulé : Identifiants Google SMTP manquants (GOOGLE_EMAIL_USER, GOOGLE_EMAIL_APP_PASSWORD).");
+    return { success: false, error: 'SMTP credentials missing' };
   }
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: from || process.env.EMAIL_FROM || 'Klando <no-reply@resend.dev>',
-      to,
-      subject,
-      react,
+    // 1. Initialiser le transporteur SMTP Google
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: user,
+        pass: pass,
+      },
     });
 
-    if (error) {
-      console.error("[MAIL ERROR]", error);
-      return { success: false, error };
-    }
+    // 2. Convertir le composant React Email en HTML
+    const html = await render(react);
 
-    return { success: true, id: data?.id };
+    // 3. Envoyer l'email
+    const info = await transporter.sendMail({
+      from: from || process.env.EMAIL_FROM || `"Klando" <${user}>`,
+      to: Array.isArray(to) ? to.join(', ') : to,
+      subject,
+      html,
+    });
+
+    console.log("[MAIL SENT]", info.messageId);
+    return { success: true, id: info.messageId };
   } catch (error) {
     console.error("[MAIL CRASH]", error);
     return { success: false, error };
