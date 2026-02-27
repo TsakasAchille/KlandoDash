@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, PenLine } from "lucide-react";
 import { MarketingComm, CommPlatform, CommStatus } from "@/app/marketing/types";
 import { 
     updateMarketingCommAction, 
