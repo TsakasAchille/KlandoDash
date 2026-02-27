@@ -82,44 +82,44 @@ export function PostList({
           </Tabs>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5">
           {comms.length > 0 ? (
             comms.map((comm) => (
               <div 
                 key={comm.id}
                 onClick={() => onSelect(comm.id)}
                 className={cn(
-                  "p-4 rounded-[1.5rem] border transition-all cursor-pointer group relative overflow-hidden h-[110px] flex flex-col justify-center shrink-0",
+                  "px-3 py-2.5 rounded-xl border transition-all cursor-pointer group relative overflow-hidden h-[72px] flex flex-col justify-center shrink-0",
                   selectedId === comm.id 
                     ? "bg-purple-50 border-purple-200 ring-1 ring-purple-200" 
                     : "bg-white border-slate-100 hover:border-purple-200 hover:bg-slate-50 shadow-sm hover:shadow-md"
                 )}
               >
-                <div className="flex items-center gap-2 mb-1.5">
+                <div className="flex items-center gap-1.5 mb-1">
                   <div className={cn(
-                    "p-1.5 rounded-lg",
+                    "p-1 rounded-md",
                     comm.platform === 'TIKTOK' ? "bg-pink-50 text-pink-500" :
                     comm.platform === 'INSTAGRAM' ? "bg-purple-50 text-purple-500" :
                     comm.platform === 'LINKEDIN' ? "bg-blue-50 text-blue-700" :
                     comm.platform === 'OTHER' ? "bg-slate-100 text-slate-600" :
                     "bg-blue-50 text-blue-400"
                   )}>
-                    {comm.platform === 'TIKTOK' && <Music className="w-3 h-3" />}
-                    {comm.platform === 'INSTAGRAM' && <Instagram className="w-3 h-3" />}
-                    {comm.platform === 'LINKEDIN' && <Linkedin className="w-3 h-3" />}
-                    {comm.platform === 'X' && <Twitter className="w-3 h-3" />}
-                    {comm.platform === 'OTHER' && <MoreHorizontal className="w-3 h-3" />}
+                    {comm.platform === 'TIKTOK' && <Music className="w-2.5 h-2.5" />}
+                    {comm.platform === 'INSTAGRAM' && <Instagram className="w-2.5 h-2.5" />}
+                    {comm.platform === 'LINKEDIN' && <Linkedin className="w-2.5 h-2.5" />}
+                    {comm.platform === 'X' && <Twitter className="w-2.5 h-2.5" />}
+                    {comm.platform === 'OTHER' && <MoreHorizontal className="w-2.5 h-2.5" />}
                   </div>
-                  <span className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">{comm.platform}</span>
+                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-tighter">{comm.platform}</span>
                 </div>
-                <p className="text-[11px] font-black text-slate-900 uppercase truncate pr-10">{comm.title}</p>
-                <p className="text-[9px] text-slate-500 line-clamp-3 italic mt-1 leading-tight pr-10">
+                <p className="text-[10px] font-black text-slate-900 uppercase truncate pr-8">{comm.title}</p>
+                <p className="text-[8px] text-slate-500 truncate italic mt-0.5 pr-8">
                   {comm.content || "(Média uniquement)"}
                 </p>
-                
+
                 {comm.image_url && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="w-10 h-10 rounded-xl border-2 border-white shadow-lg overflow-hidden">
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                    <div className="w-8 h-8 rounded-lg border-2 border-white shadow-md overflow-hidden">
                       <img src={comm.image_url} alt="mini" className="w-full h-full object-cover" />
                     </div>
                   </div>
