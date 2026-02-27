@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Search, Send, User, Loader2, Phone, Mail, FileText } from "lucide-react";
 import { searchHistoricalDrivers, createPropositionDraft, getUserInfo } from "./actions";
 import { formatDateShort } from "@/lib/utils";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 
-export function IAToolsClient() {
+function IAToolsContent() {
+  const searchParams = useSearchParams();
+  
   // Search state
   const [searchOrigin, setSearchOrigin] = useState("");
   const [searchDest, setSearchDest] = useState("");
@@ -22,6 +25,23 @@ export function IAToolsClient() {
   // User info state
   const [targetUserInfo, setTargetUserInfo] = useState<any>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(false);
+
+  // Auto-search from URL parameters
+  useEffect(() => {
+    const urlOrigin = searchParams.get("origin");
+    const urlDest = searchParams.get("dest");
+    
+    if (urlOrigin) setSearchOrigin(urlOrigin);
+    if (urlDest) setSearchDest(urlDest);
+    
+    if (urlOrigin && urlDest) {
+      // Trigger search automatically after a short delay
+      const timer = setTimeout(() => {
+        handleSearch(null, urlOrigin, urlDest);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   // Debounce user info fetching
   useEffect(() => {
@@ -47,14 +67,19 @@ export function IAToolsClient() {
     return () => clearTimeout(timer);
   }, [contactTarget]);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchOrigin.trim() || !searchDest.trim()) return;
+  const handleSearch = async (e: React.FormEvent | null, manualOrigin?: string, manualDest?: string) => {
+    if (e) e.preventDefault();
+    
+    const origin = manualOrigin || searchOrigin.trim();
+    const dest = manualDest || searchDest.trim();
+    
+    if (!origin || !dest) return;
+    
     setIsSearching(true);
     try {
-      const results = await searchHistoricalDrivers(searchOrigin.trim(), searchDest.trim());
+      const results = await searchHistoricalDrivers(origin, dest);
       setSearchResults(results);
-      if (results.length === 0) toast.info("Aucun conducteur trouvé pour ce trajet.");
+      if (results.length === 0 && !manualOrigin) toast.info("Aucun conducteur trouvé pour ce trajet.");
     } catch (error) {
       toast.error("Erreur lors de la recherche.");
     } finally {
@@ -92,9 +117,10 @@ export function IAToolsClient() {
         <h2 className="text-xs font-black uppercase text-slate-400 mb-6 tracking-widest border-l-4 border-klando-gold pl-3">
           Historique des Trajets
         </h2>
-        <form onSubmit={handleSearch} className="space-y-4 mb-6">
+        <form onSubmit={(e) => handleSearch(e)} className="space-y-4 mb-6">
           <div className="flex gap-3">
             <input
+              id="ia-search-origin"
               type="text"
               placeholder="Départ (ex: Dakar)"
               value={searchOrigin}
@@ -103,6 +129,7 @@ export function IAToolsClient() {
               data-gramm="false"
             />
             <input
+              id="ia-search-dest"
               type="text"
               placeholder="Arrivée (ex: Thiès)"
               value={searchDest}
@@ -112,6 +139,7 @@ export function IAToolsClient() {
             />
           </div>
           <button
+            id="ia-search-button"
             type="submit"
             disabled={isSearching}
             className="w-full bg-slate-900 text-white py-2 rounded text-xs font-bold hover:bg-slate-800 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
@@ -146,6 +174,7 @@ export function IAToolsClient() {
                     </div>
                   </div>
                   <button 
+                    id={`ia-select-driver-${driver.uid}`}
                     onClick={() => setContactTarget(driver.uid)}
                     className="text-[10px] font-bold text-klando-burgundy hover:underline uppercase"
                   >
@@ -210,6 +239,7 @@ export function IAToolsClient() {
             <div>
               <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Cible (ID, Email ou GLOBAL)</label>
               <input
+                id="ia-contact-target"
                 type="text"
                 placeholder="ex: user_123, test@mail.com ou GLOBAL"
                 value={contactTarget}
@@ -221,6 +251,7 @@ export function IAToolsClient() {
             <div>
               <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Objet du mail</label>
               <input
+                id="ia-contact-subject"
                 type="text"
                 value={contactSubject}
                 onChange={(e) => setContactSubject(e.target.value)}
@@ -236,6 +267,7 @@ export function IAToolsClient() {
               <span className="text-[9px] text-klando-burgundy font-bold animate-pulse">💡 INDIQUEZ BIEN LE NOM ET PRÉNOM</span>
             </div>
             <textarea
+              id="ia-contact-message"
               placeholder={`Bonjour ${targetUserInfo?.display_name || "[Nom]"}, nous avons remarqué une forte demande pour Dakar-Thiès. Seriez-vous disponible ?`}
               value={contactMessage}
               onChange={(e) => setContactMessage(e.target.value)}
@@ -248,6 +280,7 @@ export function IAToolsClient() {
             </p>
           </div>
           <button
+            id="ia-create-draft-button"
             type="submit"
             disabled={isSending}
             className="w-full bg-klando-burgundy text-white py-3 rounded text-xs font-bold hover:bg-klando-burgundy/90 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
@@ -265,5 +298,13 @@ export function IAToolsClient() {
         </form>
       </div>
     </div>
+  );
+}
+
+export function IAToolsClient() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center text-xs text-slate-400 animate-pulse">CHARGEMENT DU HUB...</div>}>
+      <IAToolsContent />
+    </Suspense>
   );
 }
