@@ -6,13 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  Edit3, Wand2, Loader2, X, Save, ImagePlus, Hash, Sparkles, Type
+  Edit3, Wand2, Loader2, X, Save, ImagePlus, Hash, Sparkles, Type, PenLine
 } from "lucide-react";
 import { MarketingComm, CommPlatform } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
 
 interface PostEditorProps {
-  createMode: 'TEXT' | 'IMAGE' | null;
   editForm: Partial<MarketingComm>;
   setEditForm: (val: Partial<MarketingComm>) => void;
   onClose: () => void;
@@ -25,7 +24,6 @@ interface PostEditorProps {
 }
 
 export function PostEditor({
-  createMode,
   editForm,
   setEditForm,
   onClose,
@@ -42,7 +40,9 @@ export function PostEditor({
   const platforms: { id: CommPlatform; label: string }[] = [
     { id: 'TIKTOK', label: 'TikTok' },
     { id: 'INSTAGRAM', label: 'Instagram' },
+    { id: 'LINKEDIN', label: 'LinkedIn' },
     { id: 'X', label: 'X / Twitter' },
+    { id: 'OTHER', label: 'Autre' },
   ];
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -63,23 +63,16 @@ export function PostEditor({
     }
   };
 
-  const isVisualMode = createMode === 'IMAGE';
-
   return (
     <Card className="flex-1 bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col text-left">
       {/* HEADER */}
       <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30 shrink-0">
         <div className="flex items-center gap-3">
-          <div className={cn(
-            "p-2 rounded-xl text-white shadow-lg",
-            isVisualMode ? "bg-purple-600 shadow-purple-200" : "bg-blue-600 shadow-blue-200"
-          )}>
-            {isVisualMode ? <ImagePlus className="w-5 h-5" /> : <Edit3 className="w-5 h-5" />}
+          <div className="p-2 rounded-xl text-white shadow-lg bg-purple-600 shadow-purple-200">
+            <PenLine className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="text-sm font-black uppercase text-slate-900">
-                {isVisualMode ? 'Post Visuel (PNG)' : 'Post Standard (Texte)'}
-            </h4>
+            <h4 className="text-sm font-black uppercase text-slate-900">Éditeur de Publication</h4>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 {editForm.platform || 'Choisir plateforme'}
             </p>
@@ -108,14 +101,14 @@ export function PostEditor({
 
             <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 pl-1 tracking-widest">Plateforme cible</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     {platforms.map((p) => (
                         <button
                             key={p.id}
                             type="button"
                             onClick={() => setEditForm({...editForm, platform: p.id})}
                             className={cn(
-                                "flex-1 flex items-center justify-center py-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-tighter",
+                                "flex-1 min-w-[80px] flex items-center justify-center py-2.5 rounded-xl border transition-all text-[9px] font-black uppercase tracking-tighter",
                                 editForm.platform === p.id 
                                     ? "bg-slate-900 border-slate-900 text-white shadow-md" 
                                     : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
@@ -152,11 +145,11 @@ export function PostEditor({
                         value={editForm.content || ""} 
                         onChange={(e) => setEditForm({...editForm, content: e.target.value})}
                         className="min-h-[300px] bg-slate-50 border-slate-200 leading-relaxed text-sm p-6 rounded-2xl resize-none focus:ring-purple-500/10 shadow-inner"
-                        placeholder={isVisualMode ? "Détails optionnels sur le visuel..." : "Contenu de la publication..."}
+                        placeholder="Contenu de la publication (optionnel si post visuel uniquement)..."
                     />
                 </div>
 
-                {/* Hashtags & Bio Section (Platform specific feel) */}
+                {/* Hashtags & Visual Idea Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-slate-400 pl-1 tracking-widest flex items-center gap-2">
@@ -239,23 +232,13 @@ export function PostEditor({
       <div className="p-8 border-t border-slate-100 bg-white shrink-0 mt-auto">
         <Button 
           onClick={onSave} 
-          disabled={isUpdating || (isVisualMode && !editForm.image_url)} 
-          className={cn(
-            "w-full h-14 text-white rounded-2xl gap-3 font-black uppercase text-xs shadow-xl transition-all",
-            isVisualMode ? "bg-purple-600 hover:bg-purple-700" : "bg-green-600 hover:bg-green-700"
-          )}
+          disabled={isUpdating} 
+          className="w-full h-14 bg-green-600 hover:bg-green-700 text-white rounded-2xl gap-3 font-black uppercase text-xs shadow-xl transition-all"
         >
           {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-          {isVisualMode && !editForm.image_url ? "Attachez votre visuel pour enregistrer" : "Enregistrer le Brouillon"}
+          Enregistrer le Brouillon
         </Button>
       </div>
     </Card>
   );
-}
-
-// Sub-component Helper
-function PenLine({ className }: { className?: string }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-    )
 }

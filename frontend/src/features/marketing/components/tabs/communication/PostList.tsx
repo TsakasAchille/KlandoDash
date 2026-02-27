@@ -4,11 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Search, Sparkles, Inbox, Music, Instagram, Twitter, ChevronRight, PenLine, ImagePlus
+  Search, Sparkles, Inbox, Music, Instagram, Twitter, ChevronRight, PenLine, ImagePlus, Linkedin, MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarketingComm, CommStatus } from "@/app/marketing/types";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface PostListProps {
   comms: MarketingComm[];
@@ -18,7 +17,7 @@ interface PostListProps {
   statusFilter: CommStatus | 'ALL';
   setStatusFilter: (val: CommStatus | 'ALL') => void;
   onSelect: (id: string) => void;
-  onStartManual: (mode: 'TEXT' | 'IMAGE') => void;
+  onStartManual: () => void;
   onShowGenerator: () => void;
   isGeneratorActive: boolean;
 }
@@ -39,42 +38,13 @@ export function PostList({
     <div className="w-80 flex-none flex flex-col gap-4">
       <div className="space-y-3">
         <div className="flex flex-col gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button className="w-full h-14 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[10px] tracking-widest gap-3 shadow-xl shadow-purple-200 group">
-                <PenLine className="w-4 h-4 transition-transform group-hover:rotate-12" />
-                Nouveau Post
-                <ChevronRight className="w-3 h-3 ml-auto opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-3 rounded-[1.5rem] border-slate-200 shadow-2xl space-y-2" align="start" side="bottom" sideOffset={10}>
-              <p className="text-[9px] font-black uppercase text-slate-400 px-2 pb-1 tracking-[0.2em]">Choisir le format</p>
-              <button 
-                onClick={() => onStartManual('TEXT')}
-                className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-purple-50 transition-all group text-left border border-transparent hover:border-purple-100"
-              >
-                <div className="p-2.5 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-colors">
-                  <PenLine className="w-4 h-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase text-slate-900 leading-tight">Post Standard</p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Légende + Image</p>
-                </div>
-              </button>
-              <button 
-                onClick={() => onStartManual('IMAGE')}
-                className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-purple-50 transition-all group text-left border border-transparent hover:border-purple-100"
-              >
-                <div className="p-2.5 bg-purple-50 rounded-xl group-hover:bg-purple-100 transition-colors">
-                  <ImagePlus className="w-4 h-4 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase text-slate-900 leading-tight">Post Visuel (PNG)</p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Création Graphique</p>
-                </div>
-              </button>
-            </PopoverContent>
-          </Popover>
+          <Button 
+            onClick={onStartManual}
+            className="w-full h-14 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[10px] tracking-widest gap-3 shadow-xl shadow-purple-200 group"
+          >
+            <PlusIcon className="w-4 h-4 transition-transform group-hover:rotate-90" />
+            Nouveau Post
+          </Button>
 
           <Button 
             variant="outline"
@@ -130,16 +100,20 @@ export function PostList({
                     "p-1.5 rounded-lg",
                     comm.platform === 'TIKTOK' ? "bg-pink-50 text-pink-500" :
                     comm.platform === 'INSTAGRAM' ? "bg-purple-50 text-purple-500" :
+                    comm.platform === 'LINKEDIN' ? "bg-blue-50 text-blue-700" :
+                    comm.platform === 'OTHER' ? "bg-slate-100 text-slate-600" :
                     "bg-blue-50 text-blue-400"
                   )}>
                     {comm.platform === 'TIKTOK' && <Music className="w-3 h-3" />}
                     {comm.platform === 'INSTAGRAM' && <Instagram className="w-3 h-3" />}
+                    {comm.platform === 'LINKEDIN' && <Linkedin className="w-3 h-3" />}
                     {comm.platform === 'X' && <Twitter className="w-3 h-3" />}
+                    {comm.platform === 'OTHER' && <MoreHorizontal className="w-3 h-3" />}
                   </div>
                   <span className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">{comm.platform}</span>
                 </div>
                 <p className="text-[11px] font-black text-slate-900 uppercase truncate pr-8">{comm.title}</p>
-                <p className="text-[10px] text-slate-500 line-clamp-1 italic mt-1">{comm.content || "(Visuel PNG Star)"}</p>
+                <p className="text-[10px] text-slate-500 line-clamp-1 italic mt-1">{comm.content || "(Média uniquement)"}</p>
                 
                 {comm.image_url && (
                   <div className="absolute right-3 bottom-3">
@@ -162,4 +136,10 @@ export function PostList({
       </div>
     </div>
   );
+}
+
+function PlusIcon({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+  )
 }

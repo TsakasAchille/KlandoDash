@@ -43,7 +43,6 @@ export function CommunicationTab({
   // États de sélection et édition
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [creationMode, setCreationMode] = useState<'TEXT' | 'IMAGE' | null>(null);
   
   // Le générateur est maintenant affiché par défaut si rien n'est sélectionné
   const [showGenerator, setShowGenerator] = useState(true);
@@ -78,13 +77,12 @@ export function CommunicationTab({
     return null;
   }, [comms, selectedId]);
 
-  const handleStartManual = (mode: 'TEXT' | 'IMAGE') => {
+  const handleStartManual = () => {
     setEditingId("NEW_MANUAL");
-    setCreationMode(mode);
     setSelectedId(null);
     setShowGenerator(false);
     setEditForm({ 
-        title: mode === 'IMAGE' ? "Nouveau Post Visuel" : "Nouvelle publication", 
+        title: "Nouvelle publication", 
         content: "", 
         hashtags: [],
         visual_suggestion: "",
@@ -95,7 +93,6 @@ export function CommunicationTab({
 
   const handleStartEdit = (comm: MarketingComm) => {
     setEditingId(comm.id);
-    setCreationMode(null);
     setShowGenerator(false);
     setEditForm({ 
         title: comm.title, 
@@ -118,14 +115,12 @@ export function CommunicationTab({
                 setStatusFilter('DRAFT');
                 setTimeout(() => setSelectedId(res.post.id), 100);
                 setEditingId(null);
-                setCreationMode(null);
             }
         } else {
             const res = await updateMarketingCommAction(editingId, { ...editForm, status: 'DRAFT' });
             if (res.success) {
                 toast.success("Publication mise à jour !");
                 setEditingId(null);
-                setCreationMode(null);
             }
         }
     } catch (err) {
@@ -236,10 +231,9 @@ export function CommunicationTab({
       <div className="flex-1 w-full min-w-0 max-w-[1100px] flex flex-col gap-6">
           {editingId ? (
               <PostEditor 
-                  createMode={editingId === "NEW_MANUAL" ? creationMode : (editForm.image_url && (!editForm.content || editForm.content.length < 50) ? 'IMAGE' : 'TEXT')}
                   editForm={editForm}
                   setEditForm={setEditForm}
-                  onClose={() => { setEditingId(null); setCreationMode(null); }}
+                  onClose={() => { setEditingId(null); }}
                   onSave={handleSaveEdit}
                   onRefine={handleRefineContent}
                   onFileUpload={handleFileUpload}

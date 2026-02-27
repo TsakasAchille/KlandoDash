@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
-  Sparkles, Loader2, Target, MapPin, Music, Instagram, Twitter
+  Sparkles, Loader2, Target, MapPin, Music, Instagram, Twitter, Linkedin, MoreHorizontal
 } from "lucide-react";
 import { CommPlatform, MarketingComm } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,9 @@ export function AIGenerator({
   const platforms: { id: CommPlatform; label: string; icon: React.ElementType }[] = [
     { id: 'TIKTOK', label: 'TikTok', icon: Music },
     { id: 'INSTAGRAM', label: 'Instagram', icon: Instagram },
+    { id: 'LINKEDIN', label: 'LinkedIn', icon: Linkedin },
     { id: 'X', label: 'X / Twitter', icon: Twitter },
+    { id: 'OTHER', label: 'Autre', icon: MoreHorizontal },
   ];
 
   return (

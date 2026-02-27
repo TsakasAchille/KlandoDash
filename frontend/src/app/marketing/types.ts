@@ -33,7 +33,7 @@ export interface MarketingEmail {
 }
 
 export type CommType = 'IDEA' | 'POST';
-export type CommPlatform = 'TIKTOK' | 'INSTAGRAM' | 'X' | 'WHATSAPP' | 'GENERAL';
+export type CommPlatform = 'TIKTOK' | 'INSTAGRAM' | 'X' | 'WHATSAPP' | 'LINKEDIN' | 'OTHER' | 'GENERAL';
 export type CommStatus = 'NEW' | 'DRAFT' | 'PUBLISHED' | 'TRASH';
 
 export interface MarketingComm {
