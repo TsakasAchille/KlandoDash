@@ -99,7 +99,7 @@ export async function getUserInfo(target: string) {
 /**
  * Crée un brouillon de proposition dans le centre éditorial (mailing)
  */
-export async function createPropositionDraft(target: string, subject: string, message: string) {
+export async function createPropositionDraft(target: string, subject: string, message: string, imageUrl?: string) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
@@ -117,22 +117,19 @@ export async function createPropositionDraft(target: string, subject: string, me
   // 2. Fallbacks si l'utilisateur n'est pas dans la DB "users"
   if (!recipientEmail) {
     if (cleanTarget.includes("@")) {
-      // C'est un email direct
       recipientEmail = cleanTarget;
       recipientName = "Contact Direct";
     } else if (cleanTarget.toLowerCase() === "global" || !cleanTarget) {
-      // Mode message global / générique
-      recipientEmail = "marketing@klando-sn.com"; // Email technique requis par la DB
+      recipientEmail = "marketing@klando-sn.com";
       recipientName = "Diffusion Globale";
     } else {
-      // ID inconnu, on l'utilise comme nom par défaut
       recipientEmail = "pending@klando-sn.com";
       recipientName = `Cible: ${cleanTarget}`;
     }
   }
 
   // 3. Créer le brouillon dans dash_marketing_emails
-  const { data, error } = await supabase
+  const { data: draft, error } = await supabase
     .from("dash_marketing_emails")
     .insert([{
       category: 'MATCH_FOUND',
@@ -142,7 +139,8 @@ export async function createPropositionDraft(target: string, subject: string, me
       recipient_name: recipientName,
       status: 'DRAFT',
       created_at: new Date().toISOString(),
-      is_ai_generated: true
+      is_ai_generated: true,
+      image_url: imageUrl || null
     }])
     .select()
     .single();
@@ -152,6 +150,6 @@ export async function createPropositionDraft(target: string, subject: string, me
     return { success: false, error: `Erreur DB: ${error.message}` };
   }
 
-  console.log(`[IA-TOOLS] Draft created successfully with ID: ${data.id}`);
-  return { success: true, id: data.id };
+  console.log(`[IA-TOOLS] Draft created successfully with ID: ${draft.id} (Image: ${!!imageUrl})`);
+  return { success: true, id: draft.id };
 }
