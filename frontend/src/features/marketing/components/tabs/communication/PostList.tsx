@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Search, Sparkles, Inbox, Music, Instagram, Twitter, ChevronRight, PenLine, ImagePlus, Linkedin, MoreHorizontal
+  Search, Sparkles, Inbox, Music, Instagram, Twitter, Linkedin, MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarketingComm, CommStatus } from "@/app/marketing/types";
@@ -112,18 +112,10 @@ export function PostList({
                   </div>
                   <span className="text-[8px] font-black uppercase text-slate-400 tracking-tighter">{comm.platform}</span>
                 </div>
-                <p className="text-[10px] font-black text-slate-900 uppercase truncate pr-8">{comm.title}</p>
-                <p className="text-[8px] text-slate-500 truncate italic mt-0.5 pr-8">
+                <p className="text-[10px] font-black text-slate-900 uppercase truncate">{comm.title}</p>
+                <p className="text-[8px] text-slate-500 truncate italic mt-0.5">
                   {comm.content || "(Média uniquement)"}
                 </p>
-
-                {comm.image_url && (
-                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                    <div className="w-8 h-8 rounded-lg border-2 border-white shadow-md overflow-hidden">
-                      <img src={comm.image_url} alt="mini" className="w-full h-full object-cover" />
-                    </div>
-                  </div>
-                )}
               </div>
             ))
           ) : (
