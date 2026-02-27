@@ -28,13 +28,11 @@ async function sendMentionNotifications(
   commenterName: string
 ) {
   try {
-    // Gracefully handle missing Resend API key
-    if (!process.env.RESEND_API_KEY) {
-      console.warn("RESEND_API_KEY is not set. Skipping email notifications.");
+    // Gracefully handle missing SMTP credentials
+    if (!process.env.GOOGLE_EMAIL_USER || !process.env.GOOGLE_EMAIL_APP_PASSWORD) {
+      console.warn("[MENTIONS] Envoi annulé : Identifiants Google SMTP manquants.");
       return;
     }
-
-    const resend = new Resend(process.env.RESEND_API_KEY); // Revert to simple initialization
     
     const mentionRegex = /@([\w.]+)/g; // Capture lettres, chiffres, underscore et points
     const mentionedIds = Array.from(commentText.matchAll(mentionRegex), match => match[1]);
