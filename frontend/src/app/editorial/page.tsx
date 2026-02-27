@@ -39,9 +39,9 @@ export default async function EditorialPage({ searchParams }: Props) {
   const scheduledCount = comms.filter(c => c.scheduled_at !== null).length;
 
   return (
-    <div className="max-w-[1600px] mx-auto space-y-6 pb-10 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-[1600px] mx-auto flex flex-col h-[calc(100vh-3rem)] px-4 sm:px-6 lg:px-8">
       {/* HEADER ULTRA COMPACT */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4 bg-background/95 backdrop-blur sticky top-0 z-[100] -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4 bg-background/95 backdrop-blur z-[100] -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-4 shrink-0">
         <div className="flex items-center gap-6">
             <div className="space-y-0.5 text-left">
                 <h1 className="text-xl font-black tracking-tight uppercase flex items-center gap-3">
@@ -58,13 +58,13 @@ export default async function EditorialPage({ searchParams }: Props) {
                 <HeaderStat icon={CheckCircle} label="Mails" value={sentCount} color="text-green-500" />
             </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
             <RefreshButton />
         </div>
       </div>
 
-      <EditorialClient 
+      <EditorialClient
         initialEmails={emails}
         initialComms={comms}
       />

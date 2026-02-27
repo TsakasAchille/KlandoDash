@@ -210,10 +210,10 @@ export function CommunicationTab({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-10 animate-in fade-in duration-500 text-left items-start">
-      {/* LEFT SIDEBAR */}
-      <div className="w-[320px] shrink-0">
-        <PostList 
+    <div className="flex flex-col lg:flex-row gap-10 animate-in fade-in duration-500 text-left items-stretch relative h-full overflow-hidden">
+      {/* LEFT SIDEBAR - FIXED COLUMN */}
+      <div className="w-[320px] shrink-0 z-20">
+        <PostList
             comms={filteredComms}
             selectedId={selectedId}
             searchTerm={searchTerm}
@@ -227,8 +227,8 @@ export function CommunicationTab({
         />
       </div>
 
-      {/* MAIN WORKSPACE (Production Zone - Responsive with max-width) */}
-      <div className="flex-1 w-full min-w-0 max-w-[1100px] flex flex-col gap-6">
+      {/* MAIN WORKSPACE (Production Zone - Scrolls independently) */}
+      <div className="flex-1 w-full min-w-0 max-w-[1100px] flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
           {editingId ? (
               <PostEditor 
                   editForm={editForm}

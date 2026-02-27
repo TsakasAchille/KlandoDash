@@ -35,7 +35,7 @@ export function PostList({
   isGeneratorActive
 }: PostListProps) {
   return (
-    <div className="w-80 flex-none flex flex-col gap-4">
+    <div className="w-80 flex-none flex flex-col gap-4 h-full">
       <div className="space-y-3">
         <div className="flex flex-col gap-2">
           <Button 
@@ -71,7 +71,7 @@ export function PostList({
         </div>
       </div>
 
-      <div className="flex-1 bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden flex flex-col shadow-sm">
+      <div className="flex-1 bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden flex flex-col shadow-sm min-h-0">
         <div className="p-2 border-b border-slate-100 bg-slate-50/50">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)} className="w-full">
             <TabsList className="grid grid-cols-3 bg-transparent h-10 p-0 gap-1">
@@ -89,13 +89,13 @@ export function PostList({
                 key={comm.id}
                 onClick={() => onSelect(comm.id)}
                 className={cn(
-                  "p-4 rounded-[1.5rem] border transition-all cursor-pointer group relative overflow-hidden",
+                  "p-4 rounded-[1.5rem] border transition-all cursor-pointer group relative overflow-hidden h-[110px] flex flex-col justify-center shrink-0",
                   selectedId === comm.id 
                     ? "bg-purple-50 border-purple-200 ring-1 ring-purple-200" 
                     : "bg-white border-slate-100 hover:border-purple-200 hover:bg-slate-50 shadow-sm hover:shadow-md"
                 )}
               >
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1.5">
                   <div className={cn(
                     "p-1.5 rounded-lg",
                     comm.platform === 'TIKTOK' ? "bg-pink-50 text-pink-500" :
@@ -112,12 +112,14 @@ export function PostList({
                   </div>
                   <span className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">{comm.platform}</span>
                 </div>
-                <p className="text-[11px] font-black text-slate-900 uppercase truncate pr-8">{comm.title}</p>
-                <p className="text-[10px] text-slate-500 line-clamp-1 italic mt-1">{comm.content || "(Média uniquement)"}</p>
+                <p className="text-[11px] font-black text-slate-900 uppercase truncate pr-10">{comm.title}</p>
+                <p className="text-[9px] text-slate-500 line-clamp-3 italic mt-1 leading-tight pr-10">
+                  {comm.content || "(Média uniquement)"}
+                </p>
                 
                 {comm.image_url && (
-                  <div className="absolute right-3 bottom-3">
-                    <div className="w-8 h-8 rounded-xl border-2 border-white shadow-lg overflow-hidden">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-10 h-10 rounded-xl border-2 border-white shadow-lg overflow-hidden">
                       <img src={comm.image_url} alt="mini" className="w-full h-full object-cover" />
                     </div>
                   </div>

@@ -130,8 +130,8 @@ function EditorialClientContent({
   };
 
   return (
-    <div className="space-y-6">
-      <Tabs value={tabParam} onValueChange={handleTabChange} className="space-y-6">
+    <div className="flex flex-col flex-1 min-h-0 gap-6 pt-6">
+      <Tabs value={tabParam} onValueChange={handleTabChange} className="flex flex-col flex-1 min-h-0 gap-6">
         {/* HEADER: TABS LIST & MAIN ACTIONS (Non-sticky car le header de page est déjà sticky) */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/50 p-2 rounded-3xl border border-slate-200 backdrop-blur-sm shadow-sm">
           <TabsList className="bg-transparent border-none p-0 h-auto gap-1">
@@ -158,9 +158,9 @@ function EditorialClientContent({
 
         {/* --- TABS CONTENT: SMART LOADING --- */}
 
-        <TabsContent value="comm" className="outline-none">
+        <TabsContent value="comm" className="outline-none flex-1 min-h-0">
           {tabParam === "comm" && (
-            <CommunicationTab 
+            <CommunicationTab
               comms={comms}
               isScanning={isScanningComm}
               onGenerateIdeas={handleCommIdeasScan}
@@ -170,9 +170,9 @@ function EditorialClientContent({
           )}
         </TabsContent>
 
-        <TabsContent value="mailing" className="outline-none">
+        <TabsContent value="mailing" className="outline-none flex-1 min-h-0">
           {tabParam === "mailing" && (
-            <MailingTab 
+            <MailingTab
               emails={emails}
               isScanning={isScanningMailing}
               sendingEmailId={sendingEmailId}
@@ -182,7 +182,7 @@ function EditorialClientContent({
           )}
         </TabsContent>
 
-        <TabsContent value="calendar" className="outline-none">
+        <TabsContent value="calendar" className="outline-none flex-1 min-h-0">
           {tabParam === "calendar" && (
             <CalendarTab comms={comms} emails={emails} />
           )}
