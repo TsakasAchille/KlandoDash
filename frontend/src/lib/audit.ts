@@ -1,13 +1,13 @@
 import { auth } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase";
 
-export type AuditAction = 
-  | 'USER_CREATE' | 'USER_UPDATE' | 'USER_DELETE' 
+export type AuditAction =
+  | 'USER_CREATE' | 'USER_UPDATE' | 'USER_DELETE'
+  | 'USER_VALIDATED' | 'USER_INVALIDATED' | 'USER_AI_ANALYZED'
   | 'EMAIL_SENT' | 'EMAIL_DRAFT_CREATED' | 'EMAIL_TRASHED'
   | 'POST_CREATED' | 'POST_UPDATED' | 'POST_TRASHED' | 'POST_DELETED'
   | 'TRIP_VALIDATED' | 'TRIP_CANCELLED'
   | 'IA_DATA_INGESTION' | 'LOGIN_SUCCESS';
-
 export type AuditEntity = 'USER' | 'MARKETING_EMAIL' | 'COMMUNICATION' | 'TRIP' | 'SYSTEM';
 
 interface LogOptions {

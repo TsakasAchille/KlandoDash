@@ -1,15 +1,22 @@
 "use client";
 
 import { UserListItem } from "@/types/user";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, CheckCircle, XCircle, User, Split, ChevronLeft } from "lucide-react";
+import { 
+  Mail, Phone, CheckCircle, XCircle, User, Split, 
+  ChevronLeft, Sparkles, Loader2, AlertTriangle, 
+  Info, ShieldAlert
+} from "lucide-react";
 import Image from "next/image";
 import { DocumentCard } from "./DocumentCard";
 import { ImageComparisonDialog } from "./ImageComparisonDialog";
+import { analyzeDocumentsAction } from "../actions";
+import { toast } from "sonner";
 
 interface UserDetailsProps {
   selectedUser: UserListItem | null;
@@ -18,7 +25,9 @@ interface UserDetailsProps {
 }
 
 export function UserDetails({ selectedUser, onValidate, onBack }: UserDetailsProps) {
+  const router = useRouter();
   const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   if (!selectedUser) {
     return (
@@ -27,6 +36,21 @@ export function UserDetails({ selectedUser, onValidate, onBack }: UserDetailsPro
       </div>
     );
   }
+
+  const handleAIAnalysis = () => {
+    startTransition(async () => {
+      const res = await analyzeDocumentsAction(selectedUser.uid);
+      if (res.success) {
+        toast.success("Analyse IA terminée");
+        router.refresh(); // Force Next.js à recharger les props du serveur
+      } else {
+        toast.error(res.message || "Échec de l'analyse");
+      }
+    });
+  };
+
+  const aiStatus = selectedUser.ai_validation_status;
+  const aiReport = selectedUser.ai_validation_report;
 
   return (
     <>
@@ -71,30 +95,154 @@ export function UserDetails({ selectedUser, onValidate, onBack }: UserDetailsPro
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  selectedUser.is_driver_doc_validated 
-                    ? "bg-green-500/10 text-green-600 border-green-500/20"
-                    : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+              <div className="flex gap-2">
+                {aiStatus && aiStatus !== 'PENDING' && (
+                  <Badge 
+                    className={cn(
+                      "font-black text-[9px] tracking-widest uppercase",
+                      aiStatus === 'SUCCESS' ? "bg-green-500 text-white" : 
+                      aiStatus === 'WARNING' ? "bg-orange-500 text-white" : "bg-red-600 text-white"
+                    )}
+                  >
+                    IA: {aiStatus}
+                  </Badge>
                 )}
-              >
-                {selectedUser.is_driver_doc_validated ? "VALIDÉ" : "EN ATTENTE"}
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCompareOpen(true)}
-                className="h-8 gap-2 text-[10px] font-black uppercase tracking-widest border-klando-gold/30 text-klando-gold hover:bg-klando-gold/10"
-              >
-                <Split className="w-3 h-3" />
-                Comparer
-              </Button>
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "font-black text-[9px] tracking-widest uppercase",
+                    selectedUser.is_driver_doc_validated 
+                      ? "bg-green-500/10 text-green-600 border-green-500/20"
+                      : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                  )}
+                >
+                  {selectedUser.is_driver_doc_validated ? "VALIDÉ" : "EN ATTENTE"}
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCompareOpen(true)}
+                  className="h-8 gap-2 text-[10px] font-black uppercase tracking-widest border-klando-gold/30 text-klando-gold hover:bg-klando-gold/10"
+                >
+                  <Split className="w-3 h-3" />
+                  Comparer
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAIAnalysis}
+                  disabled={isPending}
+                  className="h-8 gap-2 text-[10px] font-black uppercase tracking-widest border-purple-500/30 text-purple-600 hover:bg-purple-50"
+                >
+                  {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  Vérifier par IA
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-4 sm:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CardContent className="p-4 sm:p-6 space-y-8">
+          
+          {/* AI REPORT SUMMARY */}
+          {aiReport && (
+            <div className={cn(
+              "p-4 rounded-2xl border-2 space-y-4",
+              aiStatus === 'SUCCESS' ? "bg-green-50/50 border-green-100" : 
+              aiStatus === 'WARNING' ? "bg-orange-50/50 border-orange-100" : "bg-red-50/50 border-red-100"
+            )}>
+              <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className={cn("w-4 h-4", aiStatus === 'SUCCESS' ? "text-green-600" : "text-purple-600")} />
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Données extraites par IA</h4>
+                </div>
+                <span className="text-[9px] font-bold text-muted-foreground italic">
+                  Analyse du {new Date(aiReport.analyzed_at).toLocaleDateString()}
+                </span>
+              </div>
+
+              {/* TABLEAU DES DONNÉES EN DUR (BASE DE DONNÉES) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* BLOC CNI */}
+                <div className="space-y-2">
+                    <p className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-2">
+                        <User className="w-3 h-3" /> Carte d&apos;Identité
+                    </p>
+                    <div className="bg-white/80 rounded-xl border border-slate-200 p-3 space-y-2 shadow-sm">
+                        <div className="flex flex-col">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Nom complet</span>
+                                {aiReport.reports?.id_card?.nameMatchesProfile ? (
+                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">NOM OK</Badge>
+                                ) : (
+                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">NOM INCORRECT</Badge>
+                                )}
+                            </div>
+                            <span className="text-xs font-bold text-slate-900">{selectedUser.id_card_name_ai || "Non extrait"}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 border-t border-slate-50 pt-2">
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Numéro</span>
+                                <span className="text-[10px] font-mono font-bold text-purple-700">{selectedUser.id_card_number || "N/A"}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Expiration</span>
+                                <span className="text-[10px] font-bold text-slate-700">{selectedUser.id_card_expiry_ai || "N/A"}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* BLOC PERMIS */}
+                <div className="space-y-2">
+                    <p className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-2">
+                        <Split className="w-3 h-3" /> Permis de conduire
+                    </p>
+                    <div className="bg-white/80 rounded-xl border border-slate-200 p-3 space-y-2 shadow-sm">
+                        <div className="flex flex-col">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Nom complet</span>
+                                {aiReport.reports?.driver_license?.nameMatchesProfile ? (
+                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">NOM OK</Badge>
+                                ) : (
+                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">NOM INCORRECT</Badge>
+                                )}
+                            </div>
+                            <span className="text-xs font-bold text-slate-900">{selectedUser.driver_license_name_ai || "Non extrait"}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 border-t border-slate-50 pt-2">
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Numéro</span>
+                                <span className="text-[10px] font-mono font-bold text-purple-700">{selectedUser.driver_license_number || "N/A"}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Expiration</span>
+                                <span className="text-[10px] font-bold text-slate-700">{selectedUser.driver_license_expiry_ai || "N/A"}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              </div>
+
+              {aiReport.warnings && aiReport.warnings.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  {aiReport.warnings.map((warning: string, i: number) => (
+                    <div key={i} className="flex items-start gap-2 bg-red-50/50 p-2.5 rounded-xl border border-red-100 shadow-sm">
+                      {warning.includes("FRAUDE") ? (
+                        <ShieldAlert className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+                      )}
+                      <p className="text-[11px] font-bold text-red-900 leading-tight">{warning}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             <DocumentCard 
               title="Permis de conduire" 
               url={selectedUser.driver_license_url} 
@@ -107,20 +255,20 @@ export function UserDetails({ selectedUser, onValidate, onBack }: UserDetailsPro
             />
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-3">
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100">
             <Button
               onClick={onValidate}
               className={cn(
-                "flex-1 font-bold text-white h-12",
+                "flex-1 font-black uppercase text-[11px] tracking-widest text-white h-14 rounded-2xl shadow-xl transition-all",
                 selectedUser.is_driver_doc_validated 
-                  ? "bg-red-600 hover:bg-red-700" 
-                  : "bg-green-600 hover:bg-green-700"
+                  ? "bg-red-600 hover:bg-red-700 shadow-red-100" 
+                  : "bg-green-600 hover:bg-green-700 shadow-green-100"
               )}
             >
               {selectedUser.is_driver_doc_validated ? (
-                <XCircle className="w-4 h-4 mr-2" />
+                <XCircle className="w-5 h-5 mr-3" />
               ) : (
-                <CheckCircle className="w-4 h-4 mr-2" />
+                <CheckCircle className="w-5 h-5 mr-3" />
               )}
               {selectedUser.is_driver_doc_validated ? "Invalider le conducteur" : "Approuver le conducteur"}
             </Button>
@@ -128,14 +276,16 @@ export function UserDetails({ selectedUser, onValidate, onBack }: UserDetailsPro
         </CardContent>
       </Card>
 
-      <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 items-start">
-        <User className="w-5 h-5 text-blue-500 mt-0.5" />
+      <div className="bg-blue-50 border border-blue-100 p-5 rounded-[2rem] flex gap-4 items-start shadow-inner">
+        <div className="p-2 bg-blue-100 rounded-xl">
+            <Info className="w-5 h-5 text-blue-600" />
+        </div>
         <div>
-          <h4 className="text-sm font-bold text-blue-900">Information Validation</h4>
-          <p className="text-xs text-blue-700 leading-relaxed mt-1">
+          <h4 className="text-xs font-black uppercase tracking-widest text-blue-900">Protocole de Validation</h4>
+          <p className="text-[11px] text-blue-700 leading-relaxed mt-1 font-medium italic">
             {selectedUser.is_driver_doc_validated 
               ? "Ce conducteur a été validé. Vous pouvez révoquer son accès si les documents sont obsolètes."
-              : "Vérifiez la validité des dates d'expiration avant d'approuver. Une fois validé, il pourra publier des trajets."}
+              : "Utilisez la vérification IA pour détecter les doublons et extraire les numéros officiels. Vérifiez la cohérence entre le nom de profil et le nom sur les documents."}
           </p>
         </div>
       </div>

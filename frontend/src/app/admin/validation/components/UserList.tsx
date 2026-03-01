@@ -80,6 +80,13 @@ export function UserList({
                   )}>
                     {user.uid.slice(0, 8)}...
                   </span>
+                  {user.ai_validation_status && user.ai_validation_status !== 'PENDING' && (
+                    <div className={cn(
+                      "w-1.5 h-1.5 rounded-full ml-auto",
+                      user.ai_validation_status === 'SUCCESS' ? "bg-green-500" : 
+                      user.ai_validation_status === 'WARNING' ? "bg-orange-500" : "bg-red-500"
+                    )} />
+                  )}
                 </div>
               </div>
               {user.is_driver_doc_validated && (

@@ -20,14 +20,20 @@ export function ValidationFilters({
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-muted/30 p-2 rounded-xl border border-border/50">
       <Tabs value={currentStatus} onValueChange={(val) => onUpdateFilters(val)} className="w-full md:w-auto">
-        <TabsList className="bg-background/50 grid grid-cols-3 w-full md:w-[400px]">
-          <TabsTrigger value="pending" className="data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark">
+        <TabsList className="bg-background/50 grid grid-cols-5 w-full md:w-[650px]">
+          <TabsTrigger value="pending" className="data-[state=active]:bg-slate-600 data-[state=active]:text-white text-[9px] font-black uppercase">
             En attente
           </TabsTrigger>
-          <TabsTrigger value="true" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
+          <TabsTrigger value="ai_verified" className="data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark text-[9px] font-black uppercase">
+            IA Vérifiés
+          </TabsTrigger>
+          <TabsTrigger value="ai_alert" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-[9px] font-black uppercase">
+            Alertes IA
+          </TabsTrigger>
+          <TabsTrigger value="true" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-[9px] font-black uppercase">
             Validés
           </TabsTrigger>
-          <TabsTrigger value="all" className="data-[state=active]:bg-klando-burgundy data-[state=active]:text-white">
+          <TabsTrigger value="all" className="data-[state=active]:bg-klando-burgundy data-[state=active]:text-white text-[9px] font-black uppercase">
             Tous
           </TabsTrigger>
         </TabsList>

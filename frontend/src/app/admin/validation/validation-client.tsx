@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ValidationFilters } from "./components/ValidationFilters";
 import { UserList } from "./components/UserList";
 import { UserDetails } from "./components/UserDetails";
+import { validateUserAction } from "./actions";
 
 interface ValidationClientProps {
   pendingUsers: UserListItem[];
@@ -34,12 +35,17 @@ function ValidationClientContent({
   // Track if we should show details on mobile
   const [showMobileDetails, setShowMobileDetails] = useState(false);
 
-  // Reset selected user when the list changes
+  // Reset or sync selected user when the list changes
   useEffect(() => {
     if (pendingUsers.length > 0) {
-      // If no user selected or the selected user is no longer in the list, select first
-      const exists = pendingUsers.some(u => u.uid === selectedUser?.uid);
-      if (!selectedUser || !exists) {
+      // On cherche si l'utilisateur actuellement sélectionné est toujours dans la liste (avec ses nouvelles données)
+      const updatedUser = pendingUsers.find(u => u.uid === selectedUser?.uid);
+      
+      if (updatedUser) {
+        // IMPORTANT: On met à jour avec la nouvelle version (qui contient le rapport IA)
+        setSelectedUser(updatedUser);
+      } else if (!selectedUser) {
+        // Sinon on prend le premier par défaut si rien n'est sélectionné
         setSelectedUser(pendingUsers[0]);
       }
     } else {
@@ -62,8 +68,18 @@ function ValidationClientContent({
     setShowMobileDetails(true);
   };
 
-  const handleValidate = () => {
-    toast.error("Option non disponible pour l'instant");
+  const handleValidate = async () => {
+    if (!selectedUser) return;
+    
+    const newStatus = !selectedUser.is_driver_doc_validated;
+    const res = await validateUserAction(selectedUser.uid, !!newStatus);
+    
+    if (res.success) {
+      toast.success(newStatus ? "Utilisateur validé" : "Validation révoquée");
+      router.refresh();
+    } else {
+      toast.error(res.message || "Erreur lors de la validation");
+    }
   };
 
   const totalPages = Math.ceil(totalCount / pageSize);
