@@ -60,9 +60,13 @@ Les composants lourds (`CommunicationTab`, `MailingTab`, `MapClient`) sont déco
 - [x] Rôle `ia` avec accès restreint.
 - [x] Implémentation des Journaux d'Audit (Audit Logs) pour les actions admin.
 - [x] Module de Chat inter-utilisateurs (Modération et Supervision).
+- [x] Tests et validation des cas limites de matching PostGIS (Direction & Waypoints).
 
 ### TODO 🚧
-- [ ] Tests exhaustifs sur les cas limites de matching PostGIS.
+- [ ] Système de Notifications Desktop pour les nouveaux tickets/messages.
+- [ ] Support Multi-images dans le chat de modération.
+- [ ] Module de Statistiques Financières avancées (Revenus conducteurs vs Klando).
+- [ ] Export PDF des rapports d'activité marketing.
 
 ## Useful Documentation
 - [docs/IA_PAGE_COMMANDS.md](./docs/IA_PAGE_COMMANDS.md) : **Guide d'automatisation pour les agents IA.**
