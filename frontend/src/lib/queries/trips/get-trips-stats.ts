@@ -34,12 +34,11 @@ export async function getTripsStats(): Promise<TripStats> {
   const pendingCount = byStatus.find((s) => s.status === 'PENDING')?.count || 0;
   const cancelledCount = byStatus.find((s) => s.status === 'CANCELLED')?.count || 0;
 
-  // Récupération manuelle du nombre de trajets ayant au moins une transaction SUCCESS
-  // car le RPC ne le donne pas directement par trajet
+  // Récupération manuelle du nombre de trajets ayant au moins un paiement validé
   const { count: paidTripsCount } = await supabase
     .from('trips')
-    .select('trip_id', { count: 'exact', head: true })
-    .not('bookings.transaction_id', 'is', null);
+    .select('trip_id, bookings!inner(transaction!inner(status))', { count: 'exact', head: true })
+    .eq('bookings.transaction.status', 'SUCCESS');
 
   return {
     total_trips: data.trips.total,

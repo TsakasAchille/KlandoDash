@@ -164,13 +164,10 @@ export async function getTripsWithDriver(options: {
   }
 
   // Si on veut seulement les trajets payés, on filtre ceux qui ont au moins une transaction SUCCESS
-  // Note: Ce filtrage est complexe en une seule requête via PostgREST si on veut compter correctement
-  // car filter sur les relations peut réduire les résultats retournés mais pas forcément filter la table parente
-  // SAUF si on utilise !inner join
   if (onlyPaid) {
-    // Utilisation de .not.is.null sur une colonne de la transaction via inner join
+    // Utilisation de !inner join sur les bookings et les transactions pour forcer le filtrage
     // @ts-ignore
-    query = query.not('bookings.transaction_id', 'is', null);
+    query = query.select('*, bookings!inner(transaction!inner(status))').eq('bookings.transaction.status', 'SUCCESS');
   }
 
   if (driverId && driverId !== "all") {
