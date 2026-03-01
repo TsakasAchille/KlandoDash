@@ -15,7 +15,7 @@ interface ChatsClientProps {
   initialMessages: InternalMessage[];
 }
 
-export function ChatsClient({ initialMessages }: ChatsClientProps) {
+export function ChatsClient({ initialMessages = [] }: ChatsClientProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<InternalMessage[]>(initialMessages);
   const [newMessage, setNewMessage] = useState("");
