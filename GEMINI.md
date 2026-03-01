@@ -33,24 +33,31 @@ KlandoDash/
 Les composants lourds (`CommunicationTab`, `MailingTab`, `MapClient`) sont découpés en sous-composants spécialisés (List, Editor, Preview, Sidebar) isolés dans le dossier `features/`.
 
 ### 2. Centre Éditorial (Production Focus)
-- **Interface Split-View** : Navigation à gauche, zone de production à droite (750px fixe pour zéro scroll).
-- **IA Radar Intégrée** : Générateur IA affiché par défaut avec accès direct aux Angles Stratégiques (Génération en 1 clic).
-- **Dual-Mode Social Media** : Support natif des "Posts Visuels" (PNG pur) vs "Posts Standards" (Texte + Media).
+- **Interface Dual-Pane** : Navigation à gauche (largeur 320px fixe), zone de production à droite (scroll indépendant).
+- **IA Génératrice Intégrée** : Accessible directement via le bouton "Nouveau Post", permettant de générer un brouillon complet (titre, contenu, hashtags, idée visuelle) à partir d'un simple sujet.
+- **Support Multi-Plateforme** : TikTok, Instagram, LinkedIn, X, et catégorie "Autre".
 - **Gestion de Corbeille** : Système complet de suppression, restauration et suppression définitive.
 
-### 3. Radar de Matching & Capture
-- **Haute Fidélité** : Utilisation de `preferCanvas: true` dans Leaflet pour garantir un alignement parfait des tracés lors des captures `html2canvas` pour les brouillons.
-- **Auto-Correction** : Les polylines de trajets sont automatiquement inversées si le sens de saisie ne correspond pas au trajet conducteur.
+### 3. IA Data Hub & Automatisation
+- **IA Data Hub (`/ia`)** : Page dédiée fournissant un flux de données brutes pour l'ingestion par des agents IA externes.
+- **Pilotage par URL** : Support des paramètres `?origin=...&dest=...` pour déclencher des recherches automatiques.
+- **Visual Capture Hub** : Pont Base64 permettant à l'IA d'injecter des captures d'écran Facebook directement dans le stockage Supabase pour enrichir les brouillons.
+- **Rôle IA Dédié** : Nouveau profil utilisateur `ia` restreint uniquement à l'Accueil et au Hub de données.
+
+### 4. Radar de Matching & Capture
+- **Haute Fidélité** : Utilisation de `preferCanvas: true` dans Leaflet pour garantir un alignement parfait des tracés lors des captures `html2canvas`.
+- **Auto-Correction** : Inversion automatique des polylines si le sens de saisie diverge du trajet conducteur.
 
 ## Current Status
 
 ### Done ✅
-- [x] Refactorisation SOLID complète (Features directory).
-- [x] Centre Éditorial avec Navigation Collante (Sticky Header).
-- [x] Social Media Workspace (Visual Posts & Trash).
-- [x] Automated Mailing avec capture de carte alignée.
-- [x] High-precision Map Visualization (Directional arrows).
-- [x] Optimisation de l'IA Radar (Inspiration -> Génération immédiate).
+- [x] Refactorisation SOLID complète.
+- [x] Centre Éditorial Responsif (Navigation Mobile par piles vs Desktop colonnes).
+- [x] Unification de la création Social Media (Générateur IA intégré au popup).
+- [x] IA Data Hub avec pilotage par URL et pont Base64 pour images.
+- [x] Support LinkedIn et Catégorie Autre dans les communications.
+- [x] Migration SMTP Google (Nodemailer) pour le mailing.
+- [x] Rôle `ia` avec accès restreint.
 
 ### TODO 🚧
 - [ ] Implémentation du module de Chat inter-utilisateurs.
@@ -58,7 +65,8 @@ Les composants lourds (`CommunicationTab`, `MailingTab`, `MapClient`) sont déco
 - [ ] Tests exhaustifs sur les cas limites de matching PostGIS.
 
 ## Useful Documentation
-- [docs/MARKETING_MODULE.md](./docs/MARKETING_MODULE.md) : **Detailed Marketing Cockpit Guide.**
+- [docs/IA_PAGE_COMMANDS.md](./docs/IA_PAGE_COMMANDS.md) : **Guide d'automatisation pour les agents IA.**
+- [docs/MARKETING_MODULE.md](./docs/MARKETING_MODULE.md) : Detailed Marketing Cockpit Guide.
 - [docs/WEBSITE_INTEGRATION.md](./docs/WEBSITE_INTEGRATION.md) : Guide d'intégration Klando.site.
 - [docs/AI_ARCHITECTURE.md](./docs/AI_ARCHITECTURE.md) : AI & Architecture Guide.
 - [docs/AI_MATCHING_SYSTEM.md](./docs/AI_MATCHING_SYSTEM.md) : Technical matching details.
