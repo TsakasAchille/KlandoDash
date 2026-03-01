@@ -27,6 +27,7 @@ export interface MarketingEmail {
   is_liked?: boolean;
   admin_feedback?: string | null;
   image_url?: string | null;
+  images?: { url: string; description: string }[];
   asset_id?: string | null;
   created_at: string;
   sent_at: string | null;

@@ -135,15 +135,24 @@ export async function sendMarketingEmailAction(id: string) {
 
   if (fetchError || !email) return { success: false, message: "Email introuvable" };
 
-  // Construction du corps HTML avec image si présente
-  const htmlContent = `
-    <div style="font-family: sans-serif; padding: 20px; color: #333; line-height: 1.6;">
-      <div style="margin-bottom: 30px; white-space: pre-wrap;">${email.content}</div>
-      ${email.image_url ? `
+  // Construction du corps HTML avec images
+  const imagesHtml = email.images && email.images.length > 0 
+    ? email.images.map(img => `
+        <div style="margin-top: 20px; border: 1px solid #eee; border-radius: 12px; overflow: hidden; max-width: 600px; background: #f9f9f9;">
+          <img src="${img.url}" alt="${img.description}" style="width: 100%; display: block;" />
+          <div style="padding: 10px; font-size: 11px; color: #666; text-align: center; border-top: 1px solid #eee;">${img.description}</div>
+        </div>
+      `).join('')
+    : (email.image_url ? `
         <div style="margin-top: 20px; border: 1px solid #eee; border-radius: 12px; overflow: hidden; max-width: 600px;">
           <img src="${email.image_url}" alt="Carte de votre trajet" style="width: 100%; display: block;" />
         </div>
-      ` : ''}
+      ` : '');
+
+  const htmlContent = `
+    <div style="font-family: sans-serif; padding: 20px; color: #333; line-height: 1.6;">
+      <div style="margin-bottom: 30px; white-space: pre-wrap;">${email.content}</div>
+      ${imagesHtml}
       <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-size: 12px; color: #999;">
         L'équipe Klando
       </div>

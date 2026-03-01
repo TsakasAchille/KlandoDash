@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   FileText, ChevronRight, ChevronLeft, ImageIcon, Trash2, X, Edit3, Save, Loader2, Plus, Send,
-  HelpCircle, Sparkles
+  HelpCircle, Sparkles, PenLine
 } from "lucide-react";
 import { MarketingEmail } from "@/app/marketing/types";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 interface MailViewerProps {
   email: MarketingEmail;
   onClose: () => void;
-  onUpdate: (id: string, data: { subject: string; content: string }) => Promise<void>;
+  onUpdate: (id: string, data: { subject: string; content: string; images: { url: string; description: string }[] }) => Promise<void>;
   onTrash: (id: string) => void;
   onConvertToDraft: (id: string) => void;
   onSend: (id: string) => void;
@@ -39,10 +39,18 @@ export function MailViewer({
 }: MailViewerProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
-  const [editForm, setEditForm] = useState({ subject: '', content: '' });
+  const [editForm, setEditForm] = useState({ 
+    subject: '', 
+    content: '', 
+    images: [] as { url: string; description: string }[] 
+  });
 
   useEffect(() => {
-    setEditForm({ subject: email.subject, content: email.content });
+    setEditForm({ 
+      subject: email.subject, 
+      content: email.content,
+      images: email.images || (email.image_url ? [{ url: email.image_url, description: 'Image principale' }] : [])
+    });
     setIsEditing(false);
     setShowReasoning(false);
   }, [email]);
@@ -52,11 +60,28 @@ export function MailViewer({
     setIsEditing(false);
   };
 
+  const removeImage = (index: number) => {
+    setEditForm(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateImageDescription = (index: number, desc: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      images: prev.images.map((img, i) => i === index ? { ...img, description: desc } : img)
+    }));
+  };
+
   const insertImage = () => {
     const url = prompt("Entrez l'URL de l'image :");
+    const description = prompt("Entrez une légende pour cette image :", "Capture visuelle");
     if (url) {
-        const imgTag = `<img src="${url}" alt="image" style="max-width: 100%; border-radius: 8px; margin: 10px 0;" />`;
-        setEditForm(prev => ({...prev, content: prev.content + "\n" + imgTag + "\n"}));
+        setEditForm(prev => ({
+          ...prev, 
+          images: [...prev.images, { url, description: description || 'Capture visuelle' }]
+        }));
     }
   };
 
@@ -120,28 +145,79 @@ export function MailViewer({
         )}
 
         {isEditing ? (
-            <div className="h-full flex flex-col gap-4 text-left">
-                <div className="flex items-center gap-2 mb-2">
-                    <Button onClick={insertImage} variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold text-slate-700 gap-2 border-slate-300 hover:bg-slate-50">
-                        <ImageIcon className="w-3.5 h-3.5" /> Ajouter Image
-                    </Button>
+            <div className="h-full flex flex-col gap-6 text-left">
+                <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+                        <ImageIcon className="w-3.5 h-3.5" /> Gérer les images ({editForm.images.length})
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {editForm.images.map((img, idx) => (
+                            <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-2 relative group">
+                                <button 
+                                    onClick={() => removeImage(idx)}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                                <div className="h-24 w-full rounded-lg bg-slate-900 overflow-hidden">
+                                    <img src={img.url} alt="" className="w-full h-full object-contain" />
+                                </div>
+                                <Input 
+                                    value={img.description}
+                                    onChange={(e) => updateImageDescription(idx, e.target.value)}
+                                    className="h-8 text-[10px] font-bold bg-white"
+                                    placeholder="Légende..."
+                                />
+                            </div>
+                        ))}
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={insertImage}
+                            className="h-24 border-dashed border-2 flex flex-col gap-2 rounded-xl text-slate-400 hover:text-purple-600 hover:border-purple-200"
+                        >
+                            <Plus className="w-5 h-5" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Ajouter une capture</span>
+                        </Button>
+                    </div>
                 </div>
-                <Textarea 
-                    value={editForm.content}
-                    onChange={(e) => setEditForm({...editForm, content: e.target.value})}
-                    className="flex-1 min-h-[400px] bg-slate-50 border-slate-300 text-slate-900 p-6 rounded-2xl font-medium leading-relaxed resize-none outline-none focus:ring-2 focus:ring-purple-500/20 text-left"
-                />
+
+                <div className="flex-1 flex flex-col gap-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+                        <PenLine className="w-3.5 h-3.5" /> Contenu du message
+                    </label>
+                    <Textarea 
+                        value={editForm.content}
+                        onChange={(e) => setEditForm({...editForm, content: e.target.value})}
+                        className="flex-1 min-h-[300px] bg-slate-50 border-slate-300 text-slate-900 p-6 rounded-2xl font-medium leading-relaxed resize-none outline-none focus:ring-2 focus:ring-purple-500/20 text-left"
+                    />
+                </div>
             </div>
         ) : (
             <div className="space-y-6 text-left">
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-sm text-slate-800 leading-relaxed font-medium whitespace-pre-wrap italic shadow-sm text-left">
                     {email.content}
                 </div>
-                {email.image_url && (
+                
+                {/* MULTI-IMAGES DISPLAY */}
+                {email.images && email.images.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                    {email.images.map((img, idx) => (
+                      <div key={idx} className="space-y-2">
+                        <div className="rounded-2xl overflow-hidden border-2 border-slate-200 shadow-md bg-white p-1">
+                          <img src={img.url} alt={img.description} className="w-full h-auto object-cover rounded-xl" />
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight text-center italic">
+                          — {img.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : email.image_url ? (
                     <div className="rounded-2xl overflow-hidden border-2 border-slate-200 shadow-lg max-w-[500px] mx-auto group relative bg-white p-2">
                         <img src={email.image_url} alt="Aperçu du trajet" className="w-full h-auto object-cover rounded-xl" />
                     </div>
-                )}
+                ) : null}
             </div>
         )}
       </div>

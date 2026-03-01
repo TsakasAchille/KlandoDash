@@ -106,12 +106,17 @@ export async function getUserInfo(target: string) {
 /**
  * Crée un brouillon de proposition dans le centre éditorial (mailing)
  */
-export async function createPropositionDraft(target: string, subject: string, message: string, imageUrl?: string) {
+export async function createPropositionDraft(
+  target: string, 
+  subject: string, 
+  message: string, 
+  images: { url: string; description: string }[] = []
+) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
   const cleanTarget = target.trim();
-  console.log(`[IA-TOOLS] Creating draft for "${cleanTarget}" by ${session.user?.email}`);
+  console.log(`[IA-TOOLS] Creating draft for "${cleanTarget}" with ${images.length} images`);
 
   const supabase = createServerClient();
   
@@ -147,7 +152,8 @@ export async function createPropositionDraft(target: string, subject: string, me
       status: 'DRAFT',
       created_at: new Date().toISOString(),
       is_ai_generated: true,
-      image_url: imageUrl || null
+      images: images,
+      image_url: images.length > 0 ? images[0].url : null // Fallback legacy
     }])
     .select()
     .single();
@@ -161,9 +167,8 @@ export async function createPropositionDraft(target: string, subject: string, me
     action: 'EMAIL_DRAFT_CREATED',
     entityType: 'MARKETING_EMAIL',
     entityId: draft.id,
-    details: { recipient: recipientEmail, subject, method: 'IA_DATA_HUB' }
+    details: { recipient: recipientEmail, subject, method: 'IA_DATA_HUB', imagesCount: images.length }
   });
 
-  console.log(`[IA-TOOLS] Draft created successfully with ID: ${draft.id} (Image: ${!!imageUrl})`);
   return { success: true, id: draft.id };
 }
