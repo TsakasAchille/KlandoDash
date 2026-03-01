@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useTransition } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ import {
 import { CommunicationTab } from "@/features/marketing/components/tabs/CommunicationTab";
 import { MailingTab } from "@/features/marketing/components/tabs/MailingTab";
 import { CalendarTab } from "@/features/marketing/components/tabs/CalendarTab";
+import { DualPaneSkeleton, CalendarSkeleton } from "@/features/editorial/components/EditorialSkeletons";
 
 // UI / Icons
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ function EditorialClientContent({
 }: EditorialClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   // Tabs state from URL
   const tabParam = searchParams.get("tab") || "comm";
@@ -63,9 +65,11 @@ function EditorialClientContent({
 
   // --- HANDLERS: NAVIGATION ---
   const handleTabChange = (value: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", value);
-    router.replace(url.pathname + url.search, { scroll: false });
+    startTransition(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", value);
+      router.replace(url.pathname + url.search, { scroll: false });
+    });
   };
 
   // --- HANDLERS: ACTIONS ---
@@ -132,8 +136,8 @@ function EditorialClientContent({
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-6 pt-6">
       <Tabs value={tabParam} onValueChange={handleTabChange} className="flex flex-col flex-1 min-h-0 gap-6">
-        {/* HEADER: TABS LIST & MAIN ACTIONS (Non-sticky car le header de page est déjà sticky) */}
-        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-4 bg-white/50 p-2 rounded-2xl sm:rounded-3xl border border-slate-200 backdrop-blur-sm shadow-sm overflow-hidden">
+        {/* HEADER: TABS LIST & MAIN ACTIONS */}
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-4 bg-white/50 p-2 rounded-2xl sm:rounded-3xl border border-slate-200 backdrop-blur-sm shadow-sm overflow-hidden shrink-0">
           <TabsList className="bg-transparent border-none p-0 h-auto gap-1 w-full sm:w-auto">
             <TabsTrigger value="comm" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
               <Megaphone className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Social Media
@@ -145,40 +149,46 @@ function EditorialClientContent({
               <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Mailing
             </TabsTrigger>
           </TabsList>
-
         </div>
 
         {/* --- TABS CONTENT: SMART LOADING --- */}
-
-        <TabsContent value="comm" className="outline-none flex-1 min-h-0">
-          {tabParam === "comm" && (
-            <CommunicationTab
-              comms={comms}
-              isScanning={isScanningComm}
-              onGenerateIdeas={handleCommIdeasScan}
-              onGeneratePost={handleGenerateSocialPost}
-              onPromotePending={handlePromotePending}
-            />
+        <div className="flex-1 min-h-0 relative">
+          {isPending && (
+            <div className="absolute inset-0 z-50 bg-slate-50/20 backdrop-blur-[2px] animate-in fade-in duration-300">
+              {tabParam === 'calendar' ? <CalendarSkeleton /> : <DualPaneSkeleton />}
+            </div>
           )}
-        </TabsContent>
 
-        <TabsContent value="mailing" className="outline-none flex-1 min-h-0">
-          {tabParam === "mailing" && (
-            <MailingTab
-              emails={emails}
-              isScanning={isScanningMailing}
-              sendingEmailId={sendingEmailId}
-              onScan={handleMailingScan}
-              onSendEmail={handleSendEmail}
-            />
-          )}
-        </TabsContent>
+          <TabsContent value="comm" className="outline-none h-full flex-1 min-h-0 m-0">
+            {tabParam === "comm" && (
+              <CommunicationTab
+                comms={comms}
+                isScanning={isScanningComm}
+                onGenerateIdeas={handleCommIdeasScan}
+                onGeneratePost={handleGenerateSocialPost}
+                onPromotePending={handlePromotePending}
+              />
+            )}
+          </TabsContent>
 
-        <TabsContent value="calendar" className="outline-none flex-1 min-h-0">
-          {tabParam === "calendar" && (
-            <CalendarTab comms={comms} emails={emails} />
-          )}
-        </TabsContent>
+          <TabsContent value="mailing" className="outline-none h-full flex-1 min-h-0 m-0">
+            {tabParam === "mailing" && (
+              <MailingTab
+                emails={emails}
+                isScanning={isScanningMailing}
+                sendingEmailId={sendingEmailId}
+                onScan={handleMailingScan}
+                onSendEmail={handleSendEmail}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="calendar" className="outline-none h-full flex-1 min-h-0 m-0">
+            {tabParam === "calendar" && (
+              <CalendarTab comms={comms} emails={emails} />
+            )}
+          </TabsContent>
+        </div>
       </Tabs>
     </div>
   );
