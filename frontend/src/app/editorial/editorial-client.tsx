@@ -34,6 +34,7 @@ import {
   Sparkles, Loader2, PenTool, CheckCircle, 
   Clock
 } from "lucide-react";
+import { RefreshButton } from "@/components/refresh-button";
 import { cn } from "@/lib/utils";
 
 interface EditorialClientProps {
@@ -157,41 +158,47 @@ function EditorialClientContent({
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 gap-6 pt-6">
-      <Tabs value={tabParam} onValueChange={handleTabChange} className="flex flex-col flex-1 min-h-0 gap-6">
+    <div className="flex flex-col flex-1 min-h-0 gap-4 pt-0">
+      <Tabs value={tabParam} onValueChange={handleTabChange} className="flex flex-col flex-1 min-h-0 gap-4">
         {/* HEADER: TABS LIST & MAIN ACTIONS */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-4 bg-white/50 p-2 rounded-2xl sm:rounded-3xl border border-slate-200 backdrop-blur-sm shadow-sm overflow-hidden shrink-0">
-          <TabsList className="bg-transparent border-none p-0 h-auto gap-1 w-full sm:w-auto">
-            <TabsTrigger value="comm" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
-              <Megaphone className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Social Media
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
-              <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Calendrier
-            </TabsTrigger>
-            <TabsTrigger value="mailing" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
-              <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Mailing
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center gap-4">
+            <TabsList className="bg-transparent border-none p-0 h-auto gap-1 w-full sm:w-auto">
+                <TabsTrigger value="comm" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
+                <Megaphone className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Social Media
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
+                <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Calendrier
+                </TabsTrigger>
+                <TabsTrigger value="mailing" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
+                <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Mailing
+                </TabsTrigger>
+            </TabsList>
 
-          {/* TAB-SPECIFIC STATS */}
-          <div className="hidden sm:flex items-center gap-8 px-6 py-1 border-l border-slate-200/60 ml-2">
-            {tabParam === 'comm' && (
-              <>
-                <TabStat icon={PenTool} label="Brouillons" value={commDrafts} color="text-purple-500" />
-                <TabStat icon={Clock} label="Planifiés" value={commScheduled} color="text-orange-500" />
-              </>
-            )}
-            {tabParam === 'mailing' && (
-              <>
-                <TabStat icon={PenTool} label="Brouillons" value={emailDrafts} color="text-purple-500" />
-                <TabStat icon={CheckCircle} label="Envoyés" value={emailSent} color="text-green-500" />
-              </>
-            )}
-            {tabParam === 'calendar' && (
-              <>
-                <TabStat icon={CalendarIcon} label="Événements" value={calendarTotal} color="text-blue-500" />
-              </>
-            )}
+            {/* TAB-SPECIFIC STATS */}
+            <div className="hidden lg:flex items-center gap-8 px-6 py-1 border-l border-slate-200/60 ml-2">
+                {tabParam === 'comm' && (
+                <>
+                    <TabStat icon={PenTool} label="Brouillons" value={commDrafts} color="text-purple-500" />
+                    <TabStat icon={Clock} label="Planifiés" value={commScheduled} color="text-orange-500" />
+                </>
+                )}
+                {tabParam === 'mailing' && (
+                <>
+                    <TabStat icon={PenTool} label="Brouillons" value={emailDrafts} color="text-purple-500" />
+                    <TabStat icon={CheckCircle} label="Envoyés" value={emailSent} color="text-green-500" />
+                </>
+                )}
+                {tabParam === 'calendar' && (
+                <>
+                    <TabStat icon={CalendarIcon} label="Événements" value={calendarTotal} color="text-blue-500" />
+                </>
+                )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <RefreshButton />
           </div>
         </div>
 

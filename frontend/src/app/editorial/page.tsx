@@ -34,18 +34,7 @@ export default async function EditorialPage({ searchParams }: Props) {
   const comms = (commResult.success ? commResult.data : []) as MarketingComm[];
 
   return (
-    <div className="max-w-[1600px] mx-auto flex flex-col h-[calc(100vh-3rem)] px-4 sm:px-6 lg:px-8 pt-4 relative">
-      {/* HEADER ULTRA COMPACT (No Title) */}
-      <div className="flex items-center justify-between gap-4 border-b border-border/40 pb-4 bg-background/95 backdrop-blur z-30 mb-4 shrink-0">
-        <div className="flex items-center gap-6">
-            {/* The space is now empty on the left of the header, keeping the RefreshButton on the right */}
-        </div>
-
-        <div className="flex items-center gap-3">
-            <RefreshButton />
-        </div>
-      </div>
-
+    <div className="max-w-[1600px] mx-auto flex flex-col h-[calc(100vh-3rem)] px-4 sm:px-6 lg:px-8 pt-0 relative">
       <EditorialClient
         initialEmails={emails}
         initialComms={comms}

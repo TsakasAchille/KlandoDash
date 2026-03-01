@@ -15,13 +15,15 @@ export function BackNavigation() {
     // pour ne pas afficher le bouton sur la page d'entrée directe.
     if (typeof window !== "undefined" && window.history.length > 1) {
       // On évite d'afficher le bouton sur les pages "racines" du dashboard
-      const rootPages = ['/', '/map', '/users', '/trips', '/support', '/transactions', '/marketing', '/admin/logs', '/chats'];
+      const rootPages = ['/', '/map', '/users', '/trips', '/support', '/transactions', '/marketing', '/editorial', '/admin/logs', '/chats'];
+      
       if (!rootPages.includes(pathname)) {
         setCanGoBack(true);
       } else {
         // Optionnel: On peut aussi vérifier si on a des query params (ex: ?selected=123)
         // Si oui, on est dans un "détail" même sur une page racine
-        if (window.location.search) {
+        // SAUF pour l'éditorial où les query params servent juste aux onglets
+        if (window.location.search && pathname !== '/editorial') {
             setCanGoBack(true);
         } else {
             setCanGoBack(false);
@@ -33,7 +35,7 @@ export function BackNavigation() {
   if (!canGoBack) return null;
 
   return (
-    <div className="mb-4 animate-in fade-in slide-in-from-left-4 duration-500 hidden lg:block">
+    <div className="mb-2 animate-in fade-in slide-in-from-left-4 duration-500 hidden lg:block">
       <Button
         variant="outline"
         size="sm"
