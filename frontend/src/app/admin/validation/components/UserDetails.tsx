@@ -21,10 +21,11 @@ import { toast } from "sonner";
 interface UserDetailsProps {
   selectedUser: UserListItem | null;
   onValidate: () => void;
+  onAIComplete?: (newStatus: string) => void;
   onBack?: () => void;
 }
 
-export function UserDetails({ selectedUser, onValidate, onBack }: UserDetailsProps) {
+export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: UserDetailsProps) {
   const router = useRouter();
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -42,7 +43,15 @@ export function UserDetails({ selectedUser, onValidate, onBack }: UserDetailsPro
       const res = await analyzeDocumentsAction(selectedUser.uid);
       if (res.success) {
         toast.success("Analyse IA terminée");
-        router.refresh(); // Force Next.js à recharger les props du serveur
+        
+        // Déterminer l'onglet de destination
+        const targetTab = res.status === 'SUCCESS' ? 'ai_verified' : 'ai_alert';
+        
+        if (onAIComplete) {
+            onAIComplete(targetTab);
+        } else {
+            router.refresh();
+        }
       } else {
         toast.error(res.message || "Échec de l'analyse");
       }
