@@ -36,6 +36,7 @@ const adminItems = [
   { href: "/admin/validation", label: "Validation", icon: CheckSquare },
   { href: "/transactions", label: "Transactions", icon: Banknote },
   { href: "/stats", label: "Statistiques", icon: BarChart3 },
+  { href: "/admin/logs", label: "Audit Logs", icon: Database },
   { href: "/admin", label: "Administration", icon: Shield },
 ];
 

@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { createServerClient } from "@/lib/supabase";
 import { sendEmail } from "@/lib/mail";
+import { recordAuditLog } from "@/lib/audit";
 import React from "react";
 
 /**
@@ -39,6 +40,12 @@ export async function searchHistoricalDrivers(origin: string, destination: strin
     console.error("searchHistoricalDrivers error:", error);
     return [];
   }
+
+  await recordAuditLog({
+    action: 'IA_DATA_INGESTION',
+    entityType: 'SYSTEM',
+    details: { search: { origin, destination }, resultsCount: data.length }
+  });
 
   // On garde le trajet le plus récent pour chaque conducteur unique trouvé
   const uniqueDriversMap = new Map();
@@ -149,6 +156,13 @@ export async function createPropositionDraft(target: string, subject: string, me
     console.error("[IA-TOOLS] createPropositionDraft error:", error);
     return { success: false, error: `Erreur DB: ${error.message}` };
   }
+
+  await recordAuditLog({
+    action: 'EMAIL_DRAFT_CREATED',
+    entityType: 'MARKETING_EMAIL',
+    entityId: draft.id,
+    details: { recipient: recipientEmail, subject, method: 'IA_DATA_HUB' }
+  });
 
   console.log(`[IA-TOOLS] Draft created successfully with ID: ${draft.id} (Image: ${!!imageUrl})`);
   return { success: true, id: draft.id };

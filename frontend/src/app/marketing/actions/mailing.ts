@@ -7,6 +7,7 @@ import { askKlandoAI } from "@/lib/gemini";
 import { sendEmail } from "@/lib/mail";
 import React from "react";
 import { EmailCategory, EmailStatus, MarketingEmail } from "../types";
+import { recordAuditLog } from "@/lib/audit";
 import fs from "fs/promises";
 import path from "path";
 
@@ -51,6 +52,13 @@ export async function saveMailingFeedbackAction(id: string, isLiked: boolean, fe
   } catch (err) {
     console.error("[MEMORY UPDATE ERROR]", err);
   }
+
+  await recordAuditLog({
+    action: 'USER_UPDATE',
+    entityType: 'MARKETING_EMAIL',
+    entityId: id,
+    details: { isLiked, hasFeedback: !!feedback }
+  });
 
   revalidatePath("/marketing");
   return { success: true };
@@ -154,6 +162,14 @@ export async function sendMarketingEmailAction(id: string) {
       sent_at: new Date().toISOString(),
       message_id: res.id
     }).eq('id', id);
+
+    await recordAuditLog({
+      action: 'EMAIL_SENT',
+      entityType: 'MARKETING_EMAIL',
+      entityId: id,
+      details: { recipient: email.recipient_email, subject: email.subject }
+    });
+
     revalidatePath("/marketing");
     return { success: true };
   } else {
@@ -179,6 +195,13 @@ export async function moveEmailToTrashAction(id: string) {
     .eq('id', id);
 
   if (error) return { success: false };
+
+  await recordAuditLog({
+    action: 'EMAIL_TRASHED',
+    entityType: 'MARKETING_EMAIL',
+    entityId: id
+  });
+
   revalidatePath("/marketing");
   return { success: true };
 }
@@ -197,6 +220,14 @@ export async function updateMarketingEmailAction(id: string, updates: Partial<Ma
     .eq('id', id);
 
   if (error) return { success: false };
+
+  await recordAuditLog({
+    action: 'USER_UPDATE',
+    entityType: 'MARKETING_EMAIL',
+    entityId: id,
+    details: { updates }
+  });
+
   revalidatePath("/marketing");
   return { success: true };
 }
@@ -231,6 +262,13 @@ export async function createEmailDraftAction(data: {
 
   if (error) return { success: false, message: "Échec de sauvegarde" };
   
+  await recordAuditLog({
+    action: 'EMAIL_DRAFT_CREATED',
+    entityType: 'MARKETING_EMAIL',
+    entityId: draft.id,
+    details: { recipient: data.recipient_email, category: data.category }
+  });
+
   revalidatePath("/marketing");
   return { success: true, id: draft.id };
 }
@@ -318,6 +356,12 @@ export async function generateMailingSuggestionsAction() {
         }))
       );
       if (error) throw error;
+
+      await recordAuditLog({
+        action: 'EMAIL_DRAFT_CREATED',
+        entityType: 'MARKETING_EMAIL',
+        details: { type: 'AI_SUGGESTIONS', count: opportunities.length }
+      });
     }
 
     revalidatePath("/marketing");

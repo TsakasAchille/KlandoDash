@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { askKlandoAI } from "@/lib/gemini";
 import { getDashboardStats } from "@/lib/queries/stats";
 import { CommPlatform, MarketingComm, CommStatus } from "../types";
+import { recordAuditLog } from "@/lib/audit";
 
 /**
  * Génère des idées de communication stratégiques via IA
@@ -37,7 +38,7 @@ export async function generateCommIdeasAction() {
     }
 
     if (ideas && (ideas as IdeaRaw[]).length > 0) {
-      await supabase.from('dash_marketing_communications').insert(
+      const { error: insertError } = await supabase.from('dash_marketing_communications').insert(
         (ideas as IdeaRaw[]).map((i) => ({
           type: 'IDEA',
           title: i.title,
@@ -47,6 +48,14 @@ export async function generateCommIdeasAction() {
           status: 'DRAFT'
         }))
       );
+
+      if (!insertError) {
+        await recordAuditLog({
+          action: 'POST_CREATED',
+          entityType: 'COMMUNICATION',
+          details: { type: 'IDEAS_GENERATION', count: (ideas as IdeaRaw[]).length }
+        });
+      }
     }
 
     revalidatePath("/marketing");
@@ -95,6 +104,13 @@ export async function generateSocialPostAction(platform: CommPlatform, topic: st
     }]).select().single();
 
     if (error) throw error;
+
+    await recordAuditLog({
+      action: 'POST_CREATED',
+      entityType: 'COMMUNICATION',
+      entityId: post.id,
+      details: { platform, topic, method: 'AI_GENERATION' }
+    });
 
     revalidatePath("/marketing");
     revalidatePath("/editorial");
@@ -158,6 +174,13 @@ export async function generatePendingRequestsPostAction(platform: CommPlatform) 
 
     if (error) throw error;
 
+    await recordAuditLog({
+      action: 'POST_CREATED',
+      entityType: 'COMMUNICATION',
+      entityId: post.id,
+      details: { platform, method: 'PENDING_REQUESTS_PROMO' }
+    });
+
     revalidatePath("/marketing");
     revalidatePath("/editorial");
     return { success: true, post };
@@ -195,6 +218,13 @@ export async function createMarketingCommAction(data: Partial<MarketingComm>) {
     return { success: false };
   }
   
+  await recordAuditLog({
+    action: 'POST_CREATED',
+    entityType: 'COMMUNICATION',
+    entityId: post.id,
+    details: { platform: data.platform, title: data.title, method: 'MANUAL' }
+  });
+
   revalidatePath("/marketing");
   revalidatePath("/editorial");
   return { success: true, post };
@@ -242,6 +272,13 @@ export async function updateMarketingCommAction(id: string, updates: Partial<Mar
     return { success: false };
   }
   
+  await recordAuditLog({
+    action: 'POST_UPDATED',
+    entityType: 'COMMUNICATION',
+    entityId: id,
+    details: { updates }
+  });
+
   revalidatePath("/marketing");
   revalidatePath("/editorial");
   return { success: true };
@@ -276,6 +313,12 @@ export async function deleteMarketingCommAction(id: string) {
 
   if (error) return { success: false };
   
+  await recordAuditLog({
+    action: 'POST_DELETED',
+    entityType: 'COMMUNICATION',
+    entityId: id
+  });
+
   revalidatePath("/marketing");
   revalidatePath("/editorial");
   return { success: true };
