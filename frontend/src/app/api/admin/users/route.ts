@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { recordAuditLog } from "@/lib/audit";
 
 // Supabase admin client
 const supabaseAdmin = createClient(
@@ -63,6 +64,13 @@ export async function POST(request: Request) {
     );
   }
 
+  await recordAuditLog({
+    action: 'USER_CREATE',
+    entityType: 'USER',
+    entityId: email,
+    details: { role, added_by: session?.user?.email }
+  });
+
   return NextResponse.json({ user: data });
 }
 
@@ -104,6 +112,13 @@ export async function PATCH(request: Request) {
     );
   }
 
+  await recordAuditLog({
+    action: 'USER_UPDATE',
+    entityType: 'USER',
+    entityId: email,
+    details: { action, ...updateData }
+  });
+
   return NextResponse.json({ success: true });
 }
 
@@ -131,6 +146,12 @@ export async function DELETE(request: Request) {
       { status: 500 }
     );
   }
+
+  await recordAuditLog({
+    action: 'USER_DELETE',
+    entityType: 'USER',
+    entityId: email
+  });
 
   return NextResponse.json({ success: true });
 }
