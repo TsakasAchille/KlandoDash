@@ -41,17 +41,32 @@ export async function getDashUsers(): Promise<DashUser[]> {
 }
 
 /**
- * Récupère tous les journaux d'audit
+ * Récupère tous les journaux d'audit avec filtres optionnels
  */
-export async function getAuditLogs(limit = 100): Promise<AuditLog[]> {
+export async function getAuditLogs(options: { 
+  limit?: number, 
+  adminEmail?: string, 
+  actionType?: string 
+} = {}): Promise<AuditLog[]> {
   noStore();
 
+  const { limit = 100, adminEmail, actionType } = options;
   const supabase = createServerClient();
-  const { data, error } = await supabase
+  
+  let query = supabase
     .from("dash_audit_logs")
     .select("*")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .order("created_at", { ascending: false });
+
+  if (adminEmail && adminEmail !== 'ALL') {
+    query = query.eq('admin_email', adminEmail);
+  }
+
+  if (actionType && actionType !== 'ALL') {
+    query = query.eq('action_type', actionType);
+  }
+
+  const { data, error } = await query.limit(limit);
 
   if (error) {
     console.error("Erreur getAuditLogs:", error);
@@ -59,4 +74,23 @@ export async function getAuditLogs(limit = 100): Promise<AuditLog[]> {
   }
 
   return data || [];
+}
+
+/**
+ * Récupère la liste des administrateurs ayant effectué des actions (pour les filtres)
+ */
+export async function getAuditAdmins(): Promise<string[]> {
+  noStore();
+  const supabase = createServerClient();
+  
+  const { data, error } = await supabase
+    .from("dash_audit_logs")
+    .select("admin_email")
+    .order("admin_email");
+
+  if (error) return [];
+  
+  // Extraire les emails uniques
+  const uniqueEmails = Array.from(new Set(data.map(d => d.admin_email)));
+  return uniqueEmails;
 }
