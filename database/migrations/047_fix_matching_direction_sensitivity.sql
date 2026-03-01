@@ -1,6 +1,9 @@
 -- Migration: Fix Direction Sensitivity in Trip Matching
 -- Description: Ensures matching only returns trips going in the same direction as the passenger.
 
+-- We must DROP before CREATE OR REPLACE because the return signature changed in previous iterations
+DROP FUNCTION IF EXISTS public.find_matching_trips(uuid, double precision);
+
 CREATE OR REPLACE FUNCTION public.find_matching_trips(
     p_request_id uuid,
     p_radius_km double precision DEFAULT 5.0
