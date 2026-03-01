@@ -274,14 +274,6 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
         )}
       </div>
 
-      {/* 3. FLOATING ACTION BUTTON */}
-      <Button
-        onClick={() => setIsPlanModalOpen(true)}
-        className="fixed bottom-10 right-10 w-14 h-14 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-2xl shadow-purple-500/40 border-4 border-white z-[100] transition-transform hover:scale-110 active:scale-95"
-      >
-        <Plus className="w-7 h-7" />
-      </Button>
-
       <EventDetailsModal 
         event={selectedEvent} 
         onClose={() => {
