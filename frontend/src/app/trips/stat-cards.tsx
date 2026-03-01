@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { MiniStatCard } from "@/components/mini-stat-card";
 import { TripStats } from "@/types/trip";
 import { Car, Clock, Play, CheckCircle2, XCircle, Banknote, Globe } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 interface StatCardsProps {
   stats: TripStats;
@@ -13,6 +15,7 @@ interface StatCardsProps {
 export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   const currentStatus = searchParams.get("status") || "all";
   const onlyPaid = searchParams.get("onlyPaid") === "true";
 
@@ -27,11 +30,17 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
     });
     // Reset page on filter change
     newParams.set("page", "1");
-    router.push(`/trips?${newParams.toString()}`);
+    
+    startTransition(() => {
+        router.push(`/trips?${newParams.toString()}`, { scroll: false });
+    });
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+    <div className={cn(
+        "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 transition-opacity duration-300",
+        isPending ? "opacity-70 cursor-wait" : "opacity-100"
+    )}>
       <MiniStatCard 
         title="Total" 
         value={stats.total_trips} 

@@ -21,46 +21,34 @@ interface Props {
 }
 
 export default async function TripsPage({ searchParams }: Props) {
-  const { selected, page, status, search, driverId, minPrice, maxPrice, onlyPaid } = await searchParams;
-  const currentPage = parseInt(page || "1", 10);
-  const isOnlyPaid = onlyPaid === "true";
-  const pageSize = 20;
+  const { selected } = await searchParams;
 
-  // Pre-fetch data with filters and pagination
-  const [{ trips: tripsData, totalCount }, stats, selectedTripData, publicPending] = await Promise.all([
+  // On récupère une grande quantité de trajets récents pour permettre le filtrage client fluide
+  const [tripsResult, stats, selectedTripData, publicPending] = await Promise.all([
     getTripsWithDriver({
-      page: currentPage,
-      pageSize,
-      status,
-      search,
-      driverId,
-      minPrice: minPrice ? parseInt(minPrice, 10) : undefined,
-      maxPrice: maxPrice ? parseInt(maxPrice, 10) : undefined,
-      onlyPaid: isOnlyPaid,
+      page: 1,
+      pageSize: 500, // On prend les 500 derniers trajets
     }),
     getTripsStats(),
-    selected ? getTripById(selected) : null,
+    selected ? getTripById(selected) : Promise.resolve(null),
     getPublicPendingTrips(),
   ]);
 
-  // Convert to legacy Trip format for compatibility with table component
+  const { trips: tripsData } = tripsResult;
+
+  // Convert to legacy Trip format
   const trips = tripsData.map(toTrip);
 
   return (
-    <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8 pt-4 relative">
-      {/* Action Bar Floating */}
+    <div className="max-w-[1600px] mx-auto space-y-8 pt-4 px-4 sm:px-6 lg:px-8">
       <div className="absolute top-4 right-8 z-10">
         <RefreshButton />
       </div>
 
-      {/* Stats */}
-      <StatCards stats={stats} publicPendingCount={publicPending.length} />
-
       <TripsPageClient
-        trips={trips}
-        totalCount={totalCount}
-        currentPage={currentPage}
-        pageSize={pageSize}
+        initialTrips={trips}
+        stats={stats}
+        publicPendingCount={publicPending.length}
         initialSelectedId={selected || null}
         initialSelectedTripDetail={selectedTripData}
       />

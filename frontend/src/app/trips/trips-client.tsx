@@ -1,93 +1,106 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Trip, TripDetail } from "@/types/trip";
 import { TripTable } from "@/components/trips/trip-table";
 import { TripDetails } from "@/components/trips/trip-details";
+import { StatCards } from "./stat-cards";
+import { TripStats } from "@/types/trip";
 
 interface TripsPageClientProps {
-  trips: Trip[];
-  totalCount: number;
-  currentPage: number;
-  pageSize: number;
+  initialTrips: Trip[];
+  stats: TripStats;
+  publicPendingCount: number;
   initialSelectedId: string | null;
   initialSelectedTripDetail: TripDetail | null;
 }
 
-// Abstraction pour scroll (future-proof pour virtualisation)
-function scrollToRow(id: string, prefix: string = "trip") {
-  const element = document.querySelector(`[data-${prefix}-id="${id}"]`);
-  if (element) {
-    element.scrollIntoView({ behavior: "smooth", block: "center" });
-    // Highlight temporaire
-    element.classList.add("ring-2", "ring-klando-gold");
-    setTimeout(() => {
-      element.classList.remove("ring-2", "ring-klando-gold");
-    }, 2000);
-  }
-}
-
-function TripsPageClientContent({
-  trips,
-  totalCount,
-  currentPage,
-  pageSize,
+function TripsPageClientContent({ 
+  initialTrips,
+  stats,
+  publicPendingCount,
   initialSelectedId,
-  initialSelectedTripDetail,
+  initialSelectedTripDetail 
 }: TripsPageClientProps) {
   const router = useRouter();
-  const [detailedTrip, setDetailedTrip] = useState<TripDetail | null>(initialSelectedTripDetail);
-
-  // Sync URL on selection change (replace pour éviter pollution historique)
-  const handleSelectTrip = useCallback(
-    (trip: Trip) => {
-      const url = new URL(window.location.href);
-      url.searchParams.set("selected", trip.trip_id);
-      router.replace(url.pathname + url.search, { scroll: false });
-    },
-    [router]
-  );
-
-  // Scroll to selected row on mount
-  useEffect(() => {
-    if (initialSelectedId) {
-      // Petit délai pour laisser le DOM se rendre
-      setTimeout(() => scrollToRow(initialSelectedId, "trip"), 100);
-    }
-  }, [initialSelectedId]);
+  const searchParams = useSearchParams();
   
+  // États locaux pour le filtrage instantané
+  const [selectedTrip, setSelectedTrip] = useState<TripDetail | null>(initialSelectedTripDetail);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
+
+  // Récupération des filtres depuis l'URL (pour garder le lien partageable)
+  const statusFilter = searchParams.get("status") || "all";
+  const onlyPaidFilter = searchParams.get("onlyPaid") === "true";
+  const searchFilter = searchParams.get("search")?.toLowerCase() || "";
+
+  // FILTRAGE LOCAL (Instantané !)
+  const filteredTrips = useMemo(() => {
+    return initialTrips.filter(trip => {
+      const matchesStatus = statusFilter === "all" || trip.status === statusFilter;
+      const matchesPaid = !onlyPaidFilter || trip.has_successful_transaction;
+      const matchesSearch = !searchFilter || 
+        trip.departure_city.toLowerCase().includes(searchFilter) ||
+        trip.destination_city.toLowerCase().includes(searchFilter) ||
+        trip.trip_id.toLowerCase().includes(searchFilter);
+      
+      return matchesStatus && matchesPaid && matchesSearch;
+    });
+  }, [initialTrips, statusFilter, onlyPaidFilter, searchFilter]);
+
+  // Synchronisation si l'URL change (ex: bouton retour navigateur)
   useEffect(() => {
-    setDetailedTrip(initialSelectedTripDetail);
-  }, [initialSelectedTripDetail]);
+    setSelectedId(initialSelectedId);
+    if (!initialSelectedId) setSelectedTrip(null);
+  }, [initialSelectedId]);
+
+  const handleSelectTrip = (trip: Trip) => {
+    setSelectedId(trip.trip_id);
+    // On met à jour l'URL sans recharger la page
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("selected", trip.trip_id);
+    router.push(`?${params.toString()}`, { scroll: false });
+    
+    // On pourrait charger le détail complet ici si pas déjà présent
+    // Pour l'instant on simule avec les données de la liste
+    setSelectedTrip(trip as unknown as TripDetail);
+  };
 
   return (
-    <div className="flex flex-col gap-10">
-      {/* Table - Full width */}
-      <div className="min-w-0"> {/* min-w-0 pour permettre le scroll */}
-        <TripTable
-          trips={trips}
-          totalCount={totalCount}
-          currentPage={currentPage}
-          pageSize={pageSize}
-          selectedTripId={detailedTrip?.trip_id || null}
-          initialSelectedId={initialSelectedId}
-          onSelectTrip={handleSelectTrip}
-        />
-      </div>
+    <div className="space-y-6">
+      {/* Stats cliquables */}
+      <StatCards stats={stats} publicPendingCount={publicPendingCount} />
 
-      {/* Details - Below the table, full width */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {detailedTrip ? (
-          <TripDetails trip={detailedTrip} />
-        ) : (
-          <div className="flex items-center justify-center py-20 rounded-[2rem] border border-dashed border-border bg-card/30">
-            <p className="text-muted-foreground font-medium">
-              Sélectionnez un trajet pour voir les détails
-            </p>
-          </div>
-        )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Tableau (2/3 de l'écran) */}
+        <div className="lg:col-span-2 space-y-6">
+          <TripTable 
+            trips={filteredTrips} 
+            totalCount={filteredTrips.length}
+            currentPage={1}
+            pageSize={filteredTrips.length}
+            selectedTripId={selectedId}
+            onSelectTrip={handleSelectTrip}
+          />
+        </div>
+
+        {/* Détails (1/3 de l'écran) */}
+        <div className="lg:col-span-1">
+          {selectedId && selectedTrip ? (
+            <TripDetails trip={selectedTrip} />
+          ) : (
+            <div className="h-[400px] flex items-center justify-center rounded-[2.5rem] border border-dashed border-border/40 bg-card/20 backdrop-blur-sm">
+              <div className="text-center space-y-2 opacity-40">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                    <Loader2 className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest">Sélectionnez un trajet</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -105,4 +118,3 @@ export function TripsPageClient(props: TripsPageClientProps) {
     </Suspense>
   );
 }
-
