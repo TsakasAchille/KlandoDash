@@ -11,6 +11,7 @@ import { CommPlatform } from "@/app/marketing/types";
 import { createMarketingCommAction, generateSocialPostAction } from "@/app/marketing/actions/communication";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PlatformLogo } from "./PostViewer";
 
 interface PostComposeProps {
   isOpen: boolean;
@@ -109,12 +110,13 @@ export function PostCompose({ isOpen, onOpenChange, onCreated }: PostComposeProp
                     type="button"
                     onClick={() => setPlatform(p.id)}
                     className={cn(
-                      "flex-1 min-w-[80px] flex items-center justify-center py-2.5 rounded-xl border transition-all text-[9px] font-black uppercase tracking-tighter",
+                      "flex-1 min-w-[80px] flex items-center justify-center gap-2 py-2.5 rounded-xl border transition-all text-[9px] font-black uppercase tracking-tighter",
                       platform === p.id
                         ? "bg-slate-900 border-slate-900 text-white shadow-md"
                         : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
                     )}
                   >
+                    <PlatformLogo platform={p.id} className="w-3.5 h-3.5" />
                     {p.label}
                   </button>
                 ))}
