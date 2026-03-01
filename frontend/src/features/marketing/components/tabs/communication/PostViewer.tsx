@@ -26,6 +26,7 @@ interface PostViewerProps {
   onTrash: (id: string) => void;
   onRestore: (id: string) => void;
   onDeletePerm: (id: string) => void;
+  onUpdate?: (post: MarketingComm) => void;
   onMobileBack?: () => void;
 }
 
@@ -35,6 +36,7 @@ export function PostViewer({
   onTrash,
   onRestore,
   onDeletePerm,
+  onUpdate,
   onMobileBack
 }: PostViewerProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -44,6 +46,7 @@ export function PostViewer({
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastLoadedId = useRef<string | null>(null);
 
   // Reset form when post changes (like MailViewer)
   useEffect(() => {
@@ -55,7 +58,13 @@ export function PostViewer({
       platform: post.platform,
       image_url: post.image_url || null
     });
-    setIsEditing(false);
+    
+    // Auto-edit mode ONLY when switching to a brand new post ID
+    if (lastLoadedId.current !== post.id) {
+        const isBrandNew = !post.content && post.status === 'DRAFT' && post.title === "Nouvelle publication";
+        setIsEditing(isBrandNew);
+        lastLoadedId.current = post.id;
+    }
   }, [post]);
 
   const isInTrash = post.status === 'TRASH';
@@ -63,10 +72,15 @@ export function PostViewer({
   const handleSave = async () => {
     setIsUpdating(true);
     try {
-      const res = await updateMarketingCommAction(post.id, { ...editForm, status: 'DRAFT' });
+      const updates = { ...editForm, status: 'DRAFT' as const };
+      const res = await updateMarketingCommAction(post.id, updates);
       if (res.success) {
         toast.success("Publication mise à jour !");
         setIsEditing(false);
+        // Notifier le parent avec le post fusionné
+        if (onUpdate) {
+            onUpdate({ ...post, ...updates });
+        }
       }
     } catch {
       toast.error("Erreur de sauvegarde");

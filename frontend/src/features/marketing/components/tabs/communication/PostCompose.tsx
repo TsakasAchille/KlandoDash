@@ -91,10 +91,10 @@ export function PostCompose({ isOpen, onOpenChange, onCreated }: PostComposeProp
         <div className="flex flex-col">
           <DialogHeader className="p-8 pb-6 bg-white border-b border-slate-200 text-left">
             <DialogTitle className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3 text-left">
-              <Plus className="w-5 h-5 text-purple-600" /> Nouveau Post
+              <Sparkles className="w-5 h-5 text-purple-600" /> Assistant de Génération IA
             </DialogTitle>
             <DialogDescription className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-1 text-left">
-              Choisissez entre création manuelle ou assistée par IA
+              Décrivez votre sujet et laissez l&apos;IA rédiger votre publication
             </DialogDescription>
           </DialogHeader>
 
@@ -121,59 +121,29 @@ export function PostCompose({ isOpen, onOpenChange, onCreated }: PostComposeProp
               </div>
             </div>
 
-            {/* CHOICE 1: IA GENERATION */}
-            <div className="p-5 bg-purple-50 rounded-2xl border border-purple-100 space-y-4">
+            {/* IA GENERATION AREA */}
+            <div className="p-6 bg-purple-50 rounded-[2rem] border border-purple-100 space-y-4 shadow-inner">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-600" />
-                <span className="text-[10px] font-black text-purple-700 uppercase tracking-widest">Générer avec l'IA</span>
+                <span className="text-[10px] font-black text-purple-700 uppercase tracking-widest">Sujet de la publication</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <div className="relative">
-                  <Target className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
-                  <Input
+                  <Target className="absolute left-3 top-4 w-4 h-4 text-purple-400" />
+                  <textarea
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    placeholder="Sujet (ex: Promo weekend, Tips carpool...)"
-                    className="bg-white border-purple-200 rounded-xl text-slate-900 h-11 pl-10 text-sm focus:ring-purple-500/20"
+                    placeholder="Ex: Une promotion pour le weekend prochain vers Saint-Louis avec -10% pour les 3 premières réservations..."
+                    className="w-full bg-white border-purple-200 rounded-2xl text-slate-900 min-h-[100px] p-4 pl-10 text-sm focus:ring-purple-500/20 outline-none resize-none transition-all"
                   />
                 </div>
                 <Button
                   onClick={handleAIGenerate}
-                  disabled={isGenerating || isSaving || !topic.trim()}
-                  className="w-full h-11 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-[10px] uppercase tracking-widest gap-2 shadow-lg shadow-purple-500/20"
+                  disabled={isGenerating || !topic.trim()}
+                  className="w-full h-14 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black text-[11px] uppercase tracking-widest gap-3 shadow-xl shadow-purple-500/20 group"
                 >
-                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  Générer le post complet
-                </Button>
-              </div>
-            </div>
-
-            {/* DIVIDER */}
-            <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-slate-100"></div>
-                <span className="flex-shrink mx-4 text-[9px] font-black text-slate-300 uppercase tracking-widest">OU</span>
-                <div className="flex-grow border-t border-slate-100"></div>
-            </div>
-
-            {/* CHOICE 2: MANUAL CREATION */}
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-700 uppercase pl-1 tracking-widest flex items-center gap-2">
-                <Type className="w-3 h-3 text-slate-400" /> Création manuelle (Titre)
-              </label>
-              <div className="flex gap-2">
-                <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Titre interne..."
-                    className="bg-slate-50 border-slate-300 rounded-xl text-slate-900 h-11 flex-1 text-sm outline-none"
-                />
-                <Button
-                    onClick={handleCreate}
-                    variant="outline"
-                    disabled={isGenerating || isSaving}
-                    className="h-11 rounded-xl border-slate-200 font-black text-[10px] uppercase tracking-widest px-6"
-                >
-                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Créer vide"}
+                  {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 transition-transform group-hover:scale-110" />}
+                  Générer maintenant
                 </Button>
               </div>
             </div>

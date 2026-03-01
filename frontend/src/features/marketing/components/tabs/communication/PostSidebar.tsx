@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Sparkles } from "lucide-react";
+import { Search, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommStatus } from "@/app/marketing/types";
 
@@ -14,6 +14,7 @@ interface PostSidebarProps {
   onShowGenerator: () => void;
   searchTerm: string;
   setSearchTerm: (val: string) => void;
+  isCreating?: boolean;
 }
 
 export function PostSidebar({
@@ -22,17 +23,27 @@ export function PostSidebar({
   onCompose,
   onShowGenerator,
   searchTerm,
-  setSearchTerm
+  setSearchTerm,
+  isCreating = false
 }: PostSidebarProps) {
   return (
     <div className="w-full flex flex-col gap-3 shrink-0">
-      <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
         <Button
           onClick={onCompose}
-          className="w-full h-14 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[10px] tracking-widest gap-3 shadow-xl shadow-purple-200 group"
+          disabled={isCreating}
+          className="flex-1 h-14 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[10px] tracking-widest gap-3 shadow-xl shadow-purple-200 group"
         >
-          <PlusIcon className="w-4 h-4 transition-transform group-hover:rotate-90" />
+          {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusIcon className="w-4 h-4 transition-transform group-hover:rotate-90" />}
           Nouveau Post
+        </Button>
+        <Button
+          onClick={onShowGenerator}
+          variant="outline"
+          className="w-14 h-14 rounded-2xl border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-purple-600 shadow-sm group transition-all"
+          title="Assistant IA"
+        >
+          <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
         </Button>
       </div>
 

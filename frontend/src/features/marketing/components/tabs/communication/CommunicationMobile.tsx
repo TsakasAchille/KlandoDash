@@ -20,6 +20,7 @@ interface CommunicationMobileProps {
   onRestore: (id: string) => void;
   onDeletePerm: (id: string) => void;
   handleMobileBack: () => void;
+  isCreating?: boolean;
 }
 
 export function CommunicationMobile({
@@ -35,7 +36,8 @@ export function CommunicationMobile({
   onTrash,
   onRestore,
   onDeletePerm,
-  handleMobileBack
+  handleMobileBack,
+  isCreating = false
 }: CommunicationMobileProps) {
   
   // Sur mobile, on est soit en mode liste, soit en mode détail (Post)
@@ -50,9 +52,10 @@ export function CommunicationMobile({
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             onCompose={onCompose}
-            onShowGenerator={() => {}} // Disabled here
+            onShowGenerator={() => {}} // Could be enabled if needed
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
+            isCreating={isCreating}
           />
           <PostList
             comms={filteredComms}

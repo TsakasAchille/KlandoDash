@@ -6,11 +6,12 @@ import { MarketingComm, CommPlatform, CommStatus } from "@/app/marketing/types";
 import {
   trashMarketingCommAction,
   restoreMarketingCommAction,
-  deleteMarketingCommAction
+  deleteMarketingCommAction,
+  createMarketingCommAction
 } from "@/app/marketing/actions/communication";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { PenLine } from "lucide-react";
+import { PenLine, Loader2 } from "lucide-react";
 
 // Sous-composants SOLID
 import { PostSidebar } from "./communication/PostSidebar";
@@ -38,10 +39,43 @@ export function CommunicationTab({
   const [statusFilter, setStatusFilter] = useState<CommStatus | 'ALL'>('DRAFT');
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [newlyCreatedPost, setNewlyCreatedPost] = useState<MarketingComm | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => { setIsClient(true); }, []);
+
+  const handleDirectCreate = async () => {
+    setIsCreating(true);
+    try {
+      const res = await createMarketingCommAction({
+        title: "Nouvelle publication",
+        content: "",
+        hashtags: [],
+        visual_suggestion: "",
+        platform: 'INSTAGRAM',
+        image_url: null,
+        status: 'DRAFT',
+        type: 'POST'
+      });
+      if (res.success && res.post) {
+        setNewlyCreatedPost(res.post as MarketingComm);
+        setSelectedId(res.post.id);
+        setStatusFilter('DRAFT'); 
+        router.refresh();
+      }
+    } catch {
+      toast.error("Erreur de création");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleUpdatePost = (updatedPost: MarketingComm) => {
+    setNewlyCreatedPost(updatedPost);
+    router.refresh();
+  };
 
   const filteredComms = useMemo(() => {
     return comms.filter(c => {
@@ -53,9 +87,20 @@ export function CommunicationTab({
   }, [comms, statusFilter, searchTerm]);
 
   const activePost = useMemo(() => {
-    if (selectedId) return comms.find(c => c.id === selectedId) || null;
+    if (selectedId) {
+      // Priorité au post venant d'être créé ou mis à jour localement
+      if (newlyCreatedPost && newlyCreatedPost.id === selectedId) return newlyCreatedPost;
+      return comms.find(c => c.id === selectedId) || null;
+    }
     return null;
-  }, [comms, selectedId]);
+  }, [comms, selectedId, newlyCreatedPost]);
+
+  // Si on sélectionne manuellement un autre post, on vide le newlyCreatedPost
+  useEffect(() => {
+    if (selectedId && newlyCreatedPost && newlyCreatedPost.id !== selectedId) {
+      setNewlyCreatedPost(null);
+    }
+  }, [selectedId, newlyCreatedPost]);
 
   const commonProps = {
     comms,
@@ -68,6 +113,7 @@ export function CommunicationTab({
     setSearchTerm,
     onSelect: (id: string) => { setSelectedId(id || null); },
     onCompose: () => setIsComposeOpen(true),
+    onUpdate: handleUpdatePost,
     onTrash: async (id: string) => {
         const res = await trashMarketingCommAction(id);
         if (res.success) { 
@@ -112,10 +158,11 @@ export function CommunicationTab({
           <PostSidebar
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
-            onCompose={() => setIsComposeOpen(true)}
-            onShowGenerator={() => {}} // Not used anymore
+            onCompose={handleDirectCreate}
+            onShowGenerator={() => setIsComposeOpen(true)}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
+            isCreating={isCreating}
           />
           <div className="flex-1 min-h-0 w-full overflow-hidden">
             <PostList
@@ -136,6 +183,7 @@ export function CommunicationTab({
               onTrash={commonProps.onTrash}
               onRestore={commonProps.onRestore}
               onDeletePerm={commonProps.onDeletePerm}
+              onUpdate={handleUpdatePost}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-10 text-center space-y-4 opacity-40">
@@ -155,6 +203,8 @@ export function CommunicationTab({
       <div className="flex lg:hidden w-full flex-col">
         <CommunicationMobile 
             {...commonProps} 
+            onCompose={handleDirectCreate}
+            isCreating={isCreating}
             handleMobileBack={() => { setSelectedId(null); }}
         />
       </div>
