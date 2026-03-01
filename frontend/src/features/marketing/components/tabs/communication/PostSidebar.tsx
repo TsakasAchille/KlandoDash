@@ -34,17 +34,6 @@ export function PostSidebar({
           <PlusIcon className="w-4 h-4 transition-transform group-hover:rotate-90" />
           Nouveau Post
         </Button>
-
-        <Button
-          variant="outline"
-          onClick={onShowGenerator}
-          className={cn(
-            "w-full h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest gap-3 border-2 transition-all",
-            "border-slate-100 text-slate-400 hover:bg-slate-50 hover:border-slate-200"
-          )}
-        >
-          <Sparkles className="w-4 h-4" /> IA Radar Inspiration
-        </Button>
       </div>
 
       <div className="relative">

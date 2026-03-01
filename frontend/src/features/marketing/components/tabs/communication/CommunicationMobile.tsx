@@ -4,7 +4,6 @@ import { MarketingComm, CommPlatform } from "@/app/marketing/types";
 import { PostSidebar } from "./PostSidebar";
 import { PostList } from "./PostList";
 import { PostViewer } from "./PostViewer";
-import { AIGenerator } from "./AIGenerator";
 import { cn } from "@/lib/utils";
 
 interface CommunicationMobileProps {
@@ -15,22 +14,11 @@ interface CommunicationMobileProps {
   setStatusFilter: (v: any) => void;
   searchTerm: string;
   setSearchTerm: (v: string) => void;
-  selectedPlatform: CommPlatform;
-  setSelectedPlatform: (p: CommPlatform) => void;
-  topic: string;
-  setTopic: (t: string) => void;
-  isScanning: boolean;
-  ideas: MarketingComm[];
-  onGenerateIdeas: () => void;
-  onGenerate: () => void;
-  onPromote: () => void;
   onSelect: (id: string) => void;
   onCompose: () => void;
   onTrash: (id: string) => void;
   onRestore: (id: string) => void;
   onDeletePerm: (id: string) => void;
-  mobileShowGenerator: boolean;
-  setMobileShowGenerator: (v: boolean) => void;
   handleMobileBack: () => void;
 }
 
@@ -42,27 +30,16 @@ export function CommunicationMobile({
   setStatusFilter,
   searchTerm,
   setSearchTerm,
-  selectedPlatform,
-  setSelectedPlatform,
-  topic,
-  setTopic,
-  isScanning,
-  ideas,
-  onGenerateIdeas,
-  onGenerate,
-  onPromote,
   onSelect,
   onCompose,
   onTrash,
   onRestore,
   onDeletePerm,
-  mobileShowGenerator,
-  setMobileShowGenerator,
   handleMobileBack
 }: CommunicationMobileProps) {
   
-  // Sur mobile, on est soit en mode liste, soit en mode détail (Post ou Générateur)
-  const isDetailActive = !!(selectedId || mobileShowGenerator);
+  // Sur mobile, on est soit en mode liste, soit en mode détail (Post)
+  const isDetailActive = !!selectedId;
 
   return (
     <div className="flex flex-col gap-4 animate-in fade-in duration-500">
@@ -73,7 +50,7 @@ export function CommunicationMobile({
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             onCompose={onCompose}
-            onShowGenerator={() => setMobileShowGenerator(true)}
+            onShowGenerator={() => {}} // Disabled here
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
           />
@@ -94,23 +71,6 @@ export function CommunicationMobile({
           onTrash={onTrash}
           onRestore={onRestore}
           onDeletePerm={onDeletePerm}
-          onMobileBack={handleMobileBack}
-        />
-      )}
-
-      {/* MODE DÉTAIL (GÉNÉRATEUR) */}
-      {mobileShowGenerator && !selectedId && (
-        <AIGenerator
-          selectedPlatform={selectedPlatform}
-          setSelectedPlatform={setSelectedPlatform}
-          topic={topic}
-          setTopic={setTopic}
-          onGenerate={onGenerate}
-          onPromote={onPromote}
-          isScanning={isScanning}
-          ideas={ideas}
-          onGenerateIdeas={onGenerateIdeas}
-          onUseTheme={(theme) => setTopic(theme)}
           onMobileBack={handleMobileBack}
         />
       )}

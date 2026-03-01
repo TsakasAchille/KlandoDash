@@ -10,13 +10,13 @@ import {
 } from "@/app/marketing/actions/communication";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PenLine } from "lucide-react";
 
 // Sous-composants SOLID
 import { PostSidebar } from "./communication/PostSidebar";
 import { PostList } from "./communication/PostList";
 import { PostViewer } from "./communication/PostViewer";
 import { PostCompose } from "./communication/PostCompose";
-import { AIGenerator } from "./communication/AIGenerator";
 import { CommunicationMobile } from "./communication/CommunicationMobile";
 
 interface CommunicationTabProps {
@@ -38,10 +38,7 @@ export function CommunicationTab({
   const [statusFilter, setStatusFilter] = useState<CommStatus | 'ALL'>('DRAFT');
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedPlatform, setSelectedPlatform] = useState<CommPlatform>("INSTAGRAM");
-  const [topic, setTopic] = useState("");
   const [isComposeOpen, setIsComposeOpen] = useState(false);
-  const [mobileShowGenerator, setMobileShowGenerator] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => { setIsClient(true); }, []);
@@ -69,32 +66,7 @@ export function CommunicationTab({
     setStatusFilter,
     searchTerm,
     setSearchTerm,
-    selectedPlatform,
-    setSelectedPlatform,
-    topic,
-    setTopic,
-    isScanning,
-    ideas: comms.filter(c => c.type === 'IDEA' && c.status !== 'TRASH'),
-    onGenerateIdeas,
-    onGenerate: async (forcedTopic?: string) => {
-        const post = await onGeneratePost(selectedPlatform, forcedTopic || topic);
-        if (post) {
-          setStatusFilter('DRAFT');
-          router.refresh();
-          setTimeout(() => setSelectedId(post.id), 200);
-          setMobileShowGenerator(false);
-        }
-    },
-    onPromote: async () => {
-        const post = await onPromotePending(selectedPlatform);
-        if (post) {
-          setStatusFilter('DRAFT');
-          router.refresh();
-          setTimeout(() => setSelectedId(post.id), 200);
-          setMobileShowGenerator(false);
-        }
-    },
-    onSelect: (id: string) => { setSelectedId(id || null); setMobileShowGenerator(false); },
+    onSelect: (id: string) => { setSelectedId(id || null); },
     onCompose: () => setIsComposeOpen(true),
     onTrash: async (id: string) => {
         const res = await trashMarketingCommAction(id);
@@ -129,10 +101,10 @@ export function CommunicationTab({
   return (
     <div className="w-full h-full flex flex-col min-h-0">
       
-      {/* ──── VERSION DESKTOP FORCEE (Affichage uniquement si large) ──── */}
-      <div className="hidden lg:flex flex-row flex-nowrap w-full h-[calc(100vh-250px)] gap-8 items-start overflow-hidden">
+      {/* ──── VERSION DESKTOP FORCEE ──── */}
+      <div className="hidden lg:flex flex-row w-full h-full gap-8 items-start overflow-hidden border-2 border-transparent">
         
-        {/* COLONNE GAUCHE (SIDEBAR + LISTE) - LARGEUR BLOQUÉE */}
+        {/* COLONNE GAUCHE (SIDEBAR + LISTE) */}
         <div 
           style={{ width: '320px', minWidth: '320px', maxWidth: '320px' }}
           className="flex-none flex flex-col gap-4 h-full overflow-hidden border-r border-slate-100 pr-2"
@@ -141,7 +113,7 @@ export function CommunicationTab({
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             onCompose={() => setIsComposeOpen(true)}
-            onShowGenerator={() => { setSelectedId(null); setMobileShowGenerator(false); }}
+            onShowGenerator={() => {}} // Not used anymore
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
           />
@@ -155,7 +127,7 @@ export function CommunicationTab({
           </div>
         </div>
 
-        {/* COLONNE DROITE (VIEWER OU GÉNÉRATEUR) - OCCUPE TOUT LE RESTE */}
+        {/* COLONNE DROITE (VIEWER) */}
         <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden bg-slate-50/30 rounded-[2.5rem]">
           {selectedId && activePost ? (
             <PostViewer
@@ -166,23 +138,24 @@ export function CommunicationTab({
               onDeletePerm={commonProps.onDeletePerm}
             />
           ) : (
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <AIGenerator
-                {...commonProps}
-                onMobileBack={undefined}
-              />
+            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center space-y-4 opacity-40">
+              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center">
+                <PenLine className="w-8 h-8 text-slate-400" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-900">Espace de Production</p>
+                <p className="text-[10px] font-medium text-slate-500 italic max-w-xs mx-auto">Sélectionnez une publication à gauche pour l&apos;éditer ou cliquez sur &quot;Nouveau Post&quot; pour commencer.</p>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* ──── VERSION MOBILE FORCEE (Affichage uniquement si petit) ──── */}
+      {/* ──── VERSION MOBILE FORCEE ──── */}
       <div className="flex lg:hidden w-full flex-col">
         <CommunicationMobile 
             {...commonProps} 
-            mobileShowGenerator={mobileShowGenerator}
-            setMobileShowGenerator={setMobileShowGenerator}
-            handleMobileBack={() => { setSelectedId(null); setMobileShowGenerator(false); }}
+            handleMobileBack={() => { setSelectedId(null); }}
         />
       </div>
 
