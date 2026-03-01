@@ -10,6 +10,7 @@ export function useTripFilters() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const statusFilter = searchParams.get("status") || "all";
   const maxPriceFilter = searchParams.get("maxPrice") || "";
+  const onlyPaidFilter = searchParams.get("onlyPaid") === "true";
 
   const updateFilters = useCallback((newParams: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -54,6 +55,7 @@ export function useTripFilters() {
     setSearchTerm,
     statusFilter,
     maxPriceFilter,
+    onlyPaidFilter,
     showAdvanced,
     setShowAdvanced,
     isPending,

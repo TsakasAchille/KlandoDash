@@ -95,14 +95,22 @@ export function TripTableRow({ trip, isSelected, onSelect }: TripTableRowProps) 
         </div>
       </TableCell>
       <TableCell className="px-6 text-right">
-        <span
-          className={cn(
-            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm",
-            statusColors[trip.status] || "bg-gray-500/10 text-gray-400 border-gray-500/20"
+        <div className="flex flex-col items-end gap-1">
+          <span
+            className={cn(
+              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm",
+              statusColors[trip.status] || "bg-gray-500/10 text-gray-400 border-gray-500/20"
+            )}
+          >
+            {trip.status}
+          </span>
+          {trip.has_successful_transaction && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500 text-white text-[8px] font-black uppercase tracking-tighter shadow-sm animate-in zoom-in-90 duration-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              Payé
+            </span>
           )}
-        >
-          {trip.status}
-        </span>
+        </div>
       </TableCell>
     </TableRow>
   );

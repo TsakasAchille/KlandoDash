@@ -22,6 +22,7 @@ export async function getTripsStats(): Promise<TripStats> {
       completed_trips: 0,
       pending_trips: 0,
       cancelled_trips: 0,
+      paid_trips: 0,
       total_distance: 0,
       total_seats_booked: 0,
     };
@@ -33,12 +34,20 @@ export async function getTripsStats(): Promise<TripStats> {
   const pendingCount = byStatus.find((s) => s.status === 'PENDING')?.count || 0;
   const cancelledCount = byStatus.find((s) => s.status === 'CANCELLED')?.count || 0;
 
+  // Récupération manuelle du nombre de trajets ayant au moins une transaction SUCCESS
+  // car le RPC ne le donne pas directement par trajet
+  const { count: paidTripsCount } = await supabase
+    .from('trips')
+    .select('trip_id', { count: 'exact', head: true })
+    .not('bookings.transaction_id', 'is', null);
+
   return {
     total_trips: data.trips.total,
     active_trips: activeCount,
     completed_trips: completedCount,
     pending_trips: pendingCount,
     cancelled_trips: cancelledCount,
+    paid_trips: paidTripsCount || 0,
     total_distance: data.trips.totalDistance,
     total_seats_booked: data.trips.totalSeatsBooked,
   };

@@ -53,6 +53,9 @@ export interface TripDetail extends TripListItem {
   driver_price: number | null;
   auto_confirmation: boolean | null;
   created_at: string | null;
+  // Transaction info
+  has_successful_transaction?: boolean;
+  total_paid_amount?: number;
   // Driver info (joined)
   driver_name: string | null;
   driver_photo: string | null;
@@ -65,6 +68,8 @@ export interface TripDetail extends TripListItem {
     uid: string;
     display_name: string | null;
     photo_url: string | null;
+    has_paid?: boolean;
+    amount_paid?: number;
   }>;
 }
 
@@ -75,6 +80,7 @@ export interface TripStats {
   completed_trips: number;
   pending_trips: number;
   cancelled_trips: number;
+  paid_trips: number;
   total_distance: number;
   total_seats_booked: number;
 }
@@ -139,6 +145,8 @@ export interface Trip {
     uid: string;
     display_name: string | null;
     photo_url: string | null;
+    has_paid?: boolean;
+    amount_paid?: number;
   }>;
   driver_id: string;
   driver_name: string;
@@ -146,6 +154,9 @@ export interface Trip {
   trip_polyline?: string;
   created_at: string;
   viator_income?: number;
+  // Added fields
+  has_successful_transaction?: boolean;
+  total_paid_amount?: number;
 }
 
 // Convertir TripDetail vers Trip (legacy)
@@ -172,5 +183,7 @@ export function toTrip(detail: TripDetail): Trip {
     trip_polyline: detail.polyline || undefined,
     created_at: detail.created_at || "",
     viator_income: detail.driver_price || 0,
+    has_successful_transaction: detail.has_successful_transaction,
+    total_paid_amount: detail.total_paid_amount,
   };
 }

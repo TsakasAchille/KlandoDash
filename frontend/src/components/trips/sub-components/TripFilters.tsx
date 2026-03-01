@@ -10,13 +10,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, Filter, X, Banknote, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Loader2, Filter, X, Banknote, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 
 interface TripFiltersProps {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
   statusFilter: string;
   maxPriceFilter: string;
+  onlyPaidFilter: boolean;
   showAdvanced: boolean;
   setShowAdvanced: (value: boolean) => void;
   isPending: boolean;
@@ -33,6 +34,7 @@ export function TripFilters({
   setSearchTerm,
   statusFilter,
   maxPriceFilter,
+  onlyPaidFilter,
   showAdvanced,
   setShowAdvanced,
   isPending,
@@ -150,10 +152,23 @@ export function TripFilters({
             />
           </div>
 
-          <div className="flex items-center">
-            <p className="text-[10px] text-muted-foreground italic">
-              La pagination est désormais gérée côté serveur pour plus de fluidité.
-            </p>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <CheckCircle2 className="w-3 h-3 text-green-500" /> État du paiement
+            </label>
+            <div className="flex items-center gap-2 h-8">
+              <Button
+                variant={onlyPaidFilter ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "h-8 text-[9px] font-black uppercase tracking-tighter px-3 rounded-lg transition-all",
+                  onlyPaidFilter && "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                )}
+                onClick={() => updateFilters({ onlyPaid: onlyPaidFilter ? "false" : "true", page: "1" })}
+              >
+                {onlyPaidFilter ? "Afficher tous les trajets" : "Seulement les payés"}
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-col justify-end gap-2">

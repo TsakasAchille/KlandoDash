@@ -6,7 +6,7 @@ import { TripDetail } from "@/types/trip";
 import { formatDate, formatDistance, formatPrice, cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Banknote, Car, Leaf, ExternalLink, Map, ShieldCheck, Star } from "lucide-react";
+import { Banknote, Car, Leaf, ExternalLink, Map, ShieldCheck, Star, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 
 // Import dynamique pour éviter les erreurs SSR avec Leaflet
@@ -149,49 +149,92 @@ export function TripDetails({ trip }: TripDetailsProps) {
         </Card>
 
         {/* Passagers & Impact */}
-        <Card className="border-border/40">
-          <CardContent className="p-3">
-            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Passagers ({trip.passengers.length}/{trip.seats_published})</p>
-            
-            <div className="space-y-2 mb-4">
-              {trip.passengers.map((p) => (
-                <div key={p.uid} className="flex items-center justify-between p-2 rounded-xl bg-secondary/30 border border-border/20 group hover:border-klando-gold/30 transition-all">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {p.photo_url ? (
-                      <div className="relative w-8 h-8 flex-shrink-0">
-                        <Image src={p.photo_url} alt="" fill className="rounded-lg object-cover border border-border/50" sizes="32px" />
+        <div className="flex flex-col gap-4">
+          <Card className="border-border/40">
+            <CardContent className="p-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Passagers ({trip.passengers.length}/{trip.seats_published})</p>
+              
+              <div className="space-y-2">
+                {trip.passengers.map((p) => (
+                  <div key={p.uid} className="flex items-center justify-between p-2 rounded-xl bg-secondary/30 border border-border/20 group hover:border-klando-gold/30 transition-all">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {p.photo_url ? (
+                        <div className="relative w-8 h-8 flex-shrink-0">
+                          <Image src={p.photo_url} alt="" fill className="rounded-lg object-cover border border-border/50" sizes="32px" />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground text-[10px] font-black flex-shrink-0 border border-border/50">
+                          {(p.display_name || "P").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex flex-col min-w-0 leading-tight">
+                        <span className="text-xs font-bold truncate text-foreground group-hover:text-klando-gold transition-colors">{p.display_name || "Passager"}</span>
+                        {p.has_paid ? (
+                          <span className="text-[8px] font-black text-green-500 uppercase tracking-tighter">Paiement effectué</span>
+                        ) : (
+                          <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-tighter">Non payé</span>
+                        )}
                       </div>
-                    ) : (
-                      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground text-[10px] font-black flex-shrink-0 border border-border/50">
-                        {(p.display_name || "P").charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <span className="text-xs font-bold truncate text-foreground group-hover:text-klando-gold transition-colors">{p.display_name || "Passager"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {p.has_paid && (
+                        <span className="text-[9px] font-black text-slate-900 bg-white/50 px-1.5 py-0.5 rounded border border-slate-200">
+                          {formatPrice(p.amount_paid || 0)}
+                        </span>
+                      )}
+                      <Link href={`/users?selected=${p.uid}`}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 p-0 hover:bg-klando-gold/10 hover:text-klando-gold">
+                          <ExternalLink className="w-3 h-3" />
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-                  <Link href={`/users?selected=${p.uid}`}>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 p-0 hover:bg-klando-gold/10 hover:text-klando-gold">
-                      <ExternalLink className="w-3 h-3" />
-                    </Button>
-                  </Link>
+                ))}
+                {trip.passengers.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground italic py-4 text-center">Aucune réservation confirmée</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Finances Section */}
+          <Card className="border-border/40 bg-slate-900 text-white overflow-hidden">
+            <div className="p-3 bg-gradient-to-r from-slate-800 to-slate-900 flex items-center justify-between">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Suivi Financier</p>
+              {trip.has_successful_transaction && (
+                <div className="flex items-center gap-1.5 text-green-400">
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span className="text-[8px] font-black uppercase">Fonds collectés</span>
                 </div>
-              ))}
-              {trip.passengers.length === 0 && (
-                <p className="text-[10px] text-muted-foreground italic py-4 text-center">Aucune réservation confirmée</p>
               )}
             </div>
-            
-            <div className="flex items-center justify-between pt-2 border-t border-border/10">
-              <div className="flex items-center gap-1.5 text-green-500">
-                <Leaf className="w-3 h-3" />
-                <span className="text-[10px] font-bold">{co2Saved} kg CO₂</span>
+            <CardContent className="p-4 flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black uppercase text-slate-500 mb-1">Total Passagers</span>
+                  <span className="text-xl font-black tracking-tight">{formatPrice(trip.total_paid_amount || 0)}</span>
+                </div>
+                <div className="flex flex-col text-right">
+                  <span className="text-[8px] font-black uppercase text-slate-500 mb-1">Revenu Chauffeur</span>
+                  <span className="text-xl font-black tracking-tight text-klando-gold">{formatPrice(trip.driver_price || 0)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 text-klando-gold">
-                <Banknote className="w-3 h-3" />
-                <span className="text-[10px] font-bold">{formatPrice(trip.driver_price || 0)} <span className="text-[8px] opacity-60">NET</span></span>
+              
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black uppercase text-slate-500">Marge Klando</span>
+                  <span className="text-sm font-black text-green-400">
+                    +{formatPrice((trip.total_paid_amount || 0) - (trip.driver_price || 0))}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-400 italic">
+                  <Leaf className="w-3 h-3 text-green-500" />
+                  <span className="text-[9px] font-bold">{co2Saved} kg CO₂ économisés</span>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

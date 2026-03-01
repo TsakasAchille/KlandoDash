@@ -1,5 +1,8 @@
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import React from "react";
 
 interface MiniStatCardProps {
   title: string;
@@ -7,6 +10,8 @@ interface MiniStatCardProps {
   icon: React.ElementType;
   color: "blue" | "green" | "purple" | "red" | "gold";
   description?: string;
+  onClick?: () => void;
+  active?: boolean;
 }
 
 const themes = {
@@ -17,10 +22,17 @@ const themes = {
   gold: "text-klando-gold bg-klando-gold/10 border-klando-gold/20",
 };
 
-export function MiniStatCard({ title, value, icon: Icon, color, description }: MiniStatCardProps) {
+export function MiniStatCard({ title, value, icon: Icon, color, description, onClick, active }: MiniStatCardProps) {
   return (
-    <Card className="border-none shadow-sm bg-card/50 backdrop-blur-md overflow-hidden relative group min-w-[140px] flex-1">
-      {/* Glow Effect (instead of sharp circle) */}
+    <Card 
+      className={cn(
+        "border-none shadow-sm bg-card/50 backdrop-blur-md overflow-hidden relative group min-w-[140px] flex-1 transition-all duration-300",
+        onClick && "cursor-pointer hover:shadow-md hover:translate-y-[-2px]",
+        active && "ring-2 ring-klando-gold bg-klando-gold/5"
+      )}
+      onClick={onClick}
+    >
+      {/* Glow Effect */}
       <div className={cn(
         "absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 transition-all duration-700 group-hover:opacity-40 z-0",
         themes[color].split(' ')[1]

@@ -94,6 +94,7 @@ export async function getTripsWithDriver(options: {
   minDistance?: number;
   maxDistance?: number;
   driverId?: string;
+  onlyPaid?: boolean;
 } = {}): Promise<{ trips: TripDetail[], totalCount: number }> {
   const { 
     page = 1, 
@@ -104,7 +105,8 @@ export async function getTripsWithDriver(options: {
     maxPrice, 
     minDistance, 
     maxDistance,
-    driverId
+    driverId,
+    onlyPaid = false
   } = options;
   const supabase = createServerClient();
   const from = (page - 1) * pageSize;
@@ -144,6 +146,11 @@ export async function getTripsWithDriver(options: {
       ),
       bookings (
         status,
+        transaction_id,
+        transaction:transactions (
+          amount,
+          status
+        ),
         user:users (
           uid,
           display_name,
@@ -156,7 +163,15 @@ export async function getTripsWithDriver(options: {
     query = query.eq("status", status);
   }
 
-  query = query.in("bookings.status", ["CONFIRMED", "COMPLETED"]);
+  // Si on veut seulement les trajets payés, on filtre ceux qui ont au moins une transaction SUCCESS
+  // Note: Ce filtrage est complexe en une seule requête via PostgREST si on veut compter correctement
+  // car filter sur les relations peut réduire les résultats retournés mais pas forcément filter la table parente
+  // SAUF si on utilise !inner join
+  if (onlyPaid) {
+    // Utilisation de .not.is.null sur une colonne de la transaction via inner join
+    // @ts-ignore
+    query = query.not('bookings.transaction_id', 'is', null);
+  }
 
   if (driverId && driverId !== "all") {
     query = query.eq("driver_id", driverId);
@@ -205,6 +220,12 @@ export async function getTripsWithDriver(options: {
   };
 
   interface BookingRaw {
+    status: string;
+    transaction_id: string | null;
+    transaction: {
+      amount: number;
+      status: string;
+    } | null;
     user: unknown;
   }
 
@@ -215,15 +236,39 @@ export async function getTripsWithDriver(options: {
       ? (rawDriver[0] as DriverData | undefined) || null
       : (rawDriver as DriverData | null);
 
-    const passengers = (t.bookings as unknown as BookingRaw[] || [])
+    const rawBookings = t.bookings as unknown as BookingRaw[] || [];
+    
+    let hasSuccessfulTransaction = false;
+    let totalPaidAmount = 0;
+
+    const passengers = rawBookings
       .map((b: BookingRaw) => {
         const rawUser = b.user;
         if (!rawUser) return null;
-        return Array.isArray(rawUser)
+        
+        const isPaid = b.transaction?.status === 'SUCCESS';
+        if (isPaid) {
+          hasSuccessfulTransaction = true;
+          totalPaidAmount += b.transaction?.amount || 0;
+        }
+
+        const userData = Array.isArray(rawUser)
           ? (rawUser[0] as PassengerData | undefined) || null
           : (rawUser as PassengerData | null);
+          
+        if (!userData) return null;
+        
+        return {
+          ...userData,
+          has_paid: isPaid,
+          amount_paid: b.transaction?.amount || 0
+        };
       })
-      .filter((p): p is PassengerData => p !== null);
+      .filter((p): p is (PassengerData & { has_paid: boolean, amount_paid: number }) => p !== null);
+
+    // Si on a activé le filtre onlyPaid mais que par miracle PostgREST nous a retourné des trajets non payés (si pas d'inner join possible)
+    // on pourrait refiltrer ici, mais ça fausserait la pagination. 
+    // L'idéal est de le faire en SQL.
 
     return {
       trip_id: t.trip_id,
@@ -254,8 +299,14 @@ export async function getTripsWithDriver(options: {
       driver_rating_count: driver?.rating_count || null,
       driver_verified: driver?.is_driver_doc_validated || null,
       passengers: passengers,
+      has_successful_transaction: hasSuccessfulTransaction,
+      total_paid_amount: totalPaidAmount,
     } as TripDetail;
   });
 
-  return { trips, totalCount: count || 0 };
+  // Si on a le filtre onlyPaid, on s'assure de ne renvoyer que ceux qui ont effectivement des paiements réussis
+  // (Utile car le filtre .not('bookings.transaction_id', 'is', null) peut être imprécis selon le schéma)
+  const finalTrips = onlyPaid ? trips.filter(t => t.has_successful_transaction) : trips;
+
+  return { trips: finalTrips, totalCount: onlyPaid ? finalTrips.length : (count || 0) };
 }

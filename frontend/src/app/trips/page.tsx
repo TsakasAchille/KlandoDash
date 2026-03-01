@@ -2,9 +2,8 @@ import { getTripsWithDriver, getTripById, getTripsStats } from "@/lib/queries/tr
 import { getPublicPendingTrips } from "@/lib/queries/site-requests";
 import { toTrip } from "@/types/trip";
 import { TripsPageClient } from "./trips-client";
-import { Car, CheckCircle2, Play, Globe, Clock, XCircle } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
-import { MiniStatCard } from "@/components/mini-stat-card";
+import { StatCards } from "./stat-cards";
 
 export const dynamic = "force-dynamic";
 
@@ -17,12 +16,14 @@ interface Props {
     driverId?: string;
     minPrice?: string;
     maxPrice?: string;
+    onlyPaid?: string;
   }>;
 }
 
 export default async function TripsPage({ searchParams }: Props) {
-  const { selected, page, status, search, driverId, minPrice, maxPrice } = await searchParams;
+  const { selected, page, status, search, driverId, minPrice, maxPrice, onlyPaid } = await searchParams;
   const currentPage = parseInt(page || "1", 10);
+  const isOnlyPaid = onlyPaid === "true";
   const pageSize = 20;
 
   // Pre-fetch data with filters and pagination
@@ -35,6 +36,7 @@ export default async function TripsPage({ searchParams }: Props) {
       driverId,
       minPrice: minPrice ? parseInt(minPrice, 10) : undefined,
       maxPrice: maxPrice ? parseInt(maxPrice, 10) : undefined,
+      onlyPaid: isOnlyPaid,
     }),
     getTripsStats(),
     selected ? getTripById(selected) : null,
@@ -52,45 +54,7 @@ export default async function TripsPage({ searchParams }: Props) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <MiniStatCard 
-          title="Total" 
-          value={stats.total_trips} 
-          icon={Car} 
-          color="gold" 
-        />
-        <MiniStatCard 
-          title="En attente" 
-          value={stats.pending_trips} 
-          icon={Clock} 
-          color="blue" 
-        />
-        <MiniStatCard 
-          title="Actifs" 
-          value={stats.active_trips} 
-          icon={Play} 
-          color="gold" 
-        />
-        <MiniStatCard 
-          title="Terminés" 
-          value={stats.completed_trips} 
-          icon={CheckCircle2} 
-          color="green" 
-        />
-        <MiniStatCard 
-          title="Annulés" 
-          value={stats.cancelled_trips} 
-          icon={XCircle} 
-          color="red" 
-        />
-        <MiniStatCard 
-          title="Visibles (Site)" 
-          value={publicPending.length} 
-          icon={Globe} 
-          color="blue" 
-          description="En attente sur le site"
-        />
-      </div>
+      <StatCards stats={stats} publicPendingCount={publicPending.length} />
 
       <TripsPageClient
         trips={trips}
