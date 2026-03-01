@@ -78,7 +78,7 @@ export function LogsClient({ initialLogs, admins }: LogsClientProps) {
     <div className="space-y-6">
       {/* FILTERS BAR */}
       <div className="bg-white border border-slate-200 p-4 rounded-3xl shadow-sm flex flex-col md:flex-row gap-4 items-center">
-        <div className="flex items-center gap-3 flex-1 w-full min-w-0">
+        <div className="flex items-center gap-3 flex-1 w-full min-w-0 text-left">
             <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input 
@@ -128,32 +128,32 @@ export function LogsClient({ initialLogs, admins }: LogsClientProps) {
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-              <TableHead className="w-[180px] text-[10px] font-black uppercase tracking-widest">Date</TableHead>
-              <TableHead className="w-[200px] text-[10px] font-black uppercase tracking-widest">Administrateur</TableHead>
-              <TableHead className="w-[180px] text-[10px] font-black uppercase tracking-widest">Action</TableHead>
-              <TableHead className="w-[120px] text-[10px] font-black uppercase tracking-widest">Entité</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest">Détails</TableHead>
+              <TableHead className="w-[180px] text-[10px] font-black uppercase tracking-widest py-5 pl-8 text-left">Date</TableHead>
+              <TableHead className="w-[200px] text-[10px] font-black uppercase tracking-widest text-left">Administrateur</TableHead>
+              <TableHead className="w-[180px] text-[10px] font-black uppercase tracking-widest text-left">Action</TableHead>
+              <TableHead className="w-[120px] text-[10px] font-black uppercase tracking-widest text-left">Entité</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest text-left">Détails</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredLogs.map((log) => (
               <TableRow key={log.id} className="hover:bg-slate-50 transition-colors group">
-                <TableCell className="text-[11px] font-bold text-slate-500 tabular-nums">
+                <TableCell className="text-[11px] font-bold text-slate-500 tabular-nums pl-8 text-left">
                   {format(new Date(log.created_at), 'dd MMM yyyy • HH:mm:ss', { locale: fr })}
                 </TableCell>
-                <TableCell className="text-xs font-black text-slate-900 truncate max-w-[200px]">
+                <TableCell className="text-xs font-black text-slate-900 truncate max-w-[200px] text-left">
                   {log.admin_email}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-left">
                   {getActionBadge(log.action_type)}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-left">
                   <div className="flex items-center gap-2">
                     {getActionIcon(log.action_type)}
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{log.entity_type}</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-[11px] text-slate-600 font-medium">
+                <TableCell className="text-[11px] text-slate-600 font-medium text-left">
                   <div className="max-w-md truncate group-hover:whitespace-normal group-hover:overflow-visible transition-all">
                     {Object.entries(log.details || {}).map(([key, val]) => (
                       <span key={key} className="mr-3">
