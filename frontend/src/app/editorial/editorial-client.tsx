@@ -31,12 +31,28 @@ import { DualPaneSkeleton, CalendarSkeleton } from "@/features/editorial/compone
 import { Button } from "@/components/ui/button";
 import { 
   Megaphone, Mail, Calendar as CalendarIcon, 
-  Sparkles, Loader2
+  Sparkles, Loader2, PenTool, CheckCircle, 
+  Clock
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface EditorialClientProps {
   initialEmails: MarketingEmail[];
   initialComms: MarketingComm[];
+}
+
+function TabStat({ icon: Icon, label, value, color }: { icon: any, label: string, value: number, color: string }) {
+  return (
+    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-500">
+      <div className={cn("p-1.5 rounded-lg bg-slate-50", color.replace('text-', 'bg-') + '/10')}>
+        <Icon className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5", color)} />
+      </div>
+      <div className="text-left">
+        <p className="text-[9px] sm:text-[10px] font-black leading-none">{value}</p>
+        <p className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{label}</p>
+      </div>
+    </div>
+  );
 }
 
 function EditorialClientContent({ 
@@ -53,6 +69,13 @@ function EditorialClientContent({
   // Data state
   const [emails, setEmails] = useState<MarketingEmail[]>(initialEmails);
   const [comms, setComms] = useState<MarketingComm[]>(initialComms);
+
+  // --- STATS CALCULATIONS ---
+  const commDrafts = comms.filter(c => (c.status === 'DRAFT' || c.status === 'NEW') && c.type === 'POST').length;
+  const commScheduled = comms.filter(c => c.scheduled_at !== null && c.type === 'POST').length;
+  const emailDrafts = emails.filter(e => e.status === 'DRAFT').length;
+  const emailSent = emails.filter(e => e.status === 'SENT').length;
+  const calendarTotal = comms.filter(c => c.scheduled_at !== null).length + emails.filter(e => e.status === 'SENT').length; // Simplifié pour le calendrier
   
   // Loading states
   const [isScanningMailing, setIsScanningMailing] = useState(false);
@@ -149,6 +172,27 @@ function EditorialClientContent({
               <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Mailing
             </TabsTrigger>
           </TabsList>
+
+          {/* TAB-SPECIFIC STATS */}
+          <div className="hidden sm:flex items-center gap-8 px-6 py-1 border-l border-slate-200/60 ml-2">
+            {tabParam === 'comm' && (
+              <>
+                <TabStat icon={PenTool} label="Brouillons" value={commDrafts} color="text-purple-500" />
+                <TabStat icon={Clock} label="Planifiés" value={commScheduled} color="text-orange-500" />
+              </>
+            )}
+            {tabParam === 'mailing' && (
+              <>
+                <TabStat icon={PenTool} label="Brouillons" value={emailDrafts} color="text-purple-500" />
+                <TabStat icon={CheckCircle} label="Envoyés" value={emailSent} color="text-green-500" />
+              </>
+            )}
+            {tabParam === 'calendar' && (
+              <>
+                <TabStat icon={CalendarIcon} label="Événements" value={calendarTotal} color="text-blue-500" />
+              </>
+            )}
+          </div>
         </div>
 
         {/* --- TABS CONTENT: SMART LOADING --- */}

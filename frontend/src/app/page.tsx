@@ -22,18 +22,12 @@ export default async function Home() {
   const activeTrips = summary.trips.byStatus.find(s => s.status === 'ACTIVE')?.count || 0;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 pb-16 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-700">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border/40 pb-8">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-black tracking-tight uppercase bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">Tableau de Bord</h1>
-          <p className="text-sm text-muted-foreground font-medium">
-            Bonjour, <span className="text-klando-gold font-bold text-base ml-1">{session?.user?.name?.split(' ')[0] || 'Admin'}</span>. Ravi de vous revoir.
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto space-y-10 pb-16 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-700 pt-10 relative">
+      {/* Action Bar Floating */}
+      <div className="absolute top-4 right-8 z-10">
         <RefreshButton />
       </div>
-
+      
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPICard 

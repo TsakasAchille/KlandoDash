@@ -18,19 +18,9 @@ export default async function SiteRequestsPage() {
   ]);
 
   return (
-    <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/40 pb-6">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-black tracking-tight uppercase flex items-center gap-3">
-            <Globe className="w-8 h-8 text-klando-gold" />
-            Demandes Site
-            <SiteRequestsInfo />
-          </h1>
-          <p className="text-sm text-muted-foreground font-medium">
-            Intentions de voyage (Aujourd&apos;hui & Futur) collectées sur le site vitrine
-          </p>
-        </div>
+    <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8 pt-4 relative">
+      {/* Action Bar Floating */}
+      <div className="absolute top-4 right-8 z-10">
         <RefreshButton />
       </div>
 

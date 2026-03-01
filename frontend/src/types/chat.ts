@@ -17,3 +17,29 @@ export interface InternalChannel {
   last_message?: string;
   last_timestamp?: string;
 }
+
+export interface Conversation {
+  trip_id: string;
+  departure_name: string;
+  destination_name: string;
+  last_message: string;
+  last_timestamp: string;
+  participant_ids: string[];
+  participants: {
+    uid: string;
+    display_name: string;
+    photo_url?: string;
+    role: string;
+  }[];
+}
+
+export interface ChatMessage {
+  id?: string;
+  sender_id: string;
+  message: string;
+  timestamp: string;
+  sender?: {
+    display_name?: string;
+    photo_url?: string;
+  };
+}

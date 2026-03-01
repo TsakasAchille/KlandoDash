@@ -47,6 +47,7 @@ export interface DashboardStats {
     totalAmount: number;
     byStatus: { status: string; count: number }[];
     byType: { type: string; count: number }[];
+    trends?: { label: string; revenue: number; volume: number }[];
   };
   revenue: RevenueStats;
   cashFlow: CashFlowStats;

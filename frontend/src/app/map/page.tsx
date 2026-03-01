@@ -41,35 +41,27 @@ export default async function MapPage({ searchParams }: MapPageProps) {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
-      {/* Header Stylisé */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between p-4 sm:p-6 border-b border-border/40 gap-4 bg-card/50 backdrop-blur-sm z-20 relative">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight uppercase flex items-center gap-3">
-            <MapIcon className="w-6 h-6 sm:w-8 sm:h-8 text-klando-gold" />
-            Carte Live
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-            Visualisation temps réel de la flotte et des intentions
-          </p>
+      {/* Header Compact pour les Stats et Actions */}
+      <div className="flex items-center justify-between p-4 border-b border-border/40 bg-card/50 backdrop-blur-sm z-20 relative">
+        <div className="flex gap-2">
+          <div className="px-3 py-1 rounded-lg bg-secondary/80 border border-border/50 text-[10px] font-bold flex items-center gap-2">
+            <MapIcon className="w-3 h-3 text-klando-gold" />
+            {stats.total_trips} TRAJETS
+          </div>
+          <div className="px-3 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-500 text-[10px] font-bold flex items-center gap-2">
+            <Users className="w-3 h-3 text-purple-500" />
+            {siteRequests.length} DEMANDES
+          </div>
         </div>
         
-        <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-          <div className="flex gap-2">
-            <div className="px-2 py-1 sm:px-3 sm:py-1 rounded-lg bg-secondary/80 border border-border/50 text-[10px] sm:text-xs font-bold flex items-center gap-2">
-              <MapIcon className="w-3 h-3 text-klando-gold" />
-              {stats.total_trips} TRAJETS
-            </div>
-            <div className="px-2 py-1 sm:px-3 sm:py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-500 text-[10px] sm:text-xs font-bold flex items-center gap-2">
-              <Users className="w-3 h-3 text-purple-500" />
-              {siteRequests.length} DEMANDES
-            </div>
-          </div>
-          <RefreshButton />
+        {/* Floating Actions */}
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <RefreshButton />
         </div>
       </div>
 
       {/* Client Component - Map prend tout l'espace restant */}
-      <div className="flex-1 relative overflow-hidden h-[calc(100vh-140px)]">
+      <div className="flex-1 relative overflow-hidden h-[calc(100vh-80px)]">
         <Suspense fallback={
           <div className="w-full h-full flex flex-col items-center justify-center bg-card/50 backdrop-blur-md">
             <Loader2 className="w-10 h-10 text-klando-gold animate-spin mb-4" />

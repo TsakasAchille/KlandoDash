@@ -19,17 +19,7 @@ export default async function AuditLogsPage() {
   ]);
 
   return (
-    <div className="max-w-7xl mx-auto p-8 space-y-8 animate-in fade-in duration-500">
-      <header className="flex justify-between items-center border-b border-slate-200 pb-6">
-        <div className="text-left">
-          <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
-            <Shield className="w-7 h-7 text-klando-gold" />
-            Journaux d&apos;Audit
-          </h1>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Historique des actions administratives</p>
-        </div>
-      </header>
-
+    <div className="max-w-7xl mx-auto p-8 space-y-8 animate-in fade-in duration-500 pt-4">
       <LogsClient initialLogs={logs} admins={admins} />
     </div>
   );
