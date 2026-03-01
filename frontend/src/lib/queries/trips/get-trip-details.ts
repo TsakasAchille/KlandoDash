@@ -45,6 +45,11 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
       ),
       bookings (
         status,
+        transaction_id,
+        transaction:transactions (
+          amount,
+          status
+        ),
         user:users (
           uid,
           display_name,
@@ -85,19 +90,42 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
 
   interface BookingRaw {
     status: string;
+    transaction_id: string | null;
+    transaction: {
+      amount: number;
+      status: string;
+    } | null;
     user: unknown;
   }
+
+  let hasSuccessfulTransaction = false;
+  let totalPaidAmount = 0;
 
   const passengers = (data.bookings as unknown as BookingRaw[] || [])
     .filter((b: BookingRaw) => ["CONFIRMED", "COMPLETED"].includes(b.status))
     .map((b: BookingRaw) => {
       const rawUser = b.user;
       if (!rawUser) return null;
-      return Array.isArray(rawUser)
+      
+      const isPaid = b.transaction?.status === 'SUCCESS';
+      if (isPaid) {
+        hasSuccessfulTransaction = true;
+        totalPaidAmount += b.transaction?.amount || 0;
+      }
+
+      const userData = Array.isArray(rawUser)
         ? (rawUser[0] as PassengerData | undefined) || null
         : (rawUser as PassengerData | null);
+        
+      if (!userData) return null;
+      
+      return {
+        ...userData,
+        has_paid: isPaid,
+        amount_paid: b.transaction?.amount || 0
+      };
     })
-    .filter((p): p is PassengerData => p !== null);
+    .filter((p): p is (PassengerData & { has_paid: boolean, amount_paid: number }) => p !== null);
 
   return {
     trip_id: data.trip_id,
@@ -128,5 +156,7 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
     driver_rating_count: driver?.rating_count || null,
     driver_verified: driver?.is_driver_doc_validated || null,
     passengers: passengers,
+    has_successful_transaction: hasSuccessfulTransaction,
+    total_paid_amount: totalPaidAmount,
   };
 }

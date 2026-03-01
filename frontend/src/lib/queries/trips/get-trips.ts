@@ -145,17 +145,7 @@ export async function getTripsWithDriver(options: {
         is_driver_doc_validated
       ),
       bookings (
-        status,
-        transaction_id,
-        transaction:transactions (
-          amount,
-          status
-        ),
-        user:users (
-          uid,
-          display_name,
-          photo_url
-        )
+        transaction_id
       )
     `, { count: "exact" });
 
@@ -163,11 +153,10 @@ export async function getTripsWithDriver(options: {
     query = query.eq("status", status);
   }
 
-  // Si on veut seulement les trajets payés, on filtre ceux qui ont au moins une transaction SUCCESS
+  // Si on veut seulement les trajets payés
   if (onlyPaid) {
-    // Utilisation de !inner join sur les bookings et les transactions pour forcer le filtrage
     // @ts-ignore
-    query = query.select('*, bookings!inner(transaction!inner(status))').eq('bookings.transaction.status', 'SUCCESS');
+    query = query.not('bookings.transaction_id', 'is', null);
   }
 
   if (driverId && driverId !== "all") {
@@ -210,20 +199,8 @@ export async function getTripsWithDriver(options: {
     is_driver_doc_validated: boolean | null;
   };
 
-  type PassengerData = {
-    uid: string;
-    display_name: string | null;
-    photo_url: string | null;
-  };
-
   interface BookingRaw {
-    status: string;
     transaction_id: string | null;
-    transaction: {
-      amount: number;
-      status: string;
-    } | null;
-    user: unknown;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -238,34 +215,12 @@ export async function getTripsWithDriver(options: {
     let hasSuccessfulTransaction = false;
     let totalPaidAmount = 0;
 
-    const passengers = rawBookings
-      .map((b: BookingRaw) => {
-        const rawUser = b.user;
-        if (!rawUser) return null;
-        
-        const isPaid = b.transaction?.status === 'SUCCESS';
-        if (isPaid) {
-          hasSuccessfulTransaction = true;
-          totalPaidAmount += b.transaction?.amount || 0;
+    rawBookings.forEach((b: BookingRaw) => {
+        if (b.transaction_id) {
+            hasSuccessfulTransaction = true;
+            totalPaidAmount += t.passenger_price || 0;
         }
-
-        const userData = Array.isArray(rawUser)
-          ? (rawUser[0] as PassengerData | undefined) || null
-          : (rawUser as PassengerData | null);
-          
-        if (!userData) return null;
-        
-        return {
-          ...userData,
-          has_paid: isPaid,
-          amount_paid: b.transaction?.amount || 0
-        };
-      })
-      .filter((p): p is (PassengerData & { has_paid: boolean, amount_paid: number }) => p !== null);
-
-    // Si on a activé le filtre onlyPaid mais que par miracle PostgREST nous a retourné des trajets non payés (si pas d'inner join possible)
-    // on pourrait refiltrer ici, mais ça fausserait la pagination. 
-    // L'idéal est de le faire en SQL.
+    });
 
     return {
       trip_id: t.trip_id,
@@ -295,14 +250,13 @@ export async function getTripsWithDriver(options: {
       driver_rating: driver?.rating || null,
       driver_rating_count: driver?.rating_count || null,
       driver_verified: driver?.is_driver_doc_validated || null,
-      passengers: passengers,
+      passengers: [], // On vide pour la liste, sera chargé par getTripById
       has_successful_transaction: hasSuccessfulTransaction,
       total_paid_amount: totalPaidAmount,
     } as TripDetail;
   });
 
   // Si on a le filtre onlyPaid, on s'assure de ne renvoyer que ceux qui ont effectivement des paiements réussis
-  // (Utile car le filtre .not('bookings.transaction_id', 'is', null) peut être imprécis selon le schéma)
   const finalTrips = onlyPaid ? trips.filter(t => t.has_successful_transaction) : trips;
 
   return { trips: finalTrips, totalCount: onlyPaid ? finalTrips.length : (count || 0) };

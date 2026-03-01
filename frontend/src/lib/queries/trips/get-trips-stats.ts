@@ -34,19 +34,13 @@ export async function getTripsStats(): Promise<TripStats> {
   const pendingCount = byStatus.find((s) => s.status === 'PENDING')?.count || 0;
   const cancelledCount = byStatus.find((s) => s.status === 'CANCELLED')?.count || 0;
 
-  // Récupération manuelle du nombre de trajets ayant au moins un paiement validé
-  const { count: paidTripsCount } = await supabase
-    .from('trips')
-    .select('trip_id, bookings!inner(transaction!inner(status))', { count: 'exact', head: true })
-    .eq('bookings.transaction.status', 'SUCCESS');
-
   return {
     total_trips: data.trips.total,
     active_trips: activeCount,
     completed_trips: completedCount,
     pending_trips: pendingCount,
     cancelled_trips: cancelledCount,
-    paid_trips: paidTripsCount || 0,
+    paid_trips: data.trips.paid_count || 0,
     total_distance: data.trips.totalDistance,
     total_seats_booked: data.trips.totalSeatsBooked,
   };
