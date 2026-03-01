@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { 
   Home, Car, Users, BarChart3, Map, LifeBuoy, 
   Shield, X, Banknote, Globe, CheckSquare, 
-  Sparkles, Loader2, TrendingUp, PenTool 
+  Sparkles, Loader2, TrendingUp, PenTool, Database
 } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
