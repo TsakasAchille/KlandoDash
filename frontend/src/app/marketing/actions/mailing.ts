@@ -61,13 +61,21 @@ export async function saveMailingFeedbackAction(id: string, isLiked: boolean, fe
  */
 export async function uploadMarketingImageAction(base64DataWithHeader: string) {
   const session = await auth();
-  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
+  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing" && session.user.role !== "ia")) {
+    console.error("[UPLOAD] Unauthorized access attempt by", session?.user?.email, "Role:", session?.user?.role);
+    return { success: false, error: "Non autorisé" };
+  }
+
+  console.log("[UPLOAD] Starting upload from Base64 (length:", base64DataWithHeader.length, ") by", session.user.email);
 
   const supabase = createAdminClient();
   
   // Extraire le type mime et les données
   const matches = base64DataWithHeader.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.*)$/);
-  if (!matches || matches.length !== 3) return { success: false, error: "Format invalide" };
+  if (!matches || matches.length !== 3) {
+    console.error("[UPLOAD] Invalid Base64 format");
+    return { success: false, error: "Format invalide" };
+  }
 
   const contentType = matches[1];
   const base64Data = matches[2];
@@ -80,7 +88,7 @@ export async function uploadMarketingImageAction(base64DataWithHeader: string) {
   else if (contentType.includes('image/webp')) extension = 'webp';
   else if (contentType.includes('application/pdf')) extension = 'pdf';
 
-  const fileName = `${Date.now()}.${extension}`;
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
   const filePath = `uploads/${fileName}`;
 
   const { error } = await supabase.storage
@@ -91,14 +99,15 @@ export async function uploadMarketingImageAction(base64DataWithHeader: string) {
     });
 
   if (error) {
-    console.error("[STORAGE ERROR]", error);
-    return { success: false };
+    console.error("[UPLOAD] Supabase Storage Error:", error);
+    return { success: false, error: error.message };
   }
 
   const { data: { publicUrl } } = supabase.storage
     .from('marketing')
     .getPublicUrl(filePath);
 
+  console.log("[UPLOAD] Success! Public URL:", publicUrl);
   return { success: true, url: publicUrl };
 }
 
