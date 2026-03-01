@@ -473,26 +473,42 @@ export default async function StatsPage() {
 
         {/* --- TAB: FINANCES --- */}
         <TabsContent value="finances" className="space-y-8 animate-in fade-in zoom-in-95 duration-300 outline-none">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-8 rounded-2xl bg-green-500/5 border border-green-500/20">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <ArrowDownLeft className="w-5 h-5 text-green-500" />
-                <p className="text-xs font-bold text-green-600 uppercase tracking-widest">Entrées</p>
-              </div>
-              <p className="text-4xl font-black text-green-500 tracking-tight">{formatPrice(stats.cashFlow?.totalIn ?? 0)}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Card className="rounded-2xl border-none shadow-sm bg-card/50 overflow-hidden h-full">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
+                    <TrendingUp className="w-4 h-4 text-green-500" />
+                    Courbe de Croissance (Revenus Hebdo)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[350px] w-full relative pt-4">
+                  <StatsCharts type="revenue-trends" data={stats.transactions?.trends || []} />
+                </CardContent>
+              </Card>
             </div>
-            <div className="text-center p-8 rounded-2xl bg-red-500/5 border border-red-500/20">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <ArrowUpRight className="w-5 h-5 text-red-500" />
-                <p className="text-xs font-bold text-red-600 uppercase tracking-widest">Sorties</p>
+
+            <div className="lg:col-span-1 grid grid-cols-1 gap-4">
+              <div className="text-center p-6 rounded-2xl bg-green-500/5 border border-green-500/20">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <ArrowDownLeft className="w-5 h-5 text-green-500" />
+                  <p className="text-xs font-bold text-green-600 uppercase tracking-widest">Entrées</p>
+                </div>
+                <p className="text-3xl font-black text-green-500 tracking-tight">{formatPrice(stats.cashFlow?.totalIn ?? 0)}</p>
               </div>
-              <p className="text-4xl font-black text-red-500 tracking-tight">{formatPrice(stats.cashFlow?.totalOut ?? 0)}</p>
-            </div>
-            <div className="text-center p-8 rounded-2xl bg-klando-gold/5 border border-klando-gold/20">
-              <p className="text-xs font-bold text-klando-gold/80 uppercase tracking-widest mb-2">Solde Net</p>
-              <p className={`text-4xl font-black tracking-tight ${Number(stats.cashFlow?.solde ?? 0) >= 0 ? "text-green-500" : "text-red-500"}`}>
-                {Number(stats.cashFlow?.solde ?? 0) >= 0 ? "+" : ""}{formatPrice(stats.cashFlow?.solde ?? 0)}
-              </p>
+              <div className="text-center p-6 rounded-2xl bg-red-500/5 border border-red-500/20">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <ArrowUpRight className="w-5 h-5 text-red-500" />
+                  <p className="text-xs font-bold text-red-600 uppercase tracking-widest">Sorties</p>
+                </div>
+                <p className="text-3xl font-black text-red-500 tracking-tight">{formatPrice(stats.cashFlow?.totalOut ?? 0)}</p>
+              </div>
+              <div className="text-center p-6 rounded-2xl bg-klando-gold/5 border border-klando-gold/20">
+                <p className="text-xs font-bold text-klando-gold/80 uppercase tracking-widest mb-2">Solde Net</p>
+                <p className={`text-3xl font-black tracking-tight ${Number(stats.cashFlow?.solde ?? 0) >= 0 ? "text-green-500" : "text-red-500"}`}>
+                  {Number(stats.cashFlow?.solde ?? 0) >= 0 ? "+" : ""}{formatPrice(stats.cashFlow?.solde ?? 0)}
+                </p>
+              </div>
             </div>
           </div>
 

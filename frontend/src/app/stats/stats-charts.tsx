@@ -12,11 +12,13 @@ import {
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid
+  CartesianGrid,
+  AreaChart,
+  Area
 } from "recharts";
 
 interface StatsChartsProps {
-  type: "typology" | "verification" | "orphan-cities";
+  type: "typology" | "verification" | "orphan-cities" | "revenue-trends";
   data: any;
 }
 
@@ -26,7 +28,6 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // Un léger délai permet au layout des onglets de se stabiliser
     const timer = setTimeout(() => setIsMounted(true), 150);
     return () => clearTimeout(timer);
   }, []);
@@ -63,6 +64,51 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
             />
             <Legend verticalAlign="bottom" height={36}/>
           </PieChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  if (type === "revenue-trends") {
+    return (
+      <div className="w-full h-full min-h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={data}
+            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          >
+            <defs>
+              <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#22C55E" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <XAxis 
+              dataKey="label" 
+              tick={{ fill: "#94a3b8", fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis 
+              tick={{ fill: "#94a3b8", fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(val) => `${val/1000}k`}
+            />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+            <Tooltip 
+              contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: "12px", color: "#fff" }}
+              formatter={(value: any) => [`${Number(value).toLocaleString()} CFA`, 'Revenu']}
+            />
+            <Area 
+              type="monotone" 
+              dataKey="revenue" 
+              stroke="#22C55E" 
+              fillOpacity={1} 
+              fill="url(#colorRevenue)" 
+              strokeWidth={3}
+            />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     );
