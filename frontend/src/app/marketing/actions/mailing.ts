@@ -137,7 +137,7 @@ export async function sendMarketingEmailAction(id: string) {
 
   // Construction du corps HTML avec images
   const imagesHtml = email.images && email.images.length > 0 
-    ? email.images.map(img => `
+    ? email.images.map((img: { url: string; description: string }) => `
         <div style="margin-top: 20px; border: 1px solid #eee; border-radius: 12px; overflow: hidden; max-width: 600px; background: #f9f9f9;">
           <img src="${img.url}" alt="${img.description}" style="width: 100%; display: block;" />
           <div style="padding: 10px; font-size: 11px; color: #666; text-align: center; border-top: 1px solid #eee;">${img.description}</div>
