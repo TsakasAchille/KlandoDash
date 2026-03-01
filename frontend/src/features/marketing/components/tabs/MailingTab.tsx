@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { MarketingEmail } from "@/app/marketing/types";
 import { createEmailDraftAction, moveEmailToTrashAction, updateMarketingEmailAction } from "@/app/marketing/actions/mailing";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ export function MailingTab({
   onScan, 
   onSendEmail 
 }: MailingTabProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   
   const [activeFolder, setActiveFolder] = useState<MailFolder>('SUGGESTIONS');
@@ -93,7 +95,10 @@ export function MailingTab({
         if (res.success) {
             toast.success("Brouillon créé !");
             setIsComposeOpen(false);
-            if (res.id) setSelectedEmailId(res.id as string);
+            router.refresh();
+            if (res.id) {
+              setTimeout(() => setSelectedEmailId(res.id as string), 200);
+            }
             setActiveFolder('DRAFTS');
         }
     } catch (err) {
@@ -107,7 +112,10 @@ export function MailingTab({
     setIsSaving(true);
     try {
         const res = await updateMarketingEmailAction(id, data);
-        if (res.success) toast.success("Mis à jour !");
+        if (res.success) {
+          toast.success("Mis à jour !");
+          router.refresh();
+        }
     } catch (err) {
         toast.error("Erreur");
     } finally {
@@ -122,6 +130,7 @@ export function MailingTab({
         if (res.success) {
             toast.success("Corbeille !");
             setSelectedEmailId(null);
+            router.refresh();
         }
     } catch (err) {
         toast.error("Erreur");
@@ -137,7 +146,8 @@ export function MailingTab({
         if (res.success) {
             toast.success("Converti !");
             setActiveFolder('DRAFTS');
-            setSelectedEmailId(id);
+            router.refresh();
+            setTimeout(() => setSelectedEmailId(id), 200);
         }
     } catch (err) {
         toast.error("Erreur");
