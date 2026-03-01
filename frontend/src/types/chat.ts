@@ -1,27 +1,19 @@
-export interface ChatMessage {
+export interface InternalMessage {
   id: string;
-  trip_id: string | null;
-  sender_id: string | null;
-  message: string;
-  timestamp: string;
-  updated_at: string;
-  // Joined info
+  sender_email: string;
+  content: string;
+  channel_id: string;
+  created_at: string;
+  // Infos jointes du staff
   sender?: {
-    display_name: string | null;
-    photo_url: string | null;
+    role: string;
+    display_name?: string;
   };
 }
 
-export interface Conversation {
-  trip_id: string;
-  last_message: string;
-  last_timestamp: string;
-  participant_ids: string[];
-  participants: Array<{
-    uid: string;
-    display_name: string | null;
-    photo_url: string | null;
-  }>;
-  departure_name?: string | null;
-  destination_name?: string | null;
+export interface InternalChannel {
+  id: string;
+  name: string;
+  last_message?: string;
+  last_timestamp?: string;
 }
