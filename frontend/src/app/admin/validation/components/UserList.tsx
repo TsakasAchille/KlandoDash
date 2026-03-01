@@ -56,6 +56,7 @@ export function UserList({
                     src={user.photo_url}
                     alt=""
                     fill
+                    sizes="40px"
                     className="rounded-lg object-cover"
                   />
                 </div>

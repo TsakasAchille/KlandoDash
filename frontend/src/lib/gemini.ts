@@ -10,6 +10,8 @@ export interface DocumentAnalysisReport {
   documentNumber: string | null;
   expirationDate: string | null;
   fullName: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
   nameMatchesProfile?: boolean;
   confidenceScore: number; // 0-100
   summary: string;
@@ -91,15 +93,17 @@ export async function analyzeDocument(imageUrl: string, type: 'ID_CARD' | 'DRIVE
         EXTRAIS LES INFORMATIONS SUIVANTES EN JSON STRICT :
         {
           "documentType": "${type}",
-          "isSenegalese": boolean (mentions République du Sénégal ?),
-          "isLegible": boolean (image assez nette ?),
-          "documentNumber": "string (le numéro officiel sans espaces)",
-          "expirationDate": "YYYY-MM-DD (format ISO)",
-          "fullName": "LE NOM COMPLET EN MAJUSCULES",
-          "nameMatchesProfile": boolean (correspond à ${expectedName || 'Inconnu'} ?),
+          "isSenegalese": boolean,
+          "isLegible": boolean,
+          "documentNumber": "string (numéro officiel)",
+          "expirationDate": "YYYY-MM-DD",
+          "firstName": "PRÉNOM(S)",
+          "lastName": "NOM DE FAMILLE",
+          "fullName": "NOM COMPLET",
+          "nameMatchesProfile": boolean (si ça correspond à ${expectedName || 'Inconnu'}),
           "confidenceScore": number (0-100),
-          "summary": "Résumé français en 1 phrase",
-          "warnings": ["ex: Document expiré", "ex: Image floue"]
+          "summary": "Résumé en français",
+          "warnings": []
         }
       `;
 

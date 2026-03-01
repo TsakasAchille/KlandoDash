@@ -2,6 +2,8 @@
 export interface UserListItem {
   uid: string;
   display_name: string | null;
+  first_name?: string | null;
+  name?: string | null;
   email: string | null;
   phone_number: string | null;
   photo_url: string | null;
@@ -18,9 +20,13 @@ export interface UserListItem {
   // AI Validation & Extraction
   id_card_number?: string | null;
   id_card_name_ai?: string | null;
+  id_card_first_name_ai?: string | null;
+  id_card_last_name_ai?: string | null;
   id_card_expiry_ai?: string | null;
   driver_license_number?: string | null;
   driver_license_name_ai?: string | null;
+  driver_license_first_name_ai?: string | null;
+  driver_license_last_name_ai?: string | null;
   driver_license_expiry_ai?: string | null;
   ai_validation_status?: 'PENDING' | 'SUCCESS' | 'FAILED' | 'WARNING' | null;
   ai_validation_report?: any | null;

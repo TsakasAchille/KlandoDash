@@ -79,6 +79,7 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
                     src={selectedUser.photo_url}
                     alt=""
                     fill
+                    sizes="64px"
                     className="object-cover"
                   />
                 </div>
@@ -91,6 +92,11 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
                 <CardTitle className="text-xl font-black uppercase tracking-tight">
                   {selectedUser.display_name}
                 </CardTitle>
+                {(selectedUser.first_name || selectedUser.name) && (
+                    <p className="text-[10px] font-black text-klando-gold uppercase tracking-widest -mt-0.5">
+                        Profil : {selectedUser.first_name || "?"} {selectedUser.name || "?"}
+                    </p>
+                )}
                 <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5" />
@@ -178,22 +184,37 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
                     <p className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-2">
                         <User className="w-3 h-3" /> Carte d&apos;Identité
                     </p>
-                    <div className="bg-white/80 rounded-xl border border-slate-200 p-3 space-y-2 shadow-sm">
-                        <div className="flex flex-col">
+                    <div className="bg-white/80 rounded-xl border border-slate-200 p-3 space-y-3 shadow-sm">
+                        <div className="flex flex-col gap-1">
                             <div className="flex items-center justify-between">
-                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Nom complet</span>
+                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Extraction IA</span>
                                 {aiReport.reports?.id_card?.nameMatchesProfile ? (
-                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">NOM OK</Badge>
+                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">IDENTITÉ OK</Badge>
                                 ) : (
-                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">NOM INCORRECT</Badge>
+                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">IDENTITÉ INCORRECTE</Badge>
                                 )}
                             </div>
-                            <span className="text-xs font-bold text-slate-900">{selectedUser.id_card_name_ai || "Non extrait"}</span>
+                            <div className="grid grid-cols-2 gap-2 mt-1">
+                                <div className="flex flex-col">
+                                    <span className="text-[7px] font-black uppercase text-slate-300">Prénom(s)</span>
+                                    <span className="text-[11px] font-bold text-slate-900 truncate">{selectedUser.id_card_first_name_ai || "Non extrait"}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[7px] font-black uppercase text-slate-300">Nom</span>
+                                    <span className="text-[11px] font-bold text-slate-900 truncate">{selectedUser.id_card_last_name_ai || "Non extrait"}</span>
+                                </div>
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 border-t border-slate-50 pt-2">
                             <div className="flex flex-col">
                                 <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Numéro</span>
                                 <span className="text-[10px] font-mono font-bold text-purple-700">{selectedUser.id_card_number || "N/A"}</span>
+                                {aiReport.reports?.id_card?.isUnique === false && (
+                                    <span className="text-[7px] font-black text-red-600 uppercase mt-0.5">⚠️ Doublon détecté</span>
+                                )}
+                                {aiReport.reports?.id_card?.isUnique === true && (
+                                    <span className="text-[7px] font-black text-green-600 uppercase mt-0.5">✅ Numéro unique</span>
+                                )}
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Expiration</span>
@@ -208,22 +229,37 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
                     <p className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-2">
                         <Split className="w-3 h-3" /> Permis de conduire
                     </p>
-                    <div className="bg-white/80 rounded-xl border border-slate-200 p-3 space-y-2 shadow-sm">
-                        <div className="flex flex-col">
+                    <div className="bg-white/80 rounded-xl border border-slate-200 p-3 space-y-3 shadow-sm">
+                        <div className="flex flex-col gap-1">
                             <div className="flex items-center justify-between">
-                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Nom complet</span>
+                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Extraction IA</span>
                                 {aiReport.reports?.driver_license?.nameMatchesProfile ? (
-                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">NOM OK</Badge>
+                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">IDENTITÉ OK</Badge>
                                 ) : (
-                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">NOM INCORRECT</Badge>
+                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">IDENTITÉ INCORRECTE</Badge>
                                 )}
                             </div>
-                            <span className="text-xs font-bold text-slate-900">{selectedUser.driver_license_name_ai || "Non extrait"}</span>
+                            <div className="grid grid-cols-2 gap-2 mt-1">
+                                <div className="flex flex-col">
+                                    <span className="text-[7px] font-black uppercase text-slate-300">Prénom(s)</span>
+                                    <span className="text-[11px] font-bold text-slate-900 truncate">{selectedUser.driver_license_first_name_ai || "Non extrait"}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[7px] font-black uppercase text-slate-300">Nom</span>
+                                    <span className="text-[11px] font-bold text-slate-900 truncate">{selectedUser.driver_license_last_name_ai || "Non extrait"}</span>
+                                </div>
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 border-t border-slate-50 pt-2">
                             <div className="flex flex-col">
                                 <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Numéro</span>
                                 <span className="text-[10px] font-mono font-bold text-purple-700">{selectedUser.driver_license_number || "N/A"}</span>
+                                {aiReport.reports?.driver_license?.isUnique === false && (
+                                    <span className="text-[7px] font-black text-red-600 uppercase mt-0.5">⚠️ Doublon détecté</span>
+                                )}
+                                {aiReport.reports?.driver_license?.isUnique === true && (
+                                    <span className="text-[7px] font-black text-green-600 uppercase mt-0.5">✅ Numéro unique</span>
+                                )}
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Expiration</span>

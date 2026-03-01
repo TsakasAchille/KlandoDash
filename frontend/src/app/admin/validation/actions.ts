@@ -45,10 +45,14 @@ export async function analyzeDocumentsAction(uid: string) {
     const reports: Record<string, any> = {};
     let idCardNumber = null;
     let idCardName = null;
+    let idCardFirstName = null;
+    let idCardLastName = null;
     let idCardExpiry = null;
     
     let licenseNumber = null;
     let licenseName = null;
+    let licenseFirstName = null;
+    let licenseLastName = null;
     let licenseExpiry = null;
     
     const warnings: string[] = [];
@@ -60,6 +64,8 @@ export async function analyzeDocumentsAction(uid: string) {
         reports.id_card = report;
         idCardNumber = report.documentNumber;
         idCardName = report.fullName;
+        idCardFirstName = report.firstName;
+        idCardLastName = report.lastName;
         idCardExpiry = report.expirationDate;
         
         if (!report.isSenegalese) warnings.push("La carte d'identité ne semble pas être sénégalaise.");
@@ -77,6 +83,8 @@ export async function analyzeDocumentsAction(uid: string) {
         reports.driver_license = report;
         licenseNumber = report.documentNumber;
         licenseName = report.fullName;
+        licenseFirstName = report.firstName;
+        licenseLastName = report.lastName;
         licenseExpiry = report.expirationDate;
         
         if (!report.isSenegalese) warnings.push("Le permis ne semble pas être sénégalais.");
@@ -87,34 +95,38 @@ export async function analyzeDocumentsAction(uid: string) {
       }
     }
 
-    // 4. Vérifier les doublons
-    if (idCardNumber) {
-      const { count } = await supabase
-        .from('users')
-        .select('uid', { count: 'exact', head: true })
-        .eq('id_card_number', idCardNumber)
-        .neq('uid', uid);
-      
-      if (count && count > 0) {
-        warnings.push(`ALERTE FRAUDE : Ce numéro de carte d'identité est déjà utilisé par ${count} autre(s) compte(s).`);
-      }
+    // 4. Vérifier les doublons (Fraude)
+    
+    // Check par Numéro CNI
+    if (idCardNumber && reports.id_card) {
+      const { count } = await supabase.from('users').select('uid', { count: 'exact', head: true }).eq('id_card_number', idCardNumber).neq('uid', uid);
+      reports.id_card.isUnique = count === 0;
+      if (count && count > 0) warnings.push(`ALERTE FRAUDE : Ce numéro de CNI est déjà utilisé par ${count} autre(s) compte(s).`);
     }
 
-    if (licenseNumber) {
-      const { count } = await supabase
-        .from('users')
-        .select('uid', { count: 'exact', head: true })
-        .eq('driver_license_number', licenseNumber)
-        .neq('uid', uid);
-      
-      if (count && count > 0) {
-        warnings.push(`ALERTE FRAUDE : Ce numéro de permis est déjà utilisé par ${count} autre(s) compte(s).`);
-      }
+    // Check par Numéro Permis
+    if (licenseNumber && reports.driver_license) {
+      const { count } = await supabase.from('users').select('uid', { count: 'exact', head: true }).eq('driver_license_number', licenseNumber).neq('uid', uid);
+      reports.driver_license.isUnique = count === 0;
+      if (count && count > 0) warnings.push(`ALERTE FRAUDE : Ce numéro de permis est déjà utilisé par ${count} autre(s) compte(s).`);
+    }
+
+    // Check par Nom/Prénom Extrait (Détection de fraude par identité identique)
+    if (idCardFirstName && idCardLastName) {
+        const { count } = await supabase.from('users')
+            .select('uid', { count: 'exact', head: true })
+            .eq('id_card_first_name_ai', idCardFirstName)
+            .eq('id_card_last_name_ai', idCardLastName)
+            .neq('uid', uid);
+        
+        if (count && count > 0) {
+            warnings.push(`ALERTE IDENTITÉ : "${idCardFirstName} ${idCardLastName}" est déjà validé sur ${count} autre(s) compte(s).`);
+        }
     }
 
     // 5. Déterminer le statut final
     let status: 'SUCCESS' | 'FAILED' | 'WARNING' = 'SUCCESS';
-    if (warnings.some(w => w.includes("ALERTE FRAUDE"))) {
+    if (warnings.some(w => w.includes("ALERTE FRAUDE") || w.includes("ALERTE IDENTITÉ"))) {
       status = 'FAILED';
     } else if (warnings.length > 0) {
       status = 'WARNING';
@@ -126,9 +138,13 @@ export async function analyzeDocumentsAction(uid: string) {
       .update({
         id_card_number: idCardNumber,
         id_card_name_ai: idCardName,
+        id_card_first_name_ai: idCardFirstName,
+        id_card_last_name_ai: idCardLastName,
         id_card_expiry_ai: idCardExpiry,
         driver_license_number: licenseNumber,
         driver_license_name_ai: licenseName,
+        driver_license_first_name_ai: licenseFirstName,
+        driver_license_last_name_ai: licenseLastName,
         driver_license_expiry_ai: licenseExpiry,
         ai_validation_status: status,
         ai_validation_report: {

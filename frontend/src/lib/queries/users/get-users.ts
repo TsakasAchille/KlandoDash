@@ -25,6 +25,8 @@ export async function getUsers(
     .select(`
       uid,
       display_name,
+      first_name,
+      name,
       email,
       phone_number,
       photo_url,
@@ -38,9 +40,13 @@ export async function getUsers(
       driver_license_url,
       id_card_number,
       id_card_name_ai,
+      id_card_first_name_ai,
+      id_card_last_name_ai,
       id_card_expiry_ai,
       driver_license_number,
       driver_license_name_ai,
+      driver_license_first_name_ai,
+      driver_license_last_name_ai,
       driver_license_expiry_ai,
       ai_validation_status,
       ai_validation_report
