@@ -64,16 +64,26 @@ export function ConversationList({
 
               <div className="mt-3 flex items-center gap-1.5">
                 <div className="flex -space-x-2 overflow-hidden">
-                  {conv.participant_ids.slice(0, 3).map((id, i) => (
-                    <div key={id} className="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-slate-200" />
+                  {conv.participants.slice(0, 3).map((p, i) => (
+                    <div key={p.uid} className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200 overflow-hidden">
+                        {p.photo_url ? (
+                            <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-purple-100 text-[8px] font-bold text-purple-600">
+                                {p.display_name?.charAt(0) || '?'}
+                            </div>
+                        )}
+                    </div>
                   ))}
                 </div>
-                {conv.participant_ids.length > 3 && (
-                  <span className="text-[9px] font-bold text-slate-400">+{conv.participant_ids.length - 3}</span>
-                )}
-                <span className="text-[9px] font-black uppercase text-slate-400 ml-1">
-                  {conv.participant_ids.length} participants
-                </span>
+                <div className="flex flex-col ml-1">
+                    <span className="text-[9px] font-black uppercase text-slate-400">
+                        {conv.participant_ids.length} participants
+                    </span>
+                    <p className="text-[8px] text-slate-400 truncate max-w-[150px]">
+                        {conv.participants.map(p => p.display_name?.split(' ')[0]).join(', ')}
+                    </p>
+                </div>
               </div>
             </div>
           ))

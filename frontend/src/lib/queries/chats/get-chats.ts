@@ -41,7 +41,8 @@ export async function getRecentConversations(): Promise<Conversation[]> {
   noStore();
   const supabase = createServerClient();
 
-  const { data, error } = await supabase
+  // 1. On récupère les derniers messages pour identifier les conversations
+  const { data: messages, error } = await supabase
     .from("chats")
     .select(`
       trip_id,
@@ -50,7 +51,8 @@ export async function getRecentConversations(): Promise<Conversation[]> {
       sender_id,
       trip:trips (
         departure_name,
-        destination_name
+        destination_name,
+        driver_id
       )
     `)
     .order("timestamp", { ascending: false })
@@ -62,8 +64,9 @@ export async function getRecentConversations(): Promise<Conversation[]> {
   }
 
   const conversationsMap = new Map<string, Conversation>();
+  const allParticipantIds = new Set<string>();
 
-  for (const row of (data || [])) {
+  for (const row of (messages || [])) {
     if (!row.trip_id) continue;
 
     if (!conversationsMap.has(row.trip_id)) {
@@ -81,6 +84,26 @@ export async function getRecentConversations(): Promise<Conversation[]> {
     const conv = conversationsMap.get(row.trip_id)!;
     if (row.sender_id && !conv.participant_ids.includes(row.sender_id)) {
       conv.participant_ids.push(row.sender_id);
+      allParticipantIds.add(row.sender_id);
+    }
+    // S'assurer que le driver est aussi dans la liste des participants
+    if (row.trip?.driver_id && !conv.participant_ids.includes(row.trip.driver_id)) {
+        conv.participant_ids.push(row.trip.driver_id);
+        allParticipantIds.add(row.trip.driver_id);
+    }
+  }
+
+  // 2. On récupère les profils des participants en une seule fois
+  if (allParticipantIds.size > 0) {
+    const { data: profiles } = await supabase
+        .from("users")
+        .select("uid, display_name, photo_url")
+        .in("uid", Array.from(allParticipantIds));
+    
+    if (profiles) {
+        conversationsMap.forEach(conv => {
+            conv.participants = profiles.filter(p => conv.participant_ids.includes(p.uid));
+        });
     }
   }
 
