@@ -154,44 +154,53 @@ export function MailingTab({
   }, []);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:h-[750px] animate-in fade-in duration-500">
+    <div className="flex flex-col lg:flex-row flex-nowrap gap-4 lg:gap-6 h-full lg:h-[calc(100vh-250px)] min-h-0 animate-in fade-in duration-500 overflow-hidden">
 
-      {/* LEFT COLUMN: Sidebar + List stacked (hidden on mobile when viewer is open) */}
+      {/* LEFT COLUMN: Sidebar + List stacked (fixed height, internal scroll for list) */}
       <div className={cn(
-        "flex flex-col gap-4 lg:w-[320px] shrink-0 min-h-0",
+        "flex-none flex flex-col gap-4 lg:w-[320px] h-full overflow-hidden",
         isViewerActive ? 'hidden lg:flex' : 'flex'
       )}>
-        <MailSidebar
-          activeFolder={activeFolder}
-          setActiveFolder={setActiveFolder}
-          onCompose={() => setIsComposeOpen(true)}
-          onScan={onScan}
-          isScanning={isScanning}
-          counts={folderCounts}
-        />
-        <MailList
-          emails={filteredEmails}
-          selectedId={selectedEmailId}
-          onSelect={setSelectedEmailId}
-          activeFolder={activeFolder}
-        />
+        <div className="flex-none">
+          <MailSidebar
+            activeFolder={activeFolder}
+            setActiveFolder={setActiveFolder}
+            onCompose={() => setIsComposeOpen(true)}
+            onScan={onScan}
+            isScanning={isScanning}
+            counts={folderCounts}
+          />
+        </div>
+        <div className="flex-1 min-h-0">
+          <MailList
+            emails={filteredEmails}
+            selectedId={selectedEmailId}
+            onSelect={setSelectedEmailId}
+            activeFolder={activeFolder}
+          />
+        </div>
       </div>
 
-      {/* RIGHT COLUMN: Viewer (opens alongside on desktop, replaces list on mobile) */}
-      {selectedEmail && (
-        <MailViewer
-            email={selectedEmail}
-            onClose={() => setSelectedEmailId(null)}
-            onUpdate={handleUpdateMail}
-            onTrash={handleTrashMail}
-            onConvertToDraft={handleConvertToDraft}
-            onSend={onSendEmail}
-            isSaving={isSaving}
-            isTrashing={isTrashing}
-            sendingEmailId={sendingEmailId}
-            onMobileBack={handleMobileBack}
-        />
-      )}
+      {/* RIGHT COLUMN: Viewer (Independent scroll) */}
+      <div className={cn(
+        "flex-1 min-w-0 h-full overflow-hidden",
+        !isViewerActive && "hidden lg:block"
+      )}>
+        {selectedEmail && (
+          <MailViewer
+              email={selectedEmail}
+              onClose={() => setSelectedEmailId(null)}
+              onUpdate={handleUpdateMail}
+              onTrash={handleTrashMail}
+              onConvertToDraft={handleConvertToDraft}
+              onSend={onSendEmail}
+              isSaving={isSaving}
+              isTrashing={isTrashing}
+              sendingEmailId={sendingEmailId}
+              onMobileBack={handleMobileBack}
+          />
+        )}
+      </div>
 
       <MailCompose
         isOpen={isComposeOpen}

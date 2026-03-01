@@ -1,24 +1,23 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { LayoutGrid, PenLine } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { MarketingComm, CommPlatform, CommStatus } from "@/app/marketing/types";
-import { 
-    updateMarketingCommAction, 
-    createMarketingCommAction,
-    refineMarketingContentAction,
-    trashMarketingCommAction,
-    restoreMarketingCommAction,
-    deleteMarketingCommAction
+import {
+  trashMarketingCommAction,
+  restoreMarketingCommAction,
+  deleteMarketingCommAction
 } from "@/app/marketing/actions/communication";
-import { uploadMarketingImageAction } from "@/app/marketing/actions/mailing";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // Sous-composants SOLID
+import { PostSidebar } from "./communication/PostSidebar";
 import { PostList } from "./communication/PostList";
-import { PostPreview } from "./communication/PostPreview";
-import { PostEditor } from "./communication/PostEditor";
+import { PostViewer } from "./communication/PostViewer";
+import { PostCompose } from "./communication/PostCompose";
 import { AIGenerator } from "./communication/AIGenerator";
+import { CommunicationMobile } from "./communication/CommunicationMobile";
 
 interface CommunicationTabProps {
   comms: MarketingComm[];
@@ -28,257 +27,174 @@ interface CommunicationTabProps {
   onPromotePending: (platform: CommPlatform) => Promise<MarketingComm | null>;
 }
 
-export function CommunicationTab({ 
-  comms, 
-  isScanning, 
-  onGenerateIdeas, 
+export function CommunicationTab({
+  comms,
+  isScanning,
+  onGenerateIdeas,
   onGeneratePost,
   onPromotePending
 }: CommunicationTabProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [topic, setTopic] = useState("");
-  const [selectedPlatform, setSelectedPlatform] = useState<CommPlatform>("INSTAGRAM");
+  const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<CommStatus | 'ALL'>('DRAFT');
-  
-  // États de sélection et édition
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  
-  // Le générateur est maintenant affiché par défaut si rien n'est sélectionné
-  const [showGenerator, setShowGenerator] = useState(true);
+  const [selectedPlatform, setSelectedPlatform] = useState<CommPlatform>("INSTAGRAM");
+  const [topic, setTopic] = useState("");
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [mobileShowGenerator, setMobileShowGenerator] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
-  // Mobile master/detail: track if workspace should be visible on mobile
-  const [mobileShowWorkspace, setMobileShowWorkspace] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
 
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isRefining, setIsRefining] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<MarketingComm>>({});
-
-  // Synchronisation auto : si on sélectionne un post, on cache le générateur
-  useEffect(() => {
-    if (selectedId || editingId) {
-        setShowGenerator(false);
-    }
-  }, [selectedId, editingId]);
-
-  // Mobile: workspace is active when editing, previewing, or generator shown
-  const isWorkspaceActive = !!(editingId || selectedId || mobileShowWorkspace);
-
-  const handleMobileBack = useCallback(() => {
-    setSelectedId(null);
-    setEditingId(null);
-    setMobileShowWorkspace(false);
-  }, []);
-
-  // Filtrage intelligent
   const filteredComms = useMemo(() => {
     return comms.filter(c => {
-        const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter || (statusFilter === 'DRAFT' && c.status === 'NEW');
-        const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                             c.content.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesStatus && matchesSearch && c.type === 'POST';
+      const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter || (statusFilter === 'DRAFT' && c.status === 'NEW');
+      const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           c.content.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesStatus && matchesSearch && c.type === 'POST';
     });
   }, [comms, statusFilter, searchTerm]);
 
-  const ideas = useMemo(() => comms.filter(c => c.type === 'IDEA' && c.status !== 'TRASH'), [comms]);
-
-  // Post actif
   const activePost = useMemo(() => {
     if (selectedId) return comms.find(c => c.id === selectedId) || null;
     return null;
   }, [comms, selectedId]);
 
-  const handleStartManual = () => {
-    setEditingId("NEW_MANUAL");
-    setSelectedId(null);
-    setShowGenerator(false);
-    setEditForm({ 
-        title: "Nouvelle publication", 
-        content: "", 
-        hashtags: [],
-        visual_suggestion: "",
-        platform: 'INSTAGRAM',
-        image_url: null
-    });
-  };
-
-  const handleStartEdit = (comm: MarketingComm) => {
-    setEditingId(comm.id);
-    setShowGenerator(false);
-    setEditForm({ 
-        title: comm.title, 
-        content: comm.content, 
-        hashtags: comm.hashtags || [],
-        visual_suggestion: comm.visual_suggestion || '',
-        platform: comm.platform,
-        image_url: comm.image_url || null
-    });
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingId) return;
-    setIsUpdating(true);
-    try {
-        if (editingId === "NEW_MANUAL") {
-            const res = await createMarketingCommAction({ ...editForm, status: 'DRAFT' });
-            if (res.success && res.post) {
-                toast.success("Publication créée !");
-                setStatusFilter('DRAFT');
-                setTimeout(() => setSelectedId(res.post.id), 100);
-                setEditingId(null);
-            }
-        } else {
-            const res = await updateMarketingCommAction(editingId, { ...editForm, status: 'DRAFT' });
-            if (res.success) {
-                toast.success("Publication mise à jour !");
-                setEditingId(null);
-            }
+  const commonProps = {
+    comms,
+    filteredComms,
+    selectedId,
+    activePost,
+    statusFilter,
+    setStatusFilter,
+    searchTerm,
+    setSearchTerm,
+    selectedPlatform,
+    setSelectedPlatform,
+    topic,
+    setTopic,
+    isScanning,
+    ideas: comms.filter(c => c.type === 'IDEA' && c.status !== 'TRASH'),
+    onGenerateIdeas,
+    onGenerate: async (forcedTopic?: string) => {
+        const post = await onGeneratePost(selectedPlatform, forcedTopic || topic);
+        if (post) {
+          setStatusFilter('DRAFT');
+          router.refresh();
+          setTimeout(() => setSelectedId(post.id), 200);
+          setMobileShowGenerator(false);
         }
-    } catch (err) {
-        console.error(err);
-        toast.error("Erreur de sauvegarde");
-    } finally {
-        setIsUpdating(false);
-    }
-  };
-
-  const handleRefineContent = async () => {
-    if (!editForm.content) return;
-    setIsRefining(true);
-    try {
-        const res = await refineMarketingContentAction(editForm.content, editForm.platform || 'GENERAL');
-        if (res.success && res.refinedContent) {
-            setEditForm({ ...editForm, content: res.refinedContent });
-            toast.success("Texte amélioré !");
+    },
+    onPromote: async () => {
+        const post = await onPromotePending(selectedPlatform);
+        if (post) {
+          setStatusFilter('DRAFT');
+          router.refresh();
+          setTimeout(() => setSelectedId(post.id), 200);
+          setMobileShowGenerator(false);
         }
-    } catch (err) {
-        toast.error("Échec de l'amélioration");
-    } finally {
-        setIsRefining(false);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
-    const file = e instanceof File ? e : e.target.files?.[0];
-    if (!file) return;
-    setIsUploading(true);
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-        const base64 = reader.result as string;
-        const res = await uploadMarketingImageAction(base64);
-        if (res.success && res.url) {
-            setEditForm(prev => ({ ...prev, image_url: res.url }));
-            toast.success("Fichier attaché !");
+    },
+    onSelect: (id: string) => { setSelectedId(id || null); setMobileShowGenerator(false); },
+    onCompose: () => setIsComposeOpen(true),
+    onTrash: async (id: string) => {
+        const res = await trashMarketingCommAction(id);
+        if (res.success) { 
+          toast.success("Placé dans la corbeille"); 
+          setSelectedId(null);
+          router.refresh();
         }
-        setIsUploading(false);
-    };
-  };
-
-  const handleGenerate = async (forcedTopic?: string) => {
-    const post = await onGeneratePost(selectedPlatform, forcedTopic || topic);
-    if (post) {
-        setStatusFilter('DRAFT');
-        setTimeout(() => setSelectedId(post.id), 100);
-        setShowGenerator(false);
+    },
+    onRestore: async (id: string) => {
+        const res = await restoreMarketingCommAction(id);
+        if (res.success) { 
+          toast.success("Restauré"); 
+          setStatusFilter('DRAFT'); 
+          router.refresh();
+          setTimeout(() => setSelectedId(id), 200); 
+        }
+    },
+    onDeletePerm: async (id: string) => {
+        if (!confirm("Supprimer définitivement ?")) return;
+        const res = await deleteMarketingCommAction(id);
+        if (res.success) { 
+          toast.success("Supprimé"); 
+          setSelectedId(null);
+          router.refresh();
+        }
     }
   };
 
-  const handlePromote = async () => {
-    const post = await onPromotePending(selectedPlatform);
-    if (post) {
-        setStatusFilter('DRAFT');
-        setTimeout(() => setSelectedId(post.id), 100);
-        setShowGenerator(false);
-    }
-  };
-
-  // --- ACTIONS DE CORBEILLE ---
-  const handleTrash = async (id: string) => {
-    const res = await trashMarketingCommAction(id);
-    if (res.success) {
-        toast.success("Placé dans la corbeille");
-        setSelectedId(null);
-    }
-  };
-
-  const handleRestore = async (id: string) => {
-    const res = await restoreMarketingCommAction(id);
-    if (res.success) {
-        toast.success("Restauré en brouillon");
-        setStatusFilter('DRAFT');
-        setTimeout(() => setSelectedId(id), 100);
-    }
-  };
-
-  const handleDeletePerm = async (id: string) => {
-    if (!confirm("Supprimer définitivement ce post ? Cette action est irréversible.")) return;
-    const res = await deleteMarketingCommAction(id);
-    if (res.success) {
-        toast.success("Supprimé définitivement");
-        setSelectedId(null);
-    }
-  };
+  if (!isClient) return null;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 animate-in fade-in duration-500 text-left items-stretch relative lg:h-full lg:overflow-hidden">
-      {/* LEFT SIDEBAR - FIXED COLUMN (hidden on mobile when workspace is active) */}
-      <div className={`w-full lg:w-[320px] shrink-0 z-20 ${isWorkspaceActive ? 'hidden lg:block' : ''}`}>
-        <PostList
-            comms={filteredComms}
-            selectedId={selectedId}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
+    <div className="w-full h-full flex flex-col min-h-0">
+      
+      {/* ──── VERSION DESKTOP FORCEE (Affichage uniquement si large) ──── */}
+      <div className="hidden lg:flex flex-row flex-nowrap w-full h-[calc(100vh-250px)] gap-8 items-start overflow-hidden">
+        
+        {/* COLONNE GAUCHE (SIDEBAR + LISTE) - LARGEUR BLOQUÉE */}
+        <div 
+          style={{ width: '320px', minWidth: '320px', maxWidth: '320px' }}
+          className="flex-none flex flex-col gap-4 h-full overflow-hidden border-r border-slate-100 pr-2"
+        >
+          <PostSidebar
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
-            onSelect={(id) => { setSelectedId(id); setEditingId(null); }}
-            onStartManual={handleStartManual}
-            onShowGenerator={() => { setShowGenerator(true); setSelectedId(null); setEditingId(null); setMobileShowWorkspace(true); }}
-            isGeneratorActive={showGenerator}
+            onCompose={() => setIsComposeOpen(true)}
+            onShowGenerator={() => { setSelectedId(null); setMobileShowGenerator(false); }}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+          />
+          <div className="flex-1 min-h-0 w-full overflow-hidden">
+            <PostList
+              comms={filteredComms}
+              selectedId={selectedId}
+              onSelect={(id) => setSelectedId(id)}
+              statusFilter={statusFilter}
+            />
+          </div>
+        </div>
+
+        {/* COLONNE DROITE (VIEWER OU GÉNÉRATEUR) - OCCUPE TOUT LE RESTE */}
+        <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden bg-slate-50/30 rounded-[2.5rem]">
+          {selectedId && activePost ? (
+            <PostViewer
+              post={activePost}
+              onClose={() => setSelectedId(null)}
+              onTrash={commonProps.onTrash}
+              onRestore={commonProps.onRestore}
+              onDeletePerm={commonProps.onDeletePerm}
+            />
+          ) : (
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <AIGenerator
+                {...commonProps}
+                onMobileBack={undefined}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ──── VERSION MOBILE FORCEE (Affichage uniquement si petit) ──── */}
+      <div className="flex lg:hidden w-full flex-col">
+        <CommunicationMobile 
+            {...commonProps} 
+            mobileShowGenerator={mobileShowGenerator}
+            setMobileShowGenerator={setMobileShowGenerator}
+            handleMobileBack={() => { setSelectedId(null); setMobileShowGenerator(false); }}
         />
       </div>
 
-      {/* MAIN WORKSPACE (Production Zone - hidden on mobile when no workspace content) */}
-      <div className={`flex-1 w-full min-w-0 max-w-[1100px] flex flex-col gap-6 lg:overflow-y-auto pr-0 lg:pr-2 custom-scrollbar ${!isWorkspaceActive ? 'hidden lg:flex' : ''}`}>
-          {editingId ? (
-              <PostEditor
-                  editForm={editForm}
-                  setEditForm={setEditForm}
-                  onClose={() => { setEditingId(null); }}
-                  onSave={handleSaveEdit}
-                  onRefine={handleRefineContent}
-                  onFileUpload={handleFileUpload}
-                  isUpdating={isUpdating}
-                  isRefining={isRefining}
-                  isUploading={isUploading}
-                  onMobileBack={handleMobileBack}
-              />
-          ) : activePost ? (
-              <PostPreview
-                  activePost={activePost}
-                  onStartEdit={handleStartEdit}
-                  onTrash={handleTrash}
-                  onRestore={handleRestore}
-                  onDeletePerm={handleDeletePerm}
-                  onMobileBack={handleMobileBack}
-              />
-          ) : (
-              <AIGenerator
-                  selectedPlatform={selectedPlatform}
-                  setSelectedPlatform={setSelectedPlatform}
-                  topic={topic}
-                  setTopic={setTopic}
-                  onGenerate={() => handleGenerate()}
-                  onPromote={handlePromote}
-                  isScanning={isScanning}
-                  ideas={ideas}
-                  onGenerateIdeas={onGenerateIdeas}
-                  onUseTheme={(theme) => handleGenerate(theme)}
-                  onMobileBack={handleMobileBack}
-              />
-          )}
-      </div>
+      <PostCompose
+        isOpen={isComposeOpen}
+        onOpenChange={setIsComposeOpen}
+        onCreated={(id) => { 
+          setStatusFilter('DRAFT'); 
+          router.refresh();
+          setTimeout(() => setSelectedId(id), 200); 
+        }}
+      />
     </div>
   );
 }
