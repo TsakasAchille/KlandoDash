@@ -9,29 +9,38 @@ export async function getChatMessages(tripId: string): Promise<ChatMessage[]> {
   noStore();
   const supabase = createServerClient();
 
-  const { data, error } = await supabase
+  // On récupère d'abord les messages
+  const { data: messages, error } = await supabase
     .from("chats")
-    .select(`
-      id,
-      trip_id,
-      sender_id,
-      message,
-      timestamp,
-      updated_at,
-      sender:users (
-        display_name,
-        photo_url
-      )
-    `)
+    .select("*")
     .eq("trip_id", tripId)
     .order("timestamp", { ascending: true });
 
   if (error) {
-    console.error("Erreur getChatMessages:", error);
+    console.error("Erreur getChatMessages:", error.message);
     return [];
   }
 
-  return (data || []) as any as ChatMessage[];
+  if (!messages || messages.length === 0) return [];
+
+  // On récupère les profils des expéditeurs manuellement pour éviter les erreurs de jointure
+  const senderIds = Array.from(new Set(messages.map(m => m.sender_id).filter(Boolean)));
+  
+  if (senderIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("users")
+      .select("uid, display_name, photo_url")
+      .in("uid", senderIds);
+
+    if (profiles) {
+      return messages.map(m => ({
+        ...m,
+        sender: profiles.find(p => p.uid === m.sender_id)
+      })) as ChatMessage[];
+    }
+  }
+
+  return messages as ChatMessage[];
 }
 
 /**
@@ -41,33 +50,29 @@ export async function getRecentConversations(): Promise<Conversation[]> {
   noStore();
   const supabase = createServerClient();
 
-  // 1. On récupère les derniers messages pour identifier les conversations
+  // 1. Récupérer les messages bruts (sans jointure trips pour éviter l'erreur de cache)
   const { data: messages, error } = await supabase
     .from("chats")
-    .select(`
-      trip_id,
-      message,
-      timestamp,
-      sender_id,
-      trip:trips (
-        departure_name,
-        destination_name,
-        driver_id
-      )
-    `)
+    .select("trip_id, message, timestamp, sender_id")
     .order("timestamp", { ascending: false })
-    .limit(500);
+    .limit(1000);
 
   if (error) {
-    console.error("Erreur getRecentConversations:", error);
+    console.error("Erreur getRecentConversations (Fetch):", error.message);
     return [];
   }
 
-  const conversationsMap = new Map<string, Conversation>();
-  const allParticipantIds = new Set<string>();
+  if (!messages || messages.length === 0) return [];
 
-  for (const row of (messages || [])) {
+  // 2. Grouper par trip_id et collecter les IDs uniques
+  const conversationsMap = new Map<string, Conversation>();
+  const allTripIds = new Set<string>();
+  const allUserIds = new Set<string>();
+
+  for (const row of messages) {
     if (!row.trip_id) continue;
+    allTripIds.add(row.trip_id);
+    if (row.sender_id) allUserIds.add(row.sender_id);
 
     if (!conversationsMap.has(row.trip_id)) {
       conversationsMap.set(row.trip_id, {
@@ -76,34 +81,45 @@ export async function getRecentConversations(): Promise<Conversation[]> {
         last_timestamp: row.timestamp,
         participant_ids: [],
         participants: [],
-        departure_name: (row.trip as any)?.departure_name,
-        destination_name: (row.trip as any)?.destination_name,
       });
     }
 
     const conv = conversationsMap.get(row.trip_id)!;
     if (row.sender_id && !conv.participant_ids.includes(row.sender_id)) {
       conv.participant_ids.push(row.sender_id);
-      allParticipantIds.add(row.sender_id);
-    }
-    // S'assurer que le driver est aussi dans la liste des participants
-    if (row.trip?.driver_id && !conv.participant_ids.includes(row.trip.driver_id)) {
-        conv.participant_ids.push(row.trip.driver_id);
-        allParticipantIds.add(row.trip.driver_id);
     }
   }
 
-  // 2. On récupère les profils des participants en une seule fois
-  if (allParticipantIds.size > 0) {
+  // 3. Récupérer les détails des trajets manuellement
+  if (allTripIds.size > 0) {
+    const { data: trips } = await supabase
+      .from("trips")
+      .select("trip_id, departure_name, destination_name, driver_id")
+      .in("trip_id", Array.from(allTripIds));
+
+    if (trips) {
+      trips.forEach(t => {
+        const conv = conversationsMap.get(t.trip_id);
+        if (conv) {
+          conv.departure_name = t.departure_name;
+          conv.destination_name = t.destination_name;
+          if (t.driver_id) allUserIds.add(t.driver_id);
+        }
+      });
+    }
+  }
+
+  // 4. Récupérer les profils utilisateurs manuellement
+  if (allUserIds.size > 0) {
     const { data: profiles } = await supabase
-        .from("users")
-        .select("uid, display_name, photo_url")
-        .in("uid", Array.from(allParticipantIds));
-    
+      .from("users")
+      .select("uid, display_name, photo_url")
+      .in("uid", Array.from(allUserIds));
+
     if (profiles) {
-        conversationsMap.forEach(conv => {
-            conv.participants = profiles.filter(p => conv.participant_ids.includes(p.uid));
-        });
+      conversationsMap.forEach(conv => {
+        conv.participants = profiles.filter(p => conv.participant_ids.includes(p.uid));
+      });
     }
   }
 
