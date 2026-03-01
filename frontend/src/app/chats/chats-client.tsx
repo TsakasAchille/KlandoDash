@@ -10,6 +10,7 @@ import { Send, Loader2, User, Shield, TrendingUp, LifeBuoy, Sparkles } from "luc
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { linkify } from "@/features/chats/utils/linkify";
 
 interface ChatsClientProps {
   initialMessages: InternalMessage[];
@@ -107,7 +108,7 @@ export function ChatsClient({ initialMessages = [] }: ChatsClientProps) {
                   "p-4 rounded-2xl text-sm shadow-sm leading-relaxed",
                   isMe ? "bg-slate-900 text-white rounded-tr-none" : "bg-white border border-slate-100 text-slate-800 rounded-tl-none"
                 )}>
-                  {msg.content}
+                  {linkify(msg.content)}
                 </div>
                 <p className="text-[9px] font-bold text-slate-400 px-1 tabular-nums">
                   {format(new Date(msg.created_at), 'HH:mm', { locale: fr })}
