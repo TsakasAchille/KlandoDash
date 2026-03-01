@@ -51,8 +51,11 @@ export function ComparisonMap({
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     
+    // Protection contre la double initialisation Leaflet
+    // @ts-ignore
+    if (mapContainerRef.current._leaflet_id) return;
+
     // preferCanvas: true est CRITIQUE pour html2canvas. 
-    // Cela dessine les polylines sur un canvas au lieu de SVG, ce qui évite les décalages d'offset à la capture.
     const map = L.map(mapContainerRef.current, { 
       zoomControl: true, 
       scrollWheelZoom: false,

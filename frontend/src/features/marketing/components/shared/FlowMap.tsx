@@ -1,35 +1,23 @@
 "use client";
 
-import { MapContainer, TileLayer, Polyline, CircleMarker, Popup, useMap } from "react-leaflet";
+import { useEffect, useRef, useMemo, useState } from "react";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MarketingFlowStat } from "@/lib/queries/site-requests";
-import { useMemo, useEffect, useState } from "react";
-import L from "leaflet";
+import { Loader2 } from "lucide-react";
 
 interface FlowMapProps {
   stats: MarketingFlowStat[];
 }
 
-function MapRefresher() {
-  const map = useMap();
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [map]);
-  return null;
-}
-
 export default function FlowMap({ stats }: FlowMapProps) {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  // On utilise un ID d'instance pour forcer un remount propre
-  const [instanceId] = useState(() => Math.random().toString(36).substring(7));
 
   // Fix Leaflet icons issues in Next.js
   useEffect(() => {
     setIsMounted(true);
-    
     // @ts-ignore
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
@@ -39,10 +27,38 @@ export default function FlowMap({ stats }: FlowMapProps) {
     });
   }, []);
 
-  // Calculer les points chauds (Heatmap simplifiée par cercles)
+  // Initialize Map
+  useEffect(() => {
+    if (!isMounted || !mapContainerRef.current || mapRef.current) return;
+
+    // Check if container already has a map
+    // @ts-ignore
+    if (mapContainerRef.current._leaflet_id) return;
+
+    const map = L.map(mapContainerRef.current, {
+      center: [14.7167, -17.4677], // Dakar
+      zoom: 9,
+      scrollWheelZoom: false,
+      zoomControl: true,
+    });
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://carto.com/">CartoDB</a> contributors',
+    }).addTo(map);
+
+    mapRef.current = map;
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [isMounted]);
+
+  // Calculer les hotspots et dessiner les éléments
   const hotspots = useMemo(() => {
     const points: Record<string, { lat: number, lng: number, count: number, city: string }> = {};
-    
     stats.forEach(s => {
       const key = `${s.avg_origin_lat.toFixed(3)},${s.avg_origin_lng.toFixed(3)}`;
       if (!points[key]) {
@@ -50,93 +66,78 @@ export default function FlowMap({ stats }: FlowMapProps) {
       }
       points[key].count += Number(s.request_count);
     });
-
     return Object.values(points);
   }, [stats]);
 
-  const maxCount = useMemo(() => 
-    Math.max(...hotspots.map(h => h.count), 1)
-  , [hotspots]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
 
-  // Placeholder pendant le chargement côté client
-  if (!isMounted) return <div className="w-full h-[500px] rounded-[2rem] bg-slate-900" />;
+    // Nettoyer les couches existantes (hors tuiles)
+    map.eachLayer((layer) => {
+      if (layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
+        map.removeLayer(layer);
+      }
+    });
+
+    const maxCount = Math.max(...hotspots.map(h => h.count), 1);
+
+    // 1. Dessiner les FLUX
+    stats.forEach((flow) => {
+      const weight = Math.max(1, (Number(flow.request_count) / maxCount) * 10);
+      L.polyline([
+        [flow.avg_origin_lat, flow.avg_origin_lng],
+        [flow.avg_dest_lat, flow.avg_dest_lng]
+      ], {
+        color: '#7B1F2F',
+        weight: weight,
+        opacity: 0.3,
+        lineCap: 'round',
+        dashArray: '5, 10'
+      }).addTo(map).bindPopup(`
+        <div style="text-align: left; font-family: sans-serif;">
+          <strong style="text-transform: uppercase; font-size: 10px;">${flow.origin_city} ➜ ${flow.destination_city}</strong>
+          <div style="color: #7B1F2F; font-size: 10px; font-weight: bold; margin-top: 4px;">${flow.request_count} demandes</div>
+        </div>
+      `);
+    });
+
+    // 2. Dessiner la HEATMAP
+    hotspots.forEach((spot) => {
+      const intensity = spot.count / maxCount;
+      const radius = 10 + (intensity * 30);
+      L.circleMarker([spot.lat, spot.lng], {
+        fillColor: '#EBC33F',
+        fillOpacity: 0.3 + (intensity * 0.4),
+        color: 'transparent',
+        stroke: false,
+        radius: radius
+      }).addTo(map).bindPopup(`
+        <div style="text-align: left; font-family: sans-serif;">
+          <strong style="text-transform: uppercase; font-size: 10px;">${spot.city}</strong>
+          <div style="color: #7B1F2F; font-size: 10px; font-weight: bold; margin-top: 4px;">${spot.count} intentions au total</div>
+        </div>
+      `);
+    });
+
+    // Forcer le redimensionnement après un court délai
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [stats, hotspots]);
+
+  if (!isMounted) return (
+    <div className="w-full h-[500px] rounded-[2rem] bg-slate-900 flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-white/20 animate-spin" />
+    </div>
+  );
 
   return (
     <div className="w-full h-[500px] rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl relative bg-slate-900">
-      {/* 
-          IMPORTANT: On force un identifiant unique total pour le MapContainer 
-          à chaque montage du composant FlowMap pour éviter le conflit Leaflet.
-      */}
-      <MapContainer 
-        key={`map-instance-${instanceId}`}
-        center={[14.7167, -17.4677]} // Dakar
-        zoom={9} 
-        style={{ height: "100%", width: "100%" }}
-        className="z-0"
-        scrollWheelZoom={false}
-      >
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
-        />
-        
-        <MapRefresher />
-
-        {/* 1. FLUX (Top Routes) */}
-        {stats.map((flow, i) => {
-          const weight = Math.max(1, (Number(flow.request_count) / maxCount) * 10);
-          return (
-            <Polyline 
-              key={`flow-${instanceId}-${i}`}
-              positions={[
-                [flow.avg_origin_lat, flow.avg_origin_lng],
-                [flow.avg_dest_lat, flow.avg_dest_lng]
-              ]}
-              pathOptions={{
-                color: '#7B1F2F',
-                weight: weight,
-                opacity: 0.3,
-                lineCap: 'round',
-                dashArray: '5, 10'
-              }}
-            >
-              <Popup>
-                <div className="text-[10px] font-black uppercase text-slate-900 text-left">
-                  {flow.origin_city} ➜ {flow.destination_city}
-                  <div className="text-klando-burgundy mt-1">{flow.request_count} demandes</div>
-                </div>
-              </Popup>
-            </Polyline>
-          );
-        })}
-
-        {/* 2. HEATMAP (Circle Markers) */}
-        {hotspots.map((spot, i) => {
-          const intensity = spot.count / maxCount;
-          const radius = 10 + (intensity * 30);
-          return (
-            <CircleMarker 
-              key={`spot-${instanceId}-${i}`}
-              center={[spot.lat, spot.lng]}
-              pathOptions={{
-                fillColor: '#EBC33F',
-                fillOpacity: 0.3 + (intensity * 0.4),
-                color: 'transparent',
-                stroke: false
-              }}
-              radius={radius}
-            >
-              <Popup>
-                <div className="text-[10px] font-black uppercase text-slate-900 text-left">
-                  {spot.city}
-                  <div className="text-klando-burgundy mt-1">{spot.count} intentions au total</div>
-                </div>
-              </Popup>
-            </CircleMarker>
-          );
-        })}
-      </MapContainer>
-
+      <div ref={mapContainerRef} className="w-full h-full z-0" />
+      
       {/* Overlay Legend */}
       <div className="absolute bottom-6 left-6 z-[400] bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-2xl pointer-events-none">
         <h4 className="text-[10px] font-black uppercase text-slate-900 tracking-widest mb-3">Légende des Flux</h4>

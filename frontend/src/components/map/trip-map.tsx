@@ -241,6 +241,10 @@ export function TripMap({
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
+    // Protection contre la double initialisation Leaflet
+    // @ts-ignore
+    if (mapContainerRef.current._leaflet_id) return;
+
     const styleElement = document.createElement('style');
     styleElement.textContent = popupStyles;
     document.head.appendChild(styleElement);
