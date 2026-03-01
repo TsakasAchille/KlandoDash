@@ -5,6 +5,7 @@ import { MarketingEmail } from "@/app/marketing/types";
 import { createEmailDraftAction, moveEmailToTrashAction, updateMarketingEmailAction } from "@/app/marketing/actions/mailing";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 // Sous-composants SOLID
 import { MailSidebar, MailFolder } from "./mailing/MailSidebar";
@@ -155,8 +156,11 @@ export function MailingTab({
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:h-[750px] animate-in fade-in duration-500">
 
-      {/* LEFT: Sidebar + List (hidden on mobile when viewer is open) */}
-      <div className={`flex flex-col lg:flex-row gap-4 lg:gap-6 flex-1 min-w-0 ${isViewerActive ? 'hidden lg:flex' : ''}`}>
+      {/* LEFT COLUMN: Sidebar + List stacked (hidden on mobile when viewer is open) */}
+      <div className={cn(
+        "flex flex-col gap-4 lg:w-[320px] shrink-0 min-h-0",
+        isViewerActive ? 'hidden lg:flex' : 'flex'
+      )}>
         <MailSidebar
           activeFolder={activeFolder}
           setActiveFolder={setActiveFolder}
@@ -165,7 +169,6 @@ export function MailingTab({
           isScanning={isScanning}
           counts={folderCounts}
         />
-
         <MailList
           emails={filteredEmails}
           selectedId={selectedEmailId}
@@ -174,7 +177,7 @@ export function MailingTab({
         />
       </div>
 
-      {/* RIGHT: Viewer (hidden on mobile when no email selected) */}
+      {/* RIGHT COLUMN: Viewer (opens alongside on desktop, replaces list on mobile) */}
       {selectedEmail && (
         <MailViewer
             email={selectedEmail}

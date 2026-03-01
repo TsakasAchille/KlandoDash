@@ -13,10 +13,7 @@ interface MailListProps {
 
 export function MailList({ emails, selectedId, onSelect, activeFolder }: MailListProps) {
   return (
-    <div className={cn(
-      "flex-1 bg-white border border-slate-200 rounded-2xl lg:rounded-[2rem] overflow-hidden shadow-xl flex flex-col transition-all duration-500",
-      selectedId ? "lg:flex-[0.4]" : "flex-1"
-    )}>
+    <div className="flex-1 bg-white border border-slate-200 rounded-2xl lg:rounded-[2rem] overflow-hidden shadow-xl flex flex-col transition-all duration-500">
       <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between text-left">
         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 pl-2">{activeFolder}</h3>
         <div className="flex items-center gap-2 pr-2">

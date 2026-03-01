@@ -26,7 +26,7 @@ export function MailSidebar({
   counts
 }: MailSidebarProps) {
   return (
-    <div className="w-full lg:w-64 flex flex-col gap-2 text-left shrink-0">
+    <div className="w-full flex flex-col gap-2 text-left shrink-0">
       <Button
         onClick={onCompose}
         className="w-full h-11 lg:h-12 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 font-black uppercase text-[9px] lg:text-[10px] tracking-widest gap-2 lg:gap-3 shadow-xl mb-2 border-none transition-all active:scale-95 group"
