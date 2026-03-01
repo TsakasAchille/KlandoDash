@@ -20,6 +20,7 @@ const navItems = [
   { href: "/", label: "Accueil", icon: Home },
   { href: "/trips", label: "Trajets", icon: Car },
   { href: "/users", label: "Utilisateurs", icon: Users },
+  { href: "/chats", label: "Messages", icon: MessageSquare },
   { href: "/map", label: "Carte", icon: Map },
 ];
 

@@ -59,9 +59,9 @@ Les composants lourds (`CommunicationTab`, `MailingTab`, `MapClient`) sont déco
 - [x] Migration SMTP Google (Nodemailer) pour le mailing.
 - [x] Rôle `ia` avec accès restreint.
 - [x] Implémentation des Journaux d'Audit (Audit Logs) pour les actions admin.
+- [x] Module de Chat inter-utilisateurs (Modération et Supervision).
 
 ### TODO 🚧
-- [ ] Implémentation du module de Chat inter-utilisateurs.
 - [ ] Tests exhaustifs sur les cas limites de matching PostGIS.
 
 ## Useful Documentation
