@@ -40,7 +40,7 @@ export function IdeasGrid({
         </Button>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6 text-left">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 text-left">
         {ideas.length > 0 ? (
           ideas.slice(0, 3).map((idea) => (
             <Card key={idea.id} className="bg-card/40 backdrop-blur-md border-white/5 hover:border-purple-500/30 transition-all duration-500 group overflow-hidden">

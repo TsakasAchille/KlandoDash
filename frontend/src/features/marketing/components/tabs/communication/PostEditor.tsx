@@ -5,8 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Edit3, Wand2, Loader2, X, Save, ImagePlus, Hash, Sparkles, Type, PenLine
+import {
+  Edit3, Wand2, Loader2, X, Save, ImagePlus, Hash, Sparkles, Type, PenLine, ChevronLeft
 } from "lucide-react";
 import { MarketingComm, CommPlatform } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ interface PostEditorProps {
   isUpdating: boolean;
   isRefining: boolean;
   isUploading: boolean;
+  onMobileBack?: () => void;
 }
 
 export function PostEditor({
@@ -32,7 +33,8 @@ export function PostEditor({
   onFileUpload,
   isUpdating,
   isRefining,
-  isUploading
+  isUploading,
+  onMobileBack
 }: PostEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -66,8 +68,13 @@ export function PostEditor({
   return (
     <Card className="flex-1 bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col text-left">
       {/* HEADER */}
-      <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30 shrink-0">
+      <div className="p-4 lg:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30 shrink-0">
         <div className="flex items-center gap-3">
+          {onMobileBack && (
+            <button onClick={onMobileBack} className="lg:hidden p-1.5 -ml-1 rounded-lg hover:bg-slate-100 text-slate-500">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
           <div className="p-2 rounded-xl text-white shadow-lg bg-purple-600 shadow-purple-200">
             <PenLine className="w-5 h-5" />
           </div>
@@ -83,7 +90,7 @@ export function PostEditor({
         </Button>
       </div>
 
-      <div className="p-8 md:p-10 space-y-8 overflow-y-auto custom-scrollbar">
+      <div className="p-4 md:p-8 lg:p-10 space-y-8 overflow-y-auto custom-scrollbar">
         
         {/* 1. TOP BAR: TITLE & PLATFORM */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -144,7 +151,7 @@ export function PostEditor({
                     <Textarea 
                         value={editForm.content || ""} 
                         onChange={(e) => setEditForm({...editForm, content: e.target.value})}
-                        className="min-h-[300px] bg-slate-50 border-slate-200 leading-relaxed text-sm p-6 rounded-2xl resize-none focus:ring-purple-500/10 shadow-inner"
+                        className="min-h-[180px] lg:min-h-[300px] bg-slate-50 border-slate-200 leading-relaxed text-sm p-4 lg:p-6 rounded-2xl resize-none focus:ring-purple-500/10 shadow-inner"
                         placeholder="Contenu de la publication (optionnel si post visuel uniquement)..."
                     />
                 </div>
@@ -229,7 +236,7 @@ export function PostEditor({
         </div>
       </div>
 
-      <div className="p-8 border-t border-slate-100 bg-white shrink-0 mt-auto">
+      <div className="p-4 lg:p-8 border-t border-slate-100 bg-white shrink-0 mt-auto">
         <Button 
           onClick={onSave} 
           disabled={isUpdating} 

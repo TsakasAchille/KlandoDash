@@ -14,8 +14,8 @@ interface MailListProps {
 export function MailList({ emails, selectedId, onSelect, activeFolder }: MailListProps) {
   return (
     <div className={cn(
-      "flex-1 bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-xl flex flex-col transition-all duration-500",
-      selectedId ? "flex-[0.4]" : "flex-1"
+      "flex-1 bg-white border border-slate-200 rounded-2xl lg:rounded-[2rem] overflow-hidden shadow-xl flex flex-col transition-all duration-500",
+      selectedId ? "lg:flex-[0.4]" : "flex-1"
     )}>
       <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between text-left">
         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 pl-2">{activeFolder}</h3>
@@ -25,14 +25,14 @@ export function MailList({ emails, selectedId, onSelect, activeFolder }: MailLis
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto custom-scrollbar max-h-[50vh] lg:max-h-none">
         {emails.length > 0 ? (
           emails.map((email) => (
             <div 
               key={email.id}
               onClick={() => onSelect(email.id)}
               className={cn(
-                "flex items-center gap-4 px-6 py-4 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50 group text-left",
+                "flex items-center gap-3 lg:gap-4 px-4 lg:px-6 py-3 lg:py-4 border-b border-slate-50 cursor-pointer transition-all hover:bg-slate-50 group text-left",
                 selectedId === email.id ? "bg-purple-50/50 border-l-4 border-l-purple-600" : ""
               )}
             >

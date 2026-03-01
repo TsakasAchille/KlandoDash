@@ -51,7 +51,7 @@ export function MailCompose({
           </DialogHeader>
 
           <div className="flex-1 p-8 space-y-4 overflow-y-auto custom-scrollbar text-left bg-white">
-            <div className="grid grid-cols-2 gap-4 text-left">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
               <div className="space-y-1.5 text-left">
                 <label className="text-[10px] font-black text-slate-700 uppercase pl-1 flex items-center gap-2"><User className="w-3 h-3 text-purple-600"/> Destinataire (Email)</label>
                 <Input 

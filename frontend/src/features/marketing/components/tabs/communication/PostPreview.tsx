@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
   Send, Edit3, Image as ImageIcon, ExternalLink, Trash2, RotateCcw,
-  PenLine, Hash, Sparkles, Calendar, Clock
+  PenLine, Hash, Sparkles, Calendar, Clock, ChevronLeft
 } from "lucide-react";
 import { MarketingComm } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ interface PostPreviewProps {
   onTrash: (id: string) => void;
   onRestore: (id: string) => void;
   onDeletePerm: (id: string) => void;
+  onMobileBack?: () => void;
 }
 
 export function PostPreview({
@@ -23,7 +24,8 @@ export function PostPreview({
     onStartEdit,
     onTrash,
     onRestore,
-    onDeletePerm
+    onDeletePerm,
+    onMobileBack
 }: PostPreviewProps) {
   const isInTrash = activePost.status === 'TRASH';
   const hasContent = !!activePost.content;
@@ -41,8 +43,13 @@ export function PostPreview({
   return (
     <Card className="flex-1 bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col text-left animate-in zoom-in-95 duration-300">
       {/* HEADER */}
-      <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30 shrink-0">
+      <div className="p-4 lg:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30 shrink-0">
         <div className="flex items-center gap-3">
+          {onMobileBack && (
+            <button onClick={onMobileBack} className="lg:hidden p-1.5 -ml-1 rounded-lg hover:bg-slate-100 text-slate-500">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
           <div className={cn(
               "p-2 rounded-xl text-white shadow-lg",
               isInTrash ? "bg-red-500 shadow-red-100" : "bg-purple-600 shadow-purple-200"

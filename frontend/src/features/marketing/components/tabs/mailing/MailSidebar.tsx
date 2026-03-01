@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { 
-  Plus, Sparkles, Loader2, FileText, SendHorizontal, AlertCircle, Trash2
+import {
+  Plus, Sparkles, FileText, SendHorizontal, AlertCircle, Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,60 +26,51 @@ export function MailSidebar({
   counts
 }: MailSidebarProps) {
   return (
-    <div className="w-64 flex flex-col gap-2 text-left">
-      <Button 
+    <div className="w-full lg:w-64 flex flex-col gap-2 text-left shrink-0">
+      <Button
         onClick={onCompose}
-        className="w-full h-12 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 font-black uppercase text-[10px] tracking-widest gap-3 shadow-xl mb-2 border-none transition-all active:scale-95 group"
+        className="w-full h-11 lg:h-12 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 font-black uppercase text-[9px] lg:text-[10px] tracking-widest gap-2 lg:gap-3 shadow-xl mb-2 border-none transition-all active:scale-95 group"
       >
-        <Plus className="w-4 h-4 text-white group-hover:scale-110 transition-transform" /> 
+        <Plus className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
         <span>Nouveau Message</span>
       </Button>
 
-      <Button 
-        onClick={onScan}
-        disabled={isScanning}
-        variant="outline"
-        className="w-full h-10 rounded-xl border-purple-600 bg-purple-50 text-purple-700 hover:bg-purple-100 font-black uppercase text-[10px] tracking-widest gap-3 mb-4 transition-all"
-      >
-        {isScanning ? <Loader2 className="w-4 h-4 animate-spin text-purple-600" /> : <Sparkles className="w-4 h-4 text-purple-600" />}
-        <span>Scan Opportunités</span>
-      </Button>
-
-      <div className="space-y-1">
-        <FolderItem 
-          icon={Sparkles} 
-          label="Suggestions ✨" 
+      {/* Folders: horizontal scroll on mobile, vertical on desktop */}
+      <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 -mx-1 px-1 lg:mx-0 lg:px-0">
+        <FolderItem
+          icon={Sparkles}
+          label="Suggestions ✨"
           count={counts.suggestions}
           active={activeFolder === 'SUGGESTIONS'}
           onClick={() => setActiveFolder('SUGGESTIONS')}
           color="text-purple-700"
         />
-        <FolderItem 
-          icon={FileText} 
-          label="Brouillons" 
+        <FolderItem
+          icon={FileText}
+          label="Brouillons"
           count={counts.drafts}
           active={activeFolder === 'DRAFTS'}
           onClick={() => setActiveFolder('DRAFTS')}
           color="text-blue-700"
         />
-        <FolderItem 
-          icon={SendHorizontal} 
-          label="Envoyés" 
+        <FolderItem
+          icon={SendHorizontal}
+          label="Envoyés"
           active={activeFolder === 'SENT'}
           onClick={() => setActiveFolder('SENT')}
           color="text-green-700"
         />
-        <FolderItem 
-          icon={AlertCircle} 
-          label="Échecs" 
+        <FolderItem
+          icon={AlertCircle}
+          label="Échecs"
           active={activeFolder === 'FAILED'}
           onClick={() => setActiveFolder('FAILED')}
           color="text-red-700"
         />
-        <div className="pt-4 mt-4 border-t border-slate-200">
-          <FolderItem 
-              icon={Trash2} 
-              label="Corbeille" 
+        <div className="lg:pt-4 lg:mt-4 lg:border-t border-slate-200">
+          <FolderItem
+              icon={Trash2}
+              label="Corbeille"
               active={activeFolder === 'TRASH'}
               onClick={() => setActiveFolder('TRASH')}
               color="text-slate-600"
@@ -104,10 +95,10 @@ function FolderItem({ icon: Icon, label, active, onClick, count, color }: Folder
   const hoverTextColor = color || "text-slate-900";
 
   return (
-    <button 
+    <button
       onClick={onClick}
       className={cn(
-        "w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group",
+        "w-auto lg:w-full shrink-0 flex items-center justify-between px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl transition-all duration-200 group whitespace-nowrap",
         active ? `${activeBg} shadow-sm border border-slate-200/50` : "text-slate-500 hover:bg-slate-100"
       )}
     >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { LayoutGrid, PenLine } from "lucide-react";
 import { MarketingComm, CommPlatform, CommStatus } from "@/app/marketing/types";
 import { 
@@ -46,7 +46,10 @@ export function CommunicationTab({
   
   // Le générateur est maintenant affiché par défaut si rien n'est sélectionné
   const [showGenerator, setShowGenerator] = useState(true);
-  
+
+  // Mobile master/detail: track if workspace should be visible on mobile
+  const [mobileShowWorkspace, setMobileShowWorkspace] = useState(false);
+
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -58,6 +61,15 @@ export function CommunicationTab({
         setShowGenerator(false);
     }
   }, [selectedId, editingId]);
+
+  // Mobile: workspace is active when editing, previewing, or generator shown
+  const isWorkspaceActive = !!(editingId || selectedId || mobileShowWorkspace);
+
+  const handleMobileBack = useCallback(() => {
+    setSelectedId(null);
+    setEditingId(null);
+    setMobileShowWorkspace(false);
+  }, []);
 
   // Filtrage intelligent
   const filteredComms = useMemo(() => {
@@ -210,9 +222,9 @@ export function CommunicationTab({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-10 animate-in fade-in duration-500 text-left items-stretch relative h-full overflow-hidden">
-      {/* LEFT SIDEBAR - FIXED COLUMN */}
-      <div className="w-[320px] shrink-0 z-20">
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 animate-in fade-in duration-500 text-left items-stretch relative lg:h-full lg:overflow-hidden">
+      {/* LEFT SIDEBAR - FIXED COLUMN (hidden on mobile when workspace is active) */}
+      <div className={`w-full lg:w-[320px] shrink-0 z-20 ${isWorkspaceActive ? 'hidden lg:block' : ''}`}>
         <PostList
             comms={filteredComms}
             selectedId={selectedId}
@@ -222,15 +234,15 @@ export function CommunicationTab({
             setStatusFilter={setStatusFilter}
             onSelect={(id) => { setSelectedId(id); setEditingId(null); }}
             onStartManual={handleStartManual}
-            onShowGenerator={() => { setShowGenerator(true); setSelectedId(null); setEditingId(null); }}
+            onShowGenerator={() => { setShowGenerator(true); setSelectedId(null); setEditingId(null); setMobileShowWorkspace(true); }}
             isGeneratorActive={showGenerator}
         />
       </div>
 
-      {/* MAIN WORKSPACE (Production Zone - Scrolls independently) */}
-      <div className="flex-1 w-full min-w-0 max-w-[1100px] flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
+      {/* MAIN WORKSPACE (Production Zone - hidden on mobile when no workspace content) */}
+      <div className={`flex-1 w-full min-w-0 max-w-[1100px] flex flex-col gap-6 lg:overflow-y-auto pr-0 lg:pr-2 custom-scrollbar ${!isWorkspaceActive ? 'hidden lg:flex' : ''}`}>
           {editingId ? (
-              <PostEditor 
+              <PostEditor
                   editForm={editForm}
                   setEditForm={setEditForm}
                   onClose={() => { setEditingId(null); }}
@@ -240,17 +252,19 @@ export function CommunicationTab({
                   isUpdating={isUpdating}
                   isRefining={isRefining}
                   isUploading={isUploading}
+                  onMobileBack={handleMobileBack}
               />
           ) : activePost ? (
-              <PostPreview 
+              <PostPreview
                   activePost={activePost}
                   onStartEdit={handleStartEdit}
                   onTrash={handleTrash}
                   onRestore={handleRestore}
                   onDeletePerm={handleDeletePerm}
+                  onMobileBack={handleMobileBack}
               />
           ) : (
-              <AIGenerator 
+              <AIGenerator
                   selectedPlatform={selectedPlatform}
                   setSelectedPlatform={setSelectedPlatform}
                   topic={topic}
@@ -261,6 +275,7 @@ export function CommunicationTab({
                   ideas={ideas}
                   onGenerateIdeas={onGenerateIdeas}
                   onUseTheme={(theme) => handleGenerate(theme)}
+                  onMobileBack={handleMobileBack}
               />
           )}
       </div>

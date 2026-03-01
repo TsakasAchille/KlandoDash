@@ -3,8 +3,8 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Sparkles, Loader2, Target, MapPin, Music, Instagram, Twitter, Linkedin, MoreHorizontal
+import {
+  Sparkles, Loader2, Target, MapPin, Music, Instagram, Twitter, Linkedin, MoreHorizontal, ChevronLeft
 } from "lucide-react";
 import { CommPlatform, MarketingComm } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ interface AIGeneratorProps {
   ideas: MarketingComm[];
   onGenerateIdeas: () => void;
   onUseTheme: (theme: string) => void;
+  onMobileBack?: () => void;
 }
 
 export function AIGenerator({
@@ -33,7 +34,8 @@ export function AIGenerator({
   isScanning,
   ideas,
   onGenerateIdeas,
-  onUseTheme
+  onUseTheme,
+  onMobileBack
 }: AIGeneratorProps) {
   const platforms: { id: CommPlatform; label: string; icon: React.ElementType }[] = [
     { id: 'TIKTOK', label: 'TikTok', icon: Music },
@@ -44,7 +46,14 @@ export function AIGenerator({
   ];
 
   return (
-    <div className="flex flex-col gap-6 h-full animate-in fade-in duration-500 overflow-y-auto custom-scrollbar pr-2">
+    <div className="flex flex-col gap-6 h-full animate-in fade-in duration-500 lg:overflow-y-auto custom-scrollbar pr-0 lg:pr-2">
+      {/* Mobile back button */}
+      {onMobileBack && (
+        <button onClick={onMobileBack} className="lg:hidden flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-700 py-1">
+          <ChevronLeft className="w-4 h-4" /> Retour
+        </button>
+      )}
+
       {/* 1. IDEAS GRID (Inspirations) */}
       <div className="bg-white/50 backdrop-blur-sm border border-slate-200 rounded-[2.5rem] p-6 shadow-sm">
         <IdeasGrid 
@@ -57,7 +66,7 @@ export function AIGenerator({
 
       {/* 2. GENERATOR FORM */}
       <Card className="bg-white border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col shrink-0">
-        <div className="p-8 flex flex-col items-center justify-center text-center space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 flex flex-col items-center justify-center text-center space-y-6">
           <div className="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center shadow-xl shadow-purple-200">
             <Sparkles className="w-7 h-7 text-white" />
           </div>
@@ -66,7 +75,7 @@ export function AIGenerator({
             <p className="text-[10px] font-medium text-slate-500 leading-relaxed italic px-4 text-center">Vous avez déjà une idée précise ? Saisissez-la ci-dessous et laissez l&apos;IA s&apos;occuper de la rédaction.</p>
           </div>
 
-          <div className="w-full max-w-xl grid grid-cols-3 gap-3">
+          <div className="w-full max-w-xl grid grid-cols-2 sm:grid-cols-3 gap-3">
             {platforms.map(p => (
               <Button 
                 key={p.id}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { MarketingEmail } from "@/app/marketing/types";
 import { createEmailDraftAction, moveEmailToTrashAction, updateMarketingEmailAction } from "@/app/marketing/actions/mailing";
 import { toast } from "sonner";
@@ -145,27 +145,38 @@ export function MailingTab({
     }
   };
 
+  // Mobile: viewer replaces sidebar+list
+  const isViewerActive = !!selectedEmail;
+
+  const handleMobileBack = useCallback(() => {
+    setSelectedEmailId(null);
+  }, []);
+
   return (
-    <div className="flex gap-6 h-[750px] animate-in fade-in duration-500">
-      
-      <MailSidebar 
-        activeFolder={activeFolder}
-        setActiveFolder={setActiveFolder}
-        onCompose={() => setIsComposeOpen(true)}
-        onScan={onScan}
-        isScanning={isScanning}
-        counts={folderCounts}
-      />
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:h-[750px] animate-in fade-in duration-500">
 
-      <MailList 
-        emails={filteredEmails}
-        selectedId={selectedEmailId}
-        onSelect={setSelectedEmailId}
-        activeFolder={activeFolder}
-      />
+      {/* LEFT: Sidebar + List (hidden on mobile when viewer is open) */}
+      <div className={`flex flex-col lg:flex-row gap-4 lg:gap-6 flex-1 min-w-0 ${isViewerActive ? 'hidden lg:flex' : ''}`}>
+        <MailSidebar
+          activeFolder={activeFolder}
+          setActiveFolder={setActiveFolder}
+          onCompose={() => setIsComposeOpen(true)}
+          onScan={onScan}
+          isScanning={isScanning}
+          counts={folderCounts}
+        />
 
+        <MailList
+          emails={filteredEmails}
+          selectedId={selectedEmailId}
+          onSelect={setSelectedEmailId}
+          activeFolder={activeFolder}
+        />
+      </div>
+
+      {/* RIGHT: Viewer (hidden on mobile when no email selected) */}
       {selectedEmail && (
-        <MailViewer 
+        <MailViewer
             email={selectedEmail}
             onClose={() => setSelectedEmailId(null)}
             onUpdate={handleUpdateMail}
@@ -175,10 +186,11 @@ export function MailingTab({
             isSaving={isSaving}
             isTrashing={isTrashing}
             sendingEmailId={sendingEmailId}
+            onMobileBack={handleMobileBack}
         />
       )}
 
-      <MailCompose 
+      <MailCompose
         isOpen={isComposeOpen}
         onOpenChange={setIsComposeOpen}
         onSave={handleCreateDraft}

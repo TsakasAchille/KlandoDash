@@ -35,7 +35,7 @@ export function PostList({
   isGeneratorActive
 }: PostListProps) {
   return (
-    <div className="w-80 flex-none flex flex-col gap-4 h-full">
+    <div className="w-full lg:w-80 flex-none flex flex-col gap-4 h-auto lg:h-full">
       <div className="space-y-3">
         <div className="flex flex-col gap-2">
           <Button 
@@ -82,7 +82,7 @@ export function PostList({
           </Tabs>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5 max-h-[60vh] lg:max-h-none">
           {comms.length > 0 ? (
             comms.map((comm) => (
               <div 
@@ -110,10 +110,10 @@ export function PostList({
                     {comm.platform === 'X' && <Twitter className="w-2.5 h-2.5" />}
                     {comm.platform === 'OTHER' && <MoreHorizontal className="w-2.5 h-2.5" />}
                   </div>
-                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-tighter">{comm.platform}</span>
+                  <span className="text-[10px] lg:text-[8px] font-black uppercase text-slate-400 tracking-tighter">{comm.platform}</span>
                 </div>
-                <p className="text-[10px] font-black text-slate-900 uppercase truncate">{comm.title}</p>
-                <p className="text-[8px] text-slate-500 truncate italic mt-0.5">
+                <p className="text-xs lg:text-[10px] font-black text-slate-900 uppercase truncate">{comm.title}</p>
+                <p className="text-[10px] lg:text-[8px] text-slate-500 truncate italic mt-0.5">
                   {comm.content || "(Média uniquement)"}
                 </p>
               </div>
