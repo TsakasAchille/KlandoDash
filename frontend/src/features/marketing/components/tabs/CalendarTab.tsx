@@ -39,11 +39,17 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState<string | null>(null);
 
-  // Génération des jours pour une grille de calendrier complète
+  // Génération des jours — toujours 6 lignes (42 cellules) pour taille fixe
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
     const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 });
-    return eachDayOfInterval({ start, end });
+    const interval = eachDayOfInterval({ start, end });
+    // Toujours 42 jours (6 lignes) pour éviter le changement de taille
+    while (interval.length < 42) {
+      const lastDay = interval[interval.length - 1];
+      interval.push(new Date(lastDay.getFullYear(), lastDay.getMonth(), lastDay.getDate() + 1));
+    }
+    return interval;
   }, [currentMonth]);
 
   const events = useMemo(() => {
@@ -97,11 +103,11 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
   };
 
   return (
-    <div className="relative flex flex-col lg:flex-row gap-8 animate-in fade-in duration-700 text-left">
-      
+    <div className="relative flex flex-col lg:flex-row gap-6 animate-in fade-in duration-700 text-left h-full">
+
       {/* 1. CALENDAR GRID (Left/Main - 2/3 width) */}
-      <div className="lg:flex-[2] flex flex-col space-y-6">
-        <div className="flex items-center justify-between bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm">
+      <div className="flex-1 flex flex-col gap-4 min-h-0 min-w-0">
+        <div className="flex items-center justify-between bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm shrink-0">
           <div className="flex items-center gap-4 pl-4">
             <div className="p-2 bg-purple-50 rounded-xl">
                 <CalendarIcon className="w-6 h-6 text-purple-600" />
@@ -118,21 +124,21 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
         </div>
 
         {/* --- GRID SYSTEM --- */}
-        <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-xl flex flex-col w-full">
+        <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-xl flex flex-col w-full flex-1 min-h-0">
           {/* Days Header - FORCED GRID */}
-          <div 
-            className="grid grid-cols-7 bg-slate-50/50 border-b border-slate-100"
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}
+          <div
+            className="grid grid-cols-7 bg-slate-50/50 border-b border-slate-100 shrink-0"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
           >
             {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(d => (
-              <div key={d} className="py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100 last:border-r-0">{d}</div>
+              <div key={d} className="py-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100 last:border-r-0">{d}</div>
             ))}
           </div>
-          
-          {/* Calendar Body - FORCED GRID WITH ASPECT SQUARE CELLS */}
-          <div 
-            className="grid grid-cols-7"
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}
+
+          {/* Calendar Body - FIXED HEIGHT ROWS */}
+          <div
+            className="grid grid-cols-7 flex-1 min-h-0"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: 'repeat(6, minmax(0, 1fr))' }}
           >
             {days.map((day, i) => {
               const dayEvents = events.filter(e => isSameDay(e.date, day));
@@ -140,7 +146,7 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
               const dayId = format(day, 'yyyy-MM-dd');
               
               return (
-                <div 
+                <div
                   key={i}
                   onClick={() => setSelectedDay(day)}
                   onDragOver={(e) => {
@@ -150,7 +156,7 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
                   onDragLeave={() => setIsDraggingOver(null)}
                   onDrop={(e) => handleDrop(e, day)}
                   className={cn(
-                    "relative aspect-square border-r border-b border-slate-100 p-4 transition-all hover:bg-slate-50/50 cursor-pointer flex flex-col gap-2 overflow-hidden group",
+                    "relative border-r border-b border-slate-100 p-2 transition-all hover:bg-slate-50/50 cursor-pointer flex flex-col gap-1 overflow-hidden group min-h-0",
                     !isCurrentMonth && "bg-slate-50/20 opacity-30",
                     isToday(day) && "bg-purple-50/40",
                     selectedDay && isSameDay(day, selectedDay) 
@@ -159,9 +165,9 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
                     isDraggingOver === dayId && "bg-blue-50 ring-2 ring-blue-400 ring-inset z-10"
                   )}
                 >
-                  <div className="flex justify-between items-center mb-2 shrink-0">
+                  <div className="flex justify-between items-center mb-0.5 shrink-0">
                     <span className={cn(
-                      "text-xs font-black tabular-nums transition-all px-2 py-1 rounded-lg",
+                      "text-[11px] font-black tabular-nums transition-all px-1.5 py-0.5 rounded-md",
                       isToday(day) 
                         ? "bg-purple-600 text-white shadow-lg shadow-purple-200" 
                         : selectedDay && isSameDay(day, selectedDay)
@@ -212,8 +218,8 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
         </div>
       </div>
 
-      {/* 2. SIDEBAR (Right - 1/3 width) */}
-      <div className="lg:flex-1 flex flex-col h-full space-y-4">
+      {/* 2. SIDEBAR (Right - fixed width on desktop, hidden on mobile) */}
+      <div className="hidden lg:flex lg:w-[280px] shrink-0 flex-col min-h-0 space-y-4">
         <div className="flex items-center gap-2 px-2 py-2">
             <div className="p-1.5 bg-orange-50 rounded-lg">
                 <FileText className="w-4 h-4 text-orange-500" />
