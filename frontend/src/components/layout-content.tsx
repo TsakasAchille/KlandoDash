@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
+import { BackNavigation } from "@/components/navigation/BackNavigation";
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -64,6 +65,9 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Desktop: Sidebar fixe */}
       {!isMobile && <Sidebar />}
+      
+      {/* Bouton Retour Intelligent */}
+      <BackNavigation />
       
       {/* Contenu principal avec padding adaptatif */}
       <main className={`flex-1 overflow-auto transition-all duration-300 ${
