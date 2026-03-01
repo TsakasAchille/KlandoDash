@@ -95,10 +95,10 @@ function ValidationClientContent({
         />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6 relative">
+      <div className="grid lg:grid-cols-3 gap-6 relative h-[calc(100vh-180px)]">
         {/* List View */}
         <div className={cn(
-          "lg:col-span-1",
+          "lg:col-span-1 overflow-y-auto pr-2 scrollbar-thin",
           showMobileDetails ? "hidden lg:block" : "block"
         )}>
           <UserList 
@@ -112,7 +112,7 @@ function ValidationClientContent({
 
         {/* Details View */}
         <div className={cn(
-          "lg:col-span-2",
+          "lg:col-span-2 overflow-y-auto pr-2 scrollbar-thin pb-10",
           !showMobileDetails ? "hidden lg:block" : "block"
         )}>
           <UserDetails 

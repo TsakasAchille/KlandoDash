@@ -38,7 +38,7 @@ export function UserList({
           <p className="text-sm text-muted-foreground italic">Aucun utilisateur trouvé</p>
         </div>
       ) : (
-        <div className="space-y-2 overflow-auto max-h-[calc(100vh-320px)] pr-2 scrollbar-thin">
+        <div className="space-y-2">
           {users.map((user) => (
             <button
               key={user.uid}
