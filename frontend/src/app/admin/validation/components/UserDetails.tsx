@@ -21,11 +21,10 @@ import { toast } from "sonner";
 interface UserDetailsProps {
   selectedUser: UserListItem | null;
   onValidate: () => void;
-  onAIComplete?: (newStatus: string) => void;
   onBack?: () => void;
 }
 
-export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: UserDetailsProps) {
+export function UserDetails({ selectedUser, onValidate, onBack }: UserDetailsProps) {
   const router = useRouter();
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -47,11 +46,11 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
         // Déterminer l'onglet de destination
         const targetTab = res.status === 'SUCCESS' ? 'ai_verified' : 'ai_alert';
         
-        if (onAIComplete) {
-            onAIComplete(targetTab);
-        } else {
-            router.refresh();
-        }
+        // Rediriger directement
+        const params = new URLSearchParams(window.location.search);
+        params.set("status", targetTab);
+        params.set("page", "1");
+        router.push(`?${params.toString()}`, { scroll: false });
       } else {
         toast.error(res.message || "Échec de l'analyse");
       }

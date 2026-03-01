@@ -19,31 +19,24 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
   const currentStatus = searchParams.get("status") || "all";
   const onlyPaid = searchParams.get("onlyPaid") === "true";
 
-  const toggleFilter = (params: Record<string, string | null>) => {
-    const newParams = new URLSearchParams(searchParams.toString());
+  const toggleFilter = (status: string | null, onlyPaid: boolean) => {
+    const params = new URLSearchParams(window.location.search);
     
-    // Pour rendre les cartes exclusives :
-    // Si on active un statut, on désactive onlyPaid
-    if (params.status && params.status !== "all") {
-        newParams.delete("onlyPaid");
-    }
-    // Si on active onlyPaid, on remet le statut à "all"
-    if (params.onlyPaid === "true") {
-        newParams.delete("status");
+    if (status && status !== "all") {
+        params.set("status", status);
+        params.delete("onlyPaid");
+    } else if (onlyPaid) {
+        params.set("onlyPaid", "true");
+        params.delete("status");
+    } else {
+        params.delete("status");
+        params.delete("onlyPaid");
     }
 
-    Object.entries(params).forEach(([key, value]) => {
-      if (value === null || value === "all" || value === "false") {
-        newParams.delete(key);
-      } else {
-        newParams.set(key, value);
-      }
-    });
-    // Reset page on filter change
-    newParams.set("page", "1");
+    params.set("page", "1");
     
     startTransition(() => {
-        router.push(`/trips?${newParams.toString()}`, { scroll: false });
+        router.push(`?${params.toString()}`, { scroll: false });
     });
   };
 
@@ -57,7 +50,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
         value={stats.total_trips} 
         icon={Car} 
         color="gold"
-        onClick={() => toggleFilter({ status: "all", onlyPaid: "false" })}
+        onClick={() => toggleFilter("all", false)}
         active={currentStatus === "all" && !onlyPaid}
       />
       <MiniStatCard 
@@ -65,7 +58,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
         value={stats.pending_trips} 
         icon={Clock} 
         color="blue"
-        onClick={() => toggleFilter({ status: "PENDING", onlyPaid: "false" })}
+        onClick={() => toggleFilter("PENDING", false)}
         active={currentStatus === "PENDING"}
       />
       <MiniStatCard 
@@ -73,7 +66,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
         value={stats.active_trips} 
         icon={Play} 
         color="gold"
-        onClick={() => toggleFilter({ status: "ACTIVE", onlyPaid: "false" })}
+        onClick={() => toggleFilter("ACTIVE", false)}
         active={currentStatus === "ACTIVE"}
       />
       <MiniStatCard 
@@ -82,7 +75,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
         icon={Banknote} 
         color="green"
         description="Avec transactions"
-        onClick={() => toggleFilter({ onlyPaid: "true", status: "all" })}
+        onClick={() => toggleFilter(null, true)}
         active={onlyPaid}
       />
       <MiniStatCard 
@@ -90,7 +83,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
         value={stats.completed_trips} 
         icon={CheckCircle2} 
         color="green"
-        onClick={() => toggleFilter({ status: "COMPLETED", onlyPaid: "false" })}
+        onClick={() => toggleFilter("COMPLETED", false)}
         active={currentStatus === "COMPLETED"}
       />
       <MiniStatCard 
@@ -98,7 +91,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
         value={stats.cancelled_trips} 
         icon={XCircle} 
         color="red"
-        onClick={() => toggleFilter({ status: "CANCELLED", onlyPaid: "false" })}
+        onClick={() => toggleFilter("CANCELLED", false)}
         active={currentStatus === "CANCELLED"}
       />
       <MiniStatCard 

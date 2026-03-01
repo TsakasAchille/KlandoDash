@@ -2,12 +2,14 @@
 
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search, X } from "lucide-react";
 import { Trip, TripDetail } from "@/types/trip";
 import { TripTable } from "@/components/trips/trip-table";
 import { TripDetails } from "@/components/trips/trip-details";
 import { StatCards } from "./stat-cards";
 import { TripStats } from "@/types/trip";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface TripsPageClientProps {
   initialTrips: Trip[];
@@ -31,40 +33,39 @@ function TripsPageClientContent({
   const [selectedTrip, setSelectedTrip] = useState<TripDetail | null>(initialSelectedTripDetail);
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [currentPage, setCurrentPage] = useState(1);
+  const [localSearch, setLocalSearch] = useState(searchParams.get("search") || "");
   const ITEMS_PER_PAGE = 5;
 
-  // Filtres
+  // Filtres issus de l'URL
   const statusFilter = searchParams.get("status") || "all";
   const onlyPaidFilter = searchParams.get("onlyPaid") === "true";
-  const searchFilter = searchParams.get("search")?.toLowerCase() || "";
 
-  // 1. FILTRAGE LOCAL
+  // FILTRAGE LOCAL (Instantané)
   const filteredTrips = useMemo(() => {
-    const filtered = initialTrips.filter(trip => {
+    return initialTrips.filter(trip => {
       const matchesStatus = statusFilter === "all" || trip.status === statusFilter;
       const matchesPaid = !onlyPaidFilter || trip.has_successful_transaction === true;
-      const matchesSearch = !searchFilter || 
-        trip.departure_city.toLowerCase().includes(searchFilter) ||
-        trip.destination_city.toLowerCase().includes(searchFilter) ||
-        trip.trip_id.toLowerCase().includes(searchFilter);
+      const matchesSearch = !localSearch || 
+        trip.departure_city.toLowerCase().includes(localSearch.toLowerCase()) ||
+        trip.destination_city.toLowerCase().includes(localSearch.toLowerCase()) ||
+        trip.trip_id.toLowerCase().includes(localSearch.toLowerCase());
       
       return matchesStatus && matchesPaid && matchesSearch;
     });
-    return filtered;
-  }, [initialTrips, statusFilter, onlyPaidFilter, searchFilter]);
+  }, [initialTrips, statusFilter, onlyPaidFilter, localSearch]);
 
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, onlyPaidFilter, searchFilter]);
+  }, [statusFilter, onlyPaidFilter, localSearch]);
 
-  // 2. PAGINATION LOCALE (5 éléments)
+  // PAGINATION LOCALE
   const paginatedTrips = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredTrips.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredTrips, currentPage]);
 
-  // Sync URL
+  // Sync URL selection
   useEffect(() => {
     setSelectedId(initialSelectedId);
     if (!initialSelectedId) setSelectedTrip(null);
@@ -72,7 +73,7 @@ function TripsPageClientContent({
 
   const handleSelectTrip = (trip: Trip) => {
     setSelectedId(trip.trip_id);
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     params.set("selected", trip.trip_id);
     router.push(`?${params.toString()}`, { scroll: false });
     setSelectedTrip(trip as unknown as TripDetail);
@@ -83,6 +84,27 @@ function TripsPageClientContent({
       {/* Stats cliquables */}
       <StatCards stats={stats} publicPendingCount={publicPendingCount} />
 
+      {/* Barre de recherche locale */}
+      <div className="relative max-w-xl mx-auto w-full">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Filtrer par ville ou ID..."
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
+          className="pl-11 h-12 text-sm rounded-2xl bg-card/40 border-border/60 focus:border-klando-gold/50 backdrop-blur-md shadow-sm"
+        />
+        {localSearch && (
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                onClick={() => setLocalSearch("")}
+            >
+                <X className="h-4 w-4 text-muted-foreground" />
+            </Button>
+        )}
+      </div>
+
       {/* Tableau (Full width, max 5 éléments) */}
       <div className="space-y-6">
         <TripTable 
@@ -92,7 +114,6 @@ function TripsPageClientContent({
           pageSize={ITEMS_PER_PAGE}
           selectedTripId={selectedId}
           onSelectTrip={handleSelectTrip}
-          // On passe une fonction de mise à jour pour la pagination locale
           onPageChange={setCurrentPage}
         />
       </div>
@@ -106,7 +127,7 @@ function TripsPageClientContent({
         ) : (
           <div className="h-[200px] flex items-center justify-center rounded-[2.5rem] border border-dashed border-border/40 bg-card/5 backdrop-blur-sm">
             <div className="text-center space-y-2 opacity-40">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sélectionnez un trajet ci-dessus pour voir les détails financiers et passagers</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sélectionnez un trajet pour voir les détails financiers</p>
             </div>
           </div>
         )}

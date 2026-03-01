@@ -121,7 +121,6 @@ function ValidationClientContent({
           <UserDetails 
             selectedUser={selectedUser}
             onValidate={handleValidate}
-            onAIComplete={(targetTab) => updateFilters(targetTab, 1, true)}
             onBack={() => setShowMobileDetails(false)}
           />
         </div>

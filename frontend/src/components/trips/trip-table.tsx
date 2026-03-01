@@ -10,9 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { useTripFilters } from "./hooks/useTripFilters";
-import { TripFilters } from "./sub-components/TripFilters";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { TripTableRow } from "./sub-components/TripTableRow";
 import { Button } from "@/components/ui/button";
 
@@ -22,9 +20,8 @@ interface TripTableProps {
   currentPage: number;
   pageSize: number;
   selectedTripId: string | null;
-  initialSelectedId?: string | null;
   onSelectTrip: (trip: Trip) => void;
-  onPageChange?: (page: number) => void;
+  onPageChange: (page: number) => void;
 }
 
 export function TripTable({ 
@@ -36,16 +33,7 @@ export function TripTable({
   onSelectTrip,
   onPageChange
 }: TripTableProps) {
-  const filterState = useTripFilters();
   const totalPages = Math.ceil(totalCount / pageSize);
-
-  const handlePageClick = (newPage: number) => {
-    if (onPageChange) {
-        onPageChange(newPage);
-    } else {
-        filterState.updateFilters({ page: newPage.toString() });
-    }
-  };
 
   const PaginationControls = ({ className }: { className?: string }) => (
     <div className={cn("flex items-center gap-2", className)}>
@@ -53,8 +41,8 @@ export function TripTable({
         variant="outline"
         size="icon"
         className="h-8 w-8"
-        onClick={() => handlePageClick(currentPage - 1)}
-        disabled={currentPage <= 1 || filterState.isPending}
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage <= 1}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
@@ -65,8 +53,8 @@ export function TripTable({
         variant="outline"
         size="icon"
         className="h-8 w-8"
-        onClick={() => handlePageClick(currentPage + 1)}
-        disabled={currentPage >= totalPages || filterState.isPending}
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage >= totalPages}
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
@@ -75,19 +63,15 @@ export function TripTable({
 
   return (
     <div className="space-y-4">
-      <TripFilters 
-        {...filterState}
-        totalCount={totalCount}
-        currentPage={currentPage}
-        totalPages={totalPages}
-      />
+      {/* On affiche les infos de résumé car les filtres sont gérés par StatCards au dessus */}
+      <div className="flex items-center justify-between px-6 py-2 bg-muted/20 rounded-2xl border border-border/10">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            {totalCount} trajets dans cette catégorie
+        </p>
+        {totalPages > 1 && <PaginationControls />}
+      </div>
 
       <div className="rounded-[2.5rem] border border-border/40 bg-card/40 backdrop-blur-md overflow-hidden shadow-sm relative">
-        {filterState.isPending && (
-          <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
-            <Loader2 className="h-10 w-10 animate-spin text-klando-gold" />
-          </div>
-        )}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -103,7 +87,7 @@ export function TripTable({
               {trips.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-20 text-sm italic">
-                    {filterState.hasActiveFilters ? "Aucun résultat pour cette recherche..." : "Aucun trajet dans la base."}
+                    Aucun résultat trouvé dans cette catégorie.
                   </TableCell>
                 </TableRow>
               ) : (
