@@ -2,6 +2,7 @@ import { getDashboardStats } from "@/lib/queries/stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPrice, formatDistance, cn } from "@/lib/utils";
+import Link from "next/link";
 import {
   BarChart3,
   Users,
@@ -248,10 +249,13 @@ export default async function StatsPage() {
                   </thead>
                   <tbody className="divide-y divide-border/20">
                     {(stats.users?.acquisition?.topDrivers || []).map((driver: any) => (
-                      <tr key={driver.uid} className="hover:bg-white/5 transition-colors">
+                      <tr key={driver.uid} className="hover:bg-white/5 transition-colors group/row">
                         <td className="py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden border border-border relative shrink-0">
+                          <Link 
+                            href={`/users?selected=${driver.uid}`}
+                            className="flex items-center gap-3 group/link w-fit"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden border border-border relative shrink-0 group-hover/link:border-klando-gold transition-colors shadow-sm">
                               {driver.photo_url ? (
                                 <Image 
                                   src={driver.photo_url} 
@@ -264,8 +268,8 @@ export default async function StatsPage() {
                                 <User className="w-4 h-4 text-muted-foreground" />
                               )}
                             </div>
-                            <span className="text-sm font-bold truncate max-w-[150px]">{driver.display_name}</span>
-                          </div>
+                            <span className="text-sm font-bold truncate max-w-[150px] group-hover/link:text-klando-gold transition-colors underline decoration-transparent group-hover/link:decoration-klando-gold/30 underline-offset-4">{driver.display_name}</span>
+                          </Link>
                         </td>
                         <td className="py-3 text-center"><span className="text-sm font-black">{driver.trips_count}</span></td>
                         <td className="py-3 text-center">
