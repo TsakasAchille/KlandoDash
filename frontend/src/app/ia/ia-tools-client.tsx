@@ -48,14 +48,20 @@ function IAToolsContent() {
   // Image Upload Logic
   const handleBase64Upload = async (base64: string, description: string = "Capture Facebook") => {
     setIsUploading(true);
+    console.log(`[IA-CLIENT] Attempting upload. Base64 length: ${base64.length}`);
     try {
       const res = await uploadMarketingImageAction(base64);
       if (res.success && res.url) {
+        console.log(`[IA-CLIENT] Upload success: ${res.url}`);
         setAttachedImages(prev => [...prev, { url: res.url!, description }]);
         toast.success("Image ajoutée à la proposition !");
+      } else {
+        console.error(`[IA-CLIENT] Upload failed:`, res);
+        toast.error(`Erreur upload: ${res.error || "Échec inconnu"}`);
       }
-    } catch (e) {
-      toast.error("Erreur lors de l'upload.");
+    } catch (e: any) {
+      console.error(`[IA-CLIENT] Critical upload error:`, e);
+      toast.error(`Erreur réseau ou serveur (404/500). Vérifiez la console.`);
     } finally {
       setIsUploading(false);
     }
@@ -125,11 +131,15 @@ function IAToolsContent() {
     const finalTarget = getRobustValue(contactTarget, "ia-contact-target");
     const finalSubject = getRobustValue(contactSubject, "ia-contact-subject");
     const finalMessage = getRobustValue(contactMessage, "ia-contact-message");
+    
+    console.log(`[IA-CLIENT] Creating draft for ${finalTarget}. Images: ${attachedImages.length}`);
+    
     if (!finalMessage || !finalSubject) { toast.error("L'objet et le message sont obligatoires."); return; }
     setIsSending(true);
     try {
       const result = await createPropositionDraft(finalTarget, finalSubject, finalMessage, attachedImages);
       if (result.success) {
+        console.log(`[IA-CLIENT] Draft created: ${result.id}`);
         toast.success("Brouillon créé avec succès !");
         setContactMessage("");
         setAttachedImages([]);
@@ -137,9 +147,13 @@ function IAToolsContent() {
           (document.getElementById('ia-contact-message') as HTMLTextAreaElement).value = "";
         }
       } else {
+        console.error(`[IA-CLIENT] Draft creation failed:`, result);
         toast.error(result.error || "Échec de la création.");
       }
-    } catch (error) { toast.error("Erreur technique."); } finally { setIsSending(false); }
+    } catch (error: any) {
+      console.error(`[IA-CLIENT] Critical draft error:`, error);
+      toast.error("Erreur technique (404/500)."); 
+    } finally { setIsSending(false); }
   };
 
   return (

@@ -21,8 +21,19 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
 
   const toggleFilter = (params: Record<string, string | null>) => {
     const newParams = new URLSearchParams(searchParams.toString());
+    
+    // Pour rendre les cartes exclusives :
+    // Si on active un statut, on désactive onlyPaid
+    if (params.status && params.status !== "all") {
+        newParams.delete("onlyPaid");
+    }
+    // Si on active onlyPaid, on remet le statut à "all"
+    if (params.onlyPaid === "true") {
+        newParams.delete("status");
+    }
+
     Object.entries(params).forEach(([key, value]) => {
-      if (value === null || (key === "status" && value === "all" && !onlyPaid) || value === "false") {
+      if (value === null || value === "all" || value === "false") {
         newParams.delete(key);
       } else {
         newParams.set(key, value);
@@ -71,7 +82,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
         icon={Banknote} 
         color="green"
         description="Avec transactions"
-        onClick={() => toggleFilter({ onlyPaid: onlyPaid ? "false" : "true" })}
+        onClick={() => toggleFilter({ onlyPaid: "true", status: "all" })}
         active={onlyPaid}
       />
       <MiniStatCard 
@@ -80,7 +91,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
         icon={CheckCircle2} 
         color="green"
         onClick={() => toggleFilter({ status: "COMPLETED", onlyPaid: "false" })}
-        active={currentStatus === "COMPLETED" && !onlyPaid}
+        active={currentStatus === "COMPLETED"}
       />
       <MiniStatCard 
         title="Annulés" 

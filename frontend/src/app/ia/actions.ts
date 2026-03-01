@@ -10,8 +10,13 @@ import React from "react";
  * Recherche les conducteurs ayant déjà effectué un trajet spécifique
  */
 export async function searchHistoricalDrivers(origin: string, destination: string) {
+  console.log(`[IA-ACTION] searchHistoricalDrivers started for ${origin} -> ${destination}`);
   const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) {
+    console.error("[IA-ACTION] Unauthorized search attempt");
+    throw new Error("Unauthorized");
+  }
+  // ...
 
   const supabase = createServerClient();
 
@@ -112,8 +117,13 @@ export async function createPropositionDraft(
   message: string, 
   images: { url: string; description: string }[] = []
 ) {
+  console.log(`[IA-ACTION] createPropositionDraft started for ${target}. Images: ${images.length}`);
   const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) {
+    console.error("[IA-ACTION] Unauthorized draft creation attempt");
+    throw new Error("Unauthorized");
+  }
+  // ...
 
   const cleanTarget = target.trim();
   console.log(`[IA-TOOLS] Creating draft for "${cleanTarget}" with ${images.length} images`);

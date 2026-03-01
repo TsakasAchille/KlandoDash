@@ -24,6 +24,7 @@ interface TripTableProps {
   selectedTripId: string | null;
   initialSelectedId?: string | null;
   onSelectTrip: (trip: Trip) => void;
+  onPageChange?: (page: number) => void;
 }
 
 export function TripTable({ 
@@ -32,10 +33,19 @@ export function TripTable({
   currentPage,
   pageSize,
   selectedTripId, 
-  onSelectTrip 
+  onSelectTrip,
+  onPageChange
 }: TripTableProps) {
   const filterState = useTripFilters();
   const totalPages = Math.ceil(totalCount / pageSize);
+
+  const handlePageClick = (newPage: number) => {
+    if (onPageChange) {
+        onPageChange(newPage);
+    } else {
+        filterState.updateFilters({ page: newPage.toString() });
+    }
+  };
 
   const PaginationControls = ({ className }: { className?: string }) => (
     <div className={cn("flex items-center gap-2", className)}>
@@ -43,7 +53,7 @@ export function TripTable({
         variant="outline"
         size="icon"
         className="h-8 w-8"
-        onClick={() => filterState.updateFilters({ page: (currentPage - 1).toString() })}
+        onClick={() => handlePageClick(currentPage - 1)}
         disabled={currentPage <= 1 || filterState.isPending}
       >
         <ChevronLeft className="h-4 w-4" />
@@ -55,7 +65,7 @@ export function TripTable({
         variant="outline"
         size="icon"
         className="h-8 w-8"
-        onClick={() => filterState.updateFilters({ page: (currentPage + 1).toString() })}
+        onClick={() => handlePageClick(currentPage + 1)}
         disabled={currentPage >= totalPages || filterState.isPending}
       >
         <ChevronRight className="h-4 w-4" />
