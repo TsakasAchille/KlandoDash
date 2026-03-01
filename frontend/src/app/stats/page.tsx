@@ -241,12 +241,13 @@ export default async function StatsPage() {
                     <tr className="border-b border-border/40">
                       <th className="py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Conducteur</th>
                       <th className="py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Trajets</th>
+                      <th className="py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Fiabilité</th>
                       <th className="py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Note</th>
                       <th className="py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">CA Généré</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/20">
-                    {(stats.users?.acquisition?.topDrivers || []).map((driver) => (
+                    {(stats.users?.acquisition?.topDrivers || []).map((driver: any) => (
                       <tr key={driver.uid} className="hover:bg-white/5 transition-colors">
                         <td className="py-3">
                           <div className="flex items-center gap-3">
@@ -267,6 +268,18 @@ export default async function StatsPage() {
                           </div>
                         </td>
                         <td className="py-3 text-center"><span className="text-sm font-black">{driver.trips_count}</span></td>
+                        <td className="py-3 text-center">
+                          <div className="flex flex-col items-center gap-1">
+                            <span className={cn(
+                              "text-[10px] font-black px-2 py-0.5 rounded-full border",
+                              driver.reliability_rate >= 90 ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                              driver.reliability_rate >= 70 ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                              "bg-red-500/10 text-red-500 border-red-500/20"
+                            )}>
+                              {driver.reliability_rate}%
+                            </span>
+                          </div>
+                        </td>
                         <td className="py-3 text-center"><span className="text-sm font-bold text-klando-gold">★ {Number(driver.rating).toFixed(1)}</span></td>
                         <td className="py-3 text-right"><span className="text-sm font-black text-green-500">{formatPrice(driver.revenue)}</span></td>
                       </tr>
