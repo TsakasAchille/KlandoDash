@@ -184,41 +184,41 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
                     <p className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-2">
                         <User className="w-3 h-3" /> Carte d&apos;Identité
                     </p>
-                    <div className="bg-white/80 rounded-xl border border-slate-200 p-3 space-y-3 shadow-sm">
-                        <div className="flex flex-col gap-1">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Extraction IA</span>
+                    <div className="bg-white/80 rounded-xl border border-slate-200 p-4 space-y-4 shadow-sm">
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-black uppercase text-slate-400 leading-none">Extraction IA</span>
                                 {aiReport.reports?.id_card?.nameMatchesProfile ? (
-                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">IDENTITÉ OK</Badge>
+                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[9px] h-5 px-2 font-black uppercase">NOM CONFORME</Badge>
                                 ) : (
-                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">IDENTITÉ INCORRECTE</Badge>
+                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none text-[9px] h-5 px-2 font-black uppercase">NOM DIFFERENT</Badge>
                                 )}
                             </div>
-                            <div className="grid grid-cols-2 gap-2 mt-1">
-                                <div className="flex flex-col">
-                                    <span className="text-[7px] font-black uppercase text-slate-300">Prénom(s)</span>
-                                    <span className="text-[11px] font-bold text-slate-900 truncate">{selectedUser.id_card_first_name_ai || "Non extrait"}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[7px] font-black uppercase text-slate-300">Nom</span>
-                                    <span className="text-[11px] font-bold text-slate-900 truncate">{selectedUser.id_card_last_name_ai || "Non extrait"}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 border-t border-slate-50 pt-2">
                             <div className="flex flex-col">
-                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Numéro</span>
-                                <span className="text-[10px] font-mono font-bold text-purple-700">{selectedUser.id_card_number || "N/A"}</span>
+                                <span className="text-[9px] font-black uppercase text-slate-400 tracking-tight">Nom lu sur ID</span>
+                                <span className="text-sm font-black text-slate-900 leading-tight">{selectedUser.id_card_first_name_ai} {selectedUser.id_card_last_name_ai}</span>
+                            </div>
+                            {aiReport.reports?.id_card?.nameMatchesProfile && (
+                                <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-lg border border-green-100 mt-1">
+                                    <CheckCircle className="w-3 h-3 text-green-600" />
+                                    <span className="text-[10px] font-black text-green-700 uppercase tracking-tight">Profil : {selectedUser.first_name} {selectedUser.name}</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-3">
+                            <div className="flex flex-col">
+                                <span className="text-[9px] font-black uppercase text-slate-400 leading-none mb-1">Numéro</span>
+                                <span className="text-xs font-mono font-bold text-purple-700 tracking-tighter">{selectedUser.id_card_number || "N/A"}</span>
                                 {aiReport.reports?.id_card?.isUnique === false && (
-                                    <span className="text-[7px] font-black text-red-600 uppercase mt-0.5">⚠️ Doublon détecté</span>
+                                    <span className="text-[9px] font-black text-red-600 uppercase mt-1 flex items-center gap-1">⚠️ Doublon</span>
                                 )}
                                 {aiReport.reports?.id_card?.isUnique === true && (
-                                    <span className="text-[7px] font-black text-green-600 uppercase mt-0.5">✅ Numéro unique</span>
+                                    <span className="text-[9px] font-black text-green-600 uppercase mt-1 flex items-center gap-1">✅ Unique</span>
                                 )}
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Expiration</span>
-                                <span className="text-[10px] font-bold text-slate-700">{selectedUser.id_card_expiry_ai || "N/A"}</span>
+                                <span className="text-[9px] font-black uppercase text-slate-400 leading-none mb-1">Expiration</span>
+                                <span className="text-xs font-bold text-slate-700">{selectedUser.id_card_expiry_ai || "N/A"}</span>
                             </div>
                         </div>
                     </div>
@@ -229,41 +229,41 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
                     <p className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-2">
                         <Split className="w-3 h-3" /> Permis de conduire
                     </p>
-                    <div className="bg-white/80 rounded-xl border border-slate-200 p-3 space-y-3 shadow-sm">
-                        <div className="flex flex-col gap-1">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Extraction IA</span>
+                    <div className="bg-white/80 rounded-xl border border-slate-200 p-4 space-y-4 shadow-sm">
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-black uppercase text-slate-400 leading-none">Extraction IA</span>
                                 {aiReport.reports?.driver_license?.nameMatchesProfile ? (
-                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">IDENTITÉ OK</Badge>
+                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[9px] h-5 px-2 font-black uppercase">NOM CONFORME</Badge>
                                 ) : (
-                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none text-[7px] h-3.5 px-1.5 font-black uppercase">IDENTITÉ INCORRECTE</Badge>
+                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none text-[9px] h-5 px-2 font-black uppercase">NOM DIFFERENT</Badge>
                                 )}
                             </div>
-                            <div className="grid grid-cols-2 gap-2 mt-1">
-                                <div className="flex flex-col">
-                                    <span className="text-[7px] font-black uppercase text-slate-300">Prénom(s)</span>
-                                    <span className="text-[11px] font-bold text-slate-900 truncate">{selectedUser.driver_license_first_name_ai || "Non extrait"}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[7px] font-black uppercase text-slate-300">Nom</span>
-                                    <span className="text-[11px] font-bold text-slate-900 truncate">{selectedUser.driver_license_last_name_ai || "Non extrait"}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 border-t border-slate-50 pt-2">
                             <div className="flex flex-col">
-                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Numéro</span>
-                                <span className="text-[10px] font-mono font-bold text-purple-700">{selectedUser.driver_license_number || "N/A"}</span>
+                                <span className="text-[9px] font-black uppercase text-slate-400 tracking-tight">Nom lu sur Permis</span>
+                                <span className="text-sm font-black text-slate-900 leading-tight">{selectedUser.driver_license_first_name_ai} {selectedUser.driver_license_last_name_ai}</span>
+                            </div>
+                            {aiReport.reports?.driver_license?.nameMatchesProfile && (
+                                <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-lg border border-green-100 mt-1">
+                                    <CheckCircle className="w-3 h-3 text-green-600" />
+                                    <span className="text-[10px] font-black text-green-700 uppercase tracking-tight">Profil : {selectedUser.first_name} {selectedUser.name}</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-3">
+                            <div className="flex flex-col">
+                                <span className="text-[9px] font-black uppercase text-slate-400 leading-none mb-1">Numéro</span>
+                                <span className="text-xs font-mono font-bold text-purple-700 tracking-tighter">{selectedUser.driver_license_number || "N/A"}</span>
                                 {aiReport.reports?.driver_license?.isUnique === false && (
-                                    <span className="text-[7px] font-black text-red-600 uppercase mt-0.5">⚠️ Doublon détecté</span>
+                                    <span className="text-[9px] font-black text-red-600 uppercase mt-1 flex items-center gap-1">⚠️ Doublon</span>
                                 )}
                                 {aiReport.reports?.driver_license?.isUnique === true && (
-                                    <span className="text-[7px] font-black text-green-600 uppercase mt-0.5">✅ Numéro unique</span>
+                                    <span className="text-[9px] font-black text-green-600 uppercase mt-1 flex items-center gap-1">✅ Unique</span>
                                 )}
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[8px] font-black uppercase text-slate-400 leading-none">Expiration</span>
-                                <span className="text-[10px] font-bold text-slate-700">{selectedUser.driver_license_expiry_ai || "N/A"}</span>
+                                <span className="text-[9px] font-black uppercase text-slate-400 leading-none mb-1">Expiration</span>
+                                <span className="text-xs font-bold text-slate-700">{selectedUser.driver_license_expiry_ai || "N/A"}</span>
                             </div>
                         </div>
                     </div>
@@ -289,14 +289,14 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             <DocumentCard 
-              title="Permis de conduire" 
-              url={selectedUser.driver_license_url} 
-              type="license" 
-            />
-            <DocumentCard 
               title="Carte d'identité" 
               url={selectedUser.id_card_url} 
               type="id" 
+            />
+            <DocumentCard 
+              title="Permis de conduire" 
+              url={selectedUser.driver_license_url} 
+              type="license" 
             />
           </div>
 
@@ -338,10 +338,10 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
       <ImageComparisonDialog 
         isOpen={isCompareOpen}
         onClose={() => setIsCompareOpen(false)}
-        image1={selectedUser.driver_license_url || null}
-        image2={selectedUser.id_card_url || null}
-        label1="Permis de conduire"
-        label2="Carte d'identité"
+        image1={selectedUser.id_card_url || null}
+        image2={selectedUser.driver_license_url || null}
+        label1="Carte d'identité"
+        label2="Permis de conduire"
         userName={selectedUser.display_name || "Utilisateur"}
       />
     </>
