@@ -66,13 +66,12 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
       {/* Desktop: Sidebar fixe */}
       {!isMobile && <Sidebar />}
       
-      {/* Bouton Retour Intelligent */}
-      <BackNavigation />
-      
       {/* Contenu principal avec padding adaptatif */}
       <main className={`flex-1 overflow-auto transition-all duration-300 ${
         isMobile ? 'pt-20 px-4 pb-4' : 'p-6'
       } ${isMobile && sidebarOpen ? 'ml-0' : ''}`}>
+        {/* On place le bouton de retour ICI, à l'intérieur du main, pour qu'il soit au-dessus du contenu sans créer de colonne flex */}
+        <BackNavigation />
         {children}
       </main>
     </div>
