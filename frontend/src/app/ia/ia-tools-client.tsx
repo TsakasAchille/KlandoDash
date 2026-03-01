@@ -330,12 +330,21 @@ function IAToolsContent() {
 
         {/* Hidden Bridge for AI Image injection */}
         <div className="hidden">
-          <input 
-            id="ia-image-base64" 
-            type="text" 
-            value={aiBase64} 
-            onChange={(e) => setAiBase64(e.target.value)} 
-          />
+          <textarea id="ia-image-base64"></textarea>
+          <button 
+            id="ia-image-upload-button" 
+            type="button" 
+            onClick={() => {
+              const el = document.getElementById('ia-image-base64') as HTMLTextAreaElement;
+              const val = el?.value;
+              if (val && val.startsWith('data:image')) {
+                handleBase64Upload(val);
+                el.value = ''; // Clean up after
+              } else {
+                toast.error("Format d'image invalide (doit commencer par data:image)");
+              }
+            }}
+          >Upload</button>
         </div>
 
         <form onSubmit={handleCreateDraft} className="flex flex-col gap-4">
