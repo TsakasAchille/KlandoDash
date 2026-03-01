@@ -19,8 +19,8 @@ import { fr } from "date-fns/locale";
 
 const FlowMap = dynamic(() => import("../shared/FlowMap"), { 
   ssr: false,
-  loading: () => <div className="w-full h-[500px] rounded-[2rem] bg-slate-100 animate-pulse flex items-center justify-center">
-    <MapIcon className="w-8 h-8 text-slate-300 animate-bounce" />
+  loading: () => <div className="w-full h-[500px] rounded-[2rem] bg-slate-900 animate-pulse flex items-center justify-center">
+    <MapIcon className="w-8 h-8 text-white/20 animate-bounce" />
   </div>
 });
 
@@ -58,7 +58,7 @@ export function RequestHistoryTab({ requests, flowStats }: RequestHistoryTabProp
             </div>
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Cartographie des Flux & Chaleur</h3>
           </div>
-          <FlowMap stats={flowStats} />
+          <FlowMap key="marketing-flow-map" stats={flowStats} />
         </div>
 
         <div className="lg:col-span-4 space-y-6">

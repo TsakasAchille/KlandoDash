@@ -3,7 +3,7 @@
 import { MapContainer, TileLayer, Polyline, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { MarketingFlowStat } from "@/lib/queries/site-requests";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import L from "leaflet";
 
 interface FlowMapProps {
@@ -15,15 +15,21 @@ function MapRefresher() {
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize();
-    }, 100);
+    }, 400);
     return () => clearTimeout(timer);
   }, [map]);
   return null;
 }
 
 export default function FlowMap({ stats }: FlowMapProps) {
+  const [isMounted, setIsMounted] = useState(false);
+  // On utilise un ID d'instance pour forcer un remount propre
+  const [instanceId] = useState(() => Math.random().toString(36).substring(7));
+
   // Fix Leaflet icons issues in Next.js
   useEffect(() => {
+    setIsMounted(true);
+    
     // @ts-ignore
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
@@ -48,17 +54,27 @@ export default function FlowMap({ stats }: FlowMapProps) {
     return Object.values(points);
   }, [stats]);
 
-  const maxCount = Math.max(...hotspots.map(h => h.count), 1);
+  const maxCount = useMemo(() => 
+    Math.max(...hotspots.map(h => h.count), 1)
+  , [hotspots]);
+
+  // Placeholder pendant le chargement côté client
+  if (!isMounted) return <div className="w-full h-[500px] rounded-[2rem] bg-slate-900" />;
 
   return (
     <div className="w-full h-[500px] rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl relative bg-slate-900">
+      {/* 
+          IMPORTANT: On force un identifiant unique total pour le MapContainer 
+          à chaque montage du composant FlowMap pour éviter le conflit Leaflet.
+      */}
       <MapContainer 
+        key={`map-instance-${instanceId}`}
         center={[14.7167, -17.4677]} // Dakar
         zoom={9} 
         style={{ height: "100%", width: "100%" }}
         className="z-0"
+        scrollWheelZoom={false}
       >
-        {/* Utilisation du style Voyager (plus clair) au lieu de Dark_All */}
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CartoDB</a> contributors'
@@ -71,13 +87,13 @@ export default function FlowMap({ stats }: FlowMapProps) {
           const weight = Math.max(1, (Number(flow.request_count) / maxCount) * 10);
           return (
             <Polyline 
-              key={`flow-${i}`}
+              key={`flow-${instanceId}-${i}`}
               positions={[
                 [flow.avg_origin_lat, flow.avg_origin_lng],
                 [flow.avg_dest_lat, flow.avg_dest_lng]
               ]}
               pathOptions={{
-                color: '#7B1F2F', // Burgundy pour les flux sur carte claire
+                color: '#7B1F2F',
                 weight: weight,
                 opacity: 0.3,
                 lineCap: 'round',
@@ -85,7 +101,7 @@ export default function FlowMap({ stats }: FlowMapProps) {
               }}
             >
               <Popup>
-                <div className="text-[10px] font-black uppercase text-slate-900">
+                <div className="text-[10px] font-black uppercase text-slate-900 text-left">
                   {flow.origin_city} ➜ {flow.destination_city}
                   <div className="text-klando-burgundy mt-1">{flow.request_count} demandes</div>
                 </div>
@@ -100,7 +116,7 @@ export default function FlowMap({ stats }: FlowMapProps) {
           const radius = 10 + (intensity * 30);
           return (
             <CircleMarker 
-              key={`spot-${i}`}
+              key={`spot-${instanceId}-${i}`}
               center={[spot.lat, spot.lng]}
               pathOptions={{
                 fillColor: '#EBC33F',
@@ -111,7 +127,7 @@ export default function FlowMap({ stats }: FlowMapProps) {
               radius={radius}
             >
               <Popup>
-                <div className="text-[10px] font-black uppercase text-slate-900">
+                <div className="text-[10px] font-black uppercase text-slate-900 text-left">
                   {spot.city}
                   <div className="text-klando-burgundy mt-1">{spot.count} intentions au total</div>
                 </div>
@@ -122,9 +138,9 @@ export default function FlowMap({ stats }: FlowMapProps) {
       </MapContainer>
 
       {/* Overlay Legend */}
-      <div className="absolute bottom-6 left-6 z-10 bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-2xl">
+      <div className="absolute bottom-6 left-6 z-[400] bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-2xl shadow-2xl pointer-events-none">
         <h4 className="text-[10px] font-black uppercase text-slate-900 tracking-widest mb-3">Légende des Flux</h4>
-        <div className="space-y-2">
+        <div className="space-y-2 text-left">
           <div className="flex items-center gap-3">
             <div className="w-6 h-1 bg-klando-burgundy opacity-40 border-t border-dashed border-slate-400"></div>
             <span className="text-[9px] font-bold text-slate-600 uppercase">Volume de demandes</span>
