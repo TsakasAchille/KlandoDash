@@ -20,20 +20,20 @@ export function ValidationFilters({
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-muted/30 p-2 rounded-xl border border-border/50">
       <Tabs value={currentStatus} onValueChange={(val) => onUpdateFilters(val)} className="w-full md:w-auto">
-        <TabsList className="bg-background/50 grid grid-cols-5 w-full md:w-[650px]">
-          <TabsTrigger value="pending" className="data-[state=active]:bg-slate-600 data-[state=active]:text-white text-[9px] font-black uppercase">
+        <TabsList className="bg-background/50 flex w-full md:w-auto overflow-x-auto no-scrollbar justify-start p-1 gap-1">
+          <TabsTrigger value="pending" className="flex-shrink-0 data-[state=active]:bg-slate-600 data-[state=active]:text-white text-[9px] font-black uppercase px-3">
             En attente
           </TabsTrigger>
-          <TabsTrigger value="ai_verified" className="data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark text-[9px] font-black uppercase">
+          <TabsTrigger value="ai_verified" className="flex-shrink-0 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark text-[9px] font-black uppercase px-3">
             IA Vérifiés
           </TabsTrigger>
-          <TabsTrigger value="ai_alert" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-[9px] font-black uppercase">
+          <TabsTrigger value="ai_alert" className="flex-shrink-0 data-[state=active]:bg-red-600 data-[state=active]:text-white text-[9px] font-black uppercase px-3">
             Alertes IA
           </TabsTrigger>
-          <TabsTrigger value="true" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-[9px] font-black uppercase">
+          <TabsTrigger value="true" className="flex-shrink-0 data-[state=active]:bg-green-600 data-[state=active]:text-white text-[9px] font-black uppercase px-3">
             Validés
           </TabsTrigger>
-          <TabsTrigger value="all" className="data-[state=active]:bg-klando-burgundy data-[state=active]:text-white text-[9px] font-black uppercase">
+          <TabsTrigger value="all" className="flex-shrink-0 data-[state=active]:bg-klando-burgundy data-[state=active]:text-white text-[9px] font-black uppercase px-3">
             Tous
           </TabsTrigger>
         </TabsList>

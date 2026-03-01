@@ -71,10 +71,10 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
 
       <Card className="border-klando-gold/20 overflow-hidden">
         <CardHeader className="bg-muted/30 pb-4">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               {selectedUser.photo_url ? (
-                <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-white shadow-sm">
+                <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
                   <Image
                     src={selectedUser.photo_url}
                     alt=""
@@ -84,37 +84,38 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
                   />
                 </div>
               ) : (
-                <div className="w-16 h-16 rounded-xl bg-klando-burgundy text-white flex items-center justify-center text-2xl font-black">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-klando-burgundy text-white flex items-center justify-center text-xl sm:text-2xl font-black flex-shrink-0">
                   {(selectedUser.display_name || "?").charAt(0).toUpperCase()}
                 </div>
               )}
-              <div>
-                <CardTitle className="text-xl font-black uppercase tracking-tight">
+              <div className="min-w-0">
+                <CardTitle className="text-lg sm:text-xl font-black uppercase tracking-tight truncate">
                   {selectedUser.display_name}
                 </CardTitle>
                 {(selectedUser.first_name || selectedUser.name) && (
-                    <p className="text-[10px] font-black text-klando-gold uppercase tracking-widest -mt-0.5">
-                        Profil : {selectedUser.first_name || "?"} {selectedUser.name || "?"}
+                    <p className="text-[9px] sm:text-[10px] font-black text-klando-gold uppercase tracking-widest -mt-0.5 truncate">
+                        {selectedUser.first_name || "?"} {selectedUser.name || "?"}
                     </p>
                 )}
-                <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" />
-                    {selectedUser.email}
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] sm:text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5 truncate max-w-[150px] sm:max-w-none">
+                    <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <span className="truncate">{selectedUser.email}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     {selectedUser.phone_number}
                   </div>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex gap-2">
+            
+            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 border-t sm:border-t-0 border-slate-200/50 pt-3 sm:pt-0">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {aiStatus && aiStatus !== 'PENDING' && (
                   <Badge 
                     className={cn(
-                      "font-black text-[9px] tracking-widest uppercase",
+                      "font-black text-[8px] sm:text-[9px] tracking-widest uppercase px-1.5 sm:px-2 py-0.5",
                       aiStatus === 'SUCCESS' ? "bg-green-500 text-white" : 
                       aiStatus === 'WARNING' ? "bg-orange-500 text-white" : "bg-red-600 text-white"
                     )}
@@ -125,7 +126,7 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
                 <Badge 
                   variant="outline" 
                   className={cn(
-                    "font-black text-[9px] tracking-widest uppercase",
+                    "font-black text-[8px] sm:text-[9px] tracking-widest uppercase px-1.5 sm:px-2 py-0.5 whitespace-nowrap",
                     selectedUser.is_driver_doc_validated 
                       ? "bg-green-500/10 text-green-600 border-green-500/20"
                       : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
@@ -134,25 +135,26 @@ export function UserDetails({ selectedUser, onValidate, onAIComplete, onBack }: 
                   {selectedUser.is_driver_doc_validated ? "VALIDÉ" : "EN ATTENTE"}
                 </Badge>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 sm:gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsCompareOpen(true)}
-                  className="h-8 gap-2 text-[10px] font-black uppercase tracking-widest border-klando-gold/30 text-klando-gold hover:bg-klando-gold/10"
+                  className="h-7 sm:h-8 px-2 sm:px-3 gap-1.5 text-[8px] sm:text-[10px] font-black uppercase tracking-widest border-klando-gold/30 text-klando-gold hover:bg-klando-gold/10"
                 >
                   <Split className="w-3 h-3" />
-                  Comparer
+                  <span className="hidden xs:inline">Comparer</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleAIAnalysis}
                   disabled={isPending}
-                  className="h-8 gap-2 text-[10px] font-black uppercase tracking-widest border-purple-500/30 text-purple-600 hover:bg-purple-50"
+                  className="h-7 sm:h-8 px-2 sm:px-3 gap-1.5 text-[8px] sm:text-[10px] font-black uppercase tracking-widest border-purple-500/30 text-purple-600 hover:bg-purple-50"
                 >
-                  {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  Vérifier par IA
+                  {isPending ? <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" /> : <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+                  <span className="hidden xs:inline">Analyse IA</span>
+                  <span className="xs:hidden">IA</span>
                 </Button>
               </div>
             </div>

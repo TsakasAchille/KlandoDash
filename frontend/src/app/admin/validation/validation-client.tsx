@@ -55,12 +55,15 @@ function ValidationClientContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingUsers]);
 
-  const updateFilters = (newStatus: string, newPage: number = 1) => {
+  const updateFilters = (newStatus: string, newPage: number = 1, keepMobileDetails = false) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("status", newStatus);
     params.set("page", newPage.toString());
     router.push(`?${params.toString()}`);
-    setShowMobileDetails(false); // Go back to list on mobile when filtering
+    
+    if (!keepMobileDetails) {
+        setShowMobileDetails(false); // Go back to list on mobile only for manual filtering
+    }
   };
 
   const handleSelectUser = (user: UserListItem) => {
@@ -91,14 +94,14 @@ function ValidationClientContent({
           currentStatus={currentStatus}
           currentPage={currentPage}
           totalPages={totalPages}
-          onUpdateFilters={updateFilters}
+          onUpdateFilters={(status, page) => updateFilters(status, page)}
         />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6 relative h-[calc(100vh-180px)]">
+      <div className="grid lg:grid-cols-3 gap-6 relative h-[calc(100vh-220px)] lg:h-[calc(100vh-180px)]">
         {/* List View */}
         <div className={cn(
-          "lg:col-span-1 overflow-y-auto pr-2 scrollbar-thin",
+          "lg:col-span-1 overflow-y-auto pr-2 scrollbar-thin h-full",
           showMobileDetails ? "hidden lg:block" : "block"
         )}>
           <UserList 
@@ -112,13 +115,13 @@ function ValidationClientContent({
 
         {/* Details View */}
         <div className={cn(
-          "lg:col-span-2 overflow-y-auto pr-2 scrollbar-thin pb-10",
+          "lg:col-span-2 overflow-y-auto pr-2 scrollbar-thin pb-10 h-full",
           !showMobileDetails ? "hidden lg:block" : "block"
         )}>
           <UserDetails 
             selectedUser={selectedUser}
             onValidate={handleValidate}
-            onAIComplete={(targetTab) => updateFilters(targetTab)}
+            onAIComplete={(targetTab) => updateFilters(targetTab, 1, true)}
             onBack={() => setShowMobileDetails(false)}
           />
         </div>
