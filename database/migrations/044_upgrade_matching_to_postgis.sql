@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 -- We use geography (not geometry) for better accuracy with lat/lng at meter level.
 
 -- Update 'trips' table
-ALTER TABLE public.trips ADD COLUMN IF NOT EXISTS route_geog geography(LineString, 4321); -- Not 4326 for geography usually, but Supabase handles it.
+ALTER TABLE public.trips ADD COLUMN IF NOT EXISTS route_geog geography(LineString, 4326); 
 -- Actually, let's keep it simple and use ST_LineFromEncodedPolyline if available or ST_MakeLine from points.
 
 -- 3. Create a helper function to convert Google Polyline to PostGIS Geography
