@@ -92,7 +92,8 @@ export async function getAIMatchingAction(
         seats_available: Number(m.seats_available),
         // On injecte les distances déjà calculées par le SQL pour éviter les recalculs lents
         origin_dist: m.origin_distance,
-        dest_dist: m.destination_distance
+        dest_dist: m.destination_distance,
+        match_type: m.match_type
       }));
 
       aiRecommendation = await AIMatchingService.generateRecommendation(
@@ -127,10 +128,14 @@ export async function getAIMatchingAction(
 
     let matchedTripData = null;
     if (tripId && tripId.toUpperCase() !== 'NONE') {
-      console.log(`[getAIMatchingAction] Fetching details for: ${tripId}`);
       const trip = await TripService.getById(tripId);
       
       if (trip) {
+        // Find match type from the relevantTrips list if possible
+        const { findMatchingTrips } = await import("@/lib/queries/site-requests");
+        const matches = await findMatchingTrips(requestId, 15);
+        const matchInfo = matches.find(m => m.trip_id === tripId);
+
         matchedTripData = {
           id: trip.trip_id,
           departure_city: trip.departure_name || "",
@@ -149,7 +154,8 @@ export async function getAIMatchingAction(
           dest_dist: GeocodingService.calculateDistance(
             { lat: requestData.destination_lat!, lng: requestData.destination_lng! },
             { lat: trip.destination_latitude!, lng: trip.destination_longitude! }
-          )
+          ),
+          match_type: matchInfo?.match_type || 'EXACT_MATCH'
         };
       }
     }
@@ -187,7 +193,8 @@ export async function scanRequestMatchesAction(requestId: string, radiusKm: numb
           trip_id: m.trip_id,
           proximity_score: m.total_proximity_score,
           origin_distance: m.origin_distance,
-          destination_distance: m.destination_distance
+          destination_distance: m.destination_distance,
+          match_type: m.match_type
         }))
       );
     }

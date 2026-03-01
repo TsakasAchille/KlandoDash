@@ -219,6 +219,14 @@ export function MatchingDialog({
                         {matchedTrip.origin_dist.toFixed(1)} KM DU CLIENT
                       </Badge>
                     )}
+                    {matchedTrip.match_type && (
+                      <Badge variant="outline" className={cn(
+                        "text-[8px] font-black px-1.5 py-0 border-klando-dark/20",
+                        matchedTrip.match_type === 'EXACT_MATCH' ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"
+                      )}>
+                        {matchedTrip.match_type === 'EXACT_MATCH' ? 'DIRECT' : 'SUR LE TRAJET'}
+                      </Badge>
+                    )}
                   </div>
                   <Badge variant="outline" className="bg-white/20 border-white/40 text-klando-dark text-[9px] font-bold">MATCH TROUVÉ</Badge>
                 </div>

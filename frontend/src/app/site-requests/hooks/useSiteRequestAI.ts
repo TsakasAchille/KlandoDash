@@ -16,6 +16,7 @@ export interface PublicTrip {
   destination_longitude?: number | null;
   origin_dist?: number;
   dest_dist?: number;
+  match_type?: string;
 }
 
 export function useSiteRequestAI(
