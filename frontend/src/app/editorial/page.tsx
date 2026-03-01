@@ -39,20 +39,12 @@ export default async function EditorialPage({ searchParams }: Props) {
   const scheduledCount = comms.filter(c => c.scheduled_at !== null).length;
 
   return (
-    <div className="max-w-[1600px] mx-auto flex flex-col h-[calc(100vh-3rem)] px-4 sm:px-6 lg:px-8">
-      {/* HEADER ULTRA COMPACT */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4 bg-background/95 backdrop-blur z-30 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-4 shrink-0">
+    <div className="max-w-[1600px] mx-auto flex flex-col h-[calc(100vh-3rem)] px-4 sm:px-6 lg:px-8 pt-4 relative">
+      {/* HEADER ULTRA COMPACT (No Title) */}
+      <div className="flex items-center justify-between gap-4 border-b border-border/40 pb-4 bg-background/95 backdrop-blur z-30 mb-4 shrink-0">
         <div className="flex items-center gap-6">
-            <div className="space-y-0.5 text-left">
-                <h1 className="text-xl font-black tracking-tight uppercase flex items-center gap-3">
-                    <PenTool className="w-6 h-6 text-purple-500" />
-                    Centre Éditorial
-                </h1>
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Production & Planning</p>
-            </div>
-
             {/* MINI STATS INLINE */}
-            <div className="hidden lg:flex items-center gap-4 border-l border-slate-200 pl-6 ml-2">
+            <div className="flex items-center gap-6">
                 <HeaderStat icon={PenTool} label="Brouillons" value={draftsCount} color="text-purple-500" />
                 <HeaderStat icon={CalendarIcon} label="Planifiés" value={scheduledCount} color="text-orange-500" />
                 <HeaderStat icon={CheckCircle} label="Mails" value={sentCount} color="text-green-500" />
