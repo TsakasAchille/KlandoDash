@@ -4,6 +4,8 @@ import { Trip } from "@/types/trip";
 import { formatDate, formatDistance, cn } from "@/lib/utils";
 import { TableCell, TableRow } from "@/components/ui/table";
 import Image from "next/image";
+import Link from "next/link";
+import { User as UserIcon } from "lucide-react";
 
 interface TripTableRowProps {
   trip: Trip;
@@ -40,11 +42,21 @@ export function TripTableRow({ trip, isSelected, onSelect }: TripTableRowProps) 
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <Link 
+              href={`/users?selected=${trip.driver_id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 group/driver"
+            >
+                <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 group-hover/driver:border-klando-gold transition-colors">
+                    <UserIcon className="w-2.5 h-2.5 text-slate-400 group-hover/driver:text-klando-gold" />
+                </div>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter group-hover/driver:text-klando-gold transition-colors underline decoration-slate-200 underline-offset-2 truncate max-w-[100px]">
+                    {trip.driver_name || "Conducteur"}
+                </span>
+            </Link>
+            <span className="text-[10px] text-muted-foreground/40 font-mono">|</span>
             <span className="text-[10px] text-muted-foreground font-mono truncate px-2 py-0.5 bg-muted rounded">
               #{trip.trip_id.substring(0, 8)}
-            </span>
-            <span className="text-xs text-foreground font-black">
-              {trip.price_per_seat} <span className="text-[10px] text-muted-foreground ml-0.5">XOF / Place</span>
             </span>
           </div>
         </div>
