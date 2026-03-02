@@ -83,6 +83,11 @@ export default async function StatsPage() {
     );
   }
 
+  // Ratio d'Inscription (Basé sur le rôle déclaré)
+  const regDrivers = stats?.users?.registrationTypology?.drivers || 0;
+  const regPassengers = stats?.users?.registrationTypology?.passengers || 0;
+  const regRatio = regDrivers > 0 ? (regPassengers / regDrivers).toFixed(1) : "0";
+
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8 pt-4 relative">
       {/* Action Bar Floating */}
@@ -314,6 +319,35 @@ export default async function StatsPage() {
                  <StatsCharts type="registration-typology" data={stats.users?.registrationTypology || { drivers: 0, passengers: 0 }} />
               </CardContent>
             </Card>
+          </div>
+
+          {/* Ratios Comparatifs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-slate-900/5 border border-slate-200/50 rounded-[2rem] p-6 flex items-center justify-between group hover:border-klando-gold/30 transition-all">
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Ratio d&apos;Activité réelle</p>
+                    <h4 className="text-3xl font-black text-slate-900">1:{ratio}</h4>
+                </div>
+                <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 italic">Passagers par conducteur actif</p>
+                    <span className={cn("text-[9px] font-black px-2 py-0.5 rounded-full uppercase mt-2 inline-block", healthStatus.bgColor, healthStatus.color)}>
+                        {healthStatus.label}
+                    </span>
+                </div>
+            </div>
+
+            <div className="bg-slate-900/5 border border-slate-200/50 rounded-[2rem] p-6 flex items-center justify-between group hover:border-blue-500/30 transition-all">
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Ratio d&apos;Intention (Inscr.)</p>
+                    <h4 className="text-3xl font-black text-slate-900">1:{regRatio}</h4>
+                </div>
+                <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 italic">Souhaités à l&apos;inscription</p>
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 uppercase mt-2 inline-block">
+                        Potentiel Marché
+                    </span>
+                </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
