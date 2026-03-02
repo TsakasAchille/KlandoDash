@@ -3,7 +3,6 @@
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Logo } from "@/components/logo";
 import { Loader2 } from "lucide-react";
 
 function LoginCard() {
@@ -81,16 +80,15 @@ export default function LoginPage() {
         {/* Logo / Titre : Balise img standard pour éviter l'avertissement de preload */}
         <div className="text-center">
           <div className="flex justify-center mb-6">
-            <img 
-              src="/logo-klando-sans-fond.png" 
-              alt="Klando" 
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-klando-sans-fond.png"
+              alt="Klando"
+              width={176}
+              height={61}
               className="w-44 h-auto object-contain"
             />
           </div>
-          <h1 className="text-2xl font-black uppercase tracking-tighter text-white">Klando Dash</h1>
-          <p className="mt-2 text-sm text-muted-foreground font-medium">
-            Tableau de bord administration
-          </p>
         </div>
 
         <Suspense

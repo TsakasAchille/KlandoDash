@@ -55,6 +55,6 @@ export const config = {
      * - api/webhooks (webhook endpoints)
      * - api/health (health checks)
      */
-    "/((?!_next|api/auth|api/webhooks|api/health|favicon.ico).*)",
+    "/((?!_next|api/auth|api/webhooks|api/health|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.svg$|.*\\.ico$|.*\\.webp$).*)",
   ],
 };
