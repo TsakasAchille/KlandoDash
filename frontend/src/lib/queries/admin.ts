@@ -41,21 +41,22 @@ export async function getDashUsers(): Promise<DashUser[]> {
 }
 
 /**
- * Récupère tous les journaux d'audit avec filtres optionnels
+ * Récupère les journaux d'audit avec filtres et pagination
  */
 export async function getAuditLogs(options: { 
   limit?: number, 
+  offset?: number,
   adminEmail?: string, 
   actionType?: string 
-} = {}): Promise<AuditLog[]> {
+} = {}): Promise<{ logs: AuditLog[], totalCount: number }> {
   noStore();
 
-  const { limit = 100, adminEmail, actionType } = options;
+  const { limit = 100, offset = 0, adminEmail, actionType } = options;
   const supabase = createServerClient();
   
   let query = supabase
     .from("dash_audit_logs")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false });
 
   if (adminEmail && adminEmail !== 'ALL') {
@@ -66,14 +67,18 @@ export async function getAuditLogs(options: {
     query = query.eq('action_type', actionType);
   }
 
-  const { data, error } = await query.limit(limit);
+  const { data, error, count } = await query
+    .range(offset, offset + limit - 1);
 
   if (error) {
     console.error("Erreur getAuditLogs:", error);
-    return [];
+    return { logs: [], totalCount: 0 };
   }
 
-  return data || [];
+  return { 
+    logs: (data || []) as AuditLog[], 
+    totalCount: count || 0 
+  };
 }
 
 /**

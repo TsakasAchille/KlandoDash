@@ -1,48 +1,80 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AuditLog } from "@/lib/queries/admin";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Shield, Mail, Send, Sparkles, User, FileText, Database, Trash2, Edit3, Plus, Filter, Search } from "lucide-react";
+import { 
+  Shield, Mail, Send, Sparkles, User, FileText, Database, 
+  Trash2, Edit3, Plus, Filter, Search, ChevronLeft, ChevronRight 
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface LogsClientProps {
   initialLogs: AuditLog[];
   admins: string[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
 }
 
-export function LogsClient({ initialLogs, admins }: LogsClientProps) {
-  const [adminFilter, setAdminFilter] = useState("ALL");
-  const [typeFilter, setTypeFilter] = useState("ALL");
-  const [searchTerm, setSearchTerm] = useState("");
+export function LogsClient({ initialLogs, admins, totalCount, currentPage, pageSize }: LogsClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const adminFilter = searchParams.get("admin") || "ALL";
+  const typeFilter = searchParams.get("action") || "ALL";
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
 
-  const actionTypes = useMemo(() => {
-    const types = new Set(initialLogs.map(log => log.action_type));
-    return Array.from(types).sort();
-  }, [initialLogs]);
+  const totalPages = Math.ceil(totalCount / pageSize);
 
-  const filteredLogs = useMemo(() => {
-    return initialLogs.filter(log => {
-      const matchesAdmin = adminFilter === "ALL" || log.admin_email === adminFilter;
-      const matchesType = typeFilter === "ALL" || log.action_type === typeFilter;
-      const matchesSearch = searchTerm === "" || 
-        log.admin_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        JSON.stringify(log.details).toLowerCase().includes(searchTerm.toLowerCase());
-      
-      return matchesAdmin && matchesType && matchesSearch;
+  // Common actions based on AuditAction type
+  const actionTypes = [
+    'USER_CREATE', 'USER_UPDATE', 'USER_DELETE',
+    'USER_VALIDATED', 'USER_INVALIDATED', 'USER_AI_ANALYZED',
+    'EMAIL_SENT', 'EMAIL_DRAFT_CREATED', 'EMAIL_TRASHED',
+    'POST_CREATED', 'POST_UPDATED', 'POST_TRASHED', 'POST_DELETED',
+    'TRIP_VALIDATED', 'TRIP_CANCELLED',
+    'IA_DATA_INGESTION', 'LOGIN_SUCCESS'
+  ].sort();
+
+  const updateFilters = (updates: Record<string, string | number | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === "ALL" || value === "") {
+        params.delete(key);
+      } else {
+        params.set(key, String(value));
+      }
     });
-  }, [initialLogs, adminFilter, typeFilter, searchTerm]);
+    // Reset to page 1 on filter change, unless we are explicitly changing the page
+    if (updates.page === undefined) {
+      params.delete("page");
+    }
+    router.push(`?${params.toString()}`);
+  };
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== (searchParams.get("search") || "")) {
+        updateFilters({ search: searchTerm });
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const getActionIcon = (type: string) => {
     if (type.includes('USER')) return <User className="w-4 h-4 text-blue-500" />;
@@ -54,9 +86,9 @@ export function LogsClient({ initialLogs, admins }: LogsClientProps) {
   };
 
   const getActionBadge = (type: string) => {
-    const isCreate = type.includes('CREATE');
-    const isDelete = type.includes('DELETE') || type.includes('TRASH');
-    const isUpdate = type.includes('UPDATE');
+    const isCreate = type.includes('CREATE') || type.includes('SENT') || type.includes('SUCCESS');
+    const isDelete = type.includes('DELETE') || type.includes('TRASH') || type.includes('CANCELLED') || type.includes('INVALIDATED');
+    const isUpdate = type.includes('UPDATE') || type.includes('VALIDATED');
     
     return (
       <span className={cn(
@@ -91,7 +123,7 @@ export function LogsClient({ initialLogs, admins }: LogsClientProps) {
         </div>
 
         <div className="flex gap-3 w-full md:w-auto shrink-0">
-            <Select value={adminFilter} onValueChange={setAdminFilter}>
+            <Select value={adminFilter} onValueChange={(val) => updateFilters({ admin: val })}>
                 <SelectTrigger className="w-full md:w-[200px] h-10 bg-slate-50 border-slate-200 rounded-xl text-xs font-black uppercase">
                     <div className="flex items-center gap-2">
                         <User className="w-3.5 h-3.5 text-slate-400" />
@@ -106,7 +138,7 @@ export function LogsClient({ initialLogs, admins }: LogsClientProps) {
                 </SelectContent>
             </Select>
 
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <Select value={typeFilter} onValueChange={(val) => updateFilters({ action: val })}>
                 <SelectTrigger className="w-full md:w-[180px] h-10 bg-slate-50 border-slate-200 rounded-xl text-xs font-black uppercase">
                     <div className="flex items-center gap-2">
                         <Filter className="w-3.5 h-3.5 text-slate-400" />
@@ -125,6 +157,37 @@ export function LogsClient({ initialLogs, admins }: LogsClientProps) {
 
       {/* TABLE */}
       <div className="bg-white border border-slate-200 rounded-[2.5rem] shadow-xl overflow-hidden min-h-[400px]">
+        <div className="p-6 bg-slate-50/50 border-b border-slate-200 flex justify-between items-center">
+            <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-klando-burgundy">Audit Transparence</span>
+                <span className="text-sm font-black text-slate-900">{totalCount} actions enregistrées</span>
+            </div>
+            
+            {totalPages > 1 && (
+                <div className="flex items-center gap-3">
+                    <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-lg"
+                        disabled={currentPage <= 1}
+                        onClick={() => updateFilters({ page: currentPage - 1 })}
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Page {currentPage} / {totalPages}</span>
+                    <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-lg"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => updateFilters({ page: currentPage + 1 })}
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </Button>
+                </div>
+            )}
+        </div>
+
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
@@ -136,7 +199,7 @@ export function LogsClient({ initialLogs, admins }: LogsClientProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredLogs.map((log) => (
+            {initialLogs.map((log) => (
               <TableRow key={log.id} className="hover:bg-slate-50 transition-colors group">
                 <TableCell className="text-[11px] font-bold text-slate-500 tabular-nums pl-8 text-left">
                   {format(new Date(log.created_at), 'dd MMM yyyy • HH:mm:ss', { locale: fr })}
@@ -169,7 +232,7 @@ export function LogsClient({ initialLogs, admins }: LogsClientProps) {
           </TableBody>
         </Table>
         
-        {filteredLogs.length === 0 && (
+        {initialLogs.length === 0 && (
           <div className="p-20 text-center space-y-4">
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
               <Database className="w-8 h-8 text-slate-200" />
