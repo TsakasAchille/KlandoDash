@@ -288,13 +288,13 @@ export default async function StatsPage() {
 
         {/* --- TAB: USERS & DEMOGRAPHICS --- */}
         <TabsContent value="users" className="space-y-8 animate-in fade-in zoom-in-95 duration-300 outline-none">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Market Typology */}
-            <Card className="rounded-2xl border-none shadow-sm bg-card/50 lg:col-span-1 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Market Typology (Actions) */}
+            <Card className="rounded-2xl border-none shadow-sm bg-card/50 overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
                   <PieChartIcon className="w-4 h-4 text-klando-gold" />
-                  Équilibre du Marché
+                  Équilibre du Marché (Activité)
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0 pb-6 h-[300px] w-full relative">
@@ -302,8 +302,23 @@ export default async function StatsPage() {
               </CardContent>
             </Card>
 
+            {/* Registration Typology (Roles) */}
+            <Card className="rounded-2xl border-none shadow-sm bg-card/50 overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
+                  <PieChartIcon className="w-4 h-4 text-klando-gold" />
+                  Répartition par Rôle (Inscription)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 pb-6 h-[300px] w-full relative">
+                 <StatsCharts type="registration-typology" data={stats.users?.registrationTypology || { drivers: 0, passengers: 0 }} />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Gender Distribution */}
-            <Card className="rounded-2xl border-none shadow-sm bg-card/50 lg:col-span-1">
+            <Card className="rounded-2xl border-none shadow-sm bg-card/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
                   <Users className="w-4 h-4 text-klando-gold" />
@@ -335,7 +350,7 @@ export default async function StatsPage() {
             </Card>
 
             {/* Age Distribution */}
-            <Card className="rounded-2xl border-none shadow-sm bg-card/50 lg:col-span-1">
+            <Card className="rounded-2xl border-none shadow-sm bg-card/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-black uppercase text-sm tracking-widest text-muted-foreground">
                   <CalendarPlus className="w-4 h-4 text-klando-gold" />

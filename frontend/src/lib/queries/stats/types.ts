@@ -34,6 +34,10 @@ export interface DashboardStats {
       passengers: number;
       mixed: number;
     };
+    registrationTypology?: {
+      drivers: number;
+      passengers: number;
+    };
   };
   geo?: {
     topRoutes: { origin: string; destination: string; volume: number; revenue: number }[];

@@ -18,7 +18,7 @@ import {
 } from "recharts";
 
 interface StatsChartsProps {
-  type: "typology" | "verification" | "orphan-cities" | "revenue-trends";
+  type: "typology" | "registration-typology" | "verification" | "orphan-cities" | "revenue-trends";
   data: any;
 }
 
@@ -34,11 +34,14 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
 
   if (!isMounted) return <div className="h-full w-full bg-muted/5 animate-pulse rounded-lg" />;
 
-  if (type === "typology") {
-    const chartData = [
+  if (type === "typology" || type === "registration-typology") {
+    const chartData = type === "typology" ? [
       { name: "Conducteurs", value: data?.drivers || 0 },
       { name: "Passagers", value: data?.passengers || 0 },
       { name: "Mixtes", value: data?.mixed || 0 },
+    ] : [
+      { name: "Rôle Conducteur", value: data?.drivers || 0 },
+      { name: "Rôle Passager", value: data?.passengers || 0 },
     ];
 
     return (
@@ -55,7 +58,7 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
               dataKey="value"
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell key={`cell-${index}`} fill={type === "registration-typology" ? (index === 0 ? "#D4AF37" : "#3B82F6") : COLORS[index % COLORS.length]} />
               ))}
             </Pie>
             <Tooltip 
