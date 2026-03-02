@@ -145,7 +145,12 @@ export async function getTripsWithDriver(options: {
         is_driver_doc_validated
       ),
       bookings (
-        transaction_id
+        transaction_id,
+        user:users (
+          uid,
+          display_name,
+          photo_url
+        )
       )
     `, { count: "exact" });
 
@@ -201,6 +206,11 @@ export async function getTripsWithDriver(options: {
 
   interface BookingRaw {
     transaction_id: string | null;
+    user: {
+      uid: string;
+      display_name: string | null;
+      photo_url: string | null;
+    } | null;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -215,12 +225,20 @@ export async function getTripsWithDriver(options: {
     let hasSuccessfulTransaction = false;
     let totalPaidAmount = 0;
 
-    rawBookings.forEach((b: BookingRaw) => {
+    const passengers = rawBookings.map(b => {
         if (b.transaction_id) {
             hasSuccessfulTransaction = true;
             totalPaidAmount += t.passenger_price || 0;
         }
-    });
+        
+        const u = Array.isArray(b.user) ? b.user[0] : b.user;
+        return u ? {
+            uid: u.uid,
+            display_name: u.display_name,
+            photo_url: u.photo_url,
+            has_paid: !!b.transaction_id
+        } : null;
+    }).filter(p => p !== null);
 
     return {
       trip_id: t.trip_id,
@@ -250,7 +268,7 @@ export async function getTripsWithDriver(options: {
       driver_rating: driver?.rating || null,
       driver_rating_count: driver?.rating_count || null,
       driver_verified: driver?.is_driver_doc_validated || null,
-      passengers: [], // On vide pour la liste, sera chargé par getTripById
+      passengers: passengers,
       has_successful_transaction: hasSuccessfulTransaction,
       total_paid_amount: totalPaidAmount,
     } as TripDetail;

@@ -102,7 +102,7 @@ export async function getTripById(tripId: string): Promise<TripDetail | null> {
   let totalPaidAmount = 0;
 
   const passengers = (data.bookings as unknown as BookingRaw[] || [])
-    .filter((b: BookingRaw) => ["CONFIRMED", "COMPLETED"].includes(b.status))
+    .filter((b: BookingRaw) => b.status !== 'CANCELLED')
     .map((b: BookingRaw) => {
       const rawUser = b.user;
       if (!rawUser) return null;

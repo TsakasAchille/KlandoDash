@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Search, X } from "lucide-react";
+import { Loader2, Search, X, Map as MapIcon } from "lucide-react";
 import { Trip, TripDetail } from "@/types/trip";
 import { TripTable } from "@/components/trips/trip-table";
 import { TripDetails } from "@/components/trips/trip-details";
@@ -10,6 +10,8 @@ import { StatCards } from "./stat-cards";
 import { TripStats } from "@/types/trip";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getTripDetailsAction } from "./actions";
+import { toast } from "sonner";
 
 interface TripsPageClientProps {
   initialTrips: Trip[];
@@ -32,6 +34,7 @@ function TripsPageClientContent({
   // États locaux
   const [selectedTrip, setSelectedTrip] = useState<TripDetail | null>(initialSelectedTripDetail);
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [localSearch, setLocalSearch] = useState(searchParams.get("search") || "");
   const ITEMS_PER_PAGE = 5;
@@ -68,15 +71,35 @@ function TripsPageClientContent({
   // Sync URL selection
   useEffect(() => {
     setSelectedId(initialSelectedId);
+    if (initialSelectedId && !selectedTrip && initialSelectedTripDetail) {
+        setSelectedTrip(initialSelectedTripDetail);
+    }
     if (!initialSelectedId) setSelectedTrip(null);
-  }, [initialSelectedId]);
+  }, [initialSelectedId, initialSelectedTripDetail]);
 
-  const handleSelectTrip = (trip: Trip) => {
+  const handleSelectTrip = async (trip: Trip) => {
     setSelectedId(trip.trip_id);
+    setIsLoadingDetails(true);
+    
+    // Mettre à jour l'URL sans rechargement complet
     const params = new URLSearchParams(window.location.search);
     params.set("selected", trip.trip_id);
     router.push(`?${params.toString()}`, { scroll: false });
-    setSelectedTrip(trip as unknown as TripDetail);
+    
+    try {
+      const res = await getTripDetailsAction(trip.trip_id);
+      if (res.success && res.data) {
+        setSelectedTrip(res.data);
+      } else {
+        toast.error("Impossible de charger les détails complets");
+        setSelectedTrip(trip as unknown as TripDetail);
+      }
+    } catch (e) {
+      console.error(e);
+      setSelectedTrip(trip as unknown as TripDetail);
+    } finally {
+      setIsLoadingDetails(false);
+    }
   };
 
   return (
@@ -119,18 +142,29 @@ function TripsPageClientContent({
       </div>
 
       {/* Détails (Sous le tableau) */}
-      <div className="pt-4 border-t border-border/40">
-        {selectedId && selectedTrip ? (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <TripDetails trip={selectedTrip} />
-          </div>
-        ) : (
-          <div className="h-[200px] flex items-center justify-center rounded-[2.5rem] border border-dashed border-border/40 bg-card/5 backdrop-blur-sm">
-            <div className="text-center space-y-2 opacity-40">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Sélectionnez un trajet pour voir les détails financiers</p>
+      <div className="pt-8 min-h-[600px]">
+        {!selectedId ? (
+          <div className="h-[300px] flex items-center justify-center rounded-[3rem] border-2 border-dashed border-slate-200 bg-slate-50/50 backdrop-blur-sm animate-in fade-in duration-700">
+            <div className="text-center space-y-4 opacity-40">
+              <div className="w-20 h-20 bg-white rounded-[2rem] flex items-center justify-center mx-auto shadow-sm">
+                <MapIcon className="w-8 h-8 text-slate-400" />
+              </div>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Sélectionnez un trajet pour une analyse complète</p>
             </div>
           </div>
-        )}
+        ) : isLoadingDetails ? (
+          <div className="h-[500px] flex flex-col items-center justify-center space-y-6 bg-white rounded-[3rem] border border-slate-100 shadow-xl animate-in fade-in duration-300">
+              <div className="w-12 h-12 border-4 border-klando-gold border-t-transparent rounded-full animate-spin" />
+              <div className="text-center space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-klando-gold animate-pulse">Extraction des données temps-réel...</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Calcul des finances et tracé GPS</p>
+              </div>
+          </div>
+        ) : selectedTrip ? (
+          <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000 ease-out">
+            <TripDetails trip={selectedTrip} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

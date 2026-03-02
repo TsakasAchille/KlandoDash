@@ -6,7 +6,12 @@ import { TripDetail } from "@/types/trip";
 import { formatDate, formatDistance, formatPrice, cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Banknote, Car, Leaf, ExternalLink, Map, ShieldCheck, Star, CheckCircle2 } from "lucide-react";
+import { 
+  Banknote, Car, Leaf, ExternalLink, Map as MapIcon, ShieldCheck, 
+  Star, CheckCircle2, User, Users, Calendar, Clock, 
+  MapPin, ArrowRight, Wallet, TrendingUp, ShieldAlert,
+  Info, ChevronRight, Fuel, Gauge, Play, XCircle, Mail
+} from "lucide-react";
 import Image from "next/image";
 
 // Import dynamique pour éviter les erreurs SSR avec Leaflet
@@ -15,8 +20,11 @@ const TripRouteMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[200px] rounded-lg bg-secondary/50 flex items-center justify-center">
-        <span className="text-muted-foreground text-xs font-black uppercase tracking-widest animate-pulse">Chargement de la carte...</span>
+      <div className="w-full h-[600px] rounded-[2.5rem] bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-200">
+        <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-klando-gold border-t-transparent rounded-full animate-spin" />
+            <span className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Initialisation de la carte...</span>
+        </div>
       </div>
     ),
   }
@@ -27,215 +35,253 @@ interface TripDetailsProps {
 }
 
 export function TripDetails({ trip }: TripDetailsProps) {
-  const co2Saved = ((trip.distance || 0) * 0.12 * trip.passengers.length).toFixed(1);
+  const co2Saved = ((trip.distance || 0) * 0.12 * (trip.passengers?.length || 0)).toFixed(1);
+  const klandoMargin = (trip.total_paid_amount || 0) - (trip.driver_price || 0);
+  const totalPassengers = trip.passengers?.length || 0;
+  const occupancyRate = Math.round((totalPassengers / (trip.seats_published || 1)) * 100);
 
   return (
-    <div className="space-y-4 sticky top-6">
-      {/* Route & Header */}
-      <Card className="border-klando-gold/20 overflow-hidden">
-        <div className="bg-gradient-to-r from-klando-burgundy/10 to-transparent p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-klando-gold/10">
-                <Car className="w-4 h-4 text-klando-gold" />
-              </div>
-              <h2 className="text-sm font-black uppercase tracking-tight">Trajet #{trip.trip_id.substring(0, 8)}</h2>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 pb-20">
+      
+      {/* 1. HEADER HERO : Adouci */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
+        <div className="space-y-2">
+            <div className="flex items-center gap-3">
+                <div className="px-3 py-1 rounded-full bg-slate-800 text-klando-gold text-[9px] font-black uppercase tracking-widest border border-white/5 shadow-lg">
+                    ID : {trip.trip_id.substring(0, 12)}
+                </div>
+                <BadgeStatus status={trip.status || "UNKNOWN"} />
             </div>
-            <span className={cn(
-              "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border",
-              trip.status === "ACTIVE" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
-              trip.status === "COMPLETED" ? "bg-green-500/10 text-green-500 border-green-500/20" :
-              "bg-secondary text-muted-foreground border-border/50"
-            )}>
-              {trip.status}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Départ</p>
-              <p className="font-bold text-xs truncate leading-tight">{trip.departure_name}</p>
-              <p className="text-[9px] text-muted-foreground truncate italic">{trip.departure_description}</p>
-            </div>
-            <div className="text-klando-gold font-black">→</div>
-            <div className="min-w-0">
-              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1 text-right">Arrivée</p>
-              <p className="font-bold text-xs truncate leading-tight text-right">{trip.destination_name}</p>
-              <p className="text-[9px] text-muted-foreground truncate italic text-right">{trip.destination_description}</p>
-            </div>
-          </div>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+                {trip.departure_name?.split(',')[0]} <span className="text-klando-gold">→</span> {trip.destination_name?.split(',')[0]}
+            </h1>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5 text-klando-gold/60" />
+                Départ le {formatDate(trip.departure_schedule || "")}
+            </p>
         </div>
 
-        <CardContent className="p-4 pt-2">
-          {trip.polyline ? (
-            <div className="rounded-lg overflow-hidden border border-border/20 mb-4">
-              <TripRouteMap
-                polylineString={trip.polyline}
-                departureName={trip.departure_name || ""}
-                destinationName={trip.destination_name || ""}
-              />
-            </div>
-          ) : (
-            <div className="w-full h-32 rounded-lg bg-secondary/30 flex items-center justify-center mb-4 border border-dashed border-border/40">
-              <div className="text-center">
-                <Map className="w-6 h-6 mx-auto mb-1 text-muted-foreground/40" />
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Tracé non disponible</p>
-              </div>
-            </div>
-          )}
-
-          {/* Quick Metrics */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="p-2 rounded-lg bg-secondary/30 border border-border/20 text-center">
-              <p className="text-[8px] text-muted-foreground uppercase font-black tracking-widest mb-1">Distance</p>
-              <p className="text-xs font-black">{formatDistance(trip.distance || 0)}</p>
-            </div>
-            <div className="p-2 rounded-lg bg-secondary/30 border border-border/20 text-center">
-              <p className="text-[8px] text-muted-foreground uppercase font-black tracking-widest mb-1">Date</p>
-              <p className="text-xs font-black truncate">{formatDate(trip.departure_schedule || "")}</p>
-            </div>
-            <div className="p-2 rounded-lg bg-klando-gold/5 border border-klando-gold/20 text-center">
-              <p className="text-[8px] text-klando-gold uppercase font-black tracking-widest mb-1">Prix</p>
-              <p className="text-xs font-black text-klando-gold">{formatPrice(trip.passenger_price || 0)}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Participants & Impact */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Conducteur */}
-        <Card className="border-border/40 overflow-hidden">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Conducteur</p>
-              {trip.driver_verified && (
-                <div className="flex items-center gap-1 text-blue-500 bg-blue-500/5 px-1.5 py-0.5 rounded border border-blue-500/10">
-                  <ShieldCheck className="w-2.5 h-2.5" />
-                  <span className="text-[8px] font-black uppercase">Vérifié</span>
+        <div className="flex items-center gap-4">
+            <div className="text-right hidden sm:block">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Éco-Performance</p>
+                <div className="flex items-center justify-end gap-2 text-green-600/80 font-black">
+                    <Leaf className="w-3.5 h-3.5" />
+                    <span className="text-sm">{co2Saved} kg CO₂</span>
                 </div>
-              )}
             </div>
+            <div className="w-12 h-12 rounded-2xl bg-klando-gold flex items-center justify-center shadow-xl shadow-klando-gold/10">
+                <TrendingUp className="w-6 h-6 text-klando-dark" />
+            </div>
+        </div>
+      </div>
+
+      {/* 2. SECTION CARTE (Overlay Anthracite adouci) */}
+      <div className="grid grid-cols-1 gap-8">
+        <div className="rounded-[3rem] overflow-hidden border-8 border-white shadow-xl bg-white relative group min-h-[600px]">
+            {trip.polyline ? (
+                <TripRouteMap
+                    polylineString={trip.polyline}
+                    departureName={trip.departure_name || ""}
+                    destinationName={trip.destination_name || ""}
+                />
+            ) : (
+                <div className="w-full h-[600px] bg-slate-50 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2.5rem]">
+                    <MapPin className="w-16 h-16 text-slate-200 mb-4 animate-bounce" />
+                    <p className="text-sm font-black text-slate-400 uppercase tracking-[0.3em]">Tracé GPS non disponible</p>
+                </div>
+            )}
             
-            <div className="flex items-center gap-3">
-              {trip.driver_photo ? (
-                <div className="relative w-10 h-10 flex-shrink-0">
-                  <Image src={trip.driver_photo} alt="" fill className="rounded-lg object-cover border border-border/50" sizes="40px" />
+            {/* Overlay Anthracite Soft (Slate 800) */}
+            <div className="absolute bottom-8 left-8 right-8 z-[1000]">
+                <div className="bg-slate-800/90 backdrop-blur-xl p-7 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-8">
+                    <div className="flex items-center gap-10 flex-1 w-full lg:w-auto">
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[8px] font-black text-klando-gold/80 uppercase tracking-[0.2em] mb-2">Origine</p>
+                            <p className="text-white font-black text-base uppercase leading-tight truncate">{trip.departure_name}</p>
+                            <p className="text-slate-400 text-[10px] italic mt-1 truncate">{trip.departure_description}</p>
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 flex-shrink-0">
+                            <ArrowRight className="w-5 h-5 text-klando-gold" />
+                        </div>
+                        <div className="flex-1 text-right lg:text-left min-w-0">
+                            <p className="text-[8px] font-black text-klando-gold/80 uppercase tracking-[0.2em] mb-2">Destination</p>
+                            <p className="text-white font-black text-base uppercase leading-tight truncate">{trip.destination_name}</p>
+                            <p className="text-slate-400 text-[10px] italic mt-1 truncate">{trip.destination_description}</p>
+                        </div>
+                    </div>
+                    
+                    <div className="h-px lg:h-12 w-full lg:w-[1px] bg-white/10" />
+                    
+                    <div className="flex items-center gap-8 shrink-0">
+                        <div className="text-center">
+                            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Distance</p>
+                            <p className="text-lg font-black text-white tabular-nums">{formatDistance(trip.distance || 0)}</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Occupation</p>
+                            <p className="text-lg font-black text-klando-gold tabular-nums">{occupancyRate}%</p>
+                        </div>
+                    </div>
                 </div>
-              ) : (
-                <div className="w-10 h-10 rounded-lg bg-klando-burgundy flex items-center justify-center text-white text-sm font-black flex-shrink-0">
-                  {(trip.driver_name || "C").charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-xs truncate uppercase tracking-tight leading-none mb-1">{trip.driver_name}</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-0.5 text-klando-gold">
-                    <span className="text-[10px] font-black">{trip.driver_rating?.toFixed(1) || "-"}</span>
-                    <Star className="w-2.5 h-2.5 fill-current" />
-                  </div>
-                  <span className="text-[9px] text-muted-foreground font-mono truncate">{trip.driver_phone || "Non renseigné"}</span>
-                </div>
-              </div>
-              {trip.driver_id && (
-                <Link href={`/users?selected=${trip.driver_id}`}>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 p-0 hover:bg-klando-gold/10 hover:text-klando-gold">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Button>
-                </Link>
-              )}
             </div>
-          </CardContent>
+        </div>
+      </div>
+
+      {/* 3. GRILLE DE DÉTAILS : Anthracite adouci */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        
+        {/* CONDUCTEUR */}
+        <Card className="rounded-[3rem] border-none shadow-xl bg-white overflow-hidden flex flex-col">
+            <div className="bg-slate-50 p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="text-slate-900 font-black uppercase text-[10px] tracking-widest flex items-center gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-blue-500" /> Conducteur
+                </h3>
+                <Link href={`/users?selected=${trip.driver_id}`}>
+                    <Button size="icon" variant="ghost" className="w-8 h-8 rounded-xl hover:bg-slate-100 text-slate-400">
+                        <User className="w-4 h-4" />
+                    </Button>
+                </Link>
+            </div>
+            <CardContent className="p-8 flex-1 flex flex-col justify-center">
+                <div className="flex items-center gap-5">
+                    <div className="relative">
+                        <div className="w-16 h-16 rounded-2xl border-4 border-slate-50 overflow-hidden shadow-md">
+                            {trip.driver_photo ? (
+                                <Image src={trip.driver_photo} alt="" fill className="object-cover" sizes="64px" />
+                            ) : (
+                                <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300 font-black text-xl uppercase">
+                                    {(trip.driver_name || "C").charAt(0)}
+                                </div>
+                            )}
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 bg-klando-gold text-klando-dark px-1.5 py-0.5 rounded text-[8px] font-black border-2 border-white">
+                            {trip.driver_rating?.toFixed(1) || "5.0"} ★
+                        </div>
+                    </div>
+                    <div className="min-w-0">
+                        <h4 className="text-base font-black text-slate-900 uppercase tracking-tight truncate">{trip.driver_name}</h4>
+                        <p className="text-slate-400 font-mono text-[11px] mt-0.5">{trip.driver_phone || "Non renseigné"}</p>
+                    </div>
+                </div>
+            </CardContent>
         </Card>
 
-        {/* Passagers & Impact */}
-        <div className="flex flex-col gap-4">
-          <Card className="border-border/40">
-            <CardContent className="p-3">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Passagers ({trip.passengers.length}/{trip.seats_published})</p>
-              
-              <div className="space-y-2">
-                {trip.passengers.map((p) => (
-                  <div key={p.uid} className="flex items-center justify-between p-2 rounded-xl bg-secondary/30 border border-border/20 group hover:border-klando-gold/30 transition-all">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {p.photo_url ? (
-                        <div className="relative w-8 h-8 flex-shrink-0">
-                          <Image src={p.photo_url} alt="" fill className="rounded-lg object-cover border border-border/50" sizes="32px" />
-                        </div>
-                      ) : (
-                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground text-[10px] font-black flex-shrink-0 border border-border/50">
-                          {(p.display_name || "P").charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="flex flex-col min-w-0 leading-tight">
-                        <span className="text-xs font-bold truncate text-foreground group-hover:text-klando-gold transition-colors">{p.display_name || "Passager"}</span>
-                        {p.has_paid ? (
-                          <span className="text-[8px] font-black text-green-500 uppercase tracking-tighter">Paiement effectué</span>
-                        ) : (
-                          <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-tighter">Non payé</span>
-                        )}
-                      </div>
+        {/* FINANCE CARD : Anthracite Soft (Slate 800) */}
+        <Card className="rounded-[3rem] border-none shadow-2xl bg-slate-800 text-white p-8 xl:col-span-2 relative overflow-hidden flex flex-col justify-between">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-klando-gold/5 blur-[80px] -mr-32 -mt-32 pointer-events-none" />
+            
+            <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                        <Wallet className="w-5 h-5 text-klando-gold" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      {p.has_paid && (
-                        <span className="text-[9px] font-black text-slate-900 bg-white/50 px-1.5 py-0.5 rounded border border-slate-200">
-                          {formatPrice(p.amount_paid || 0)}
-                        </span>
-                      )}
-                      <Link href={`/users?selected=${p.uid}`}>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 p-0 hover:bg-klando-gold/10 hover:text-klando-gold">
-                          <ExternalLink className="w-3 h-3" />
-                        </Button>
-                      </Link>
+                    <div>
+                        <h3 className="text-base font-black uppercase tracking-tight leading-none text-white">Analyse Financière</h3>
+                        <p className="text-white/30 text-[8px] font-black uppercase tracking-widest mt-1">Ref: {trip.trip_id.split('-')[0]}</p>
                     </div>
-                  </div>
-                ))}
-                {trip.passengers.length === 0 && (
-                  <p className="text-[10px] text-muted-foreground italic py-4 text-center">Aucune réservation confirmée</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Finances Section */}
-          <Card className="border-border/40 bg-slate-900 text-white overflow-hidden">
-            <div className="p-3 bg-gradient-to-r from-slate-800 to-slate-900 flex items-center justify-between">
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Suivi Financier</p>
-              {trip.has_successful_transaction && (
-                <div className="flex items-center gap-1.5 text-green-400">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span className="text-[8px] font-black uppercase">Fonds collectés</span>
                 </div>
-              )}
+                <div>
+                    {trip.has_successful_transaction ? (
+                        <span className="text-green-400 text-[9px] font-black uppercase tracking-widest bg-green-400/10 px-3 py-1 rounded-full border border-green-400/20">● PAYÉ</span>
+                    ) : (
+                        <span className="text-orange-400 text-[9px] font-black uppercase tracking-widest bg-orange-400/10 px-3 py-1 rounded-full border border-orange-400/20">● EN ATTENTE</span>
+                    )}
+                </div>
             </div>
-            <CardContent className="p-4 flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <span className="text-[8px] font-black uppercase text-slate-500 mb-1">Total Passagers</span>
-                  <span className="text-xl font-black tracking-tight">{formatPrice(trip.total_paid_amount || 0)}</span>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10 my-6">
+                <div className="space-y-1">
+                    <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Collecté</p>
+                    <p className="text-2xl font-black text-white tracking-tighter tabular-nums">{formatPrice(trip.total_paid_amount || 0)}</p>
                 </div>
-                <div className="flex flex-col text-right">
-                  <span className="text-[8px] font-black uppercase text-slate-500 mb-1">Revenu Chauffeur</span>
-                  <span className="text-xl font-black tracking-tight text-klando-gold">{formatPrice(trip.driver_price || 0)}</span>
+                <div className="space-y-1">
+                    <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Part Chauffeur</p>
+                    <p className="text-2xl font-black text-klando-gold tracking-tighter tabular-nums">{formatPrice(trip.driver_price || 0)}</p>
                 </div>
-              </div>
-              
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[8px] font-black uppercase text-slate-500">Marge Klando</span>
-                  <span className="text-sm font-black text-green-400">
-                    +{formatPrice((trip.total_paid_amount || 0) - (trip.driver_price || 0))}
-                  </span>
+                <div className="bg-white/5 rounded-[2rem] p-5 border border-white/5 shadow-inner">
+                    <p className="text-[9px] font-black text-green-400/60 uppercase tracking-widest mb-1">Profit Klando</p>
+                    <p className="text-2xl font-black text-green-400 tracking-tighter tabular-nums">+{formatPrice(klandoMargin)}</p>
                 </div>
-                <div className="flex items-center gap-1.5 text-slate-400 italic">
-                  <Leaf className="w-3 h-3 text-green-500" />
-                  <span className="text-[9px] font-bold">{co2Saved} kg CO₂ économisés</span>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-white/5 pt-6 relative z-10">
+                <div className="flex items-center gap-2 text-white/30">
+                    <Info className="w-3 h-3" />
+                    <span className="text-[8px] font-bold uppercase">Inclut les frais de service et assurance</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="text-[8px] font-black text-white/10 uppercase tracking-[0.3em]">
+                    KLANDO FINANCE CORE
+                </div>
+            </div>
+        </Card>
+      </div>
+
+      {/* 4. PASSAGERS : Grille moderne adoucie */}
+      <div className="space-y-5 pt-4">
+        <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-4 flex items-center gap-2">
+            <Users className="w-3.5 h-3.5" /> Passagers confirmés ({totalPassengers}/{trip.seats_published})
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 px-2">
+            {trip.passengers?.map((p) => (
+                <Card key={p.uid} className="rounded-[2rem] border-none shadow-md bg-white hover:shadow-lg transition-all duration-500 border border-slate-100">
+                    <div className="p-4 flex items-center gap-4">
+                        <div className="relative">
+                            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-inner bg-slate-50">
+                                {p.photo_url ? (
+                                    <Image src={p.photo_url} alt="" fill className="object-cover" sizes="40px" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-300 text-sm font-black uppercase">
+                                        {p.display_name?.charAt(0)}
+                                    </div>
+                                )}
+                            </div>
+                            {p.has_paid && (
+                                <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
+                                    <CheckCircle2 className="w-2 h-2" />
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-black text-[11px] uppercase text-slate-900 truncate">{p.display_name}</p>
+                            <p className={cn(
+                                "text-[8px] font-black uppercase mt-0.5",
+                                p.has_paid ? "text-green-500" : "text-slate-300"
+                            )}>
+                                {p.has_paid ? `Payé ${formatPrice(p.amount_paid || 0)}` : 'Non payé'}
+                            </p>
+                        </div>
+                        <Link href={`/users?selected=${p.uid}`}>
+                            <Button size="icon" variant="ghost" className="w-7 h-7 hover:bg-slate-50 text-slate-300 hover:text-klando-gold">
+                                <ExternalLink className="w-3 h-3" />
+                            </Button>
+                        </Link>
+                    </div>
+                </Card>
+            ))}
+            
+            {(!trip.passengers || trip.passengers.length === 0) && (
+                <div className="col-span-full py-10 flex flex-col items-center justify-center bg-slate-50/50 rounded-[2rem] border-2 border-dashed border-slate-200 opacity-40">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic">En attente de réservations</p>
+                </div>
+            )}
         </div>
       </div>
     </div>
   );
+}
+
+function BadgeStatus({ status }: { status: string }) {
+    const configs: Record<string, { label: string, color: string, icon: any }> = {
+        'ACTIVE': { label: 'EN COURS', color: 'bg-blue-500 text-white shadow-blue-500/10', icon: Play },
+        'COMPLETED': { label: 'TERMINÉ', color: 'bg-green-600 text-white shadow-green-500/10', icon: CheckCircle2 },
+        'CANCELLED': { label: 'ANNULÉ', color: 'bg-red-600 text-white shadow-red-500/10', icon: XCircle },
+        'PENDING': { label: 'EN ATTENTE', color: 'bg-orange-500 text-white shadow-orange-500/10', icon: Clock },
+    };
+    const config = configs[status] || { label: status, color: 'bg-slate-500 text-white', icon: ShieldAlert };
+    const Icon = config.icon;
+    return (
+        <div className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full font-black uppercase text-[8px] tracking-widest shadow-md", config.color)}>
+            <Icon className="w-3 h-3" /> {config.label}
+        </div>
+    );
 }
