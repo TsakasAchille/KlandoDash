@@ -1,13 +1,16 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import * as LucideIcons from "lucide-react";
+import { ArrowRight, Car, Users, AlertCircle, TrendingUp, LucideIcon } from "lucide-react";
+
+const icons = {
+  Car, Users, AlertCircle, TrendingUp
+};
 
 interface KPICardProps {
   title: string;
   value: string | number;
-  icon: keyof typeof LucideIcons | React.ElementType;
+  icon: keyof typeof icons | React.ElementType;
   color: "blue" | "purple" | "red" | "green";
   href: string;
   description?: string;
@@ -29,8 +32,8 @@ export function KPICard({
   };
 
   const IconComponent = typeof icon === 'string' 
-    ? (LucideIcons[icon as keyof typeof LucideIcons] as React.ElementType)
-    : icon;
+    ? (icons[icon as keyof typeof icons] as LucideIcon)
+    : icon as LucideIcon;
 
   return (
     <Link href={href} className="block group">

@@ -1,12 +1,28 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import React from "react";
-import * as LucideIcons from "lucide-react";
+import { 
+  Car, Users, Ticket, Banknote, MapPin, 
+  UserPlus, XCircle, CalendarPlus, Wallet,
+  ArrowDownLeft, ArrowUpRight, Play, Clock,
+  CheckCircle2, Globe, LucideIcon, CircleDot,
+  Zap, ShieldCheck, CheckCircle, LayoutGrid,
+  AlertCircle, TrendingUp, Star
+} from "lucide-react";
+
+const icons = {
+  Car, Users, Ticket, Banknote, MapPin, 
+  UserPlus, XCircle, CalendarPlus, Wallet,
+  ArrowDownLeft, ArrowUpRight, Play, Clock,
+  CheckCircle2, Globe, CircleDot, Zap, 
+  ShieldCheck, CheckCircle, LayoutGrid,
+  AlertCircle, TrendingUp, Star
+};
 
 interface MiniStatCardProps {
   title: string;
   value: string | number;
-  icon: keyof typeof LucideIcons | React.ElementType;
+  icon: keyof typeof icons | React.ElementType;
   color: "blue" | "green" | "purple" | "red" | "gold";
   description?: string;
   onClick?: () => void;
@@ -22,11 +38,9 @@ const themes = {
 };
 
 export function MiniStatCard({ title, value, icon, color, description, onClick, active }: MiniStatCardProps) {
-  // If icon is a string, get the component from LucideIcons
-  // Otherwise, use it directly (if passed within the same boundary)
   const IconComponent = typeof icon === 'string' 
-    ? (LucideIcons[icon as keyof typeof LucideIcons] as React.ElementType)
-    : icon;
+    ? (icons[icon as keyof typeof icons] as LucideIcon)
+    : icon as LucideIcon;
 
   return (
     <Card 

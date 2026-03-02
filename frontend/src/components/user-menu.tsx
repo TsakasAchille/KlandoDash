@@ -30,7 +30,7 @@ export function UserMenu() {
           {/* Avatar avec Ring Glow */}
           <div className="relative shrink-0">
             <div className={cn(
-              "w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden border-2 transition-all duration-500",
+              "w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden border-2 transition-all duration-500 relative",
               role === "admin" ? "border-klando-gold/30 group-hover/user:border-klando-gold shadow-lg shadow-klando-gold/5" : "border-white/10 group-hover/user:border-white/30"
             )}>
               {image ? (
@@ -40,6 +40,8 @@ export function UserMenu() {
                   fill
                   className="object-cover transition-transform duration-700 group-hover/user:scale-110"
                   sizes="44px"
+                  unoptimized
+                  priority
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-klando-burgundy to-[#9b2c3d] flex items-center justify-center text-white text-xs font-black">
