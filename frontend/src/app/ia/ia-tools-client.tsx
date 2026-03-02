@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useRef } from "react";
 import { Search, Send, User, Loader2, Phone, Mail, FileText, ImageIcon, X, UploadCloud, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { searchHistoricalDrivers, createPropositionDraft, getUserInfo } from "./actions";
+import { searchHistoricalDrivers, createPropositionDraft, getUserInfo } from "./ia-actions";
 import { uploadMarketingImageAction } from "@/app/marketing/actions/mailing";
 import { formatDateShort, cn } from "@/lib/utils";
 import { toast } from "sonner";
