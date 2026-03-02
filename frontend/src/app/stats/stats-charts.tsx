@@ -44,6 +44,8 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
       { name: "Rôle Passager", value: data?.passengers || 0 },
     ];
 
+    const total = chartData.reduce((acc, curr) => acc + curr.value, 0) || 1;
+
     return (
       <div className="w-full h-full min-h-[250px]">
         <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0} debounce={50}>
@@ -56,6 +58,8 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
               outerRadius={80}
               paddingAngle={5}
               dataKey="value"
+              label={({ percent }) => `${((percent || 0) * 100).toFixed(0)}%`}
+              labelLine={false}
             >
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={type === "registration-typology" ? (index === 0 ? "#D4AF37" : "#3B82F6") : COLORS[index % COLORS.length]} />
@@ -64,6 +68,7 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
             <Tooltip 
               contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: "8px", color: "#fff" }}
               itemStyle={{ color: "#fff" }}
+              formatter={(value: any) => [`${value} (${((Number(value) / total) * 100).toFixed(1)}%)`, 'Nombre']}
             />
             <Legend verticalAlign="bottom" height={36}/>
           </PieChart>
@@ -123,6 +128,8 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
       count: item.count || item.demand_count
     }));
 
+    const total = chartData.reduce((acc: number, curr: any) => acc + curr.count, 0) || 1;
+
     return (
       <div className="w-full h-full min-h-[250px]">
         <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0} debounce={50}>
@@ -142,6 +149,7 @@ export function StatsCharts({ type, data }: StatsChartsProps) {
             <Tooltip 
               cursor={{ fill: "rgba(255,255,255,0.05)" }}
               contentStyle={{ backgroundColor: "#1e293b", border: "none", borderRadius: "8px", color: "#fff" }}
+              formatter={(value: any) => [`${value} (${((Number(value) / total) * 100).toFixed(1)}%)`, 'Nombre']}
             />
             <Bar 
               dataKey="count" 
