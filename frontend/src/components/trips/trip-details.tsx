@@ -63,7 +63,7 @@ export function TripDetails({ trip }: TripDetailsProps) {
 
         <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Éco-Performance</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Éco-Performance</p>
                 <div className="flex items-center justify-end gap-2 text-green-600/80 font-black">
                     <Leaf className="w-3.5 h-3.5" />
                     <span className="text-sm">{co2Saved} kg CO₂</span>
@@ -96,7 +96,7 @@ export function TripDetails({ trip }: TripDetailsProps) {
                 <div className="bg-slate-800/90 backdrop-blur-xl p-7 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-8">
                     <div className="flex items-center gap-10 flex-1 w-full lg:w-auto">
                         <div className="flex-1 min-w-0">
-                            <p className="text-[8px] font-black text-klando-gold/80 uppercase tracking-[0.2em] mb-2">Origine</p>
+                            <p className="text-[9px] font-black text-klando-gold/80 uppercase tracking-[0.2em] mb-2">Origine</p>
                             <p className="text-white font-black text-base uppercase leading-tight truncate">{trip.departure_name}</p>
                             <p className="text-slate-400 text-[10px] italic mt-1 truncate">{trip.departure_description}</p>
                         </div>
@@ -149,7 +149,7 @@ export function TripDetails({ trip }: TripDetailsProps) {
                             {trip.driver_photo ? (
                                 <Image src={trip.driver_photo} alt="" fill className="object-cover" sizes="64px" />
                             ) : (
-                                <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300 font-black text-xl uppercase">
+                                <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300 font-black text-xl uppercase">
                                     {(trip.driver_name || "C").charAt(0)}
                                 </div>
                             )}
@@ -166,50 +166,50 @@ export function TripDetails({ trip }: TripDetailsProps) {
             </CardContent>
         </Card>
 
-        {/* FINANCE CARD : Anthracite Soft (Slate 800) */}
-        <Card className="rounded-[3rem] border-none shadow-2xl bg-slate-800 text-white p-8 xl:col-span-2 relative overflow-hidden flex flex-col justify-between">
+        {/* FINANCE CARD : Version Grise Claire (Slate 50) */}
+        <Card className="rounded-[3rem] border-none shadow-lg bg-slate-50 p-8 xl:col-span-2 relative overflow-hidden flex flex-col justify-between border border-slate-200/50">
             <div className="absolute top-0 right-0 w-64 h-64 bg-klando-gold/5 blur-[80px] -mr-32 -mt-32 pointer-events-none" />
             
             <div className="flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
                         <Wallet className="w-5 h-5 text-klando-gold" />
                     </div>
                     <div>
-                        <h3 className="text-base font-black uppercase tracking-tight leading-none text-white">Analyse Financière</h3>
-                        <p className="text-white/30 text-[8px] font-black uppercase tracking-widest mt-1">Ref: {trip.trip_id.split('-')[0]}</p>
+                        <h3 className="text-base font-black uppercase tracking-tight leading-none text-slate-900">Analyse Financière</h3>
+                        <p className="text-slate-400 text-[8px] font-black uppercase tracking-widest mt-1">Ref: {trip.trip_id.split('-')[0]}</p>
                     </div>
                 </div>
                 <div>
                     {trip.has_successful_transaction ? (
-                        <span className="text-green-400 text-[9px] font-black uppercase tracking-widest bg-green-400/10 px-3 py-1 rounded-full border border-green-400/20">● PAYÉ</span>
+                        <span className="text-green-600 text-[9px] font-black uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full border border-green-100">● PAYÉ</span>
                     ) : (
-                        <span className="text-orange-400 text-[9px] font-black uppercase tracking-widest bg-orange-400/10 px-3 py-1 rounded-full border border-orange-400/20">● EN ATTENTE</span>
+                        <span className="text-orange-500 text-[9px] font-black uppercase tracking-widest bg-orange-50 px-3 py-1 rounded-full border border-orange-100">● EN ATTENTE</span>
                     )}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10 my-6">
                 <div className="space-y-1">
-                    <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Collecté</p>
-                    <p className="text-2xl font-black text-white tracking-tighter tabular-nums">{formatPrice(trip.total_paid_amount || 0)}</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Collecté</p>
+                    <p className="text-2xl font-black text-slate-900 tracking-tighter tabular-nums">{formatPrice(trip.total_paid_amount || 0)}</p>
                 </div>
                 <div className="space-y-1">
-                    <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Part Chauffeur</p>
-                    <p className="text-2xl font-black text-klando-gold tracking-tighter tabular-nums">{formatPrice(trip.driver_price || 0)}</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Part Chauffeur</p>
+                    <p className="text-2xl font-black text-slate-900 tracking-tighter tabular-nums">{formatPrice(trip.driver_price || 0)}</p>
                 </div>
-                <div className="bg-white/5 rounded-[2rem] p-5 border border-white/5 shadow-inner">
-                    <p className="text-[9px] font-black text-green-400/60 uppercase tracking-widest mb-1">Profit Klando</p>
-                    <p className="text-2xl font-black text-green-400 tracking-tighter tabular-nums">+{formatPrice(klandoMargin)}</p>
+                <div className="bg-green-500/5 rounded-[2rem] p-5 border border-green-500/10 shadow-inner">
+                    <p className="text-[9px] font-black text-green-600/60 uppercase tracking-widest mb-1">Profit Klando</p>
+                    <p className="text-2xl font-black text-green-600 tracking-tighter tabular-nums">+{formatPrice(klandoMargin)}</p>
                 </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-white/5 pt-6 relative z-10">
-                <div className="flex items-center gap-2 text-white/30">
-                    <Info className="w-3 h-3" />
+            <div className="flex items-center justify-between border-t border-slate-200 pt-6 relative z-10">
+                <div className="flex items-center gap-2 text-slate-400">
+                    <Info className="w-3.5 h-3.5" />
                     <span className="text-[8px] font-bold uppercase">Inclut les frais de service et assurance</span>
                 </div>
-                <div className="text-[8px] font-black text-white/10 uppercase tracking-[0.3em]">
+                <div className="text-[8px] font-black text-slate-300 uppercase tracking-[0.3em]">
                     KLANDO FINANCE CORE
                 </div>
             </div>
@@ -230,7 +230,7 @@ export function TripDetails({ trip }: TripDetailsProps) {
                                 {p.photo_url ? (
                                     <Image src={p.photo_url} alt="" fill className="object-cover" sizes="40px" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-slate-300 text-sm font-black uppercase">
+                                    <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300 text-sm font-black uppercase">
                                         {p.display_name?.charAt(0)}
                                     </div>
                                 )}
@@ -252,7 +252,7 @@ export function TripDetails({ trip }: TripDetailsProps) {
                         </div>
                         <Link href={`/users?selected=${p.uid}`}>
                             <Button size="icon" variant="ghost" className="w-7 h-7 hover:bg-slate-50 text-slate-300 hover:text-klando-gold">
-                                <ExternalLink className="w-3 h-3" />
+                                <ExternalLink className="w-3.5 h-3.5" />
                             </Button>
                         </Link>
                     </div>
@@ -280,7 +280,7 @@ function BadgeStatus({ status }: { status: string }) {
     const config = configs[status] || { label: status, color: 'bg-slate-500 text-white', icon: ShieldAlert };
     const Icon = config.icon;
     return (
-        <div className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full font-black uppercase text-[8px] tracking-widest shadow-md", config.color)}>
+        <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-2xl font-black uppercase text-[8px] tracking-widest shadow-md", config.color)}>
             <Icon className="w-3 h-3" /> {config.label}
         </div>
     );

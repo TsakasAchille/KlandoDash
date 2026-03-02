@@ -107,7 +107,11 @@ export function MailViewer({
             ) : (
                 <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight line-clamp-1">{email.subject}</h4>
             )}
-            <p className="text-[10px] font-bold text-slate-600 uppercase mt-0.5">À: {email.recipient_email}</p>
+            <p className="text-[10px] font-bold text-slate-600 uppercase mt-0.5 flex items-center gap-2">
+              À: {email.recipient_email}
+              <span className="w-1 h-1 rounded-full bg-slate-300" />
+              {new Date(email.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">

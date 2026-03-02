@@ -36,22 +36,31 @@ export function PostList({ comms, selectedId, onSelect, statusFilter }: PostList
               )}
             >
               {/* PLATFORM BADGE */}
-              <div className="flex items-center gap-2 mb-1.5 shrink-0">
-                <div className={cn(
-                  "p-1.5 rounded-lg shrink-0",
-                  comm.platform === 'TIKTOK' ? "bg-pink-50 text-pink-500" :
-                  comm.platform === 'INSTAGRAM' ? "bg-purple-50 text-purple-500" :
-                  comm.platform === 'LINKEDIN' ? "bg-blue-50 text-blue-700" :
-                  comm.platform === 'OTHER' ? "bg-slate-100 text-slate-600" :
-                  "bg-blue-50 text-blue-400"
-                )}>
-                  {comm.platform === 'TIKTOK' && <Music className="w-3 h-3" />}
-                  {comm.platform === 'INSTAGRAM' && <Instagram className="w-3 h-3" />}
-                  {comm.platform === 'LINKEDIN' && <Linkedin className="w-3 h-3" />}
-                  {comm.platform === 'X' && <Twitter className="w-3 h-3" />}
-                  {comm.platform === 'OTHER' && <MoreHorizontal className="w-3 h-3" />}
+              <div className="flex items-center justify-between gap-2 mb-1.5 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={cn(
+                    "p-1.5 rounded-lg shrink-0",
+                    comm.platform === 'TIKTOK' ? "bg-pink-50 text-pink-500" :
+                    comm.platform === 'INSTAGRAM' ? "bg-purple-50 text-purple-500" :
+                    comm.platform === 'LINKEDIN' ? "bg-blue-50 text-blue-700" :
+                    comm.platform === 'OTHER' ? "bg-slate-100 text-slate-600" :
+                    "bg-blue-50 text-blue-400"
+                  )}>
+                    {comm.platform === 'TIKTOK' && <Music className="w-3 h-3" />}
+                    {comm.platform === 'INSTAGRAM' && <Instagram className="w-3 h-3" />}
+                    {comm.platform === 'LINKEDIN' && <Linkedin className="w-3 h-3" />}
+                    {comm.platform === 'X' && <Twitter className="w-3 h-3" />}
+                    {comm.platform === 'OTHER' && <MoreHorizontal className="w-3 h-3" />}
+                  </div>
+                  <span className="text-[9px] font-black uppercase text-slate-400 tracking-tighter truncate">{comm.platform}</span>
                 </div>
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-tighter truncate">{comm.platform}</span>
+                
+                <span className="text-[9px] font-bold text-slate-300 tabular-nums shrink-0">
+                  {new Date(comm.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                  <span className="ml-1 opacity-70">
+                    {new Date(comm.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </span>
               </div>
               
               {/* TEXT CONTENT - WRAPPED WITH min-w-0 TO FORCE TRUNCATE */}
