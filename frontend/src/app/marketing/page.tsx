@@ -18,13 +18,9 @@ export default async function MarketingPage() {
   }
 
   // On ne charge QUE ce qui est vital pour l'affichage immédiat (Stats + Premier onglet)
-  const [stats, insightResult] = await Promise.all([
-    getSiteTripRequestsStats(),
-    getMarketingInsightsAction(),
-  ]);
+  const stats = await getSiteTripRequestsStats();
 
-  const insights = insightResult.success ? insightResult.data : [];
-  const pendingCount = 0; // Temporairement désactivé avec l'onglet stratégie
+  const pendingCount = 0; // Temporairement désactivé
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8 pt-4 relative">
@@ -43,8 +39,7 @@ export default async function MarketingPage() {
       </div>
 
       <MarketingClient 
-        initialInsights={insights}
-        // Les autres données seront chargées de manière différée (Smart Loading)
+        // Les données seront chargées de manière différée (Smart Loading)
       />
     </div>
   );

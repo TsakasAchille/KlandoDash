@@ -15,19 +15,15 @@ import {
   getMarketingSiteRequestsAction
 } from "@/app/site-requests/actions";
 import { 
-  runMarketingAIScanAction,
   getMarketingMapTripsAction,
   getMarketingFlowStatsAction
 } from "./actions/intelligence";
 import { 
-  MarketingInsight, 
   MarketingFlowStat
 } from "./types";
 
 // Sub-components (extracted for SOLID)
-import { IntelligenceTab } from "@/features/marketing/components/tabs/IntelligenceTab";
 import { RequestHistoryTab } from "@/features/marketing/components/tabs/RequestHistoryTab";
-import { InsightDetailModal } from "@/features/marketing/components/shared/InsightDetailModal";
 
 // Existing Site Requests Components
 import { SiteRequestTable } from "@/components/site-requests/site-request-table";
@@ -37,23 +33,21 @@ import { MatchingDialog } from "@/app/site-requests/components/MatchingDialog";
 // UI / Icons
 import { Button } from "@/components/ui/button";
 import { 
-  Users, Map as MapIcon, History, Sparkles, Loader2, 
-  BarChart3, TrendingUp
+  Users, Map as MapIcon, History, Loader2, 
+  TrendingUp
 } from "lucide-react";
 import { Suspense } from "react";
 
 interface MarketingClientProps {
-  initialInsights: MarketingInsight[];
 }
 
 function MarketingClientContent({ 
-  initialInsights,
 }: MarketingClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // --- URL STATE MANAGEMENT ---
-  const tabParam = searchParams.get("tab") || "stats";
+  const tabParam = searchParams.get("tab") || "prospects";
   const subTabParam = searchParams.get("sub") || "to-treat";
   const statusParam = searchParams.get("status") || "all";
   const pageParam = parseInt(searchParams.get("page") || "1");
@@ -70,9 +64,6 @@ function MarketingClientContent({
     router.replace(url.pathname + url.search, { scroll: false });
   };
 
-  // Data state
-  const [insights, setInsights] = useState<MarketingInsight[]>(initialInsights);
-  
   // DEFERRED DATA (Smart Loading)
   const [requests, setRequests] = useState<SiteTripRequest[]>([]);
   const [tripsForMap, setTripsForMap] = useState<TripMapItem[]>([]);
@@ -82,16 +73,11 @@ function MarketingClientContent({
   const [isDataLoading, setIsDataLoading] = useState(false);
 
   // Loading states
-  const [isScanningMarketing, setIsScanningMarketing] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [scanningId, setScanningId] = useState<string | null>(null);
 
   // UI state
-  const [selectedInsight, setSelectedInsight] = useState<MarketingInsight | null>(null);
   const [aiDialogOpenId, setAiDialogOpenId] = useState<string | null>(null);
-
-  // --- EFFECT: SYNC PROPS ---
-  useEffect(() => { setInsights(initialInsights); }, [initialInsights]);
 
   // --- EFFECT: DEFERRED LOADING (SMART LOAD) ---
   useEffect(() => {
@@ -131,16 +117,6 @@ function MarketingClientContent({
   }, [tabParam, requests.length, flowStats.length, isDataLoading, aiDialogOpenId, publicPending.length]);
 
   // --- HANDLERS: ACTIONS ---
-  const handleMarketingScan = async () => {
-    setIsScanningMarketing(true);
-    const res = await runMarketingAIScanAction();
-    if (res.success) {
-      toast.success(`${res.count} rapports d'analyse IA générés.`);
-      router.refresh();
-    }
-    setIsScanningMarketing(false);
-  };
-
   const handleUpdateStatus = async (id: string, status: SiteTripRequestStatus) => {
     setUpdatingId(id);
     const result = await updateRequestStatusAction(id, status);
@@ -165,9 +141,6 @@ function MarketingClientContent({
         {/* HEADER: TABS LIST & MAIN ACTIONS */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/30 p-2 rounded-3xl border border-white/5 backdrop-blur-sm shadow-xl">
           <TabsList className="bg-transparent border-none p-0 h-auto gap-1">
-            <TabsTrigger value="stats" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
-              <BarChart3 className="w-3.5 h-3.5" /> Intelligence
-            </TabsTrigger>
             <TabsTrigger value="prospects" className="rounded-2xl px-6 py-2.5 data-[state=active]:bg-klando-gold data-[state=active]:text-klando-dark font-black uppercase text-[10px] tracking-widest gap-2">
               <Users className="w-3.5 h-3.5" /> Prospects
             </TabsTrigger>
@@ -178,29 +151,9 @@ function MarketingClientContent({
               <History className="w-3.5 h-3.5" /> Observatoire
             </TabsTrigger>
           </TabsList>
-          
-          <div className="flex items-center gap-2">
-            {tabParam === "stats" && (
-                <Button onClick={handleMarketingScan} disabled={isScanningMarketing} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl px-6 h-10 shadow-lg shadow-blue-500/20">
-                    {isScanningMarketing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                    Scan IA Stratégique
-                </Button>
-            )}
-          </div>
         </div>
 
         {/* --- TABS CONTENT: SMART LOADING --- */}
-
-        <TabsContent value="stats" className="outline-none">
-          {tabParam === "stats" && (
-            <IntelligenceTab 
-              insights={insights}
-              isScanning={isScanningMarketing}
-              onScan={handleMarketingScan}
-              onSelect={setSelectedInsight}
-            />
-          )}
-        </TabsContent>
 
         <TabsContent value="prospects" className="outline-none">
           {tabParam === "prospects" && (
@@ -245,8 +198,6 @@ function MarketingClientContent({
       </Tabs>
 
       {/* --- MODALS --- */}
-      <InsightDetailModal insight={selectedInsight} onClose={() => setSelectedInsight(null)} />
-
       <MatchingDialog 
         isOpen={!!aiDialogOpenId}
         onClose={() => setAiDialogOpenId(null)}
