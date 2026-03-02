@@ -63,7 +63,7 @@ export function TripDetails({ trip }: TripDetailsProps) {
 
         <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Éco-Performance</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Éco-Performance</p>
                 <div className="flex items-center justify-end gap-2 text-green-600/80 font-black">
                     <Leaf className="w-3.5 h-3.5" />
                     <span className="text-sm">{co2Saved} kg CO₂</span>
@@ -143,26 +143,32 @@ export function TripDetails({ trip }: TripDetailsProps) {
                 </Link>
             </div>
             <CardContent className="p-8 flex-1 flex flex-col justify-center">
-                <div className="flex items-center gap-5">
+                <Link 
+                    href={`/users?selected=${trip.driver_id}`}
+                    className="flex items-center gap-5 group/driverinfo hover:opacity-80 transition-all"
+                >
                     <div className="relative">
-                        <div className="w-16 h-16 rounded-2xl border-4 border-slate-50 overflow-hidden shadow-md">
+                        <div className="w-16 h-16 rounded-2xl border-4 border-slate-50 overflow-hidden shadow-md group-hover/driverinfo:border-klando-gold transition-colors">
                             {trip.driver_photo ? (
                                 <Image src={trip.driver_photo} alt="" fill className="object-cover" sizes="64px" />
                             ) : (
-                                <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300 font-black text-xl uppercase">
+                                <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300 font-black text-xl uppercase">
                                     {(trip.driver_name || "C").charAt(0)}
                                 </div>
                             )}
                         </div>
-                        <div className="absolute -bottom-1 -right-1 bg-klando-gold text-klando-dark px-1.5 py-0.5 rounded text-[8px] font-black border-2 border-white">
+                        <div className="absolute -bottom-1 -right-1 bg-klando-gold text-klando-dark px-1.5 py-0.5 rounded text-[8px] font-black border-2 border-white shadow-sm">
                             {trip.driver_rating?.toFixed(1) || "5.0"} ★
                         </div>
                     </div>
                     <div className="min-w-0">
-                        <h4 className="text-base font-black text-slate-900 uppercase tracking-tight truncate">{trip.driver_name}</h4>
+                        <h4 className="text-base font-black text-slate-900 uppercase tracking-tight truncate group-hover/driverinfo:text-klando-gold transition-colors">{trip.driver_name}</h4>
                         <p className="text-slate-400 font-mono text-[11px] mt-0.5">{trip.driver_phone || "Non renseigné"}</p>
+                        <div className="mt-2 flex items-center gap-1.5 text-klando-gold font-black text-[8px] uppercase tracking-widest opacity-0 group-hover/driverinfo:opacity-100 transition-opacity">
+                            Voir le profil <ExternalLink className="w-2.5 h-2.5" />
+                        </div>
                     </div>
-                </div>
+                </Link>
             </CardContent>
         </Card>
 
@@ -237,7 +243,7 @@ export function TripDetails({ trip }: TripDetailsProps) {
                             </div>
                             {p.has_paid && (
                                 <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 border-2 border-white shadow-sm">
-                                    <CheckCircle2 className="w-2 h-2" />
+                                    <CheckCircle2 className="w-2.5 h-2.5" />
                                 </div>
                             )}
                         </div>
