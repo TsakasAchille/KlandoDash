@@ -43,34 +43,35 @@ export default async function UsersPage({ searchParams }: Props) {
       <div className="absolute top-4 right-8 z-10">
         <RefreshButton />
       </div>
+{/* Stats */}
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+  <MiniStatCard 
+    title="Total" 
+    value={stats.total_users} 
+    icon="Users" 
+    color="purple" 
+  />
+  <MiniStatCard 
+    title="Vérifiés" 
+    value={stats.verified_drivers} 
+    icon="ShieldCheck" 
+    color="green" 
+  />
+  <MiniStatCard 
+    title="Note Moyenne" 
+    value={stats.avg_rating.toFixed(1)} 
+    icon="Star" 
+    color="gold" 
+  />
+  <MiniStatCard 
+    title="Nouveaux" 
+    value={stats.new_this_month} 
+    icon="UserPlus" 
+    color="blue" 
+    description="Inscrits ce mois-ci"
+  />
+</div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MiniStatCard 
-          title="Total" 
-          value={stats.total_users} 
-          icon={Users} 
-          color="purple" 
-        />
-        <MiniStatCard 
-          title="Vérifiés" 
-          value={stats.verified_drivers} 
-          icon={ShieldCheck} 
-          color="green" 
-        />
-        <MiniStatCard 
-          title="Note Moyenne" 
-          value={stats.avg_rating.toFixed(1)} 
-          icon={Star} 
-          color="gold" 
-        />
-        <MiniStatCard 
-          title="Nouveaux" 
-          value={stats.new_this_month} 
-          icon={CalendarPlus} 
-          color="red" 
-        />
-      </div>
 
       {/* Contenu principal */}
       <UsersPageClient

@@ -35,25 +35,25 @@ export default async function SupportPage({ searchParams }: Props) {
         <MiniStatCard 
           title="Total" 
           value={stats.total} 
-          icon={Ticket} 
+          icon="Ticket" 
           color="purple" 
         />
         <MiniStatCard 
           title="Ouverts" 
           value={stats.open} 
-          icon={CircleDot} 
+          icon="CircleDot" 
           color="red" 
         />
         <MiniStatCard 
           title="En attente" 
           value={stats.pending} 
-          icon={Clock} 
+          icon="Clock" 
           color="gold" 
         />
         <MiniStatCard 
           title="Fermés" 
           value={stats.closed} 
-          icon={CheckCircle} 
+          icon="CheckCircle" 
           color="green" 
         />
       </div>

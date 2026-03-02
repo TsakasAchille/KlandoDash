@@ -33,25 +33,25 @@ export default async function TransactionsPage({ searchParams }: Props) {
         <MiniStatCard 
           title="Total" 
           value={stats.total} 
-          icon={Wallet} 
+          icon="Wallet" 
           color="gold" 
         />
         <MiniStatCard 
           title="Montant Total" 
           value={formatPrice(stats.totalAmount)} 
-          icon={Banknote} 
+          icon="Banknote" 
           color="blue" 
         />
         <MiniStatCard 
           title="Entrées" 
           value={formatPrice(cashFlow.totalIn)} 
-          icon={ArrowDownLeft} 
+          icon="ArrowDownLeft" 
           color="green" 
         />
         <MiniStatCard 
           title="Sorties" 
           value={formatPrice(cashFlow.totalOut)} 
-          icon={ArrowUpRight} 
+          icon="ArrowUpRight" 
           color="red" 
         />
       </div>

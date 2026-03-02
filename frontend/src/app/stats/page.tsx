@@ -122,17 +122,17 @@ export default async function StatsPage() {
         {/* --- TAB: OVERVIEW --- */}
         <TabsContent value="overview" className="space-y-8 animate-in fade-in zoom-in-95 duration-300 outline-none">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <MiniStatCard title="Trajets" value={stats.trips?.total ?? 0} icon={Car} color="blue" />
-            <MiniStatCard title="Utilisateurs" value={stats.users?.total ?? 0} icon={Users} color="purple" />
-            <MiniStatCard title="Réservations" value={stats.bookings?.total ?? 0} icon={Ticket} color="gold" />
-            <MiniStatCard title="Transactions" value={stats.transactions?.total ?? 0} icon={Banknote} color="green" />
+            <MiniStatCard title="Trajets" value={stats.trips?.total ?? 0} icon="Car" color="blue" />
+            <MiniStatCard title="Utilisateurs" value={stats.users?.total ?? 0} icon="Users" color="purple" />
+            <MiniStatCard title="Réservations" value={stats.bookings?.total ?? 0} icon="Ticket" color="gold" />
+            <MiniStatCard title="Transactions" value={stats.transactions?.total ?? 0} icon="Banknote" color="green" />
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <MiniStatCard title="Distance" value={formatDistance(stats.trips?.totalDistance ?? 0)} icon={MapPin} color="blue" />
-            <MiniStatCard title="Intentions Site" value={stats.marketing?.siteRequestsTotal ?? 0} icon={UserPlus} color="gold" />
-            <MiniStatCard title="Taux Annulation" value={`${stats.trips?.cancellationRate ?? 0}%`} icon={XCircle} color="red" />
-            <MiniStatCard title="Nouveaux" value={stats.users?.newThisMonth ?? 0} icon={CalendarPlus} color="purple" />
+            <MiniStatCard title="Distance" value={formatDistance(stats.trips?.totalDistance ?? 0)} icon="MapPin" color="blue" />
+            <MiniStatCard title="Intentions Site" value={stats.marketing?.siteRequestsTotal ?? 0} icon="UserPlus" color="gold" />
+            <MiniStatCard title="Taux Annulation" value={`${stats.trips?.cancellationRate ?? 0}%`} icon="XCircle" color="red" />
+            <MiniStatCard title="Nouveaux" value={stats.users?.newThisMonth ?? 0} icon="CalendarPlus" color="purple" />
             
             {/* Market Health Card (Ratio 1:3) */}
             <Card className="rounded-2xl border-none shadow-sm bg-card/50 overflow-hidden group">

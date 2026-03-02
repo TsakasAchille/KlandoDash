@@ -1,11 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import React from "react";
+import * as LucideIcons from "lucide-react";
 
 interface MiniStatCardProps {
   title: string;
   value: string | number;
-  icon: React.ElementType;
+  icon: keyof typeof LucideIcons | React.ElementType;
   color: "blue" | "green" | "purple" | "red" | "gold";
   description?: string;
   onClick?: () => void;
@@ -20,7 +21,13 @@ const themes = {
   gold: "text-klando-gold bg-klando-gold/10 border-klando-gold/20",
 };
 
-export function MiniStatCard({ title, value, icon: Icon, color, description, onClick, active }: MiniStatCardProps) {
+export function MiniStatCard({ title, value, icon, color, description, onClick, active }: MiniStatCardProps) {
+  // If icon is a string, get the component from LucideIcons
+  // Otherwise, use it directly (if passed within the same boundary)
+  const IconComponent = typeof icon === 'string' 
+    ? (LucideIcons[icon as keyof typeof LucideIcons] as React.ElementType)
+    : icon;
+
   return (
     <Card 
       className={cn(
@@ -50,7 +57,7 @@ export function MiniStatCard({ title, value, icon: Icon, color, description, onC
           "p-2.5 rounded-xl border transition-transform duration-500 group-hover:scale-110 shrink-0",
           themes[color]
         )}>
-          <Icon className="w-4 h-4" />
+          {IconComponent && <IconComponent className="w-4 h-4" />}
         </div>
       </CardContent>
     </Card>

@@ -29,31 +29,31 @@ export default async function SiteRequestsPage() {
         <MiniStatCard 
           title="Total" 
           value={stats.total} 
-          icon={LayoutGrid} 
+          icon="LayoutGrid" 
           color="purple" 
         />
         <MiniStatCard 
           title="Nouveaux" 
           value={stats.new} 
-          icon={CircleDot} 
+          icon="CircleDot" 
           color="red" 
         />
         <MiniStatCard 
           title="Examinés" 
           value={stats.reviewed} 
-          icon={Clock} 
+          icon="Clock" 
           color="gold" 
         />
         <MiniStatCard 
           title="Contactés" 
           value={stats.contacted} 
-          icon={CheckCircle} 
+          icon="CheckCircle" 
           color="blue" 
         />
         <MiniStatCard 
           title="Validés" 
           value={stats.validated} 
-          icon={ShieldCheck} 
+          icon="ShieldCheck" 
           color="green" 
         />
       </div>

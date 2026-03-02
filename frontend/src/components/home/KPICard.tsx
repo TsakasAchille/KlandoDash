@@ -1,12 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowRight, LucideIcon } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 
 interface KPICardProps {
   title: string;
   value: string | number;
-  icon: LucideIcon;
+  icon: keyof typeof LucideIcons | React.ElementType;
   color: "blue" | "purple" | "red" | "green";
   href: string;
   description?: string;
@@ -15,7 +16,7 @@ interface KPICardProps {
 export function KPICard({ 
   title, 
   value, 
-  icon: Icon, 
+  icon, 
   color, 
   href,
   description
@@ -26,6 +27,10 @@ export function KPICard({
     red: "text-red-500 bg-red-500/10 border-red-500/20",
     green: "text-green-500 bg-green-500/10 border-green-500/20",
   };
+
+  const IconComponent = typeof icon === 'string' 
+    ? (LucideIcons[icon as keyof typeof LucideIcons] as React.ElementType)
+    : icon;
 
   return (
     <Link href={href} className="block group">
@@ -46,7 +51,7 @@ export function KPICard({
               "p-3.5 rounded-2xl border transition-all duration-500 group-hover:rotate-12 group-hover:shadow-lg",
               themes[color]
             )}>
-              <Icon className="w-6 h-6" />
+              {IconComponent && <IconComponent className="w-6 h-6" />}
             </div>
           </div>
           <div className="mt-6 flex items-center text-[10px] font-black text-klando-gold opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">

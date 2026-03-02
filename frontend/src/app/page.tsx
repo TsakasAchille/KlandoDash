@@ -33,7 +33,7 @@ export default async function Home() {
         <KPICard 
           title="Trajets Live" 
           value={activeTrips} 
-          icon={Car} 
+          icon="Car" 
           color="blue"
           href="/trips?status=ACTIVE"
           description={`${summary.trips.total} au total`}
@@ -41,7 +41,7 @@ export default async function Home() {
         <KPICard 
           title="Utilisateurs" 
           value={summary.users.total} 
-          icon={Users} 
+          icon="Users" 
           color="purple"
           href="/users"
           description={`+${summary.users.newThisMonth} ce mois-ci`}
@@ -49,7 +49,7 @@ export default async function Home() {
         <KPICard 
           title="Support" 
           value={summary.recentTickets.filter(t => t.status === 'OPEN').length} 
-          icon={AlertCircle} 
+          icon="AlertCircle" 
           color="red"
           href="/support"
           description="Tickets ouverts"
@@ -57,7 +57,7 @@ export default async function Home() {
         <KPICard 
           title="Marge Brute" 
           value={formatPrice(summary.revenue.klandoMargin)} 
-          icon={TrendingUp} 
+          icon="TrendingUp" 
           color="green"
           href="/stats"
           description="Trajets payés"

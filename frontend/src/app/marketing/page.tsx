@@ -35,11 +35,11 @@ export default async function MarketingPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <MiniStatCard title="Prospects" value={stats.total} icon={Globe} color="purple" />
-        <MiniStatCard title="Nouveaux" value={stats.new} icon={CircleDot} color="red" />
-        <MiniStatCard title="À Traiter (IA)" value={pendingCount} icon={Zap} color="gold" />
-        <MiniStatCard title="Matchs Validés" value={stats.validated} icon={ShieldCheck} color="green" />
-        <MiniStatCard title="Contactés" value={stats.contacted} icon={CheckCircle} color="blue" />
+        <MiniStatCard title="Prospects" value={stats.total} icon="Globe" color="purple" />
+        <MiniStatCard title="Nouveaux" value={stats.new} icon="CircleDot" color="red" />
+        <MiniStatCard title="À Traiter (IA)" value={pendingCount} icon="Zap" color="gold" />
+        <MiniStatCard title="Matchs Validés" value={stats.validated} icon="ShieldCheck" color="green" />
+        <MiniStatCard title="Contactés" value={stats.contacted} icon="CheckCircle" color="blue" />
       </div>
 
       <MarketingClient 

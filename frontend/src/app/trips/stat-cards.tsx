@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { MiniStatCard } from "@/components/mini-stat-card";
 import { TripStats } from "@/types/trip";
-import { Car, Clock, Play, CheckCircle2, XCircle, Banknote, Globe } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +47,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
       <MiniStatCard 
         title="Total" 
         value={stats.total_trips} 
-        icon={Car} 
+        icon="Car" 
         color="gold"
         onClick={() => toggleFilter("all", false)}
         active={currentStatus === "all" && !onlyPaid}
@@ -56,7 +55,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
       <MiniStatCard 
         title="En attente" 
         value={stats.pending_trips} 
-        icon={Clock} 
+        icon="Clock" 
         color="blue"
         onClick={() => toggleFilter("PENDING", false)}
         active={currentStatus === "PENDING"}
@@ -64,7 +63,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
       <MiniStatCard 
         title="Actifs" 
         value={stats.active_trips} 
-        icon={Play} 
+        icon="Play" 
         color="gold"
         onClick={() => toggleFilter("ACTIVE", false)}
         active={currentStatus === "ACTIVE"}
@@ -72,7 +71,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
       <MiniStatCard 
         title="Payés" 
         value={stats.paid_trips} 
-        icon={Banknote} 
+        icon="Banknote" 
         color="green"
         description="Avec transactions"
         onClick={() => toggleFilter(null, true)}
@@ -81,7 +80,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
       <MiniStatCard 
         title="Terminés" 
         value={stats.completed_trips} 
-        icon={CheckCircle2} 
+        icon="CheckCircle2" 
         color="green"
         onClick={() => toggleFilter("COMPLETED", false)}
         active={currentStatus === "COMPLETED"}
@@ -89,7 +88,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
       <MiniStatCard 
         title="Annulés" 
         value={stats.cancelled_trips} 
-        icon={XCircle} 
+        icon="XCircle" 
         color="red"
         onClick={() => toggleFilter("CANCELLED", false)}
         active={currentStatus === "CANCELLED"}
@@ -97,7 +96,7 @@ export function StatCards({ stats, publicPendingCount }: StatCardsProps) {
       <MiniStatCard 
         title="Visibles (Site)" 
         value={publicPendingCount} 
-        icon={Globe} 
+        icon="Globe" 
         color="blue" 
         description="En attente sur le site"
       />
