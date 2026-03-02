@@ -4,67 +4,48 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Logo } from "@/components/logo";
+import { Loader2 } from "lucide-react";
 
-function LoginContent() {
+function LoginCard() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-klando-dark px-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Logo / Titre */}
-        <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <Logo size="xlarge" />
-          </div>
-          <h1 className="text-2xl font-black uppercase tracking-tighter text-white">Klando Dash</h1>
-          <p className="mt-2 text-sm text-muted-foreground font-medium">
-            Tableau de bord administration v1.4.0
+    <div className="w-full space-y-8">
+      {/* Message d'erreur */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl text-center text-sm font-bold animate-in fade-in zoom-in duration-300">
+          {error === "AccessDenied" ? (
+            <>
+              <p>Accès refusé</p>
+              <p className="text-[10px] opacity-80 mt-1 uppercase tracking-wider">
+                Votre email n&apos;est pas dans la liste autorisée.
+              </p>
+            </>
+          ) : (
+            <p>Erreur de connexion : {error}</p>
+          )}
+        </div>
+      )}
+
+      {/* Carte de connexion */}
+      <div className="bg-card/50 backdrop-blur-xl border border-white/5 rounded-[2rem] p-8 space-y-8 shadow-2xl">
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-bold text-white uppercase tracking-tight">Connexion</h2>
+          <p className="text-xs text-muted-foreground font-medium italic">
+            Réservé aux administrateurs Klando
           </p>
         </div>
 
-        {/* Message d'erreur */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl text-center text-sm font-bold animate-in fade-in zoom-in duration-300">
-            {error === "AccessDenied" ? (
-              <>
-                <p>Accès refusé</p>
-                <p className="text-[10px] opacity-80 mt-1 uppercase tracking-wider">
-                  Votre email n&apos;est pas dans la liste autorisée.
-                </p>
-              </>
-            ) : (
-              <p>Erreur de connexion : {error}</p>
-            )}
-          </div>
-        )}
-
-        {/* Carte de connexion */}
-        <div className="bg-card/50 backdrop-blur-xl border border-white/5 rounded-[2rem] p-8 space-y-8 shadow-2xl">
-          <div className="text-center space-y-2">
-            <h2 className="text-xl font-bold text-white uppercase tracking-tight">Connexion</h2>
-            <p className="text-xs text-muted-foreground font-medium italic">
-              Réservé aux administrateurs Klando
-            </p>
-          </div>
-
-          {/* Bouton Google */}
-          <button
-            onClick={() => signIn("google", { callbackUrl })}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-klando-gold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/5"
-          >
-            <GoogleIcon />
-            Continuer avec Google
-          </button>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center space-y-4">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
-            Sécurité renforcée par NextAuth & Supabase
-          </p>
-        </div>
+        {/* Bouton Google */}
+        <button
+          onClick={() => signIn("google", { callbackUrl })}
+          className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-klando-gold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/5"
+        >
+          <GoogleIcon />
+          Continuer avec Google
+        </button>
       </div>
     </div>
   );
@@ -95,15 +76,41 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex flex-col items-center justify-center bg-klando-dark space-y-4">
-          <div className="w-12 h-12 border-4 border-klando-gold border-t-transparent rounded-full animate-spin"></div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-klando-gold">Chargement sécurisé...</div>
+    <div className="min-h-screen flex items-center justify-center bg-klando-dark px-4">
+      <div className="w-full max-w-md space-y-8">
+        {/* Logo / Titre : Balise img standard pour éviter l'avertissement de preload */}
+        <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <img 
+              src="/logo-klando-sans-fond.png" 
+              alt="Klando" 
+              className="w-44 h-auto object-contain"
+            />
+          </div>
+          <h1 className="text-2xl font-black uppercase tracking-tighter text-white">Klando Dash</h1>
+          <p className="mt-2 text-sm text-muted-foreground font-medium">
+            Tableau de bord administration
+          </p>
         </div>
-      }
-    >
-      <LoginContent />
-    </Suspense>
+
+        <Suspense
+          fallback={
+            <div className="flex flex-col items-center justify-center py-10 space-y-4">
+              <Loader2 className="w-8 h-8 text-klando-gold animate-spin" />
+              <div className="text-[10px] font-black uppercase tracking-widest text-klando-gold">Chargement sécurisé...</div>
+            </div>
+          }
+        >
+          <LoginCard />
+        </Suspense>
+
+        {/* Footer */}
+        <div className="text-center space-y-4 pt-4">
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+            Sécurité renforcée par NextAuth & Supabase
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }

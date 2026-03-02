@@ -28,29 +28,21 @@ export function SplashScreen() {
       )}
     >
       <div className="relative w-64 h-32 md:w-80 md:h-40">
-        {/* Logo Gris (Fond) */}
+        {/* Logo Gris (Fond) : Utilisation de img standard pour éviter les problèmes de preload */}
         <div className="absolute inset-0 opacity-20 grayscale brightness-200">
-          <Image
+          <img
             src="/logo-klando-sans-fond.png"
-            alt="Klando"
-            fill
-            className="object-contain"
-            priority
-            unoptimized
-            sizes="(max-width: 768px) 256px, 320px"
+            alt=""
+            className="w-full h-full object-contain"
           />
         </div>
 
         {/* Logo qui se remplit (Animation définie dans globals.css) */}
         <div className="absolute inset-0 animate-fill-logo overflow-hidden">
-          <Image
+          <img
             src="/logo-klando-sans-fond.png"
             alt="Klando"
-            fill
-            className="object-contain"
-            priority
-            unoptimized
-            sizes="(max-width: 768px) 256px, 320px"
+            className="w-full h-full object-contain"
           />
         </div>
       </div>
