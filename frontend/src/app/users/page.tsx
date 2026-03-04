@@ -3,6 +3,7 @@ import { UsersPageClient } from "./users-client";
 import { Users, ShieldCheck, Star, CalendarPlus } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 import { MiniStatCard } from "@/components/mini-stat-card";
+import { UserExportButton } from "@/components/users/user-export-button";
 
 export const dynamic = "force-dynamic";
 
@@ -24,15 +25,17 @@ export default async function UsersPage({ searchParams }: Props) {
   const currentPage = parseInt(page || "1", 10);
   const pageSize = 10;
 
+  const filters = {
+    role,
+    verified,
+    search,
+    gender,
+    minRating: minRating ? parseFloat(minRating) : undefined,
+    isNew: isNew === "true",
+  };
+
   const [{ users, totalCount }, stats, initialSelectedUser] = await Promise.all([
-    getUsers(currentPage, pageSize, {
-      role,
-      verified,
-      search,
-      gender,
-      minRating: minRating ? parseFloat(minRating) : undefined,
-      isNew: isNew === "true",
-    }),
+    getUsers(currentPage, pageSize, filters),
     getUsersStats(),
     selected ? getUserById(selected) : null,
   ]);
@@ -40,7 +43,8 @@ export default async function UsersPage({ searchParams }: Props) {
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 pb-10 px-4 sm:px-6 lg:px-8 pt-4 relative">
       {/* Action Bar Floating */}
-      <div className="absolute top-4 right-8 z-10">
+      <div className="absolute top-4 right-8 z-10 flex items-center gap-2">
+        <UserExportButton filters={filters} />
         <RefreshButton />
       </div>
 {/* Stats */}
