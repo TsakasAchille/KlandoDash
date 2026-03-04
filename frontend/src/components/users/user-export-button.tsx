@@ -58,7 +58,6 @@ export function UserExportButton({ filters }: UserExportButtonProps) {
         return;
       }
 
-      // Headers for CSV
       const headers = [
         "ID",
         "Nom d'affichage",
@@ -73,7 +72,6 @@ export function UserExportButton({ filters }: UserExportButtonProps) {
         "N° Permis",
       ];
 
-      // Format data rows
       const rows = users.map((u) => [
         u.uid,
         u.display_name || "",
@@ -88,37 +86,96 @@ export function UserExportButton({ filters }: UserExportButtonProps) {
         u.driver_license_number || "",
       ]);
 
-      // Create CSV string
-      // Note: Use semicolon for Excel/Google Sheets compatibility in some locales, or comma
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.map(cell => {
-          const content = String(cell).replace(/"/g, '""');
-          return `"${content}"`;
-        }).join(","))
-      ].join("\n");
+      if (format === "csv") {
+        const csvContent = [
+          headers.join(","),
+          ...rows.map((row) => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+        ].join("\n");
 
-      // Create blob and download
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      const filename = `klando-users-export-${new Date().toISOString().split('T')[0]}.csv`;
-      
-      link.setAttribute("href", url);
-      link.setAttribute("download", filename);
-      link.style.visibility = "hidden";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `klando-users-${new Date().toISOString().split('T')[0]}.csv`);
+        link.click();
+      } else {
+        // Mode "Premium XLSX Style" - Using XML structure for perfect formatting
+        const filterLabels = [];
+        if (filters.role && filters.role !== "all") filterLabels.push(`Rôle: ${filters.role}`);
+        if (filters.verified === "true") filterLabels.push("Vérifiés");
+        if (filters.search) filterLabels.push(`Recherche: ${filters.search}`);
+        const filterText = filterLabels.length > 0 ? filterLabels.join(" | ") : "Tous les utilisateurs";
 
-      setIsDone(true);
-      toast.success(`${users.length} utilisateurs exportés avec succès`);
-      
-      if (format === "google-sheets") {
-        toast.info("Importez ce fichier CSV dans Google Sheets (Fichier > Importer)");
+        const styles = `
+          <style>
+            table { border-collapse: collapse; font-family: 'Helvetica', 'Arial', sans-serif; }
+            .title { font-size: 24pt; color: #1a1a1a; font-weight: bold; padding: 20px 0; }
+            .meta { font-size: 11pt; color: #4b5563; padding-bottom: 30px; }
+            th { background-color: #eab308; color: white; border: 1.5pt solid #ca8a04; font-weight: bold; height: 40px; text-transform: uppercase; font-size: 10pt; }
+            td { border: 0.5pt solid #d1d5db; height: 35px; padding: 5px; font-size: 11pt; color: #1f2937; }
+            .zebra { background-color: #fffbeb; }
+            .center { text-align: center; }
+            .verified-yes { color: #166534; font-weight: bold; background-color: #f0fdf4; }
+            .verified-no { color: #991b1b; font-weight: bold; background-color: #fef2f2; }
+            .role-driver { color: #854d0e; font-weight: 700; }
+            .rating { color: #ca8a04; font-weight: bold; }
+            .email { color: #2563eb; text-decoration: underline; }
+          </style>
+        `;
+
+        const htmlContent = `
+          <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+          <head>
+            <meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8">
+            ${styles}
+          </head>
+          <body>
+            <table>
+              <tr><td colspan="11" class="title">RAPPORT UTILISATEURS KLANDO</td></tr>
+              <tr><td colspan="11" class="meta">
+                Date : ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}<br>
+                Filtres appliqués : ${filterText}<br>
+                Export : ${users.length} utilisateurs extraits
+              </td></tr>
+              <tr style="height: 20px;"></tr>
+              <thead>
+                <tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>
+              </thead>
+              <tbody>
+                ${rows.map((row, i) => `
+                  <tr class="${i % 2 === 0 ? "" : "zebra"}">
+                    <td>${row[0]}</td>
+                    <td style="font-weight:bold">${row[1]}</td>
+                    <td class="email">${row[2]}</td>
+                    <td>${row[3]}</td>
+                    <td class="${row[4] === 'driver' ? 'role-driver' : ''}">${row[4]}</td>
+                    <td class="center">${row[5]}</td>
+                    <td class="center rating">${row[6]}</td>
+                    <td class="center ${row[7] === 'OUI' ? 'verified-yes' : 'verified-no'}">${row[7]}</td>
+                    <td>${row[8]}</td>
+                    <td>${row[9]}</td>
+                    <td>${row[10]}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </body>
+          </html>
+        `;
+
+        const blob = new Blob([htmlContent], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const filename = `klando-export-${new Date().toISOString().split('T')[0]}.xlsx`;
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.click();
+        
+        toast.success("Rapport XLSX généré avec un design premium !");
       }
 
-      // Fermer après un court délai
+      setIsDone(true);
       setTimeout(() => {
         setIsOpen(false);
         setIsDone(false);
@@ -144,7 +201,7 @@ export function UserExportButton({ filters }: UserExportButtonProps) {
         <DialogHeader>
           <DialogTitle>Exporter les utilisateurs</DialogTitle>
           <DialogDescription>
-            Choisissez le nombre d&apos;utilisateurs à exporter. Les filtres actuels seront appliqués.
+            Choisissez le format et le nombre d&apos;utilisateurs à extraire.
           </DialogDescription>
         </DialogHeader>
         
@@ -160,46 +217,35 @@ export function UserExportButton({ filters }: UserExportButtonProps) {
                 <SelectItem value="500">500 utilisateurs</SelectItem>
                 <SelectItem value="1000">1 000 utilisateurs</SelectItem>
                 <SelectItem value="5000">5 000 utilisateurs</SelectItem>
-                <SelectItem value="10000">10 000 utilisateurs (Maximum)</SelectItem>
+                <SelectItem value="10000">10 000 utilisateurs</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-[10px] text-muted-foreground">
-              Note: Les exports volumineux peuvent prendre quelques secondes.
-            </p>
           </div>
         </div>
 
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button 
-            variant="default" 
+            variant="outline" 
             className="flex-1 gap-2" 
             onClick={() => handleExport("csv")}
             disabled={isExporting}
           >
-            {isExporting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : isDone ? (
-              <CheckCircle2 className="w-4 h-4" />
-            ) : (
-              <FileSpreadsheet className="w-4 h-4" />
-            )}
-            {isExporting ? "Exportation..." : "Format CSV / Excel"}
+            <FileSpreadsheet className="w-4 h-4 text-gray-500" />
+            CSV Brut
           </Button>
           
           <Button 
-            variant="secondary" 
-            className="flex-1 gap-2" 
+            variant="default" 
+            className="flex-1 gap-2 bg-green-700 hover:bg-green-800" 
             onClick={() => handleExport("google-sheets")}
             disabled={isExporting}
           >
             {isExporting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : isDone ? (
-              <CheckCircle2 className="w-4 h-4" />
             ) : (
-              <FileSpreadsheet className="w-4 h-4 text-green-600" />
+              <FileSpreadsheet className="w-4 h-4" />
             )}
-            Google Sheets
+            Format XLSX (Stylisé)
           </Button>
         </DialogFooter>
       </DialogContent>
