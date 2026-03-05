@@ -1,4 +1,5 @@
 import { getPilotageMetrics } from "@/lib/queries/stats/get-pilotage-metrics";
+import { getCRMOpportunities } from "@/lib/queries/stats/get-crm-opportunities";
 import { KPICard } from "@/components/home/KPICard";
 import { 
   Rocket, 
@@ -8,15 +9,20 @@ import {
   Map, 
   CheckCircle2,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Lightbulb
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshButton } from "@/components/refresh-button";
+import { CRMOpportunities } from "./crm-opportunities";
 
 export const dynamic = "force-dynamic";
 
 export default async function PilotagePage() {
-  const metrics = await getPilotageMetrics();
+  const [metrics, crmData] = await Promise.all([
+    getPilotageMetrics(),
+    getCRMOpportunities()
+  ]);
 
   if (!metrics) {
     return (
@@ -225,6 +231,9 @@ export default async function PilotagePage() {
           </table>
         </div>
       </div>
+
+      {/* BLOC 4: CRM & ACTIONS PRIORITAIRES */}
+      <CRMOpportunities data={crmData} />
     </div>
   );
 }

@@ -32,11 +32,11 @@ KlandoDash/
 ### 1. Feature-Driven Design (SOLID)
 Les composants lourds (`CommunicationTab`, `MessagingTab`, `MapClient`) sont découpés en sous-composants spécialisés (List, Editor, Preview, Sidebar) isolés dans le dossier `features/`.
 
-### 2. Centre Éditorial (Production Focus)
-- **Interface Dual-Pane** : Navigation à gauche (largeur 320px fixe), zone de production à droite (scroll indépendant).
-- **IA Génératrice Intégrée** : Accessible directement via le bouton "Nouveau Post", permettant de générer un brouillon complet (titre, contenu, hashtags, idée visuelle) à partir d'un simple sujet.
-- **Support Multi-Plateforme** : TikTok, Instagram, LinkedIn, X, et catégorie "Autre".
-- **Gestion de Corbeille** : Système complet de suppression, restauration et suppression définitive.
+### 2. Centre Éditorial & Messagerie (Production Focus)
+- **Espaces Dédiés** : Messagerie Directe (`/messaging`) et Social Media (`/editorial`) sont désormais séparés pour une meilleure clarté opérationnelle.
+- **Interface Messagerie** : Gestion unifiée Email & WhatsApp Business avec sélecteur de canal et envoi assisté (wa.me).
+- **IA Génératrice** : Suggestions mixtes (Email/WA) basées sur les nouveaux prospects et les utilisateurs inactifs.
+- **Centre Social Media** : Création de posts TikTok, Instagram, LinkedIn, X avec un planificateur (Calendrier) global.
 
 ### 3. IA Data Hub & Automatisation
 - **IA Data Hub (`/ia`)** : Page dédiée fournissant un flux de données brutes pour l'ingestion par des agents IA externes.
