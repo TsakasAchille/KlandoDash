@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { 
   Home, Car, Users, BarChart3, Map, LifeBuoy, 
   Shield, X, Banknote, Globe, CheckSquare, 
-  Sparkles, Loader2, TrendingUp, PenTool, Database, MessageSquare
+  Sparkles, Loader2, TrendingUp, PenTool, Database, MessageSquare, Rocket
 } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
@@ -18,6 +18,7 @@ import packageInfo from "../../package.json";
 
 const navItems = [
   { href: "/", label: "Accueil", icon: Home },
+  { href: "/admin/pilotage", label: "Pilotage Growth", icon: Rocket },
   { href: "/trips", label: "Trajets", icon: Car },
   { href: "/users", label: "Utilisateurs", icon: Users },
   { href: "/chats", label: "Messages", icon: MessageSquare },
