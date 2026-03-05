@@ -54,6 +54,11 @@ export default async function PilotagePage() {
             icon="Users" 
             color="blue"
             description="Requête sous 72h"
+            info={{
+              formula: "(Users avec req. < 72h) / (Total nouveaux users)",
+              tables: ["users", "site_trip_requests"],
+              details: "Mesure l'engagement immédiat : % des inscrits (30j) ayant exprimé un besoin dans les 3 jours."
+            }}
           />
           <KPICard 
             title="Activation Conducteur" 
@@ -61,6 +66,11 @@ export default async function PilotagePage() {
             icon="Car" 
             color="purple"
             description="Trajet sous 7j"
+            info={{
+              formula: "(Drivers avec trajet < 7j) / (Total nouveaux drivers)",
+              tables: ["users", "trips"],
+              details: "Mesure la conversion de l'offre : % des inscrits (30j) ayant publié leur premier trajet sous une semaine."
+            }}
           />
           <KPICard 
             title="Repeat Passager (W1)" 
@@ -68,6 +78,11 @@ export default async function PilotagePage() {
             icon="RefreshCw" 
             color="green"
             description="Actif Semaine N-2 → N-1"
+            info={{
+              formula: "(Actifs W N-2 ET W N-1) / (Actifs W N-2)",
+              tables: ["bookings"],
+              details: "Rétention hebdomadaire : % des passagers actifs en semaine N-2 qui sont revenus en semaine N-1."
+            }}
           />
           <KPICard 
             title="Repeat Conducteur (W1)" 
@@ -75,6 +90,11 @@ export default async function PilotagePage() {
             icon="RefreshCw" 
             color="orange"
             description="Actif Semaine N-2 → N-1"
+            info={{
+              formula: "(Actifs W N-2 ET W N-1) / (Actifs W N-2)",
+              tables: ["trips"],
+              details: "Rétention de l'offre : % des conducteurs actifs en semaine N-2 qui ont republié en semaine N-1."
+            }}
           />
         </div>
       </div>
@@ -87,24 +107,30 @@ export default async function PilotagePage() {
             Liquidité (Match Rate)
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card className="bg-background/40 backdrop-blur-sm border-klando-gold/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Match Rate Demande</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-black italic text-klando-gold">{metrics.liquidity.match_rate_demand}%</div>
-                <p className="text-[9px] font-medium text-muted-foreground mt-1 uppercase tracking-tighter">Requêtes trouvant un trajet</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-background/40 backdrop-blur-sm border-klando-gold/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Match Rate Offre</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-black italic text-klando-gold">{metrics.liquidity.match_rate_supply}%</div>
-                <p className="text-[9px] font-medium text-muted-foreground mt-1 uppercase tracking-tighter">Trajets avec ≥ 1 résa</p>
-              </CardContent>
-            </Card>
+            <KPICard 
+              title="Match Rate Demande" 
+              value={`${metrics.liquidity.match_rate_demand}%`} 
+              icon="Target" 
+              color="blue"
+              description="Requêtes trouvant un trajet"
+              info={{
+                formula: "(Requests avec match) / (Total requests)",
+                tables: ["site_trip_requests", "site_trip_request_matches"],
+                details: "Liquidité côté demande : % des intentions de trajet du site ayant trouvé au moins une offre correspondante."
+              }}
+            />
+            <KPICard 
+              title="Match Rate Offre" 
+              value={`${metrics.liquidity.match_rate_supply}%`} 
+              icon="Car" 
+              color="purple"
+              description="Trajets avec ≥ 1 résa"
+              info={{
+                formula: "(Trajets avec seats_booked > 0) / (Total trajets)",
+                tables: ["trips"],
+                details: "Liquidité côté offre : % des trajets publiés qui reçoivent au moins une réservation de passager."
+              }}
+            />
           </div>
         </div>
 
@@ -114,24 +140,30 @@ export default async function PilotagePage() {
             Efficacité Opérationnelle
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card className="bg-background/40 backdrop-blur-sm border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Fill Rate Moyen</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-black italic text-foreground">{metrics.efficiency.fill_rate}%</div>
-                <p className="text-[9px] font-medium text-muted-foreground mt-1 uppercase tracking-tighter">Occupation des sièges</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-background/40 backdrop-blur-sm border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Exécution (Realized)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-black italic text-foreground">{metrics.efficiency.realized_published_ratio}%</div>
-                <p className="text-[9px] font-medium text-muted-foreground mt-1 uppercase tracking-tighter">Ratio Réalisés / Publiés</p>
-              </CardContent>
-            </Card>
+            <KPICard 
+              title="Fill Rate Moyen" 
+              value={`${metrics.efficiency.fill_rate}%`} 
+              icon="Users" 
+              color="green"
+              description="Occupation des sièges"
+              info={{
+                formula: "AVG(seats_booked / total_seats)",
+                tables: ["trips"],
+                details: "Optimisation de l'offre : % moyen de remplissage des véhicules sur les trajets actifs."
+              }}
+            />
+            <KPICard 
+              title="Exécution (Realized)" 
+              value={`${metrics.efficiency.realized_published_ratio}%`} 
+              icon="CheckCircle2" 
+              color="blue"
+              description="Ratio Réalisés / Publiés"
+              info={{
+                formula: "(Trajets COMPLETED) / (Trajets clôturés)",
+                tables: ["trips"],
+                details: "Fiabilité : % de trajets publiés qui atteignent le statut 'COMPLETED' sans être annulés."
+              }}
+            />
           </div>
         </div>
       </div>
