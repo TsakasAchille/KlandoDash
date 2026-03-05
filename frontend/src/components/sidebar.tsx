@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { 
@@ -21,7 +21,7 @@ const navItems = [
   { href: "/admin/pilotage", label: "Pilotage Growth", icon: Rocket },
   { href: "/trips", label: "Trajets", icon: Car },
   { href: "/users", label: "Utilisateurs", icon: Users },
-  { href: "/chats", label: "Messages", icon: MessageSquare },
+  { href: "/messaging", label: "Messagerie", icon: MessageSquare },
   { href: "/map", label: "Carte", icon: Map },
 ];
 
@@ -51,6 +51,8 @@ interface SidebarProps {
 
 export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab");
   const { data: session } = useSession();
   const userRole = session?.user?.role;
   const [loadingHref, setLoadingHref] = useState<string | null>(null);
@@ -70,7 +72,12 @@ export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   };
 
   const renderNavItem = (item: { href: string, label: string, icon: React.ElementType | string }, isSmall = false) => {
-    const isActive = pathname === item.href;
+    const [itemPath, itemQuery] = item.href.split('?');
+    const itemTab = itemQuery ? new URLSearchParams(itemQuery).get('tab') : null;
+    
+    // Un item est actif si le chemin correspond ET (si l'item a un tab, il doit correspondre au tab actuel)
+    const isActive = pathname === itemPath && (!itemTab || currentTab === itemTab);
+    
     const isLoading = loadingHref === item.href;
     const isImageIcon = typeof item.icon === "string";
     const Icon = item.icon as React.ElementType;

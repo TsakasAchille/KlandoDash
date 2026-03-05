@@ -7,23 +7,17 @@ import { toast } from "sonner";
 
 // Actions & Types
 import { 
-  generateMessagingSuggestionsAction, 
-  sendMessageAction 
-} from "@/app/marketing/actions/messaging";
-import { 
   generateCommIdeasAction, 
   generateSocialPostAction,
   generatePendingRequestsPostAction
 } from "@/app/marketing/actions/communication";
 import { 
-  MarketingMessage, 
   MarketingComm, 
   CommPlatform 
 } from "@/app/marketing/types";
 
 // Sub-components
 import { CommunicationTab } from "@/features/marketing/components/tabs/CommunicationTab";
-import { MessagingTab } from "@/features/marketing/components/tabs/MessagingTab";
 import { CalendarTab } from "@/features/marketing/components/tabs/CalendarTab";
 import { DualPaneSkeleton, CalendarSkeleton } from "@/features/editorial/components/EditorialSkeletons";
 
@@ -74,17 +68,12 @@ function EditorialClientContent({
   // --- STATS CALCULATIONS ---
   const commDrafts = comms.filter(c => (c.status === 'DRAFT' || c.status === 'NEW') && c.type === 'POST').length;
   const commScheduled = comms.filter(c => c.scheduled_at !== null && c.type === 'POST').length;
-  const messageDrafts = messages.filter(m => m.status === 'DRAFT').length;
-  const messageSent = messages.filter(m => m.status === 'SENT').length;
-  const calendarTotal = comms.filter(c => c.scheduled_at !== null).length + messages.filter(m => m.status === 'SENT').length; 
+  const calendarTotal = comms.filter(c => c.scheduled_at !== null).length; 
   
   // Loading states
-  const [isScanningMessaging, setIsScanningMessaging] = useState(false);
   const [isScanningComm, setIsScanningComm] = useState(false);
-  const [sendingMessageId, setSendingMessageId] = useState<string | null>(null);
 
   // --- EFFECT: SYNC PROPS ---
-  useEffect(() => { setMessages(initialMessages); }, [initialMessages]);
   useEffect(() => { setComms(initialComms); }, [initialComms]);
 
   // --- HANDLERS: NAVIGATION ---
@@ -97,16 +86,6 @@ function EditorialClientContent({
   };
 
   // --- HANDLERS: ACTIONS ---
-  const handleMessagingScan = async () => {
-    setIsScanningMessaging(true);
-    const res = await generateMessagingSuggestionsAction();
-    if (res.success) {
-      toast.success(`${res.count} nouvelles opportunités de messagerie identifiées.`);
-      router.refresh();
-    }
-    setIsScanningMessaging(false);
-  };
-
   const handleCommIdeasScan = async () => {
     setIsScanningComm(true);
     const res = await generateCommIdeasAction();
@@ -145,22 +124,6 @@ function EditorialClientContent({
     return null;
   };
 
-  const handleSendMessage = async (id: string) => {
-    setSendingMessageId(id);
-    const res = await sendMessageAction(id);
-    if (res.success) {
-      if (res.via === 'WHATSAPP_LINK') {
-        toast.success("Message marqué comme prêt pour WhatsApp.");
-      } else {
-        toast.success("Email envoyé avec succès !");
-      }
-      router.refresh();
-    } else {
-      toast.error("Échec de l'envoi.");
-    }
-    setSendingMessageId(null);
-  };
-
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-4 pt-0">
       <Tabs value={tabParam} onValueChange={handleTabChange} className="flex flex-col flex-1 min-h-0 gap-4">
@@ -174,9 +137,6 @@ function EditorialClientContent({
                 <TabsTrigger value="calendar" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
                 <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Calendrier
                 </TabsTrigger>
-                <TabsTrigger value="messaging" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
-                <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Messagerie
-                </TabsTrigger>
             </TabsList>
 
             {/* TAB-SPECIFIC STATS */}
@@ -185,12 +145,6 @@ function EditorialClientContent({
                 <>
                     <TabStat icon={PenTool} label="Brouillons" value={commDrafts} color="text-purple-500" />
                     <TabStat icon={Clock} label="Planifiés" value={commScheduled} color="text-orange-500" />
-                </>
-                )}
-                {tabParam === 'messaging' && (
-                <>
-                    <TabStat icon={PenTool} label="Brouillons" value={messageDrafts} color="text-purple-500" />
-                    <TabStat icon={CheckCircle} label="Envoyés" value={messageSent} color="text-green-500" />
                 </>
                 )}
                 {tabParam === 'calendar' && (
@@ -226,21 +180,9 @@ function EditorialClientContent({
             )}
           </TabsContent>
 
-          <TabsContent value="messaging" className="outline-none h-full flex-1 min-h-0 m-0">
-            {tabParam === "messaging" && (
-              <MessagingTab
-                messages={messages}
-                isScanning={isScanningMessaging}
-                sendingMessageId={sendingMessageId}
-                onScan={handleMessagingScan}
-                onSendMessage={handleSendMessage}
-              />
-            )}
-          </TabsContent>
-
           <TabsContent value="calendar" className="outline-none h-full flex-1 min-h-0 m-0">
             {tabParam === "calendar" && (
-              <CalendarTab comms={comms} emails={messages as any} /> 
+              <CalendarTab comms={comms} emails={messages} /> 
             )}
           </TabsContent>
         </div>
