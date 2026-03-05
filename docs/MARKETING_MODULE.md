@@ -9,10 +9,10 @@ Le module marketing sépare l'analyse stratégique de la production de contenu.
 - **Observatoire** : Visualisation des flux de demande (Heatmap) et des trajets récurrents.
 - **Intelligence IA** : Rapports Gemini sur les opportunités de revenus et les conversions.
 
-### 2. Centre Éditorial (`/editorial`)
+### 2. Centre Éditorial (`/editorial`) & Messagerie (`/messaging`)
 *Focus : Production, Planification, Engagement.*
 - **Social Media** : Création unifiée de posts TikTok, Instagram, LinkedIn, X et catégorie Autre.
-- **Messagerie Directe** : Gestion des messages (Email & WhatsApp) avec suggestions IA ciblées.
+- **Messagerie Directe (`/messaging`)** : Gestion des messages (Email & WhatsApp) avec suggestions IA ciblées.
 - **Calendrier** : Planning global des publications et envois.
 
 ## Key Features & UI Standards

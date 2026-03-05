@@ -17,7 +17,8 @@ Ce dossier contient la documentation détaillée de l'architecture, des modules 
 
 ### Spécifications Modules
 - [PILOTAGE_COCKPIT.md](./PILOTAGE_COCKPIT.md) : **Cockpit de Pilotage Growth** (KPIs Activation, Rétention, Liquidité).
-- [MARKETING_MODULE.md](./MARKETING_MODULE.md) : **Cockpit Marketing & Croissance** (Observatoire, IA Social, Mailing).
+- [MARKETING_MODULE.md](./MARKETING_MODULE.md) : **Cockpit Marketing & Croissance** (Observatoire, IA Social, Messagerie).
+- [WHATSAPP_INTEGRATION.md](./WHATSAPP_INTEGRATION.md) : Guide d'utilisation et d'évolution de WhatsApp Business.
 - [MAP_PAGE_SPEC.md](./MAP_PAGE_SPEC.md) : Fonctionnement de la carte interactive.
 - [plan-support-technique.md](./plan-support-technique.md) : Plan de mise en œuvre du support.
 - [plan-authentification-google.md](./plan-authentification-google.md) : Détails du flux OAuth.
