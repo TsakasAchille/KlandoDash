@@ -173,6 +173,12 @@ Discussion interne entre dashboard users.
 - **Sécurité** : `SECURITY DEFINER` (Ignore RLS pour les totaux globaux).
 - **Structure de retour** : JSON structuré (Trips, Users, Bookings, Transactions, Revenue, Cashflow).
 
+### `get_pilotage_metrics()`
+- **Utilité** : Calcule les indicateurs de croissance (Activation, Rétention, Liquidité).
+- **Source** : Migration `056_create_pilotage_metrics.sql`.
+- **Rôles** : `admin`, `marketing`.
+- **Structure de retour** : JSON (Activation, Rétention, Efficacité, Liquidité, Corridors).
+
 ---
 
 ## Vues SQL (Interface Site Vitrine)

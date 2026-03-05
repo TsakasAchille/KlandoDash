@@ -52,6 +52,8 @@ Les composants lourds (`CommunicationTab`, `MailingTab`, `MapClient`) sont déco
 
 ### Done ✅
 - [x] Refactorisation SOLID complète.
+- [x] Cockpit de Pilotage Growth (KPIs : Activation, Rétention, Liquidité).
+- [x] RPC `get_pilotage_metrics` optimisée avec Focus Remplissage Réalisé.
 - [x] Centre Éditorial Responsif (Navigation Mobile par piles vs Desktop colonnes).
 - [x] Unification de la création Social Media (Générateur IA intégré au popup).
 - [x] IA Data Hub avec pilotage par URL et pont Base64 pour images.

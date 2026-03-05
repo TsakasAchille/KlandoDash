@@ -9,6 +9,7 @@ Ces fonctions sont les seules sources de vérité pour l'IA. Elles extraient et 
 | Fonction | Source Supabase (Table / RPC) | Données fournies |
 | :--- | :--- | :--- |
 | `getDashboardStats()` | RPC `get_klando_stats_final` (Tables `trips`, `users`, `bookings`, `transactions`, `site_trip_requests`) | Chiffres clés, Revenus, Mix Conducteurs/Passagers, Top Routes. |
+| `getPilotageMetrics()` | RPC `get_pilotage_metrics` | Ratios de croissance (Activation, Rétention, Liquidité). |
 | `getSiteTripRequests()` | Table `site_trip_requests` | Intentions de voyage (Ville A -> Ville B, Date, Contact). |
 | `getUsersContext()` | Table `users` | Segments d'utilisateurs (Actifs, Inactifs, Top Drivers). |
 | `getMarketingMemories()`| Fichier local `MARKETING_MEMORIES.md` | Préférences de style et historique des retours admin. |
