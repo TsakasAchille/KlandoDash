@@ -40,7 +40,7 @@ export function MessagingClient({ initialMessages }: MessagingClientProps) {
   const handleSendMessage = async (id: string) => {
     setSendingId(id);
     try {
-      const res = await sendMessageAction(id);
+      const res = await sendMessageAction(id) as any;
       if (res.success) {
         if (res.via === 'WHATSAPP_LINK') {
           toast.success("Prêt pour WhatsApp");

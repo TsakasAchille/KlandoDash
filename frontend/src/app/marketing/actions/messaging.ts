@@ -379,7 +379,7 @@ export async function uploadMarketingImageAction(base64DataWithHeader: string) {
   const filePath = `uploads/${fileName}`;
 
   const { error } = await supabase.storage.from('marketing').upload(filePath, buffer, { contentType });
-  if (error) return { success: false };
+  if (error) return { success: false, error: error.message };
 
   const { data: { publicUrl } } = supabase.storage.from('marketing').getPublicUrl(filePath);
   return { success: true, url: publicUrl };

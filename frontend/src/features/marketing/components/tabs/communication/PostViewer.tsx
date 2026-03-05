@@ -10,7 +10,7 @@ import {
   Send, Edit3, Image as ImageIcon, ExternalLink, Trash2, RotateCcw,
   PenLine, Hash, Sparkles, Calendar, Clock, ChevronLeft,
   Wand2, Loader2, X, Save, ImagePlus, Type,
-  Instagram, Linkedin, Twitter
+  Instagram, Linkedin, Twitter, MessageSquare
 } from "lucide-react";
 
 // Helper component for Platform Logos

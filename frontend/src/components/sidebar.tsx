@@ -12,7 +12,7 @@ import {
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
 import { ChangelogModal } from "@/components/changelog-modal";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import packageInfo from "../../package.json";
 
@@ -49,7 +49,15 @@ interface SidebarProps {
   isMobile?: boolean;
 }
 
-export function Sidebar({ onClose, isMobile = false }: SidebarProps) {
+export function Sidebar(props: SidebarProps) {
+  return (
+    <Suspense fallback={<div className={cn("bg-slate-900 border-r border-white/5", props.isMobile ? "w-full h-full" : "w-64")} />}>
+      <SidebarContent {...props} />
+    </Suspense>
+  );
+}
+
+function SidebarContent({ onClose, isMobile = false }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab");

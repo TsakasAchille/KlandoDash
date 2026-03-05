@@ -13,7 +13,8 @@ import {
 } from "@/app/marketing/actions/communication";
 import { 
   MarketingComm, 
-  CommPlatform 
+  CommPlatform,
+  MarketingMessage 
 } from "@/app/marketing/types";
 
 // Sub-components
