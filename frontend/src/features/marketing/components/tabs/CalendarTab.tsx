@@ -8,9 +8,9 @@ import {
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   Music, Instagram, Twitter, Mail, 
   FileText, X as XIcon, Plus, Image as ImageIcon,
-  GripVertical
+  GripVertical, MessageSquare
 } from "lucide-react";
-import { MarketingComm, MarketingEmail } from "@/app/marketing/types";
+import { MarketingComm, MarketingMessage } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, isSameMonth, startOfWeek, endOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -21,20 +21,20 @@ import { updateMarketingCommAction } from "@/app/marketing/actions/communication
 
 interface CalendarTabProps {
   comms: MarketingComm[];
-  emails: MarketingEmail[];
+  emails: MarketingMessage[]; // Prop name remains for compatibility but type is generic
 }
 
-type CalendarEvent = (MarketingComm | MarketingEmail) & { 
-  eventType: 'COMM' | 'EMAIL'; 
+type CalendarEvent = (MarketingComm | MarketingMessage) & { 
+  eventType: 'COMM' | 'DIRECT_MSG'; 
   date: Date;
 };
 
-export function CalendarTab({ comms, emails }: CalendarTabProps) {
+export function CalendarTab({ comms, emails: messages }: CalendarTabProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
   
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [selectedEventType, setSelectedEventType] = useState<'COMM' | 'EMAIL' | null>(null);
+  const [selectedEventType, setSelectedEventType] = useState<'COMM' | 'DIRECT_MSG' | null>(null);
   
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState<string | null>(null);
@@ -59,13 +59,13 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
         allEvents.push({ ...c, eventType: 'COMM', date: new Date(c.scheduled_at) } as CalendarEvent);
       }
     });
-    emails.forEach(e => {
-      if (e.sent_at) {
-        allEvents.push({ ...e, eventType: 'EMAIL', date: new Date(e.sent_at) } as CalendarEvent);
+    messages.forEach(m => {
+      if (m.sent_at) {
+        allEvents.push({ ...m, eventType: 'DIRECT_MSG', date: new Date(m.sent_at) } as CalendarEvent);
       }
     });
     return allEvents;
-  }, [comms, emails]);
+  }, [comms, messages]);
 
   const selectedEvent = useMemo(() => {
     if (!selectedEventId) return null;
@@ -197,15 +197,17 @@ export function CalendarTab({ comms, emails }: CalendarTabProps) {
                         }}
                         className={cn(
                           "text-[9px] font-black uppercase p-2 rounded-xl flex flex-col gap-2 border shadow-sm transition-all hover:translate-x-0.5 w-full overflow-hidden",
-                          ev.eventType === 'EMAIL' ? "bg-green-50 text-green-600 border-green-100" : "bg-blue-50 text-blue-600 border-blue-100"
+                          ev.eventType === 'DIRECT_MSG' 
+                            ? (('channel' in ev && ev.channel === 'WHATSAPP') ? "bg-green-50 text-green-600 border-green-100" : "bg-purple-50 text-purple-600 border-purple-100") 
+                            : "bg-blue-50 text-blue-600 border-blue-100"
                         )}
                       >
                         <div className="flex items-center gap-2">
-                          {('image_url' in ev) && ev.image_url && !ev.image_url.endsWith('.pdf') && (
-                              <img src={ev.image_url} alt="mini" className="w-5 h-5 rounded-md object-cover shrink-0 border border-black/5" />
-                          )}
+                          {ev.eventType === 'DIRECT_MSG' ? (
+                            ('channel' in ev && ev.channel === 'WHATSAPP') ? <MessageSquare className="w-3 h-3" /> : <Mail className="w-3 h-3" />
+                          ) : <ImageIcon className="w-3 h-3" />}
                           <span className="truncate flex-1 min-w-0">
-                            {('title' in ev) ? ev.title : ('subject' in ev ? ev.subject : '')}
+                            {('title' in ev) ? ev.title : (('subject' in ev && ev.subject) ? ev.subject : ev.content.substring(0, 15))}
                           </span>
                         </div>
                       </div>

@@ -2,93 +2,98 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { MarketingEmail } from "@/app/marketing/types";
-import { createEmailDraftAction, moveEmailToTrashAction, updateMarketingEmailAction } from "@/app/marketing/actions/mailing";
+import { MarketingMessage, MessageChannel } from "@/app/marketing/types";
+import { 
+  createMessageDraftAction, 
+  moveMessageToTrashAction, 
+  updateMarketingMessageAction 
+} from "@/app/marketing/actions/messaging";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 // Sous-composants SOLID
-import { MailSidebar, MailFolder } from "./mailing/MailSidebar";
-import { MailList } from "./mailing/MailList";
-import { MailViewer } from "./mailing/MailViewer";
-import { MailCompose } from "./mailing/MailCompose";
+import { MessageSidebar, MessageFolder } from "./messaging/MessageSidebar";
+import { MessageList } from "./messaging/MessageList";
+import { MessageViewer } from "./messaging/MessageViewer";
+import { MessageCompose } from "./messaging/MessageCompose";
 
-interface MailingTabProps {
-  emails: MarketingEmail[];
+interface MessagingTabProps {
+  messages: MarketingMessage[];
   isScanning: boolean;
-  sendingEmailId: string | null;
+  sendingMessageId: string | null;
   onScan: () => void;
-  onSendEmail: (id: string) => void;
+  onSendMessage: (id: string) => void;
 }
 
-export function MailingTab({ 
-  emails, 
+export function MessagingTab({ 
+  messages, 
   isScanning, 
-  sendingEmailId, 
+  sendingMessageId, 
   onScan, 
-  onSendEmail 
-}: MailingTabProps) {
+  onSendMessage 
+}: MessagingTabProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const [activeFolder, setActiveFolder] = useState<MailFolder>('SUGGESTIONS');
-  const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
+  const [activeFolder, setActiveFolder] = useState<MessageFolder>('SUGGESTIONS');
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTrashing, setIsTrashing] = useState(false);
 
   // --- AUTO-SELECTION DEPUIS L'URL ---
   useEffect(() => {
-    const mailIdFromUrl = searchParams.get("mailId");
-    if (mailIdFromUrl) {
-        const mail = emails.find(e => e.id === mailIdFromUrl);
-        if (mail) {
-            setSelectedEmailId(mailIdFromUrl);
-            if (mail.status === 'DRAFT') {
-                setActiveFolder(mail.is_ai_generated ? 'SUGGESTIONS' : 'DRAFTS');
-            } else if (mail.status === 'SENT') {
+    const msgIdFromUrl = searchParams.get("messageId");
+    if (msgIdFromUrl) {
+        const msg = messages.find(m => m.id === msgIdFromUrl);
+        if (msg) {
+            setSelectedMessageId(msgIdFromUrl);
+            if (msg.status === 'DRAFT') {
+                setActiveFolder(msg.is_ai_generated ? 'SUGGESTIONS' : 'DRAFTS');
+            } else if (msg.status === 'SENT') {
                 setActiveFolder('SENT');
-            } else if (mail.status === 'TRASH') {
+            } else if (msg.status === 'TRASH') {
                 setActiveFolder('TRASH');
             }
         }
     }
-  }, [searchParams, emails]);
+  }, [searchParams, messages]);
 
-  const filteredEmails = useMemo(() => {
-    return emails.filter(e => {
-        if (activeFolder === 'SUGGESTIONS') return e.status === 'DRAFT' && e.is_ai_generated;
-        if (activeFolder === 'DRAFTS') return e.status === 'DRAFT' && !e.is_ai_generated;
-        if (activeFolder === 'SENT') return e.status === 'SENT';
-        if (activeFolder === 'FAILED') return e.status === 'FAILED';
-        if (activeFolder === 'TRASH') return e.status === 'TRASH';
+  const filteredMessages = useMemo(() => {
+    return messages.filter(m => {
+        if (activeFolder === 'SUGGESTIONS') return m.status === 'DRAFT' && m.is_ai_generated;
+        if (activeFolder === 'DRAFTS') return m.status === 'DRAFT' && !m.is_ai_generated;
+        if (activeFolder === 'SENT') return m.status === 'SENT';
+        if (activeFolder === 'FAILED') return m.status === 'FAILED';
+        if (activeFolder === 'TRASH') return m.status === 'TRASH';
         return false;
     });
-  }, [emails, activeFolder]);
+  }, [messages, activeFolder]);
 
-  const selectedEmail = useMemo(() => 
-    emails.find(e => e.id === selectedEmailId) || null
-  , [emails, selectedEmailId]);
+  const selectedMessage = useMemo(() => 
+    messages.find(m => m.id === selectedMessageId) || null
+  , [messages, selectedMessageId]);
 
   const folderCounts = useMemo(() => ({
-    suggestions: emails.filter(e => e.status === 'DRAFT' && e.is_ai_generated).length,
-    drafts: emails.filter(e => e.status === 'DRAFT' && !e.is_ai_generated).length
-  }), [emails]);
+    suggestions: messages.filter(m => m.status === 'DRAFT' && m.is_ai_generated).length,
+    drafts: messages.filter(m => m.status === 'DRAFT' && !m.is_ai_generated).length
+  }), [messages]);
 
-  const handleCreateDraft = async (data: Partial<MarketingEmail>) => {
-    if (!data.recipient_email || !data.subject || !data.content || !data.category) {
+  const handleCreateDraft = async (data: Partial<MarketingMessage>) => {
+    if (!data.recipient_contact || !data.content || !data.category || !data.channel) {
         toast.error("Veuillez remplir tous les champs obligatoires");
         return;
     }
     setIsSaving(true);
     try {
-        const res = await createEmailDraftAction({
-            recipient_email: data.recipient_email,
+        const res = await createMessageDraftAction({
+            recipient_contact: data.recipient_contact,
             recipient_name: data.recipient_name || undefined,
-            subject: data.subject,
+            subject: data.subject || undefined,
             content: data.content,
             category: data.category,
+            channel: data.channel,
             is_ai_generated: false,
             image_url: data.image_url || undefined
         });
@@ -97,7 +102,7 @@ export function MailingTab({
             setIsComposeOpen(false);
             router.refresh();
             if (res.id) {
-              setTimeout(() => setSelectedEmailId(res.id as string), 200);
+              setTimeout(() => setSelectedMessageId(res.id as string), 200);
             }
             setActiveFolder('DRAFTS');
         }
@@ -108,10 +113,10 @@ export function MailingTab({
     }
   };
 
-  const handleUpdateMail = async (id: string, data: Partial<MarketingEmail>) => {
+  const handleUpdateMessage = async (id: string, data: Partial<MarketingMessage>) => {
     setIsSaving(true);
     try {
-        const res = await updateMarketingEmailAction(id, data);
+        const res = await updateMarketingMessageAction(id, data);
         if (res.success) {
           toast.success("Mis à jour !");
           router.refresh();
@@ -123,13 +128,13 @@ export function MailingTab({
     }
   };
 
-  const handleTrashMail = async (id: string) => {
+  const handleTrashMessage = async (id: string) => {
     setIsTrashing(true);
     try {
-        const res = await moveEmailToTrashAction(id);
+        const res = await moveMessageToTrashAction(id);
         if (res.success) {
             toast.success("Corbeille !");
-            setSelectedEmailId(null);
+            setSelectedMessageId(null);
             router.refresh();
         }
     } catch (err) {
@@ -142,12 +147,12 @@ export function MailingTab({
   const handleConvertToDraft = async (id: string) => {
     setIsSaving(true);
     try {
-        const res = await updateMarketingEmailAction(id, { is_ai_generated: false });
+        const res = await updateMarketingMessageAction(id, { is_ai_generated: false });
         if (res.success) {
             toast.success("Converti !");
             setActiveFolder('DRAFTS');
             router.refresh();
-            setTimeout(() => setSelectedEmailId(id), 200);
+            setTimeout(() => setSelectedMessageId(id), 200);
         }
     } catch (err) {
         toast.error("Erreur");
@@ -157,10 +162,10 @@ export function MailingTab({
   };
 
   // Mobile: viewer replaces sidebar+list
-  const isViewerActive = !!selectedEmail;
+  const isViewerActive = !!selectedMessage;
 
   const handleMobileBack = useCallback(() => {
-    setSelectedEmailId(null);
+    setSelectedMessageId(null);
   }, []);
 
   return (
@@ -172,7 +177,7 @@ export function MailingTab({
         isViewerActive ? 'hidden lg:flex' : 'flex'
       )}>
         <div className="flex-none">
-          <MailSidebar
+          <MessageSidebar
             activeFolder={activeFolder}
             setActiveFolder={setActiveFolder}
             onCompose={() => setIsComposeOpen(true)}
@@ -182,10 +187,10 @@ export function MailingTab({
           />
         </div>
         <div className="flex-1 min-h-0">
-          <MailList
-            emails={filteredEmails}
-            selectedId={selectedEmailId}
-            onSelect={setSelectedEmailId}
+          <MessageList
+            messages={filteredMessages}
+            selectedId={selectedMessageId}
+            onSelect={setSelectedMessageId}
             activeFolder={activeFolder}
           />
         </div>
@@ -196,23 +201,23 @@ export function MailingTab({
         "flex-1 min-w-0 h-full overflow-hidden",
         !isViewerActive && "hidden lg:block"
       )}>
-        {selectedEmail && (
-          <MailViewer
-              email={selectedEmail}
-              onClose={() => setSelectedEmailId(null)}
-              onUpdate={handleUpdateMail}
-              onTrash={handleTrashMail}
+        {selectedMessage && (
+          <MessageViewer
+              message={selectedMessage}
+              onClose={() => setSelectedMessageId(null)}
+              onUpdate={handleUpdateMessage}
+              onTrash={handleTrashMessage}
               onConvertToDraft={handleConvertToDraft}
-              onSend={onSendEmail}
+              onSend={onSendMessage}
               isSaving={isSaving}
               isTrashing={isTrashing}
-              sendingEmailId={sendingEmailId}
+              sendingMessageId={sendingMessageId}
               onMobileBack={handleMobileBack}
           />
         )}
       </div>
 
-      <MailCompose
+      <MessageCompose
         isOpen={isComposeOpen}
         onOpenChange={setIsComposeOpen}
         onSave={handleCreateDraft}

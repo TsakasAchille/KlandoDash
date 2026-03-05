@@ -16,7 +16,7 @@ import { SiteTripRequest } from "@/types/site-request";
 import { PublicTrip } from "../hooks/useSiteRequestAI";
 import dynamic from "next/dynamic";
 import { GeocodingService } from "@/features/site-requests/services/geocoding.service";
-import { createEmailDraftAction, uploadMarketingImageAction } from "@/app/marketing/actions/mailing";
+import { createMessageDraftAction, uploadMarketingImageAction } from "@/app/marketing/actions/messaging";
 import html2canvas from "html2canvas";
 
 // IMPORT DU NOUVEAU COMPOSANT FEATURES (Architecture SOLID)
@@ -128,12 +128,13 @@ export function MatchingDialog({
       }
 
       // 3. CRÉATION DU BROUILLON (Action manuelle -> Dossier Brouillons)
-      const res = await createEmailDraftAction({
-        recipient_email: selectedRequest.contact_info,
+      const res = await createMessageDraftAction({
+        recipient_contact: selectedRequest.contact_info,
         recipient_name: "",
         subject: `Klando : Trajet trouvé pour ${selectedRequest.origin_city}`,
         content: aiMessage,
         category: 'MATCH_FOUND',
+        channel: 'EMAIL', // Par défaut Email pour ce flux
         is_ai_generated: false, // On le met à false ici
         image_url: imageUrl
       });
@@ -142,7 +143,7 @@ export function MatchingDialog({
         toast.success("Brouillon enregistré avec la carte !", {
           action: {
             label: "Voir",
-            onClick: () => (window.location.href = `/editorial?tab=mailing&mailId=${res.id}`)
+            onClick: () => (window.location.href = `/editorial?tab=messaging&messageId=${res.id}`)
           }
         });
       }

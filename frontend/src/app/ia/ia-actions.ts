@@ -150,16 +150,17 @@ export async function createPropositionDraft(
     }
   }
 
-  // 3. Créer le brouillon dans dash_marketing_emails
+  // 3. Créer le brouillon dans dash_marketing_messages
   const { data: draft, error } = await supabase
-    .from("dash_marketing_emails")
+    .from("dash_marketing_messages")
     .insert([{
       category: 'MATCH_FOUND',
       subject: subject,
       content: message,
-      recipient_email: recipientEmail,
+      recipient_contact: recipientEmail,
       recipient_name: recipientName,
       status: 'DRAFT',
+      channel: 'EMAIL',
       created_at: new Date().toISOString(),
       is_ai_generated: true,
       images: images,
@@ -174,8 +175,8 @@ export async function createPropositionDraft(
   }
 
   await recordAuditLog({
-    action: 'EMAIL_DRAFT_CREATED',
-    entityType: 'MARKETING_EMAIL',
+    action: 'MESSAGE_DRAFT_CREATED',
+    entityType: 'MARKETING_MESSAGE',
     entityId: draft.id,
     details: { recipient: recipientEmail, subject, method: 'IA_DATA_HUB', imagesCount: images.length }
   });

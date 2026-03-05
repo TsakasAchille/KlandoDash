@@ -6,25 +6,25 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type MailFolder = 'SUGGESTIONS' | 'DRAFTS' | 'SENT' | 'FAILED' | 'TRASH';
+export type MessageFolder = 'SUGGESTIONS' | 'DRAFTS' | 'SENT' | 'FAILED' | 'TRASH';
 
-interface MailSidebarProps {
-  activeFolder: MailFolder;
-  setActiveFolder: (f: MailFolder) => void;
+interface MessageSidebarProps {
+  activeFolder: MessageFolder;
+  setActiveFolder: (f: MessageFolder) => void;
   onCompose: () => void;
   onScan: () => void;
   isScanning: boolean;
   counts: Record<string, number>;
 }
 
-export function MailSidebar({
+export function MessageSidebar({
   activeFolder,
   setActiveFolder,
   onCompose,
   onScan,
   isScanning,
   counts
-}: MailSidebarProps) {
+}: MessageSidebarProps) {
   return (
     <div className="w-full flex flex-col gap-2 text-left shrink-0">
       <Button

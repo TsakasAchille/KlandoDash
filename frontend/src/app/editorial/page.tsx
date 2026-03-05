@@ -1,12 +1,9 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getMarketingEmailsAction } from "@/app/marketing/actions/mailing";
+import { getMarketingMessagesAction } from "@/app/marketing/actions/messaging";
 import { getMarketingCommAction } from "@/app/marketing/actions/communication";
 import { EditorialClient } from "./editorial-client";
-import { PenTool, CheckCircle, Calendar as CalendarIcon, Hash } from "lucide-react";
-import { RefreshButton } from "@/components/refresh-button";
-import { MarketingEmail, MarketingComm } from "@/app/marketing/types";
-import { cn } from "@/lib/utils";
+import { MarketingMessage, MarketingComm } from "@/app/marketing/types";
 
 export const dynamic = "force-dynamic";
 
@@ -23,20 +20,19 @@ export default async function EditorialPage({ searchParams }: Props) {
     redirect("/login");
   }
 
-  // On récupère toujours les deux pour les stats du header, 
-  // mais on pourrait optimiser ici plus tard avec une requête de comptage légère.
-  const [emailResult, commResult] = await Promise.all([
-    getMarketingEmailsAction(),
+  // On récupère toujours les deux pour les stats du header
+  const [msgResult, commResult] = await Promise.all([
+    getMarketingMessagesAction(),
     getMarketingCommAction()
   ]);
 
-  const emails = (emailResult.success ? emailResult.data : []) as MarketingEmail[];
+  const messages = (msgResult.success ? msgResult.data : []) as MarketingMessage[];
   const comms = (commResult.success ? commResult.data : []) as MarketingComm[];
 
   return (
     <div className="max-w-[1600px] mx-auto flex flex-col h-[calc(100vh-3rem)] px-4 sm:px-6 lg:px-8 pt-0 relative">
       <EditorialClient
-        initialEmails={emails}
+        initialMessages={messages}
         initialComms={comms}
       />
     </div>

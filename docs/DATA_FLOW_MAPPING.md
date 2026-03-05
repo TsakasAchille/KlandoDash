@@ -10,7 +10,7 @@ This document details the relationship between the database (Tables/Views) and t
 | `public_pending_trips` | View | **Site Requests** | `/site-requests` | Used by AI Matching & Landing Page. Only `PENDING` with seats. |
 | `site_trip_requests` | Table | **Site Requests** | `/site-requests` | Intentions collected from the landing page. |
 | `dash_marketing_communications` | Table | **Editorial** | `/editorial` | Scheduled social posts and communication ideas. |
-| `dash_marketing_emails` | Table | **Editorial** | `/editorial` | Mailing drafts and history. |
+| `dash_marketing_messages` | Table | **Editorial** | `/editorial` | Direct messaging (Email/WhatsApp) drafts and history. |
 | `dash_marketing_comments` | Table | **Editorial** | `/editorial` | Internal user comments on marketing content. |
 | `dash_authorized_users` | Table | **Admin/All** | `/admin` | Whitelisted dashboard users with roles and profile sync. |
 | `users` | Table | **Utilisateurs** | `/users` | User profiles and driver documentation. |

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MarketingComment, MarketingComm, MarketingEmail } from "@/app/marketing/types";
+import { MarketingComment, MarketingComm, MarketingMessage } from "@/app/marketing/types";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,18 +10,18 @@ import {
   Music, Instagram, Twitter, Mail, 
   Send, Calendar, Tag,
   Image as ImageIcon,
-  Loader2, FileText, Trash2
+  Loader2, FileText, Trash2, MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getMarketingComments, addMarketingComment } from "@/app/editorial/actions";
 import { updateMarketingCommAction } from "@/app/marketing/actions/communication";
-import { updateMarketingEmailAction } from "@/app/marketing/actions/mailing";
+import { updateMarketingMessageAction } from "@/app/marketing/actions/messaging";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
-export type CalendarEvent = (MarketingComm | MarketingEmail) & {
-  eventType: 'COMM' | 'EMAIL';
+export type CalendarEvent = (MarketingComm | MarketingMessage) & {
+  eventType: 'COMM' | 'DIRECT_MSG';
   date: Date;
 };
 
@@ -82,7 +82,7 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
     setSubmitting(true);
     const res = event.eventType === 'COMM' 
         ? await updateMarketingCommAction(event.id, { scheduled_at: null })
-        : await updateMarketingEmailAction(event.id, { sent_at: null });
+        : await updateMarketingMessageAction(event.id, { sent_at: null });
 
     if (res.success) {
         toast.success("Contenu déplanifié");
@@ -95,15 +95,15 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
 
   if (!event) return null;
 
-  // Type narrowing for safer access
+  // Type narrowing
   const isComm = event.eventType === 'COMM';
   const comm = isComm ? event as MarketingComm : null;
-  const email = !isComm ? event as MarketingEmail : null;
+  const msg = !isComm ? event as MarketingMessage : null;
 
-  const title = comm?.title || email?.subject || "Détails du contenu";
-  const content = comm?.content || email?.content || "";
-  const imageUrl = comm?.image_url || email?.image_url;
-  const platform = isComm ? comm?.platform : 'EMAIL';
+  const title = comm?.title || msg?.subject || (msg?.channel === 'WHATSAPP' ? "WhatsApp Direct" : "Sans objet");
+  const content = comm?.content || msg?.content || "";
+  const imageUrl = comm?.image_url || msg?.image_url;
+  const platform = isComm ? comm?.platform : (msg?.channel === 'WHATSAPP' ? 'WHATSAPP' : 'EMAIL');
   const hashtags = comm?.hashtags || [];
   const date = event.date;
 
@@ -113,7 +113,7 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
         <DialogHeader className="sr-only">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Détails et commentaires de la publication ou de l&apos;email.
+            Détails et commentaires de la publication ou du message.
           </DialogDescription>
         </DialogHeader>
         
@@ -148,7 +148,8 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
                 {platform === 'TIKTOK' && <Music className="w-3 h-3 text-black" />}
                 {platform === 'INSTAGRAM' && <Instagram className="w-3 h-3 text-pink-600" />}
                 {platform === 'X' && <Twitter className="w-3 h-3 text-blue-400" />}
-                {event.eventType === 'EMAIL' && <Mail className="w-3 h-3 text-green-500" />}
+                {platform === 'WHATSAPP' && <MessageSquare className="w-3 h-3 text-green-600" />}
+                {platform === 'EMAIL' && <Mail className="w-3 h-3 text-blue-500" />}
                 <span className="text-[9px] font-black uppercase tracking-tight text-slate-900">
                   {platform}
                 </span>

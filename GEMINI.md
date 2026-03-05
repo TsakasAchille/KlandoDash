@@ -30,7 +30,7 @@ KlandoDash/
 ## Architecture & Logic Flow
 
 ### 1. Feature-Driven Design (SOLID)
-Les composants lourds (`CommunicationTab`, `MailingTab`, `MapClient`) sont découpés en sous-composants spécialisés (List, Editor, Preview, Sidebar) isolés dans le dossier `features/`.
+Les composants lourds (`CommunicationTab`, `MessagingTab`, `MapClient`) sont découpés en sous-composants spécialisés (List, Editor, Preview, Sidebar) isolés dans le dossier `features/`.
 
 ### 2. Centre Éditorial (Production Focus)
 - **Interface Dual-Pane** : Navigation à gauche (largeur 320px fixe), zone de production à droite (scroll indépendant).

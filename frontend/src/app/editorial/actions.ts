@@ -83,7 +83,7 @@ export async function updateMarketingVisual(params: {
         if (error) return { success: false, error: error.message };
     } else if (params.emailId) {
         const { error } = await supabase
-            .from('dash_marketing_emails')
+            .from('dash_marketing_messages')
             .update({ image_url: params.imageUrl })
             .eq('id', params.emailId);
         

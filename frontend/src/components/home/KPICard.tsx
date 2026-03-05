@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowRight, Car, Users, AlertCircle, TrendingUp, LucideIcon, RefreshCw, Info, HelpCircle, Target, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Car, Users, AlertCircle, TrendingUp, LucideIcon, RefreshCw, Info, HelpCircle, Target, CheckCircle2, MessageSquare } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 
 const icons = {
-  Car, Users, AlertCircle, TrendingUp, RefreshCw, Target, CheckCircle2
+  Car, Users, AlertCircle, TrendingUp, RefreshCw, Target, CheckCircle2, MessageSquare
 };
 
 interface KPICardProps {

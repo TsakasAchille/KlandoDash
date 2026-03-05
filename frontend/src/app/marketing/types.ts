@@ -11,17 +11,19 @@ export interface MarketingInsight {
   created_at: string;
 }
 
-export type EmailStatus = 'DRAFT' | 'SENT' | 'FAILED' | 'TRASH';
-export type EmailCategory = 'WELCOME' | 'MATCH_FOUND' | 'RETENTION' | 'PROMO' | 'GENERAL';
+export type MessageChannel = 'EMAIL' | 'WHATSAPP';
+export type MessageStatus = 'DRAFT' | 'SENT' | 'FAILED' | 'TRASH';
+export type MessageCategory = 'WELCOME' | 'MATCH_FOUND' | 'RETENTION' | 'PROMO' | 'GENERAL';
 
-export interface MarketingEmail {
+export interface MarketingMessage {
   id: string;
-  category: EmailCategory;
-  subject: string;
+  channel: MessageChannel;
+  category: MessageCategory;
+  subject?: string | null; // Null for WhatsApp often
   content: string;
-  recipient_email: string;
+  recipient_contact: string; // Email or Phone
   recipient_name: string | null;
-  status: EmailStatus;
+  status: MessageStatus;
   is_ai_generated: boolean;
   ai_reasoning?: string | null;
   is_liked?: boolean;
@@ -31,6 +33,8 @@ export interface MarketingEmail {
   asset_id?: string | null;
   created_at: string;
   sent_at: string | null;
+  message_id?: string | null; // Resend ID or WhatsApp Msg ID
+  error_message?: string | null;
 }
 
 export type CommType = 'IDEA' | 'POST';

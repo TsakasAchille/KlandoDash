@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useRef } from "react";
 import { Search, Send, User, Loader2, Phone, Mail, FileText, ImageIcon, X, UploadCloud, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { searchHistoricalDrivers, createPropositionDraft, getUserInfo } from "./ia-actions";
-import { uploadMarketingImageAction } from "@/app/marketing/actions/mailing";
+import { uploadMarketingImageAction } from "@/app/marketing/actions/messaging";
 import { formatDateShort, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";

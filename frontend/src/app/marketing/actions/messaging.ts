@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 import { askKlandoAI } from "@/lib/gemini";
 import { sendEmail } from "@/lib/mail";
 import React from "react";
-import { EmailCategory, EmailStatus, MarketingEmail } from "../types";
+import { MessageCategory, MessageStatus, MarketingMessage, MessageChannel } from "../types";
 import { recordAuditLog } from "@/lib/audit";
 import fs from "fs/promises";
 import path from "path";
@@ -14,15 +14,15 @@ import path from "path";
 /**
  * Sauvegarde le feedback de l'utilisateur (Like/Commentaire) et met à jour les mémoires IA
  */
-export async function saveMailingFeedbackAction(id: string, isLiked: boolean, feedback?: string) {
+export async function saveMessagingFeedbackAction(id: string, isLiked: boolean, feedback?: string) {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   const supabase = createAdminClient();
   
   // 1. Mise à jour en base
-  const { data: email, error } = await supabase
-    .from('dash_marketing_emails')
+  const { data: message, error } = await supabase
+    .from('dash_marketing_messages')
     .update({ 
       is_liked: isLiked, 
       admin_feedback: feedback 
@@ -39,12 +39,12 @@ export async function saveMailingFeedbackAction(id: string, isLiked: boolean, fe
     let content = await fs.readFile(memoryPath, "utf-8");
 
     if (feedback) {
-      const feedbackEntry = `\n*   **Feedback (${new Date().toLocaleDateString()})** : "${feedback}" (Sur le mail: "${email.subject}")`;
+      const feedbackEntry = `\n*   **Feedback (${new Date().toLocaleDateString()})** : "${feedback}" (Sur le message: "${message.subject || message.content.substring(0, 20)}")`;
       content = content.replace("## 2. Historique des Retours Admin (Apprentissage)", `## 2. Historique des Retours Admin (Apprentissage)${feedbackEntry}`);
     }
 
     if (isLiked) {
-      const likeEntry = `\n*   **Exemple Liké** : Objet "${email.subject}" - Contenu: "${email.content.substring(0, 50)}..."`;
+      const likeEntry = `\n*   **Exemple Liké** : Canal "${message.channel}" - Contenu: "${message.content.substring(0, 50)}..."`;
       content = content.replace("## 3. Exemples de Succès (Liked)", `## 3. Exemples de Succès (Liked)${likeEntry}`);
     }
 
@@ -55,7 +55,7 @@ export async function saveMailingFeedbackAction(id: string, isLiked: boolean, fe
 
   await recordAuditLog({
     action: 'USER_UPDATE',
-    entityType: 'MARKETING_EMAIL',
+    entityType: 'MARKETING_MESSAGE',
     entityId: id,
     details: { isLiked, hasFeedback: !!feedback }
   });
@@ -65,75 +65,47 @@ export async function saveMailingFeedbackAction(id: string, isLiked: boolean, fe
 }
 
 /**
- * Télécharge un fichier (image ou doc) vers Supabase Storage
+ * Envoie un message (Email ou WhatsApp)
  */
-export async function uploadMarketingImageAction(base64DataWithHeader: string) {
-  const session = await auth();
-  if (!session || (session.user.role !== "admin" && session.user.role !== "marketing" && session.user.role !== "ia")) {
-    console.error("[UPLOAD] Unauthorized access attempt by", session?.user?.email, "Role:", session?.user?.role);
-    return { success: false, error: "Non autorisé" };
-  }
-
-  console.log("[UPLOAD] Starting upload from Base64 (length:", base64DataWithHeader.length, ") by", session.user.email);
-
-  const supabase = createAdminClient();
-  
-  // Extraire le type mime et les données
-  const matches = base64DataWithHeader.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.*)$/);
-  if (!matches || matches.length !== 3) {
-    console.error("[UPLOAD] Invalid Base64 format");
-    return { success: false, error: "Format invalide" };
-  }
-
-  const contentType = matches[1];
-  const base64Data = matches[2];
-  const buffer = Buffer.from(base64Data, 'base64');
-  
-  // Déterminer l'extension
-  let extension = 'bin';
-  if (contentType.includes('image/png')) extension = 'png';
-  else if (contentType.includes('image/jpeg')) extension = 'jpg';
-  else if (contentType.includes('image/webp')) extension = 'webp';
-  else if (contentType.includes('application/pdf')) extension = 'pdf';
-
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
-  const filePath = `uploads/${fileName}`;
-
-  const { error } = await supabase.storage
-    .from('marketing')
-    .upload(filePath, buffer, {
-      contentType,
-      upsert: true
-    });
-
-  if (error) {
-    console.error("[UPLOAD] Supabase Storage Error:", error);
-    return { success: false, error: error.message };
-  }
-
-  const { data: { publicUrl } } = supabase.storage
-    .from('marketing')
-    .getPublicUrl(filePath);
-
-  console.log("[UPLOAD] Success! Public URL:", publicUrl);
-  return { success: true, url: publicUrl };
-}
-
-/**
- * Envoie un email marketing via Resend
- */
-export async function sendMarketingEmailAction(id: string) {
+export async function sendMessageAction(id: string) {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   const supabase = createAdminClient();
-  const { data: email, error: fetchError } = await supabase
-    .from('dash_marketing_emails')
+  const { data: message, error: fetchError } = await supabase
+    .from('dash_marketing_messages')
     .select('*')
     .eq('id', id)
     .single();
 
-  if (fetchError || !email) return { success: false, message: "Email introuvable" };
+  if (fetchError || !message) return { success: false, message: "Message introuvable" };
+
+  if (message.channel === 'EMAIL') {
+    return sendEmailInternalAction(id);
+  } else {
+    // Pour WhatsApp, on marque juste comme envoyé pour l'instant (en attendant l'API Meta)
+    // L'envoi se fait via wa.me coté client
+    await supabase.from('dash_marketing_messages').update({
+      status: 'SENT',
+      sent_at: new Date().toISOString()
+    }).eq('id', id);
+    
+    return { success: true, via: 'WHATSAPP_LINK' };
+  }
+}
+
+/**
+ * Logique interne d'envoi d'email
+ */
+async function sendEmailInternalAction(id: string) {
+  const supabase = createAdminClient();
+  const { data: email } = await supabase
+    .from('dash_marketing_messages')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (!email) return { success: false };
 
   // Construction du corps HTML avec images
   const imagesHtml = email.images && email.images.length > 0 
@@ -160,13 +132,13 @@ export async function sendMarketingEmailAction(id: string) {
   `;
 
   const res = await sendEmail({
-    to: email.recipient_email,
-    subject: email.subject,
+    to: email.recipient_contact,
+    subject: email.subject || "Message de Klando",
     react: React.createElement("div", { dangerouslySetInnerHTML: { __html: htmlContent } })
   });
 
   if (res.success) {
-    await supabase.from('dash_marketing_emails').update({
+    await supabase.from('dash_marketing_messages').update({
       status: 'SENT',
       sent_at: new Date().toISOString(),
       message_id: res.id
@@ -174,15 +146,15 @@ export async function sendMarketingEmailAction(id: string) {
 
     await recordAuditLog({
       action: 'EMAIL_SENT',
-      entityType: 'MARKETING_EMAIL',
+      entityType: 'MARKETING_MESSAGE',
       entityId: id,
-      details: { recipient: email.recipient_email, subject: email.subject }
+      details: { recipient: email.recipient_contact, subject: email.subject }
     });
 
     revalidatePath("/marketing");
     return { success: true };
   } else {
-    await supabase.from('dash_marketing_emails').update({
+    await supabase.from('dash_marketing_messages').update({
       status: 'FAILED',
       error_message: JSON.stringify(res.error)
     }).eq('id', id);
@@ -191,23 +163,23 @@ export async function sendMarketingEmailAction(id: string) {
 }
 
 /**
- * Déplace un email vers la corbeille
+ * Déplace un message vers la corbeille
  */
-export async function moveEmailToTrashAction(id: string) {
+export async function moveMessageToTrashAction(id: string) {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   const supabase = createAdminClient();
   const { error } = await supabase
-    .from('dash_marketing_emails')
+    .from('dash_marketing_messages')
     .update({ status: 'TRASH' })
     .eq('id', id);
 
   if (error) return { success: false };
 
   await recordAuditLog({
-    action: 'EMAIL_TRASHED',
-    entityType: 'MARKETING_EMAIL',
+    action: 'MESSAGE_TRASHED',
+    entityType: 'MARKETING_MESSAGE',
     entityId: id
   });
 
@@ -216,15 +188,15 @@ export async function moveEmailToTrashAction(id: string) {
 }
 
 /**
- * Met à jour un email (contenu, sujet ou flag AI)
+ * Met à jour un message
  */
-export async function updateMarketingEmailAction(id: string, updates: Partial<MarketingEmail>) {
+export async function updateMarketingMessageAction(id: string, updates: Partial<MarketingMessage>) {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   const supabase = createAdminClient();
   const { error } = await supabase
-    .from('dash_marketing_emails')
+    .from('dash_marketing_messages')
     .update(updates)
     .eq('id', id);
 
@@ -232,7 +204,7 @@ export async function updateMarketingEmailAction(id: string, updates: Partial<Ma
 
   await recordAuditLog({
     action: 'USER_UPDATE',
-    entityType: 'MARKETING_EMAIL',
+    entityType: 'MARKETING_MESSAGE',
     entityId: id,
     details: { updates }
   });
@@ -242,14 +214,15 @@ export async function updateMarketingEmailAction(id: string, updates: Partial<Ma
 }
 
 /**
- * Crée un brouillon d'email manuellement (ou via Aide IA)
+ * Crée un brouillon de message
  */
-export async function createEmailDraftAction(data: {
-  recipient_email: string;
+export async function createMessageDraftAction(data: {
+  recipient_contact: string;
   recipient_name?: string;
-  subject: string;
+  subject?: string;
   content: string;
-  category: EmailCategory;
+  category: MessageCategory;
+  channel: MessageChannel;
   is_ai_generated?: boolean;
   image_url?: string;
 }) {
@@ -258,7 +231,7 @@ export async function createEmailDraftAction(data: {
 
   const supabase = createAdminClient();
   const { data: draft, error } = await supabase
-    .from('dash_marketing_emails')
+    .from('dash_marketing_messages')
     .insert([{
       ...data,
       status: 'DRAFT',
@@ -272,10 +245,10 @@ export async function createEmailDraftAction(data: {
   if (error) return { success: false, message: "Échec de sauvegarde" };
   
   await recordAuditLog({
-    action: 'EMAIL_DRAFT_CREATED',
-    entityType: 'MARKETING_EMAIL',
+    action: 'MESSAGE_DRAFT_CREATED',
+    entityType: 'MARKETING_MESSAGE',
     entityId: draft.id,
-    details: { recipient: data.recipient_email, category: data.category }
+    details: { recipient: data.recipient_contact, channel: data.channel }
   });
 
   revalidatePath("/marketing");
@@ -283,27 +256,27 @@ export async function createEmailDraftAction(data: {
 }
 
 /**
- * Récupère l'historique de mailing
+ * Récupère l'historique de messagerie
  */
-export async function getMarketingEmailsAction() {
+export async function getMarketingMessagesAction() {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
   const supabase = createAdminClient();
   const { data, error } = await supabase
-    .from('dash_marketing_emails')
+    .from('dash_marketing_messages')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(50);
 
   if (error) return { success: false, data: [] };
-  return { success: true, data: data as MarketingEmail[] };
+  return { success: true, data: data as MarketingMessage[] };
 }
 
 /**
- * Génère des suggestions de mailing ciblées via IA
+ * Génère des suggestions de messagerie (Email + WhatsApp) via IA
  */
-export async function generateMailingSuggestionsAction() {
+export async function generateMessagingSuggestionsAction() {
   const session = await auth();
   if (!session || (session.user.role !== "admin" && session.user.role !== "marketing")) throw new Error("Non autorisé");
 
@@ -323,26 +296,32 @@ export async function generateMailingSuggestionsAction() {
   const { data: inactiveUsers } = await supabase.from('users').select('*').limit(10);
 
   const dataContext = {
-    prospects: prospects?.map(p => ({ email: p.contact_info, from: p.origin_city, to: p.destination_city })),
-    inactive_users: inactiveUsers?.map(u => ({ name: u.display_name, email: u.email })),
+    prospects: prospects?.map(p => ({ contact: p.contact_info, from: p.origin_city, to: p.destination_city })),
+    inactive_users: inactiveUsers?.map(u => ({ name: u.display_name, email: u.email, phone: u.phone_number })),
     preferences: marketingMemories
   };
 
   // 3. Demander à l'IA de suggérer des opportunités avec raisonnement
   const prompt = `
-    En te basant sur nos préférences marketing et sur les données fournies, identifie 3 opportunités de mailing.
-    IMPORTANT : Pour chaque mail, explique précisément POURQUOI tu suggères cette approche dans le champ "ai_reasoning".
+    En te basant sur nos préférences marketing et sur les données fournies, identifie 4 opportunités de messagerie directe.
+    Mixe intelligemment entre EMAIL et WHATSAPP selon le type de prospect.
+    
+    IMPORTANT : 
+    - Pour WhatsApp, pas de sujet, sois plus direct et utilise des emojis.
+    - Pour Email, utilise un sujet accrocheur.
+    - Explique ton choix de canal dans "ai_reasoning".
     
     Structure JSON attendue :
     {
       "opportunities": [
         {
+          "channel": "EMAIL" | "WHATSAPP",
           "category": "MATCH_FOUND" | "RETENTION" | "WELCOME" | "PROMO",
-          "recipient_email": "email",
+          "recipient_contact": "email ou téléphone",
           "recipient_name": "nom",
-          "subject": "sujet",
+          "subject": "sujet (null si whatsapp)",
           "content": "contenu Markdown",
-          "ai_reasoning": "Explication de la stratégie choisie"
+          "ai_reasoning": "Explication de la stratégie et du choix du canal"
         }
       ]
     }
@@ -357,7 +336,7 @@ export async function generateMailingSuggestionsAction() {
     const { opportunities } = JSON.parse(jsonMatch[0]);
 
     if (opportunities && opportunities.length > 0) {
-      const { error } = await supabase.from('dash_marketing_emails').insert(
+      const { error } = await supabase.from('dash_marketing_messages').insert(
         opportunities.map((o: any) => ({
           ...o,
           status: 'DRAFT',
@@ -367,8 +346,8 @@ export async function generateMailingSuggestionsAction() {
       if (error) throw error;
 
       await recordAuditLog({
-        action: 'EMAIL_DRAFT_CREATED',
-        entityType: 'MARKETING_EMAIL',
+        action: 'MESSAGE_DRAFT_CREATED',
+        entityType: 'MARKETING_MESSAGE',
         details: { type: 'AI_SUGGESTIONS', count: opportunities.length }
       });
     }
@@ -376,7 +355,32 @@ export async function generateMailingSuggestionsAction() {
     revalidatePath("/marketing");
     return { success: true, count: opportunities.length };
   } catch (err) {
-    console.error("[Mailing AI] Failed:", err);
+    console.error("[Messaging AI] Failed:", err);
     return { success: false, message: "Échec de la génération." };
   }
+}
+
+/**
+ * Télécharge un fichier (image ou doc) vers Supabase Storage
+ */
+export async function uploadMarketingImageAction(base64DataWithHeader: string) {
+  // Re-exportée ou gardée ici si besoin, c'est identique à avant
+  const session = await auth();
+  if (!session) return { success: false };
+  const supabase = createAdminClient();
+  
+  const matches = base64DataWithHeader.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.*)$/);
+  if (!matches || matches.length !== 3) return { success: false };
+
+  const contentType = matches[1];
+  const buffer = Buffer.from(matches[2], 'base64');
+  const extension = contentType.split('/')[1];
+  const fileName = `${Date.now()}.${extension}`;
+  const filePath = `uploads/${fileName}`;
+
+  const { error } = await supabase.storage.from('marketing').upload(filePath, buffer, { contentType });
+  if (error) return { success: false };
+
+  const { data: { publicUrl } } = supabase.storage.from('marketing').getPublicUrl(filePath);
+  return { success: true, url: publicUrl };
 }

@@ -12,8 +12,8 @@ Le module marketing sépare l'analyse stratégique de la production de contenu.
 ### 2. Centre Éditorial (`/editorial`)
 *Focus : Production, Planification, Engagement.*
 - **Social Media** : Création unifiée de posts TikTok, Instagram, LinkedIn, X et catégorie Autre.
-- **Mailing** : Gestion des brouillons automatisés avec capture de carte.
-- **Calendrier** : Planning global des publications.
+- **Messagerie Directe** : Gestion des messages (Email & WhatsApp) avec suggestions IA ciblées.
+- **Calendrier** : Planning global des publications et envois.
 
 ## Key Features & UI Standards
 
@@ -40,7 +40,7 @@ Une page dédiée (`/ia`) permet à des agents IA externes de :
 ## Technical Structure (SOLID)
 Les composants sont situés dans `src/features/marketing/components/tabs/` :
 - `communication/` : PostList, PostSidebar, PostViewer, PostCompose, CommunicationMobile.
-- `mailing/` : MailSidebar, MailList, MailViewer, MailCompose.
+- `messaging/` : MessageSidebar, MessageList, MessageViewer, MessageCompose.
 - `shared/` : InsightDetailModal, FlowMap.
 
 ## Data Statuses

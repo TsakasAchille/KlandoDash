@@ -139,17 +139,19 @@ Publications sociales et idées de contenu.
 | `image_url` | text | Lien vers le visuel final (Storage) |
 | `created_at` | timestamptz | |
 
-### `dash_marketing_emails`
-Brouillons et historique du mailing direct.
+### `dash_marketing_messages`
+Brouillons et historique de la messagerie directe (Email & WhatsApp).
 
 | Colonne | Type | Description |
 |---------|------|-------------|
 | `id` | uuid | **PK** |
-| `recipient_email` | text | Email de la cible |
-| `subject` | text | Sujet du mail |
-| `content` | text | Corps du mail (HTML/Markdown) |
-| `status` | text | `DRAFT`, `SENT`, `FAILED` |
+| `channel` | enum | `EMAIL` ou `WHATSAPP` |
+| `recipient_contact` | text | Email ou Téléphone de la cible |
+| `subject` | text | Sujet du mail (null pour whatsapp) |
+| `content` | text | Corps du message (Markdown) |
+| `status` | enum | `DRAFT`, `SENT`, `FAILED`, `TRASH` |
 | `image_url` | text | Capture de carte intégrée |
+| `is_ai_generated` | boolean | Flag pour suggestions IA |
 | `sent_at` | timestamptz | |
 
 ### `dash_marketing_comments`
@@ -159,7 +161,7 @@ Discussion interne entre dashboard users.
 |---------|------|-------------|
 | `id` | uuid | **PK** |
 | `comm_id` | uuid | **FK → dash_marketing_communications** |
-| `email_id` | uuid | **FK → dash_marketing_emails** |
+| `email_id` | uuid | **FK → dash_marketing_messages** |
 | `user_email` | text | **FK → dash_authorized_users.email** |
 | `content` | text | Texte du commentaire |
 | `created_at` | timestamptz | |

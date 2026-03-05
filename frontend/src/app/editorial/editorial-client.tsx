@@ -7,23 +7,23 @@ import { toast } from "sonner";
 
 // Actions & Types
 import { 
-  generateMailingSuggestionsAction, 
-  sendMarketingEmailAction 
-} from "@/app/marketing/actions/mailing";
+  generateMessagingSuggestionsAction, 
+  sendMessageAction 
+} from "@/app/marketing/actions/messaging";
 import { 
   generateCommIdeasAction, 
   generateSocialPostAction,
   generatePendingRequestsPostAction
 } from "@/app/marketing/actions/communication";
 import { 
-  MarketingEmail, 
+  MarketingMessage, 
   MarketingComm, 
   CommPlatform 
 } from "@/app/marketing/types";
 
 // Sub-components
 import { CommunicationTab } from "@/features/marketing/components/tabs/CommunicationTab";
-import { MailingTab } from "@/features/marketing/components/tabs/MailingTab";
+import { MessagingTab } from "@/features/marketing/components/tabs/MessagingTab";
 import { CalendarTab } from "@/features/marketing/components/tabs/CalendarTab";
 import { DualPaneSkeleton, CalendarSkeleton } from "@/features/editorial/components/EditorialSkeletons";
 
@@ -32,13 +32,13 @@ import { Button } from "@/components/ui/button";
 import { 
   Megaphone, Mail, Calendar as CalendarIcon, 
   Sparkles, Loader2, PenTool, CheckCircle, 
-  Clock
+  Clock, MessageCircle
 } from "lucide-react";
 import { RefreshButton } from "@/components/refresh-button";
 import { cn } from "@/lib/utils";
 
 interface EditorialClientProps {
-  initialEmails: MarketingEmail[];
+  initialMessages: MarketingMessage[];
   initialComms: MarketingComm[];
 }
 
@@ -57,7 +57,7 @@ function TabStat({ icon: Icon, label, value, color }: { icon: any, label: string
 }
 
 function EditorialClientContent({ 
-  initialEmails, 
+  initialMessages, 
   initialComms
 }: EditorialClientProps) {
   const router = useRouter();
@@ -68,23 +68,23 @@ function EditorialClientContent({
   const tabParam = searchParams.get("tab") || "comm";
 
   // Data state
-  const [emails, setEmails] = useState<MarketingEmail[]>(initialEmails);
+  const [messages, setMessages] = useState<MarketingMessage[]>(initialMessages);
   const [comms, setComms] = useState<MarketingComm[]>(initialComms);
 
   // --- STATS CALCULATIONS ---
   const commDrafts = comms.filter(c => (c.status === 'DRAFT' || c.status === 'NEW') && c.type === 'POST').length;
   const commScheduled = comms.filter(c => c.scheduled_at !== null && c.type === 'POST').length;
-  const emailDrafts = emails.filter(e => e.status === 'DRAFT').length;
-  const emailSent = emails.filter(e => e.status === 'SENT').length;
-  const calendarTotal = comms.filter(c => c.scheduled_at !== null).length + emails.filter(e => e.status === 'SENT').length; // Simplifié pour le calendrier
+  const messageDrafts = messages.filter(m => m.status === 'DRAFT').length;
+  const messageSent = messages.filter(m => m.status === 'SENT').length;
+  const calendarTotal = comms.filter(c => c.scheduled_at !== null).length + messages.filter(m => m.status === 'SENT').length; 
   
   // Loading states
-  const [isScanningMailing, setIsScanningMailing] = useState(false);
+  const [isScanningMessaging, setIsScanningMessaging] = useState(false);
   const [isScanningComm, setIsScanningComm] = useState(false);
-  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [sendingMessageId, setSendingMessageId] = useState<string | null>(null);
 
   // --- EFFECT: SYNC PROPS ---
-  useEffect(() => { setEmails(initialEmails); }, [initialEmails]);
+  useEffect(() => { setMessages(initialMessages); }, [initialMessages]);
   useEffect(() => { setComms(initialComms); }, [initialComms]);
 
   // --- HANDLERS: NAVIGATION ---
@@ -97,14 +97,14 @@ function EditorialClientContent({
   };
 
   // --- HANDLERS: ACTIONS ---
-  const handleMailingScan = async () => {
-    setIsScanningMailing(true);
-    const res = await generateMailingSuggestionsAction();
+  const handleMessagingScan = async () => {
+    setIsScanningMessaging(true);
+    const res = await generateMessagingSuggestionsAction();
     if (res.success) {
-      toast.success(`${res.count} nouvelles opportunités de mail identifiées.`);
+      toast.success(`${res.count} nouvelles opportunités de messagerie identifiées.`);
       router.refresh();
     }
-    setIsScanningMailing(false);
+    setIsScanningMessaging(false);
   };
 
   const handleCommIdeasScan = async () => {
@@ -145,16 +145,20 @@ function EditorialClientContent({
     return null;
   };
 
-  const handleSendEmail = async (id: string) => {
-    setSendingEmailId(id);
-    const res = await sendMarketingEmailAction(id);
+  const handleSendMessage = async (id: string) => {
+    setSendingMessageId(id);
+    const res = await sendMessageAction(id);
     if (res.success) {
-      toast.success("Email envoyé avec succès !");
+      if (res.via === 'WHATSAPP_LINK') {
+        toast.success("Message marqué comme prêt pour WhatsApp.");
+      } else {
+        toast.success("Email envoyé avec succès !");
+      }
       router.refresh();
     } else {
       toast.error("Échec de l'envoi.");
     }
-    setSendingEmailId(null);
+    setSendingMessageId(null);
   };
 
   return (
@@ -170,8 +174,8 @@ function EditorialClientContent({
                 <TabsTrigger value="calendar" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
                 <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Calendrier
                 </TabsTrigger>
-                <TabsTrigger value="mailing" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
-                <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Mailing
+                <TabsTrigger value="messaging" className="flex-1 sm:flex-initial rounded-xl sm:rounded-2xl px-2.5 sm:px-6 py-2 sm:py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white font-black uppercase text-[8px] sm:text-[10px] tracking-widest gap-1 sm:gap-2">
+                <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Messagerie
                 </TabsTrigger>
             </TabsList>
 
@@ -183,10 +187,10 @@ function EditorialClientContent({
                     <TabStat icon={Clock} label="Planifiés" value={commScheduled} color="text-orange-500" />
                 </>
                 )}
-                {tabParam === 'mailing' && (
+                {tabParam === 'messaging' && (
                 <>
-                    <TabStat icon={PenTool} label="Brouillons" value={emailDrafts} color="text-purple-500" />
-                    <TabStat icon={CheckCircle} label="Envoyés" value={emailSent} color="text-green-500" />
+                    <TabStat icon={PenTool} label="Brouillons" value={messageDrafts} color="text-purple-500" />
+                    <TabStat icon={CheckCircle} label="Envoyés" value={messageSent} color="text-green-500" />
                 </>
                 )}
                 {tabParam === 'calendar' && (
@@ -222,21 +226,21 @@ function EditorialClientContent({
             )}
           </TabsContent>
 
-          <TabsContent value="mailing" className="outline-none h-full flex-1 min-h-0 m-0">
-            {tabParam === "mailing" && (
-              <MailingTab
-                emails={emails}
-                isScanning={isScanningMailing}
-                sendingEmailId={sendingEmailId}
-                onScan={handleMailingScan}
-                onSendEmail={handleSendEmail}
+          <TabsContent value="messaging" className="outline-none h-full flex-1 min-h-0 m-0">
+            {tabParam === "messaging" && (
+              <MessagingTab
+                messages={messages}
+                isScanning={isScanningMessaging}
+                sendingMessageId={sendingMessageId}
+                onScan={handleMessagingScan}
+                onSendMessage={handleSendMessage}
               />
             )}
           </TabsContent>
 
           <TabsContent value="calendar" className="outline-none h-full flex-1 min-h-0 m-0">
             {tabParam === "calendar" && (
-              <CalendarTab comms={comms} emails={emails} />
+              <CalendarTab comms={comms} emails={messages as any} /> 
             )}
           </TabsContent>
         </div>
@@ -245,7 +249,7 @@ function EditorialClientContent({
   );
 }
 
-export function EditorialClient(props: EditorialClientProps) {
+export function EditorialClient({ initialMessages = [], initialComms = [] }: EditorialClientProps) {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
@@ -253,7 +257,7 @@ export function EditorialClient(props: EditorialClientProps) {
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-pulse">Chargement de l&apos;espace éditorial...</p>
       </div>
     }>
-      <EditorialClientContent {...props} />
+      <EditorialClientContent initialMessages={initialMessages} initialComms={initialComms} />
     </Suspense>
   );
 }

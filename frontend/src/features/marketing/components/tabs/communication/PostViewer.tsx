@@ -19,6 +19,7 @@ export function PlatformLogo({ platform, className = "w-4 h-4" }: { platform: Co
     case 'INSTAGRAM': return <Instagram className={className} />;
     case 'LINKEDIN': return <Linkedin className={className} />;
     case 'X': return <Twitter className={className} />;
+    case 'WHATSAPP': return <MessageSquare className={className} />;
     case 'TIKTOK': return (
       <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
         <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.81-.74-3.94-1.69-.16-.13-.31-.27-.45-.4v6.38c-.01 2.57-.88 5.1-2.73 6.84-1.91 1.81-4.74 2.52-7.31 1.94-2.55-.57-4.74-2.42-5.6-4.9-.81-2.31-.44-5.01 1.04-7.01 1.51-2.02 4.13-3.04 6.59-2.52.14.03.27.07.41.11v4.07c-.87-.34-1.87-.34-2.73.08-1.07.53-1.78 1.67-1.83 2.87-.03 1.21.5 2.45 1.43 3.16.95.73 2.31.84 3.35.27.91-.5 1.44-1.49 1.46-2.52l.01-14.68z"/>
@@ -32,7 +33,7 @@ import {
   updateMarketingCommAction,
   refineMarketingContentAction
 } from "@/app/marketing/actions/communication";
-import { uploadMarketingImageAction } from "@/app/marketing/actions/mailing";
+import { uploadMarketingImageAction } from "@/app/marketing/actions/messaging";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -162,6 +163,7 @@ export function PostViewer({
     { id: 'INSTAGRAM', label: 'Instagram' },
     { id: 'LINKEDIN', label: 'LinkedIn' },
     { id: 'X', label: 'X / Twitter' },
+    { id: 'WHATSAPP', label: 'WhatsApp' },
     { id: 'OTHER', label: 'Autre' },
   ];
 
@@ -193,6 +195,7 @@ export function PostViewer({
                 post.platform === 'TIKTOK' ? "bg-pink-50 text-pink-600" :
                 post.platform === 'INSTAGRAM' ? "bg-purple-50 text-purple-600" :
                 post.platform === 'LINKEDIN' ? "bg-blue-50 text-blue-700" :
+                post.platform === 'WHATSAPP' ? "bg-green-50 text-green-600" :
                 post.platform === 'OTHER' ? "bg-slate-100 text-slate-600" :
                 "bg-blue-50 text-blue-500"
               )}>
@@ -499,13 +502,32 @@ export function PostViewer({
             </Button>
           </div>
         ) : (
-          <Button
-            variant="ghost"
-            onClick={() => onTrash(post.id)}
-            className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl font-black uppercase text-[10px] gap-2 px-5 h-10"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> Placer dans la corbeille
-          </Button>
+          <div className="flex items-center justify-between gap-4">
+            {post.platform === 'WHATSAPP' && (
+              <Button
+                className="flex-1 h-12 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl gap-2 font-black uppercase text-[10px] shadow-lg shadow-green-100/50 transition-all"
+                asChild
+              >
+                <a 
+                  href={`https://wa.me/?text=${encodeURIComponent(post.content + (post.hashtags?.length ? '\n\n' + post.hashtags.map(t => '#' + t).join(' ') : ''))}`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                >
+                  <MessageSquare className="w-4 h-4" /> Envoyer via WhatsApp
+                </a>
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              onClick={() => onTrash(post.id)}
+              className={cn(
+                "text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl font-black uppercase text-[10px] gap-2 px-5 h-10",
+                post.platform === 'WHATSAPP' ? "flex-initial" : "w-full"
+              )}
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Placer dans la corbeille
+            </Button>
+          </div>
         )}
       </div>
     </Card>

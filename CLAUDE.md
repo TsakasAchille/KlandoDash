@@ -61,7 +61,7 @@ npx supabase db dump --schema public -f schema.sql
 | `dash_authorized_users` | Dashboard authorized users & Profiles | `email` |
 | `support_tickets` | Tickets de support | `ticket_id` |
 | `dash_marketing_communications` | Social posts & ideas | `id` |
-| `dash_marketing_emails` | Mailing drafts & history | `id` |
+| `dash_marketing_messages` | Messaging drafts & history | `id` |
 | `dash_marketing_comments` | Internal editorial collaboration | `id` |
 
 ## Authentication (NextAuth.js v5)
