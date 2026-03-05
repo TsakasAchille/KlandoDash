@@ -55,6 +55,9 @@ export default async function PilotagePage() {
           <TabsTrigger value="perf" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
             <BarChart3 className="w-3.5 h-3.5" /> Performance Stratégique
           </TabsTrigger>
+          <TabsTrigger value="corridors" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
+            <Map className="w-3.5 h-3.5" /> Corridors Focus
+          </TabsTrigger>
           <TabsTrigger value="crm" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md font-black uppercase text-[10px] tracking-widest gap-2 relative">
             <Sparkles className="w-3.5 h-3.5" /> Moteur d&apos;Actions CRM
             <div className="absolute -top-1 -right-1 flex h-4 w-4">
@@ -193,7 +196,9 @@ export default async function PilotagePage() {
               </div>
             </div>
           </div>
+        </TabsContent>
 
+        <TabsContent value="corridors" className="outline-none animate-in fade-in duration-500">
           {/* BLOC 3: CORRIDORS PRIORITAIRES */}
           <div className="space-y-6">
             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
