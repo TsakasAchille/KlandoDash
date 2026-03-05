@@ -84,13 +84,13 @@ BEGIN
     FROM active_n2 n2
     LEFT JOIN active_n1 n1 ON n2.driver_id = n1.driver_id;
 
-    -- 5. FILL RATE & ZERO BOOKING
+    -- 5. FILL RATE & ZERO BOOKING (Realized focus)
     SELECT 
         round(avg(seats_booked::numeric / NULLIF(seats_available + seats_booked, 0)) * 100, 1),
         round(count(*) FILTER (WHERE seats_booked = 0)::numeric / NULLIF(count(*), 0) * 100, 1)
     INTO fill_rate, trips_zero_booking_pct
     FROM trips
-    WHERE status != 'CANCELLED';
+    WHERE status = 'COMPLETED';
 
     -- 6. MATCH RATE (Liquidité)
     -- Demande : % de site_requests avec au moins un match trouvé

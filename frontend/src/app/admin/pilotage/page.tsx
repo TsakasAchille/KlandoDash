@@ -147,9 +147,9 @@ export default async function PilotagePage() {
               color="green"
               description="Occupation des sièges"
               info={{
-                formula: "AVG(seats_booked / total_seats)",
+                formula: "AVG(seats_booked / total_seats) [COMPLETED]",
                 tables: ["trips"],
-                details: "Optimisation de l'offre : % moyen de remplissage des véhicules sur les trajets actifs."
+                details: "Performance réalisée : % moyen de remplissage uniquement sur les trajets terminés (encaissés)."
               }}
             />
             <KPICard 
