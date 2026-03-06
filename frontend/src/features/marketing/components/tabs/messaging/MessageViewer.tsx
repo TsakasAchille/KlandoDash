@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   FileText, ChevronRight, ChevronLeft, ImageIcon, Trash2, X, Edit3, Save, Loader2, Plus, Send,
-  HelpCircle, Sparkles, PenLine, Mail, MessageSquare
+  HelpCircle, Sparkles, PenLine, Mail, MessageSquare, Maximize2
 } from "lucide-react";
 import { MarketingMessage } from "@/app/marketing/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface MessageViewerProps {
   message: MarketingMessage;
@@ -42,6 +43,7 @@ export function MessageViewer({
   const [isEditing, setIsEditing] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
   const [editForm, setEditForm] = useState<Partial<MarketingMessage>>({});
+  const [selectedLightboxImage, setSelectedLightboxImage] = useState<string | null>(null);
 
   useEffect(() => {
     setEditForm({ 
@@ -91,6 +93,25 @@ export function MessageViewer({
   };
 
   const isWhatsApp = message.channel === 'WHATSAPP';
+
+  // Custom components for Markdown to handle image clicks
+  const markdownComponents = {
+    img: ({ src, alt }: any) => (
+      <div 
+        className="relative group cursor-zoom-in my-4 inline-block max-w-full"
+        onClick={() => setSelectedLightboxImage(src)}
+      >
+        <img 
+          src={src} 
+          alt={alt} 
+          className="rounded-xl border border-slate-200 shadow-sm transition-transform group-hover:scale-[1.01]" 
+        />
+        <div className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+          <Maximize2 className="w-3.5 h-3.5" />
+        </div>
+      </div>
+    )
+  };
 
   return (
     <div className="flex-1 bg-slate-50 border border-white/10 rounded-2xl lg:rounded-[2rem] overflow-hidden flex flex-col animate-in slide-in-from-right-4 duration-500 shadow-2xl h-full">
@@ -159,7 +180,7 @@ export function MessageViewer({
                     <span className="text-[10px] font-black uppercase tracking-widest text-purple-700">Raisonnement de l'IA</span>
                 </div>
                 <div className="text-sm text-purple-900 font-medium leading-relaxed italic prose-klando max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                         {message.ai_reasoning}
                     </ReactMarkdown>
                 </div>
@@ -182,7 +203,10 @@ export function MessageViewer({
                                   >
                                       <X className="w-3 h-3" />
                                   </button>
-                                  <div className="h-24 w-full rounded-lg bg-slate-900 overflow-hidden">
+                                  <div 
+                                    className="h-24 w-full rounded-lg bg-slate-900 overflow-hidden cursor-zoom-in"
+                                    onClick={() => setSelectedLightboxImage(img.url)}
+                                  >
                                       <img src={img.url} alt="" className="w-full h-full object-contain" />
                                   </div>
                                   <Input 
@@ -223,7 +247,7 @@ export function MessageViewer({
                   "bg-slate-50 border border-slate-200 rounded-2xl p-8 text-sm text-slate-800 leading-relaxed font-medium shadow-sm text-left prose-klando max-w-none",
                   isWhatsApp && "border-l-8 border-l-[#25D366]"
                 )}>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                         {message.content}
                     </ReactMarkdown>
                 </div>
@@ -232,9 +256,12 @@ export function MessageViewer({
                 {!isWhatsApp && message.images && message.images.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                     {message.images.map((img, idx) => (
-                      <div key={idx} className="space-y-2">
-                        <div className="rounded-2xl overflow-hidden border-2 border-slate-200 shadow-md bg-white p-1">
-                          <img src={img.url} alt={img.description} className="w-full h-auto object-cover rounded-xl" />
+                      <div key={idx} className="space-y-2 group cursor-zoom-in" onClick={() => setSelectedLightboxImage(img.url)}>
+                        <div className="rounded-2xl overflow-hidden border-2 border-slate-200 shadow-md bg-white p-1 relative">
+                          <img src={img.url} alt={img.description} className="w-full h-auto object-cover rounded-xl transition-transform group-hover:scale-[1.02]" />
+                          <div className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Maximize2 className="w-4 h-4" />
+                          </div>
                         </div>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight text-center italic">
                           — {img.description}
@@ -243,8 +270,14 @@ export function MessageViewer({
                     ))}
                   </div>
                 ) : !isWhatsApp && message.image_url ? (
-                    <div className="rounded-2xl overflow-hidden border-2 border-slate-200 shadow-lg max-w-[500px] mx-auto group relative bg-white p-2">
-                        <img src={message.image_url} alt="Aperçu du trajet" className="w-full h-auto object-cover rounded-xl" />
+                    <div 
+                      className="rounded-2xl overflow-hidden border-2 border-slate-200 shadow-lg max-w-[500px] mx-auto group relative bg-white p-2 cursor-zoom-in"
+                      onClick={() => setSelectedLightboxImage(message.image_url!)}
+                    >
+                        <img src={message.image_url} alt="Aperçu du trajet" className="w-full h-auto object-cover rounded-xl transition-transform group-hover:scale-[1.01]" />
+                        <div className="absolute top-6 right-6 p-2 bg-black/50 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Maximize2 className="w-4 h-4" />
+                        </div>
                     </div>
                 ) : null}
             </div>
@@ -320,6 +353,28 @@ export function MessageViewer({
             )}
         </div>
       </div>
+
+      {/* LIGHTBOX DIALOG */}
+      <Dialog open={!!selectedLightboxImage} onOpenChange={(open) => !open && setSelectedLightboxImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none overflow-hidden flex items-center justify-center">
+          <DialogTitle className="sr-only">Aperçu de l'image</DialogTitle>
+          {selectedLightboxImage && (
+            <div className="relative w-full h-full flex items-center justify-center animate-in zoom-in-95 duration-300">
+              <img 
+                src={selectedLightboxImage} 
+                alt="Full size preview" 
+                className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl border-4 border-white/10" 
+              />
+              <button 
+                onClick={() => setSelectedLightboxImage(null)}
+                className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

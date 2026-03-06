@@ -193,6 +193,3 @@
 .prose-klando strong {
   @apply font-black text-slate-900;
 }
-.prose-klando img {
-  @apply rounded-xl border border-slate-200 my-4 shadow-sm max-w-full h-auto;
-}

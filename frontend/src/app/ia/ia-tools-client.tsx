@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect, Suspense, useRef } from "react";
-import { Search, Send, User, Loader2, Phone, Mail, FileText, ImageIcon, X, UploadCloud, Plus } from "lucide-react";
+import { Search, Send, User, Loader2, Phone, Mail, FileText, ImageIcon, X, UploadCloud, Plus, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { searchHistoricalDrivers, createPropositionDraft, getUserInfo } from "./ia-actions";
 import { uploadMarketingImageAction } from "@/app/marketing/actions/messaging";
 import { formatDateShort, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 function IAToolsContent() {
   const searchParams = useSearchParams();
@@ -32,6 +33,9 @@ function IAToolsContent() {
   // User info state
   const [targetUserInfo, setTargetUserInfo] = useState<any>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(false);
+
+  // Lightbox state
+  const [selectedLightboxImage, setSelectedLightboxImage] = useState<string | null>(null);
 
   // Auto-search from URL parameters
   useEffect(() => {
@@ -209,7 +213,15 @@ function IAToolsContent() {
             {attachedImages.map((img, index) => (
               <div key={index} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-3 relative group animate-in zoom-in-95 duration-200">
                 <button onClick={() => removeImage(index)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg z-10 opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3" /></button>
-                <div className="h-24 w-full rounded-lg bg-slate-900 overflow-hidden"><img src={img.url} alt="" className="w-full h-full object-contain" /></div>
+                <div 
+                  className="h-24 w-full rounded-lg bg-slate-900 overflow-hidden cursor-zoom-in relative"
+                  onClick={() => setSelectedLightboxImage(img.url)}
+                >
+                  <img src={img.url} alt="" className="w-full h-full object-contain" />
+                  <div className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Maximize2 className="w-3 h-3" />
+                  </div>
+                </div>
                 <input 
                   type="text" 
                   value={img.description} 
@@ -263,6 +275,28 @@ function IAToolsContent() {
         </form>
         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
       </div>
+
+      {/* LIGHTBOX DIALOG */}
+      <Dialog open={!!selectedLightboxImage} onOpenChange={(open) => !open && setSelectedLightboxImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none overflow-hidden flex items-center justify-center">
+          <DialogTitle className="sr-only">Aperçu de la capture</DialogTitle>
+          {selectedLightboxImage && (
+            <div className="relative w-full h-full flex items-center justify-center animate-in zoom-in-95 duration-300">
+              <img 
+                src={selectedLightboxImage} 
+                alt="Full size preview" 
+                className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl border-4 border-white/10" 
+              />
+              <button 
+                onClick={() => setSelectedLightboxImage(null)}
+                className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
