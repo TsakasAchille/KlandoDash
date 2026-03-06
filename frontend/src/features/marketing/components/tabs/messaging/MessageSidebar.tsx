@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  Plus, Sparkles, FileText, SendHorizontal, AlertCircle, Trash2
+  Plus, Sparkles, FileText, SendHorizontal, AlertCircle, Trash2, Loader2, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,13 +27,29 @@ export function MessageSidebar({
 }: MessageSidebarProps) {
   return (
     <div className="w-full flex flex-col gap-2 text-left shrink-0">
-      <Button
-        onClick={onCompose}
-        className="w-full h-11 lg:h-12 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 font-black uppercase text-[9px] lg:text-[10px] tracking-widest gap-2 lg:gap-3 shadow-xl mb-2 border-none transition-all active:scale-95 group"
-      >
-        <Plus className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
-        <span>Nouveau Message</span>
-      </Button>
+      <div className="flex flex-col gap-2 mb-2">
+        <Button
+          onClick={onCompose}
+          className="w-full h-11 lg:h-12 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 font-black uppercase text-[9px] lg:text-[10px] tracking-widest gap-2 lg:gap-3 shadow-xl border-none transition-all active:scale-95 group"
+        >
+          <Plus className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+          <span>Nouveau Message</span>
+        </Button>
+
+        <Button
+          onClick={onScan}
+          disabled={isScanning}
+          variant="outline"
+          className="w-full h-11 lg:h-12 rounded-2xl border-slate-200 text-slate-900 hover:bg-slate-50 font-black uppercase text-[9px] lg:text-[10px] tracking-widest gap-2 lg:gap-3 shadow-sm transition-all active:scale-95 group"
+        >
+          {isScanning ? (
+            <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+          ) : (
+            <Zap className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
+          )}
+          <span>{isScanning ? "Analyse..." : "Scanner Opportunités"}</span>
+        </Button>
+      </div>
 
       {/* Folders: horizontal scroll on mobile, vertical on desktop */}
       <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 -mx-1 px-1 lg:mx-0 lg:px-0">

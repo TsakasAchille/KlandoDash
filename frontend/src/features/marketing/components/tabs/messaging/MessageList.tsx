@@ -56,7 +56,7 @@ export function MessageList({ messages, selectedId, onSelect, activeFolder }: Me
                     </span>
                   </div>
                   <span className="text-[10px] font-bold text-slate-400 tabular-nums whitespace-nowrap ml-2">
-                    {new Date(msg.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                    {new Date(msg.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })} {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 <p className="text-[11px] font-bold text-slate-700 truncate">{msg.subject || "(Pas d'objet)"}</p>
