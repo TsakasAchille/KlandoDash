@@ -164,3 +164,35 @@
 .animate-progress-bar {
   animation: progress-bar 2s ease-in-out forwards;
 }
+
+/* Markdown Typography */
+.prose-klando {
+  @apply text-slate-800 leading-relaxed;
+}
+.prose-klando h1, .prose-klando h2, .prose-klando h3 {
+  @apply font-black uppercase tracking-tight text-slate-900 mt-6 mb-3;
+}
+.prose-klando h1 { @apply text-lg; }
+.prose-klando h2 { @apply text-base; }
+.prose-klando h3 { @apply text-sm; }
+.prose-klando p {
+  @apply mb-4;
+}
+.prose-klando blockquote {
+  @apply border-l-4 border-slate-200 pl-4 italic text-slate-500 my-4;
+}
+.prose-klando ul {
+  @apply list-disc pl-5 mb-4 space-y-1;
+}
+.prose-klando ol {
+  @apply list-decimal pl-5 mb-4 space-y-1;
+}
+.prose-klando code {
+  @apply bg-slate-100 px-1.5 py-0.5 rounded text-[12px] font-mono text-pink-600;
+}
+.prose-klando strong {
+  @apply font-black text-slate-900;
+}
+.prose-klando img {
+  @apply rounded-xl border border-slate-200 my-4 shadow-sm max-w-full h-auto;
+}

@@ -68,6 +68,7 @@ export interface TripDetail extends TripListItem {
     uid: string;
     display_name: string | null;
     photo_url: string | null;
+    phone_number?: string | null;
     has_paid?: boolean;
     amount_paid?: number;
   }>;
@@ -145,6 +146,7 @@ export interface Trip {
     uid: string;
     display_name: string | null;
     photo_url: string | null;
+    phone_number?: string | null;
     has_paid?: boolean;
     amount_paid?: number;
   }>;

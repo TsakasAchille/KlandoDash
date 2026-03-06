@@ -4,6 +4,7 @@ export interface TopDriver {
   uid: string;
   display_name: string;
   photo_url: string;
+  phone_number: string;
   trip_count: number;
   rating: number;
 }
@@ -23,7 +24,7 @@ export async function getTopDrivers(): Promise<TopDriver[]> {
   // On compte les trajets par driver_id dans la table trips
   const { data, error } = await supabase
     .from("trips")
-    .select("driver_id, driver:users!fk_driver(display_name, photo_url, rating)")
+    .select("driver_id, driver:users!fk_driver(display_name, photo_url, phone_number, rating)")
     .not("driver_id", "is", null);
 
   if (error) {
@@ -46,6 +47,7 @@ export async function getTopDrivers(): Promise<TopDriver[]> {
       uid,
       display_name: info.user?.display_name || "Inconnu",
       photo_url: info.user?.photo_url || "",
+      phone_number: info.user?.phone_number || "",
       trip_count: info.count,
       rating: info.user?.rating || 0,
     }))

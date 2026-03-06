@@ -1,13 +1,13 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getDashboardStats } from "@/lib/queries/stats/get-dashboard-stats";
-import { getTrips } from "@/lib/queries/trips/get-trips";
+import { getTripsWithDriver } from "@/lib/queries/trips/get-trips";
 import { getSiteTripRequests } from "@/lib/queries/site-requests/get-requests";
 import { getTopDrivers, getTopRequestedRoutes } from "@/lib/queries/stats/get-ai-analytics";
 import { RefreshButton } from "./refresh-button";
 import { IAToolsClient } from "./ia-tools-client";
 import { formatDateShort } from "@/lib/utils";
-import { User, MapPin } from "lucide-react";
+import { User, MapPin, Phone } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -22,21 +22,57 @@ export default async function IAPage() {
     redirect("/"); // Redirige vers l'accueil si pas les droits
   }
 
-  // Fetching data for AI snapshot
-  const [stats, pendingTrips, activeTrips, newRequests, reviewedRequests, topDrivers, topRoutes] = await Promise.all([
+  // Fetching data for AI snapshot with full contact details
+  const [
+    stats, 
+    pendingTripsData, 
+    activeTripsData, 
+    newRequests, 
+    reviewedRequests, 
+    topDrivers, 
+    topRoutes
+  ] = await Promise.all([
     getDashboardStats(),
-    getTrips({ status: 'PENDING', limit: 100 }),
-    getTrips({ status: 'ACTIVE', limit: 50 }),
+    getTripsWithDriver({ status: 'PENDING', pageSize: 100 }),
+    getTripsWithDriver({ status: 'ACTIVE', pageSize: 50 }),
     getSiteTripRequests({ status: 'NEW', limit: 100 }),
     getSiteTripRequests({ status: 'REVIEWED', limit: 100 }),
     getTopDrivers(),
     getTopRequestedRoutes(),
   ]);
 
+  const pendingTrips = pendingTripsData.trips;
+  const activeTrips = activeTripsData.trips;
+
   const now = new Date().toLocaleString('fr-FR');
+
+  // Structured data for JS Bridge
+  const rawDataPayload = {
+    timestamp: new Date().toISOString(),
+    stats,
+    trips: {
+      pending: pendingTrips,
+      active: activeTrips
+    },
+    requests: {
+      new: newRequests,
+      reviewed: reviewedRequests
+    },
+    analytics: {
+      topDrivers,
+      topRoutes
+    }
+  };
 
   return (
     <div className="bg-slate-50 min-h-screen font-mono text-sm p-8 max-w-6xl mx-auto border-x border-slate-200 shadow-sm">
+      {/* JSON BRIDGE FOR IA AGENTS / SCRIPTS */}
+      <script
+        id="ia-raw-data"
+        type="application/json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(rawDataPayload) }}
+      />
+
       <header className="flex justify-between items-center mb-10 border-b border-slate-300 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
@@ -85,8 +121,8 @@ export default async function IAPage() {
             <div className="bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
               <div className="p-2 bg-slate-100 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase flex">
                 <div className="w-1/2">Nom</div>
-                <div className="w-1/4">Trajets</div>
-                <div className="w-1/4">Note</div>
+                <div className="w-1/4 text-center">Trajets</div>
+                <div className="w-1/4 text-right">Contact</div>
               </div>
               <div className="divide-y divide-slate-100">
                 {topDrivers.map((driver, i) => (
@@ -95,10 +131,9 @@ export default async function IAPage() {
                       <span className="text-[10px] text-slate-400 w-4">{i + 1}.</span>
                       <span className="truncate">{driver.display_name}</span>
                     </div>
-                    <div className="w-1/4 font-bold">{driver.trip_count}</div>
-                    <div className="w-1/4 flex items-center gap-1">
-                      <span className="text-klando-gold font-bold">{driver.rating}</span>
-                      <span className="text-[8px] text-slate-400">/5</span>
+                    <div className="w-1/4 font-bold text-center">{driver.trip_count}</div>
+                    <div className="w-1/4 text-right">
+                      <span className="text-[10px] font-bold text-slate-400 tabular-nums">{driver.phone_number}</span>
                     </div>
                   </div>
                 ))}
@@ -134,22 +169,32 @@ export default async function IAPage() {
           <h2 className="text-xs font-black uppercase text-slate-400 mb-4 tracking-widest border-l-4 border-emerald-500 pl-3">Trajets Actifs & En attente (Drivers)</h2>
           <div className="bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
             <div className="p-2 bg-slate-100 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase flex">
-              <div className="w-1/4">Date</div>
-              <div className="w-1/3">Origine -&gt; Destination</div>
-              <div className="w-1/6">Sièges</div>
-              <div className="w-1/6">Prix</div>
-              <div className="w-1/12">Status</div>
+              <div className="w-1/6">Date</div>
+              <div className="w-1/4">Origine -&gt; Destination</div>
+              <div className="w-1/4">Conducteur</div>
+              <div className="w-1/6 text-center">Passagers</div>
+              <div className="w-1/12 text-right">Status</div>
             </div>
             <div className="divide-y divide-slate-100">
               {[...activeTrips, ...pendingTrips].map((trip) => (
                 <div key={trip.trip_id} className="p-2 flex items-center hover:bg-slate-50">
-                  <div className="w-1/4 truncate text-slate-500">{formatDateShort(trip.departure_schedule || "")}</div>
-                  <div className="w-1/3 truncate font-medium">
+                  <div className="w-1/6 truncate text-slate-500">{formatDateShort(trip.departure_schedule || "")}</div>
+                  <div className="w-1/4 truncate font-medium">
                     {trip.departure_name?.split(',')[0]} → {trip.destination_name?.split(',')[0]}
                   </div>
-                  <div className="w-1/6">{trip.seats_available}/{trip.seats_published}</div>
-                  <div className="w-1/6">{trip.passenger_price} CFA</div>
-                  <div className="w-1/12">
+                  <div className="w-1/4 truncate text-[10px]">
+                    <span className="font-bold">{trip.driver_name}</span>
+                    <br />
+                    <span className="text-slate-400">{trip.driver_phone}</span>
+                  </div>
+                  <div className="w-1/6 text-center text-[9px] font-bold text-indigo-600">
+                    {trip.passengers.length > 0 ? (
+                      <span title={trip.passengers.map(p => `${p.display_name} (${p.phone_number})`).join(', ')}>
+                        {trip.passengers.length} passagers
+                      </span>
+                    ) : "-"}
+                  </div>
+                  <div className="w-1/12 text-right">
                     <span className={`px-1.5 py-0.5 rounded text-[10px] ${trip.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
                       {trip.status}
                     </span>

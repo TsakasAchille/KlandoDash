@@ -11,6 +11,8 @@ import {
 import { MarketingMessage } from "@/app/marketing/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface MessageViewerProps {
   message: MarketingMessage;
@@ -151,14 +153,16 @@ export function MessageViewer({
 
       <div className="flex-1 p-4 lg:p-8 overflow-y-auto custom-scrollbar text-left bg-white">
         {showReasoning && message.ai_reasoning && (
-            <div className="mb-8 p-6 bg-purple-50 border border-purple-100 rounded-2xl animate-in slide-in-from-top-4 duration-300">
+            <div className="mb-8 p-6 bg-purple-50 border border-purple-100 rounded-2xl animate-in slide-in-from-top-4 duration-300 text-left">
                 <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="w-4 h-4 text-purple-600" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-purple-700">Raisonnement de l'IA</span>
                 </div>
-                <p className="text-sm text-purple-900 font-medium leading-relaxed italic">
-                    "{message.ai_reasoning}"
-                </p>
+                <div className="text-sm text-purple-900 font-medium leading-relaxed italic prose-klando max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {message.ai_reasoning}
+                    </ReactMarkdown>
+                </div>
             </div>
         )}
 
@@ -216,10 +220,12 @@ export function MessageViewer({
         ) : (
             <div className="space-y-6 text-left">
                 <div className={cn(
-                  "bg-slate-50 border border-slate-200 rounded-2xl p-8 text-sm text-slate-800 leading-relaxed font-medium whitespace-pre-wrap shadow-sm text-left",
+                  "bg-slate-50 border border-slate-200 rounded-2xl p-8 text-sm text-slate-800 leading-relaxed font-medium shadow-sm text-left prose-klando max-w-none",
                   isWhatsApp && "border-l-8 border-l-[#25D366]"
                 )}>
-                    {message.content}
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {message.content}
+                    </ReactMarkdown>
                 </div>
                 
                 {/* MULTI-IMAGES DISPLAY (EMAIL ONLY FOR NOW) */}

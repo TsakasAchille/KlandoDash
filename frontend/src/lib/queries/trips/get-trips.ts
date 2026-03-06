@@ -149,7 +149,8 @@ export async function getTripsWithDriver(options: {
         user:users (
           uid,
           display_name,
-          photo_url
+          photo_url,
+          phone_number
         )
       )
     `, { count: "exact" });
@@ -236,6 +237,7 @@ export async function getTripsWithDriver(options: {
             uid: u.uid,
             display_name: u.display_name,
             photo_url: u.photo_url,
+            phone_number: u.phone_number,
             has_paid: !!b.transaction_id
         } : null;
     }).filter(p => p !== null);
