@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   Target, Globe, Facebook, BarChart3, Car,
-  ChevronDown, ChevronRight, MessageSquare, Crosshair, Users
+  ChevronDown, ChevronRight, MessageSquare, Crosshair, Users, Zap
 } from "lucide-react";
 import { SiteTripRequest } from "@/types/site-request";
 import { cn } from "@/lib/utils";
@@ -47,7 +47,7 @@ function SectionHeader({
   );
 }
 
-/* ── Lead Item ── */
+/* ── Lead Item Universel avec Radar intégré ── */
 
 function LeadItem({
   request, isSelected, onClick
@@ -66,42 +66,42 @@ function LeadItem({
       onClick={onClick}
       className={cn(
         "px-5 py-3 cursor-pointer transition-all border-l-4 hover:bg-slate-50/80",
-        isSelected ? "bg-slate-50 border-l-klando-gold" : "border-l-transparent"
+        isSelected ? "bg-slate-50 border-l-klando-gold shadow-inner" : "border-l-transparent"
       )}
     >
       <div className="flex items-center justify-between text-left">
-        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase italic tracking-tight text-slate-900">
-          <span className={cn(
-            "not-italic px-1 rounded-[4px] text-[7px]",
-            request.request_type === 'DRIVER' ? "bg-orange-100 text-orange-700" : "bg-purple-100 text-purple-700"
-          )}>
-            {request.request_type === 'DRIVER' ? "DRV" : "PSGR"}
-          </span>
-          <span>{request.origin_city || '?'}</span>
-          <span className="text-slate-300">→</span>
-          <span>{request.destination_city || '?'}</span>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase italic tracking-tight text-slate-900">
+            <span className={cn(
+              "not-italic px-1 rounded-[4px] text-[7px]",
+              request.request_type === 'DRIVER' ? "bg-orange-100 text-orange-700" : "bg-purple-100 text-purple-700"
+            )}>
+              {request.request_type === 'DRIVER' ? "DRV" : "PSGR"}
+            </span>
+            <span>{request.origin_city || '?'}</span>
+            <span className="text-slate-300">→</span>
+            <span>{request.destination_city || '?'}</span>
+          </div>
+          <p className="text-[8px] font-bold text-slate-400 uppercase truncate max-w-[180px]">{request.contact_info}</p>
         </div>
-        {matchCount > 0 && (
-          <span className="text-[8px] font-black bg-klando-gold/20 text-klando-dark px-2 py-0.5 rounded-full flex items-center gap-1">
-            <Crosshair className="w-2.5 h-2.5" /> {matchCount}
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-3 mt-1 text-left">
-        {request.desired_date && (
-          <span className="text-[9px] text-slate-400">
-            {new Date(request.desired_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-          </span>
-        )}
-        {matchCount > 0 && (
-          <span className="text-[9px] text-klando-gold font-bold">{bestScore}% match</span>
+
+        {/* Indicateur RADAR intégré */}
+        {matchCount > 0 ? (
+          <div className="flex flex-col items-end">
+            <span className="text-[9px] font-black bg-klando-gold text-klando-dark px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+              <Target className="w-2.5 h-2.5" /> {matchCount}
+            </span>
+            <span className="text-[7px] font-bold text-klando-gold mt-0.5">{bestScore}% match</span>
+          </div>
+        ) : (
+          <span className="text-[8px] font-bold text-slate-300 uppercase italic">No match</span>
         )}
       </div>
     </div>
   );
 }
 
-/* ── Lead Section (reusable) ── */
+/* ── Lead Section ── */
 
 function LeadSection({
   leads, selectedRequestId, onSelect, emptyLabel, icon, label, colorClass, bgClass, isOpen, onToggle
@@ -153,12 +153,12 @@ export interface RadarSidebarProps {
 
 export function RadarSidebar({
   showFlows, showFacebook, showSite,
-  corridors, facebookLeads, siteLeads, whatsappLeads, matchedProspects,
+  corridors, facebookLeads, siteLeads, whatsappLeads,
   selectedRequestId, selectedCorridor,
   onSelectCorridor, onSelectRequest
 }: RadarSidebarProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    corridors: true, facebook: true, site: true, whatsapp: true, matches: true
+    corridors: true, facebook: true, site: true, whatsapp: true
   });
 
   const toggleSection = (key: string) => {
@@ -170,7 +170,7 @@ export function RadarSidebar({
       <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-slate-100 pb-20">
 
         {/* Axes de Traffic (Offre + Demande) */}
-        {(showFlows || facebookLeads.length > 0 || siteLeads.length > 0) && (
+        {showFlows && (
           <div>
             <SectionHeader icon={BarChart3} label="Axes de Traffic" count={corridors.length} isOpen={openSections.corridors} onToggle={() => toggleSection('corridors')} colorClass="text-indigo-600" bgClass="bg-indigo-50/50" />
             {openSections.corridors && (
@@ -182,7 +182,7 @@ export function RadarSidebar({
                     className={cn(
                       "px-5 py-3 cursor-pointer transition-all border-l-4 hover:bg-indigo-50/30",
                       selectedCorridor?.origin === c.origin && selectedCorridor?.destination === c.destination
-                        ? "bg-indigo-50/50 border-l-indigo-500" : "border-l-transparent"
+                        ? "bg-indigo-50/50 border-l-indigo-500 shadow-inner" : "border-l-transparent"
                     )}
                   >
                     <div className="flex items-center justify-between text-left">
@@ -235,55 +235,6 @@ export function RadarSidebar({
         {whatsappLeads.length > 0 && (
           <LeadSection leads={whatsappLeads} selectedRequestId={selectedRequestId} onSelect={onSelectRequest} emptyLabel="" icon={MessageSquare} label="WhatsApp" colorClass="text-green-600" bgClass="bg-green-50/50" isOpen={openSections.whatsapp} onToggle={() => toggleSection('whatsapp')} />
         )}
-
-        {/* Matchs Radar */}
-        <div className="border-t-2 border-yellow-200">
-          <SectionHeader icon={Target} label="Matchs Trouvés" count={matchedProspects.length} isOpen={openSections.matches} onToggle={() => toggleSection('matches')} colorClass="text-yellow-700" bgClass="bg-yellow-50/80" />
-          {openSections.matches && (
-            <div className="divide-y divide-yellow-100/50 bg-yellow-50/30">
-              {matchedProspects.length > 0 ? matchedProspects.map(r => {
-                const matchCount = r.matches!.length;
-                const bestScore = Math.round(Math.max(...r.matches!.map(m => m.proximity_score)) * 100);
-                const source = (r.source || 'SITE').toUpperCase();
-                const SourceIcon = source === 'FACEBOOK' ? Facebook : source === 'WHATSAPP' ? MessageSquare : Globe;
-                const sourceColor = source === 'FACEBOOK' ? 'text-blue-500' : source === 'WHATSAPP' ? 'text-green-500' : 'text-emerald-500';
-
-                return (
-                  <div
-                    key={r.id}
-                    onClick={() => onSelectRequest(r)}
-                    className={cn(
-                      "px-5 py-3 cursor-pointer transition-all border-l-4 hover:bg-yellow-50/80",
-                      selectedRequestId === r.id ? "bg-yellow-50 border-l-klando-gold" : "border-l-transparent"
-                    )}
-                  >
-                    <div className="flex items-center justify-between text-left">
-                      <div className="flex items-center gap-1.5">
-                        <SourceIcon className={cn("w-3 h-3", sourceColor)} />
-                        <span className="text-[10px] font-black uppercase italic tracking-tight text-slate-900">{r.origin_city || '?'}</span>
-                        <span className="text-slate-300">→</span>
-                        <span className="text-[10px] font-black uppercase italic tracking-tight text-slate-900">{r.destination_city || '?'}</span>
-                      </div>
-                      <span className="text-[9px] font-black bg-klando-gold text-klando-dark px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                        <Crosshair className="w-2.5 h-2.5" /> {matchCount}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-left">
-                      <span className="text-[9px] font-bold text-klando-gold">{bestScore}% proximité</span>
-                      {r.desired_date && (
-                        <span className="text-[9px] text-slate-400">
-                          {new Date(r.desired_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              }) : (
-                <p className="px-5 py-6 text-[9px] text-yellow-400 uppercase tracking-widest text-center italic">Aucun match détecté</p>
-              )}
-            </div>
-          )}
-        </div>
 
       </div>
     </div>
