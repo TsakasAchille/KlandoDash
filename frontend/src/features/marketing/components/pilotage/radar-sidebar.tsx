@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   Target, Globe, Facebook, BarChart3, Car,
-  ChevronDown, ChevronRight, MessageSquare, Crosshair
+  ChevronDown, ChevronRight, MessageSquare, Crosshair, Users
 } from "lucide-react";
 import { SiteTripRequest } from "@/types/site-request";
 import { cn } from "@/lib/utils";
@@ -137,6 +137,7 @@ function LeadSection({
 /* ── Sidebar Principal ── */
 
 export interface RadarSidebarProps {
+  showFlows: boolean;
   showFacebook: boolean;
   showSite: boolean;
   corridors: any[];
@@ -151,7 +152,7 @@ export interface RadarSidebarProps {
 }
 
 export function RadarSidebar({
-  showFacebook, showSite,
+  showFlows, showFacebook, showSite,
   corridors, facebookLeads, siteLeads, whatsappLeads, matchedProspects,
   selectedRequestId, selectedCorridor,
   onSelectCorridor, onSelectRequest
@@ -168,44 +169,57 @@ export function RadarSidebar({
     <div className="flex flex-col h-full text-left">
       <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-slate-100 pb-20">
 
-        {/* Corridors Klando (toujours visible) */}
-        <div>
-          <SectionHeader icon={Car} label="Corridors Klando" count={corridors.length} isOpen={openSections.corridors} onToggle={() => toggleSection('corridors')} colorClass="text-indigo-600" bgClass="bg-indigo-50/50" />
-          {openSections.corridors && (
-            <div className="divide-y divide-slate-50">
-              {corridors.length > 0 ? corridors.map((c, i) => (
-                <div
-                  key={i}
-                  onClick={() => onSelectCorridor(c)}
-                  className={cn(
-                    "px-5 py-3 cursor-pointer transition-all border-l-4 hover:bg-indigo-50/30",
-                    selectedCorridor?.origin === c.origin && selectedCorridor?.destination === c.destination
-                      ? "bg-indigo-50/50 border-l-indigo-500" : "border-l-transparent"
-                  )}
-                >
-                  <div className="flex items-center justify-between text-left">
-                    <div className="flex items-center gap-1.5 text-[10px] font-black uppercase italic tracking-tight text-slate-900">
-                      <span>{c.origin}</span>
-                      <span className="text-slate-300">→</span>
-                      <span>{c.destination}</span>
+        {/* Axes de Traffic (Offre + Demande) */}
+        {(showFlows || facebookLeads.length > 0 || siteLeads.length > 0) && (
+          <div>
+            <SectionHeader icon={BarChart3} label="Axes de Traffic" count={corridors.length} isOpen={openSections.corridors} onToggle={() => toggleSection('corridors')} colorClass="text-indigo-600" bgClass="bg-indigo-50/50" />
+            {openSections.corridors && (
+              <div className="divide-y divide-slate-50">
+                {corridors.length > 0 ? corridors.map((c, i) => (
+                  <div
+                    key={i}
+                    onClick={() => onSelectCorridor(c)}
+                    className={cn(
+                      "px-5 py-3 cursor-pointer transition-all border-l-4 hover:bg-indigo-50/30",
+                      selectedCorridor?.origin === c.origin && selectedCorridor?.destination === c.destination
+                        ? "bg-indigo-50/50 border-l-indigo-500" : "border-l-transparent"
+                    )}
+                  >
+                    <div className="flex items-center justify-between text-left">
+                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase italic tracking-tight text-slate-900">
+                        <span>{c.origin}</span>
+                        <span className="text-slate-300">→</span>
+                        <span>{c.destination}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {c.trips > 0 && (
+                          <span className="text-[9px] font-black text-indigo-600 flex items-center gap-1">
+                            <Car className="w-2.5 h-2.5" /> {c.trips}
+                          </span>
+                        )}
+                        {c.leads > 0 && (
+                          <span className="text-[9px] font-black text-pink-600 flex items-center gap-1">
+                            <Users className="w-2.5 h-2.5" /> {c.leads}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-[10px] font-black text-indigo-600 flex items-center gap-1">
-                      <Car className="w-2.5 h-2.5" /> {c.trips_count}
-                    </span>
+                    {c.trips > 0 && (
+                      <div className="flex items-center gap-2 mt-1.5 text-left">
+                        <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${c.fill || 0}%` }} />
+                        </div>
+                        <span className="text-[8px] font-bold text-slate-400">{Math.round(c.fill || 0)}% fill</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 mt-1.5 text-left">
-                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${c.fill_rate || 0}%` }} />
-                    </div>
-                    <span className="text-[9px] font-bold text-slate-400">{Math.round(c.fill_rate || 0)}%</span>
-                  </div>
-                </div>
-              )) : (
-                <p className="px-5 py-6 text-[9px] text-slate-300 uppercase tracking-widest text-center italic">Aucun corridor</p>
-              )}
-            </div>
-          )}
-        </div>
+                )) : (
+                  <p className="px-5 py-6 text-[9px] text-slate-300 uppercase tracking-widest text-center italic">Aucun axe actif</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Facebook Leads */}
         {showFacebook && (

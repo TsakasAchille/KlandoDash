@@ -33,9 +33,11 @@ interface RadarTabProps {
 export function RadarTab({
   corridors, tripsForMap, requests, drivers, selectedRequest, onSelectRequest
 }: RadarTabProps) {
+  const [showFlows, setShowFlows] = useState(true);
   const [showFacebook, setShowFacebook] = useState(true);
   const [showSite, setShowSite] = useState(true);
   const [showRadarOnly, setShowRadarOnly] = useState(false);
+  
   const [selectedCorridor, setSelectedCorridor] = useState<any | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<TripMapItem | null>(null);
   const [hoveredTripId, setHoveredTripId] = useState<string | null>(null);
@@ -59,6 +61,32 @@ export function RadarTab({
   const whatsappLeads = useMemo(() => filteredRequests.filter(r => (r.source || '').toUpperCase() === 'WHATSAPP'), [filteredRequests]);
   const matchedProspects = useMemo(() => requests.filter(r => r.matches && r.matches.length > 0), [requests]);
   const activeCorridors = useMemo(() => corridors.filter(c => c.origin && c.destination).sort((a, b) => b.trips_count - a.trips_count), [corridors]);
+
+  // 2. Calculer les axes unifiés (Offre + Demande) pour la navigation
+  const activeAxes = useMemo(() => {
+    const axesMap: Record<string, { origin: string, dest: string, trips: number, leads: number, fill: number }> = {};
+
+    // On commence par les flux de l'application
+    corridors.forEach(c => {
+      if (!c.origin || !c.destination) return;
+      const key = [c.origin.toLowerCase(), c.destination.toLowerCase()].sort().join(' - ');
+      axesMap[key] = { origin: c.origin, dest: c.destination, trips: c.trips_count, leads: 0, fill: c.fill_rate };
+    });
+
+    // On enrichit avec les prospects filtrés (Facebook / Site)
+    filteredRequests.forEach(r => {
+      if (!r.origin_city || !r.destination_city) return;
+      const key = [r.origin_city.toLowerCase(), r.destination_city.toLowerCase()].sort().join(' - ');
+      if (!axesMap[key]) {
+        axesMap[key] = { origin: r.origin_city, dest: r.destination_city, trips: 0, leads: 0, fill: 0 };
+      }
+      axesMap[key].leads++;
+    });
+
+    return Object.values(axesMap)
+      .filter(a => (showFlows && a.trips > 0) || a.leads > 0)
+      .sort((a, b) => (b.trips + b.leads) - (a.trips + a.leads));
+  }, [corridors, filteredRequests, showFlows]);
 
   const filteredTrips = useMemo(() => {
     if (selectedCorridor) {
@@ -90,6 +118,7 @@ export function RadarTab({
   return (
     <div>
       <RadarControls
+        showFlows={showFlows} setShowFlows={setShowFlows}
         showFacebook={showFacebook} setShowFacebook={setShowFacebook}
         showSite={showSite} setShowSite={setShowSite}
         showRadarOnly={showRadarOnly} setShowRadarOnly={setShowRadarOnly}
@@ -110,9 +139,10 @@ export function RadarTab({
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
             <RadarSidebar
+              showFlows={showFlows}
               showFacebook={showFacebook}
               showSite={showSite}
-              corridors={activeCorridors}
+              corridors={activeAxes}
               facebookLeads={facebookLeads}
               siteLeads={siteLeads}
               whatsappLeads={whatsappLeads}
@@ -140,7 +170,7 @@ export function RadarTab({
             onSelectRequest={onSelectRequest}
             onHoverTrip={setHoveredTripId}
             onHoverRequest={setHoveredRequestId}
-            flowMode={!isFocusMode}
+            flowMode={showFlows && !isFocusMode}
           />
 
           {/* Overlay badge */}

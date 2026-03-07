@@ -1,6 +1,6 @@
 "use client";
 
-import { Target, Globe, Facebook, X } from "lucide-react";
+import { Target, Globe, Facebook, X, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RadarControlsProps {
@@ -8,6 +8,8 @@ interface RadarControlsProps {
   setShowFacebook: (v: boolean) => void;
   showSite: boolean;
   setShowSite: (v: boolean) => void;
+  showFlows: boolean;
+  setShowFlows: (v: boolean) => void;
   showRadarOnly: boolean;
   setShowRadarOnly: (v: boolean) => void;
   hasSelection: boolean;
@@ -17,12 +19,28 @@ interface RadarControlsProps {
 export function RadarControls({
   showFacebook, setShowFacebook,
   showSite, setShowSite,
+  showFlows, setShowFlows,
   showRadarOnly, setShowRadarOnly,
   hasSelection, onReset
 }: RadarControlsProps) {
   return (
     <div className="flex flex-wrap gap-3 items-center justify-between bg-slate-900 p-4 rounded-[2rem] border border-white/5 shadow-2xl">
       <div className="flex flex-wrap gap-2 items-center">
+        {/* Toggle CORRIDORS (FLOWS) */}
+        <button
+          onClick={() => setShowFlows(!showFlows)}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+            showFlows 
+              ? "bg-indigo-600 text-white border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.4)]" 
+              : "bg-slate-800/50 text-slate-500 border-slate-700 hover:text-slate-300"
+          )}
+        >
+          <TrendingUp className="w-3.5 h-3.5" /> Corridors
+        </button>
+
+        <div className="w-px h-6 bg-white/10 mx-1 hidden md:block" />
+
         {/* Toggle FACEBOOK */}
         <button
           onClick={() => setShowFacebook(!showFacebook)}
