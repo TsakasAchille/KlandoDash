@@ -14,7 +14,6 @@ import {
   Loader2,
   Search,
   Users,
-  History,
   Globe,
   CircleDot,
   ShieldCheck,
@@ -33,7 +32,6 @@ import { PublicTrip, useSiteRequestAI } from "@/app/site-requests/hooks/useSiteR
 import { updateRequestStatusAction, scanRequestMatchesAction } from "@/app/site-requests/actions";
 import { toast } from "sonner";
 import { SiteRequestTable } from "@/components/site-requests/site-request-table";
-import { RequestHistoryTab } from "@/features/marketing/components/tabs/RequestHistoryTab";
 import { MatchingDialog } from "@/app/site-requests/components/MatchingDialog";
 import { MiniStatCard } from "@/components/mini-stat-card";
 
@@ -56,7 +54,6 @@ interface PilotageClientProps {
   tripsForMap: TripMapItem[];
   initialRequests: SiteTripRequest[];
   leadStats: SiteTripRequestsStats;
-  flowStats: MarketingFlowStat[];
   publicPending: PublicTrip[];
   publicCompleted: PublicTrip[];
 }
@@ -67,7 +64,6 @@ export function PilotageClient({
   tripsForMap,
   initialRequests,
   leadStats,
-  flowStats,
   publicPending,
   publicCompleted
 }: PilotageClientProps) {
@@ -192,9 +188,6 @@ export function PilotageClient({
                 {(crmData?.unmatched_demand?.length || 0) + (crmData?.empty_trips?.length || 0)}
               </span>
             </div>
-          </TabsTrigger>
-          <TabsTrigger value="history" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
-            <History className="w-3.5 h-3.5" /> Observatoire
           </TabsTrigger>
         </TabsList>
 
@@ -348,11 +341,6 @@ export function PilotageClient({
         {/* CRM TAB */}
         <TabsContent value="crm" className="outline-none animate-in slide-in-from-right-4 duration-500">
           <CRMOpportunities data={crmData} />
-        </TabsContent>
-
-        {/* OBSERVATOIRE TAB (NEWLY INTEGRATED) */}
-        <TabsContent value="history" className="outline-none animate-in fade-in duration-500">
-          <RequestHistoryTab requests={requests} flowStats={flowStats} />
         </TabsContent>
       </Tabs>
 
