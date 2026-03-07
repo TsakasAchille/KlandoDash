@@ -131,6 +131,50 @@ export async function getUserInfo(target: string) {
 }
 
 /**
+ * Enregistre une demande de trajet externe (ex: Facebook) dans le dashboard
+ */
+export async function ingestExternalRequest(data: {
+  origin: string;
+  dest: string;
+  contact: string;
+  source: 'FACEBOOK' | 'WHATSAPP' | 'IA_AGENT';
+  notes?: string;
+}) {
+  console.log(`[IA-ACTION] Ingesting external request from ${data.source}: ${data.origin} -> ${data.dest}`);
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const supabase = createServerClient();
+
+  const { data: request, error } = await supabase
+    .from("site_trip_requests")
+    .insert([{
+      origin_city: data.origin,
+      destination_city: data.dest,
+      contact_info: data.contact,
+      source: data.source,
+      status: 'NEW',
+      notes: data.notes || `Injecté par IA le ${new Date().toLocaleString()}`
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[IA-TOOLS] ingestExternalRequest error:", error);
+    return { success: false, error: error.message };
+  }
+
+  await recordAuditLog({
+    action: 'EXTERNAL_LEAD_INGESTED',
+    entityType: 'SITE_TRIP_REQUEST',
+    entityId: request.id,
+    details: { source: data.source, origin: data.origin, dest: data.dest }
+  });
+
+  return { success: true, id: request.id };
+}
+
+/**
  * Crée un brouillon de proposition dans le centre éditorial (mailing)
  */
 export async function createPropositionDraft(

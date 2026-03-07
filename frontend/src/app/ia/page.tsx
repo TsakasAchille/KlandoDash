@@ -238,10 +238,19 @@ export default async function IAPage() {
                   data-origin={req.origin_city}
                   data-dest={req.destination_city}
                   data-contact={req.contact_info}
+                  data-source={req.source || "SITE"}
                 >
                   <div className="w-1/6 truncate text-slate-500">{formatDateShort(req.created_at)}</div>
                   <div className="w-1/4 truncate font-medium">
-                    {req.origin_city} → {req.destination_city}
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "text-[8px] font-black px-1 rounded uppercase",
+                        req.source === 'FACEBOOK' ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+                      )}>
+                        {req.source || "SITE"}
+                      </span>
+                      {req.origin_city} → {req.destination_city}
+                    </div>
                   </div>
                   <div className="w-1/4 truncate text-slate-600">
                     {req.contact_info} ({req.desired_date || "Dès que possible"})
