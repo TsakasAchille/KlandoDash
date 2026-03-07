@@ -181,9 +181,13 @@ function IAToolsContent() {
               className="ia-search-result-item flex flex-col p-3 bg-slate-50 border border-slate-100 rounded gap-2 mb-2"
               data-driver-uid={driver.uid}
               data-driver-name={driver.display_name}
+              data-driver-phone={driver.phone_number || "N/A"}
             >
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-bold truncate max-w-[100px]">{driver.display_name}</p>
+                <div>
+                  <p className="text-[11px] font-bold truncate max-w-[150px]">{driver.display_name}</p>
+                  <p className="text-[9px] text-slate-400 font-mono">{driver.phone_number || "Pas de numéro"}</p>
+                </div>
                 <button 
                   id={`ia-select-driver-${driver.uid}`} 
                   type="button" 
