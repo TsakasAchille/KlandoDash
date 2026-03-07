@@ -15,7 +15,7 @@ export function BackNavigation() {
     // pour ne pas afficher le bouton sur la page d'entrée directe.
     if (typeof window !== "undefined" && window.history.length > 1) {
       // On évite d'afficher le bouton sur les pages "racines" du dashboard
-      const rootPages = ['/', '/map', '/users', '/trips', '/support', '/transactions', '/marketing', '/editorial', '/admin/logs', '/chats'];
+      const rootPages = ['/', '/map', '/users', '/trips', '/support', '/transactions', '/admin/pilotage', '/editorial', '/admin/logs', '/chats'];
       
       if (!rootPages.includes(pathname)) {
         setCanGoBack(true);

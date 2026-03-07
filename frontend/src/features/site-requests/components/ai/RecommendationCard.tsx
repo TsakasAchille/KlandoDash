@@ -64,7 +64,7 @@ export function RecommendationCard({ reco, onApply, onDismiss }: RecommendationC
   const handleGoToTool = (tripId?: string) => {
     if (isTraction) {
       const tripParam = tripId ? `&selectedTrip=${tripId}` : '';
-      router.push(`/marketing?tab=radar&id=${reco.target_id}${tripParam}`);
+      router.push(`/admin/pilotage?tab=prospects&id=${reco.target_id}${tripParam}`);
     } else {
       router.push(`/users?uid=${reco.target_id}`);
     }

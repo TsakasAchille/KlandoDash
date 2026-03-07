@@ -75,7 +75,7 @@ export async function saveInsightFeedbackAction(id: string, isLiked: boolean, fe
   }
 
   revalidatePath("/stats");
-  revalidatePath("/marketing");
+  revalidatePath("/admin/pilotage");
   return { success: true };
 }
 
@@ -143,7 +143,7 @@ export async function runMarketingAIScanAction() {
     if (error) throw error;
   }
 
-  revalidatePath("/marketing");
+  revalidatePath("/admin/pilotage");
   return { success: true, count: results.length };
 }
 

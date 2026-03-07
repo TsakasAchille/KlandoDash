@@ -1,15 +1,32 @@
 import { getPilotageMetrics } from "@/lib/queries/stats/get-pilotage-metrics";
 import { getCRMOpportunities } from "@/lib/queries/stats/get-crm-opportunities";
 import { getTripsForMap } from "@/lib/queries/trips/get-trips-for-map";
+import { getMarketingSiteRequestsAction } from "@/app/site-requests/actions";
+import { getMarketingFlowStatsAction } from "@/app/marketing/actions/intelligence";
+import { getPublicPendingTrips, getPublicCompletedTrips, getSiteTripRequestsStats } from "@/lib/queries/site-requests";
 import { PilotageClient } from "./pilotage-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function PilotagePage() {
-  const [metrics, crmData, tripsForMap] = await Promise.all([
+  const [
+    metrics, 
+    crmData, 
+    tripsForMap, 
+    requestsRes, 
+    flowStatsRes,
+    publicPending,
+    publicCompleted,
+    leadStats
+  ] = await Promise.all([
     getPilotageMetrics(),
     getCRMOpportunities(),
-    getTripsForMap(200) // On prend un peu plus de trajets pour la vue corridors
+    getTripsForMap(200),
+    getMarketingSiteRequestsAction({ limit: 1000 }),
+    getMarketingFlowStatsAction(),
+    getPublicPendingTrips(),
+    getPublicCompletedTrips(),
+    getSiteTripRequestsStats()
   ]);
 
   if (!metrics) {
@@ -24,7 +41,12 @@ export default async function PilotagePage() {
     <PilotageClient 
       metrics={metrics} 
       crmData={crmData} 
-      tripsForMap={tripsForMap} 
+      tripsForMap={tripsForMap}
+      initialRequests={requestsRes.success ? requestsRes.data : []}
+      leadStats={leadStats}
+      flowStats={flowStatsRes.success ? flowStatsRes.data : []}
+      publicPending={publicPending}
+      publicCompleted={publicCompleted}
     />
   );
 }

@@ -14,7 +14,7 @@ export async function runGlobalScanAction() {
 
   try {
     const count = await GlobalAIService.runGlobalIntelligenceScan();
-    revalidatePath("/marketing");
+    revalidatePath("/admin/pilotage");
     return { success: true, count };
   } catch (error) {
     console.error("[AI Action] Global scan failed:", error);
@@ -36,7 +36,7 @@ export async function updateRecommendationStatusAction(id: string, status: 'APPL
     .eq('id', id);
 
   if (error) return { success: false };
-  revalidatePath("/marketing");
+  revalidatePath("/admin/pilotage");
   return { success: true };
 }
 

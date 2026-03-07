@@ -20,7 +20,7 @@ export async function updateRequestStatusAction(id: string, status: SiteTripRequ
   const success = await updateRequest(id, { status });
   if (success) {
     revalidatePath("/site-requests");
-    revalidatePath("/marketing");
+    revalidatePath("/admin/pilotage");
   }
   return { success };
 }
@@ -48,7 +48,7 @@ export async function calculateAndSaveRequestRouteAction(requestId: string, orig
     };
 
     const success = await updateRequest(requestId, geometry);
-    if (success) revalidatePath("/marketing");
+    if (success) revalidatePath("/admin/pilotage");
     return { success, data: geometry };
   } catch (error) {
     return { success: false, message: "Erreur serveur." };
@@ -112,7 +112,7 @@ export async function getAIMatchingAction(
         ai_updated_at: new Date().toISOString() 
       });
       revalidatePath("/site-requests");
-      revalidatePath("/marketing");
+      revalidatePath("/admin/pilotage");
     }
 
     // EXTRACTION ROBUSTE DE L'ID
@@ -199,7 +199,7 @@ export async function scanRequestMatchesAction(requestId: string, radiusKm: numb
       );
     }
     revalidatePath("/site-requests");
-    revalidatePath("/marketing");
+    revalidatePath("/admin/pilotage");
     return { success: true, count: matches.length };
   } catch (error) {
     return { success: false };

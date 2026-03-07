@@ -60,7 +60,7 @@ export async function saveMessagingFeedbackAction(id: string, isLiked: boolean, 
     details: { isLiked, hasFeedback: !!feedback }
   });
 
-  revalidatePath("/marketing");
+  revalidatePath("/admin/pilotage");
   return { success: true };
 }
 
@@ -151,7 +151,7 @@ async function sendEmailInternalAction(id: string) {
       details: { recipient: email.recipient_contact, subject: email.subject }
     });
 
-    revalidatePath("/marketing");
+    revalidatePath("/admin/pilotage");
     return { success: true };
   } else {
     await supabase.from('dash_marketing_messages').update({
@@ -183,7 +183,7 @@ export async function moveMessageToTrashAction(id: string) {
     entityId: id
   });
 
-  revalidatePath("/marketing");
+  revalidatePath("/admin/pilotage");
   return { success: true };
 }
 
@@ -209,7 +209,7 @@ export async function updateMarketingMessageAction(id: string, updates: Partial<
     details: { updates }
   });
 
-  revalidatePath("/marketing");
+  revalidatePath("/admin/pilotage");
   return { success: true };
 }
 
@@ -251,7 +251,7 @@ export async function createMessageDraftAction(data: {
     details: { recipient: data.recipient_contact, channel: data.channel }
   });
 
-  revalidatePath("/marketing");
+  revalidatePath("/admin/pilotage");
   return { success: true, id: draft.id };
 }
 
@@ -352,7 +352,7 @@ export async function generateMessagingSuggestionsAction() {
       });
     }
 
-    revalidatePath("/marketing");
+    revalidatePath("/admin/pilotage");
     return { success: true, count: opportunities.length };
   } catch (err) {
     console.error("[Messaging AI] Failed:", err);

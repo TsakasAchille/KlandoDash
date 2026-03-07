@@ -140,23 +140,6 @@ const createRequestEndIcon = (isSelected: boolean) =>
     iconAnchor: [10, 10],
   });
 
-// On garde l'icône générique pour le survol ou les états simples
-const createRequestIcon = () =>
-  L.divIcon({
-    className: "custom-request-marker",
-    html: `<div style="
-      background-color: #A855F7;
-      width: 12px;
-      height: 12px;
-      border-radius: 3px;
-      border: 2px solid white;
-      box-shadow: 0 2px 10px rgba(168, 85, 247, 0.4);
-      transform: rotate(45deg);
-    "></div>`,
-    iconSize: [12, 12],
-    iconAnchor: [6, 6],
-  });
-
 interface TripMapProps {
   trips: TripMapItem[];
   siteRequests?: SiteTripRequest[];
@@ -171,6 +154,7 @@ interface TripMapProps {
   onSelectRequest: (request: SiteTripRequest) => void;
   onHoverTrip: (tripId: string | null) => void;
   onHoverRequest: (requestId: string | null) => void;
+  flowMode?: boolean; // NOUVEAU: Mode stratégique (lignes épaisses agrégées)
 }
 
 export function TripMap({
@@ -187,11 +171,13 @@ export function TripMap({
   onSelectRequest,
   onHoverTrip,
   onHoverRequest,
+  flowMode = false,
 }: TripMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const polylinesRef = useRef<Map<string, L.Polyline>>(new Map());
   const requestPolylinesRef = useRef<Map<string, L.Polyline>>(new Map());
+  const flowLinesRef = useRef<L.Layer[]>([]); // NOUVEAU
   const matchLinesRef = useRef<L.Layer[]>([]);
   const markersRef = useRef<L.Layer[]>([]);
   const hasHighlighted = useRef(false);
@@ -205,6 +191,42 @@ export function TripMap({
       setTimeout(() => setIsHighlighting(false), 2500);
     }
   }, [initialSelectedId]);
+
+  // Agrégation des flux pour le flowMode
+  const flows = useMemo(() => {
+    if (!flowMode) return [];
+    
+    const flowMap: Record<string, {
+      id: string;
+      origin: [number, number];
+      dest: [number, number];
+      count: number;
+      originName: string;
+      destName: string;
+    }> = {};
+
+    trips.forEach(trip => {
+      if (!trip.departure_latitude || !trip.departure_longitude || !trip.destination_latitude || !trip.destination_longitude) return;
+      
+      const originName = trip.departure_name?.split(',')[0] || 'Inconnu';
+      const destName = trip.destination_name?.split(',')[0] || 'Inconnu';
+      const flowKey = [originName, destName].sort().join(' <-> ');
+      
+      if (!flowMap[flowKey]) {
+        flowMap[flowKey] = {
+          id: flowKey,
+          origin: [trip.departure_latitude, trip.departure_longitude],
+          dest: [trip.destination_latitude, trip.destination_longitude],
+          count: 0,
+          originName,
+          destName
+        };
+      }
+      flowMap[flowKey].count++;
+    });
+
+    return Object.values(flowMap);
+  }, [trips, flowMode]);
 
   // Décoder les polylines avec gestion d'erreurs
   const decodedTrips = useMemo(() => {
@@ -241,7 +263,6 @@ export function TripMap({
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Protection contre la double initialisation Leaflet
     // @ts-ignore
     if (mapContainerRef.current._leaflet_id) return;
 
@@ -255,7 +276,6 @@ export function TripMap({
       zoomControl: true,
     });
 
-    // Style de carte premium (CartoDB Voyagers)
     L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://carto.com/">CartoDB</a>',
       subdomains: "abcd",
@@ -279,13 +299,44 @@ export function TripMap({
     requestPolylinesRef.current.forEach((p) => p.remove());
     requestPolylinesRef.current.clear();
 
+    flowLinesRef.current.forEach((l) => l.remove());
+    flowLinesRef.current = [];
+
     matchLinesRef.current.forEach((l) => l.remove());
     matchLinesRef.current = [];
 
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    // 1. Dessiner les trajets
+    // --- MODE FLUX (Stratégique) ---
+    if (flowMode) {
+      flows.forEach(flow => {
+        const line = L.polyline([flow.origin, flow.dest], {
+          color: "#4f46e5", // Indigo
+          weight: Math.min(4 + flow.count * 2, 15),
+          opacity: 0.7,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(mapRef.current!);
+
+        line.bindTooltip(`
+          <div class="font-black uppercase text-[10px] space-y-1">
+            <p>${flow.originName} ↔ ${flow.destName}</p>
+            <p class="text-indigo-400">${flow.count} Trajets actifs</p>
+          </div>
+        `, { sticky: true });
+
+        flowLinesRef.current.push(line);
+
+        // Petits cercles aux extrémités
+        const c1 = L.circleMarker(flow.origin, { radius: 4, color: 'white', weight: 2, fillColor: '#4f46e5', fillOpacity: 1 }).addTo(mapRef.current!);
+        const c2 = L.circleMarker(flow.dest, { radius: 4, color: 'white', weight: 2, fillColor: '#4f46e5', fillOpacity: 1 }).addTo(mapRef.current!);
+        markersRef.current.push(c1, c2);
+      });
+      return;
+    }
+
+    // --- MODE STANDARD (Opérationnel) ---
     decodedTrips.forEach((trip, index) => {
       if (hiddenTripIds.has(trip.trip_id)) return;
 
@@ -312,7 +363,6 @@ export function TripMap({
       polylinesRef.current.set(trip.trip_id, line);
 
       if (isSelected || isHovered) {
-        // Départ Trajet (Coordonnées explicites)
         const startCoords: [number, number] = (trip.departure_latitude && trip.departure_longitude) 
           ? [trip.departure_latitude, trip.departure_longitude] 
           : trip.coordinates[0];
@@ -331,7 +381,6 @@ export function TripMap({
         
         markersRef.current.push(startMarker);
 
-        // Arrivée Trajet (Coordonnées explicites)
         if (isSelected) {
           const endCoords: [number, number] = (trip.destination_latitude && trip.destination_longitude) 
             ? [trip.destination_latitude, trip.destination_longitude] 
@@ -352,7 +401,7 @@ export function TripMap({
       }
     });
 
-    // 2. Dessiner les polylines des demandes clients
+    // Dessiner les polylines des demandes clients
     decodedRequests.forEach((req) => {
       if (hiddenRequestIds.has(req.id)) return;
 
@@ -363,7 +412,7 @@ export function TripMap({
         color: "#A855F7", // Violet
         weight: isSelected ? 5 : isHovered ? 4 : 2,
         opacity: isSelected || isHovered ? 0.9 : 0.4,
-        dashArray: isSelected ? undefined : "5, 10", // Pointillés si pas sélectionné
+        dashArray: isSelected ? undefined : "5, 10", 
         lineCap: 'round',
         lineJoin: 'round',
       });
@@ -379,7 +428,7 @@ export function TripMap({
       requestPolylinesRef.current.set(req.id, line);
     });
 
-    // 3. Dessiner les marqueurs des demandes clients
+    // Dessiner les marqueurs des demandes clients
     siteRequests.forEach((req) => {
       if (hiddenRequestIds.has(req.id)) return;
       if (!req.origin_lat || !req.origin_lng) return;
@@ -387,7 +436,6 @@ export function TripMap({
       const isSelected = selectedRequest?.id === req.id;
       const isHovered = hoveredRequestId === req.id;
 
-      // Marqueur Départ (Vert)
       const startMarker = L.marker([req.origin_lat, req.origin_lng], {
         icon: createRequestStartIcon(isSelected),
         zIndexOffset: isSelected || isHovered ? 1000 : 0
@@ -402,7 +450,6 @@ export function TripMap({
       
       markersRef.current.push(startMarker);
 
-      // Marqueur Arrivée (Rouge) - uniquement si on a les coordonnées
       if (req.destination_lat && req.destination_lng) {
         const endMarker = L.marker([req.destination_lat, req.destination_lng], {
           icon: createRequestEndIcon(isSelected),
@@ -420,21 +467,18 @@ export function TripMap({
       }
     });
 
-    // 4. Dessiner les lignes de liaison pour les matches (si une demande est sélectionnée)
+    // Lignes de liaison pour les matches
     if (selectedRequest && selectedRequest.origin_lat && selectedRequest.origin_lng) {
       const matchedTripIds = selectedRequest.matches?.map(m => m.trip_id) || [];
       
       decodedTrips.forEach(trip => {
-        // On ne dessine la liaison que si le trajet est un match ET n'est pas caché
         if (matchedTripIds.includes(trip.trip_id) && !hiddenTripIds.has(trip.trip_id)) {
-          
-          // A. Ligne de liaison : Départ Client ➜ Départ Trajet (Coordonnées explicites)
           if (trip.departure_latitude && trip.departure_longitude) {
             const startLine = L.polyline([
               [selectedRequest.origin_lat!, selectedRequest.origin_lng!],
               [trip.departure_latitude, trip.departure_longitude]
             ], {
-              color: "#22C55E", // Vert
+              color: "#22C55E", 
               weight: 1.5,
               opacity: 0.7,
               dashArray: "4, 6",
@@ -443,7 +487,6 @@ export function TripMap({
             
             matchLinesRef.current.push(startLine);
 
-            // Petit ancrage visuel au point de départ du trajet
             const startAnchor = L.circleMarker([trip.departure_latitude, trip.departure_longitude], {
               radius: 3,
               fillColor: "#22C55E",
@@ -454,13 +497,12 @@ export function TripMap({
             matchLinesRef.current.push(startAnchor);
           }
 
-          // B. Ligne de liaison : Arrivée Client ➜ Arrivée Trajet (Coordonnées explicites)
           if (selectedRequest.destination_lat && selectedRequest.destination_lng && trip.destination_latitude && trip.destination_longitude) {
             const endLine = L.polyline([
               [selectedRequest.destination_lat!, selectedRequest.destination_lng!],
               [trip.destination_latitude, trip.destination_longitude]
             ], {
-              color: "#EF4444", // Rouge
+              color: "#EF4444", 
               weight: 1.5,
               opacity: 0.7,
               dashArray: "4, 6",
@@ -469,7 +511,6 @@ export function TripMap({
             
             matchLinesRef.current.push(endLine);
 
-            // Petit ancrage visuel au point d'arrivée du trajet
             const endAnchor = L.circleMarker([trip.destination_latitude, trip.destination_longitude], {
               radius: 3,
               fillColor: "#EF4444",
@@ -483,14 +524,20 @@ export function TripMap({
       });
     }
 
-  }, [decodedTrips, decodedRequests, siteRequests, selectedTrip, selectedRequest, hoveredTripId, hoveredRequestId, hiddenTripIds, hiddenRequestIds, isHighlighting, onSelectTrip, onSelectRequest, onHoverTrip, onHoverRequest]);
+  }, [decodedTrips, decodedRequests, siteRequests, selectedTrip, selectedRequest, hoveredTripId, hoveredRequestId, hiddenTripIds, hiddenRequestIds, isHighlighting, onSelectTrip, onSelectRequest, onHoverTrip, onHoverRequest, flowMode, flows]);
 
   // Zoom management
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // On force Leaflet à recalculer la taille du conteneur avant de bouger
     mapRef.current.invalidateSize();
+
+    if (flowMode && flowLinesRef.current.length > 0) {
+      const group = new L.FeatureGroup(flowLinesRef.current);
+      const bounds = group.getBounds();
+      if (bounds.isValid()) mapRef.current.fitBounds(bounds, { padding: [50, 50], animate: false });
+      return;
+    }
 
     if (selectedTrip) {
       const line = polylinesRef.current.get(selectedTrip.trip_id);
@@ -506,7 +553,6 @@ export function TripMap({
       const allLayers = [
         ...Array.from(polylinesRef.current.values()),
         ...Array.from(requestPolylinesRef.current.values()),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...markersRef.current as any[]
       ];
       
@@ -518,7 +564,7 @@ export function TripMap({
         }
       }
     }
-  }, [selectedTrip, selectedRequest, hiddenTripIds, hiddenRequestIds, trips.length, siteRequests.length]);
+  }, [selectedTrip, selectedRequest, hiddenTripIds, hiddenRequestIds, trips.length, siteRequests.length, flowMode]);
 
   return (
     <div

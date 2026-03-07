@@ -18,7 +18,7 @@ import packageInfo from "../../package.json";
 
 const navItems = [
   { href: "/", label: "Accueil", icon: Home },
-  { href: "/admin/pilotage", label: "Pilotage Growth", icon: Rocket },
+  { href: "/admin/pilotage", label: "Croissance & Marketing", icon: Rocket },
   { href: "/trips", label: "Trajets", icon: Car },
   { href: "/users", label: "Utilisateurs", icon: Users },
   { href: "/messaging", label: "Messagerie", icon: MessageSquare },
@@ -30,7 +30,6 @@ const supportItems = [
 ];
 
 const marketingItems = [
-  { href: "/marketing", label: "Marketing & Radar", icon: TrendingUp },
   { href: "/editorial", label: "Centre Éditorial", icon: PenTool },
 ];
 

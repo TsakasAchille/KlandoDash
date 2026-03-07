@@ -13,7 +13,12 @@ import {
   Sparkles,
   Loader2,
   Search,
-  Filter as FilterIcon
+  Users,
+  History,
+  Globe,
+  CircleDot,
+  ShieldCheck,
+  CheckCircle
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshButton } from "@/components/refresh-button";
@@ -22,6 +27,15 @@ import { CRMOpportunities } from "./crm-opportunities";
 import dynamic from "next/dynamic";
 import { TripMapItem } from "@/types/trip";
 import { cn } from "@/lib/utils";
+import { SiteTripRequest, SiteTripRequestStatus, SiteTripRequestsStats } from "@/types/site-request";
+import { MarketingFlowStat } from "@/app/marketing/types";
+import { PublicTrip, useSiteRequestAI } from "@/app/site-requests/hooks/useSiteRequestAI";
+import { updateRequestStatusAction, scanRequestMatchesAction } from "@/app/site-requests/actions";
+import { toast } from "sonner";
+import { SiteRequestTable } from "@/components/site-requests/site-request-table";
+import { RequestHistoryTab } from "@/features/marketing/components/tabs/RequestHistoryTab";
+import { MatchingDialog } from "@/app/site-requests/components/MatchingDialog";
+import { MiniStatCard } from "@/components/mini-stat-card";
 
 const TripMap = dynamic(
   () => import("@/components/map/trip-map").then((mod) => mod.TripMap),
@@ -40,9 +54,26 @@ interface PilotageClientProps {
   metrics: any;
   crmData: any;
   tripsForMap: TripMapItem[];
+  initialRequests: SiteTripRequest[];
+  leadStats: SiteTripRequestsStats;
+  flowStats: MarketingFlowStat[];
+  publicPending: PublicTrip[];
+  publicCompleted: PublicTrip[];
 }
 
-export function PilotageClient({ metrics, crmData, tripsForMap }: PilotageClientProps) {
+export function PilotageClient({ 
+  metrics, 
+  crmData, 
+  tripsForMap,
+  initialRequests,
+  leadStats,
+  flowStats,
+  publicPending,
+  publicCompleted
+}: PilotageClientProps) {
+  const [activeTab, setActiveTab] = useState("perf");
+  
+  // Corridors state
   const [selectedCorridor, setSelectedCorridor] = useState<any | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<TripMapItem | null>(null);
   const [hoveredTripId, setHoveredTripId] = useState<string | null>(null);
@@ -50,6 +81,14 @@ export function PilotageClient({ metrics, crmData, tripsForMap }: PilotageClient
   // Filtering state
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<'all' | 'optimal' | 'boost'>('all');
+
+  // Prospects state
+  const [requests, setRequests] = useState<SiteTripRequest[]>(initialRequests);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [scanningId, setScanningId] = useState<string | null>(null);
+  const [aiDialogOpenId, setAiDialogOpenId] = useState<string | null>(null);
+  const [prospectsPage, setProspectsPage] = useState(1);
+  const [prospectsStatus, setProspectsStatus] = useState("all");
 
   // Filter corridors based on search and status
   const filteredCorridors = useMemo(() => {
@@ -68,14 +107,14 @@ export function PilotageClient({ metrics, crmData, tripsForMap }: PilotageClient
     });
   }, [metrics.corridors, searchQuery, filterStatus]);
 
-  // Auto-select first corridor on mount or when filtered list changes
+  // Auto-select first corridor on mount
   useEffect(() => {
     if (filteredCorridors.length > 0 && !selectedCorridor) {
       setSelectedCorridor(filteredCorridors[0]);
     }
   }, [filteredCorridors, selectedCorridor]);
 
-  // Sync trips shown on map with ONLY the selected corridor for clarity
+  // Sync trips shown on map with ONLY the selected corridor
   const filteredTripsForMap = useMemo(() => {
     if (!selectedCorridor) return [];
     
@@ -87,31 +126,66 @@ export function PilotageClient({ metrics, crmData, tripsForMap }: PilotageClient
     });
   }, [tripsForMap, selectedCorridor]);
 
+  // --- PROSPECTS HANDLERS ---
+  const handleUpdateStatus = async (id: string, status: SiteTripRequestStatus) => {
+    setUpdatingId(id);
+    const result = await updateRequestStatusAction(id, status);
+    if (result.success) {
+      toast.success("Statut mis à jour.");
+      setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    }
+    setUpdatingId(null);
+  };
+
+  const handleScanRequest = async (id: string) => {
+    setScanningId(id);
+    const result = await scanRequestMatchesAction(id, 30);
+    if (result.success) {
+      toast.success(`Scan terminé : ${result.count} trajets analysés.`);
+    }
+    setScanningId(null);
+  };
+
+  const aiRequest = useMemo(() => aiDialogOpenId ? requests.find(r => r.id === aiDialogOpenId) : null, [requests, aiDialogOpenId]);
+  const aiMatching = useSiteRequestAI(aiRequest || null, publicPending, publicCompleted);
+
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 pb-16 px-4 sm:px-6 lg:px-8 pt-6 relative">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase italic text-klando-gold flex items-center gap-3">
             <Rocket className="w-8 h-8" />
-            Cockpit de Pilotage
+            Croissance & Marketing
           </h1>
           <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest mt-1">
-            Intelligence de Croissance & Croisement de Données
+            Intelligence Stratégique & Pilotage des Leads
           </p>
         </div>
         <RefreshButton />
       </div>
 
-      <Tabs defaultValue="perf" className="space-y-8">
+      {/* Mini Stats Lead Tracking */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <MiniStatCard title="Prospects" value={leadStats.total} icon="Globe" color="purple" />
+        <MiniStatCard title="Nouveaux" value={leadStats.new} icon="CircleDot" color="red" />
+        <MiniStatCard title="Observés" value={leadStats.reviewed} icon="Zap" color="gold" />
+        <MiniStatCard title="Validés" value={leadStats.validated} icon="ShieldCheck" color="green" />
+        <MiniStatCard title="Contactés" value={leadStats.contacted} icon="CheckCircle" color="blue" />
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
         <TabsList className="bg-slate-100 p-1 rounded-2xl h-auto gap-1">
           <TabsTrigger value="perf" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
-            <BarChart3 className="w-3.5 h-3.5" /> Performance Stratégique
+            <BarChart3 className="w-3.5 h-3.5" /> Performance
+          </TabsTrigger>
+          <TabsTrigger value="prospects" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
+            <Users className="w-3.5 h-3.5" /> Prospects
           </TabsTrigger>
           <TabsTrigger value="corridors" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
-            <MapIcon className="w-3.5 h-3.5" /> Corridors Focus
+            <MapIcon className="w-3.5 h-3.5" /> Carte des Flux
           </TabsTrigger>
           <TabsTrigger value="crm" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md font-black uppercase text-[10px] tracking-widest gap-2 relative">
-            <Sparkles className="w-3.5 h-3.5" /> Moteur d&apos;Actions CRM
+            <Sparkles className="w-3.5 h-3.5" /> CRM Actions
             <div className="absolute -top-1 -right-1 flex h-4 w-4">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-4 w-4 bg-indigo-500 text-[8px] items-center justify-center font-bold text-white">
@@ -119,68 +193,25 @@ export function PilotageClient({ metrics, crmData, tripsForMap }: PilotageClient
               </span>
             </div>
           </TabsTrigger>
+          <TabsTrigger value="history" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
+            <History className="w-3.5 h-3.5" /> Observatoire
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="perf" className="space-y-10 outline-none animate-in fade-in duration-500">
-          {/* BLOC 1: ACQUISITION & ACTIVATION */}
           <div className="space-y-6">
             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
               <Zap className="w-4 h-4 text-klando-gold" />
-              Acquisition & Engagement (Cahier des charges)
+              Acquisition & Engagement
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <KPICard 
-                title="Activation Passager" 
-                value={`${metrics.activation.passenger}%`} 
-                icon="Users" 
-                color="blue"
-                description="Requête sous 72h"
-                info={{
-                  formula: "(Users avec req. < 72h) / (Total nouveaux users)",
-                  tables: ["users", "site_trip_requests"],
-                  details: "Mesure l'engagement immédiat : % des inscrits (30j) ayant exprimé un besoin dans les 3 jours."
-                }}
-              />
-              <KPICard 
-                title="Activation Conducteur" 
-                value={`${metrics.activation.driver}%`} 
-                icon="Car" 
-                color="purple"
-                description="Trajet sous 7j"
-                info={{
-                  formula: "(Drivers avec trajet < 7j) / (Total nouveaux drivers)",
-                  tables: ["users", "trips"],
-                  details: "Mesure la conversion de l'offre : % des inscrits (30j) ayant publié leur premier trajet sous une semaine."
-                }}
-              />
-              <KPICard 
-                title="Repeat Passager (W1)" 
-                value={`${metrics.retention.passenger_w1}%`} 
-                icon="RefreshCw" 
-                color="green"
-                description="Actif Semaine N-2 → N-1"
-                info={{
-                  formula: "(Actifs W N-2 ET W N-1) / (Actifs W N-2)",
-                  tables: ["bookings"],
-                  details: "Rétention hebdomadaire : % des passagers actifs en semaine N-2 qui sont revenus en semaine N-1."
-                }}
-              />
-              <KPICard 
-                title="Repeat Conducteur (W1)" 
-                value={`${metrics.retention.driver_w1}%`} 
-                icon="RefreshCw" 
-                color="orange"
-                description="Actif Semaine N-2 → N-1"
-                info={{
-                  formula: "(Actifs W N-2 ET W N-1) / (Actifs W N-2)",
-                  tables: ["trips"],
-                  details: "Rétention de l'offre : % des conducteurs actifs en semaine N-2 qui ont republié en semaine N-1."
-                }}
-              />
+              <KPICard title="Activation Passager" value={`${metrics.activation.passenger}%`} icon="Users" color="blue" description="Requête sous 72h" />
+              <KPICard title="Activation Conducteur" value={`${metrics.activation.driver}%`} icon="Car" color="purple" description="Trajet sous 7j" />
+              <KPICard title="Repeat Passager (W1)" value={`${metrics.retention.passenger_w1}%`} icon="RefreshCw" color="green" description="Actif W N-2 → N-1" />
+              <KPICard title="Repeat Conducteur (W1)" value={`${metrics.retention.driver_w1}%`} icon="RefreshCw" color="orange" description="Actif W N-2 → N-1" />
             </div>
           </div>
 
-          {/* BLOC 2: LIQUIDITÉ & EFFICACITÉ */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-6">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
@@ -188,109 +219,53 @@ export function PilotageClient({ metrics, crmData, tripsForMap }: PilotageClient
                 Liquidité (Match Rate)
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <KPICard 
-                  title="Match Rate Demande" 
-                  value={`${metrics.liquidity.match_rate_demand}%`} 
-                  icon="Target" 
-                  color="blue"
-                  description="Requêtes trouvant un trajet"
-                  info={{
-                    formula: "(Requests avec match) / (Total requests)",
-                    tables: ["site_trip_requests", "site_trip_request_matches"],
-                    details: "Liquidité côté demande : % des intentions de trajet du site ayant trouvé au moins une offre correspondante."
-                  }}
-                />
-                <KPICard 
-                  title="Match Rate Offre" 
-                  value={`${metrics.liquidity.match_rate_supply}%`} 
-                  icon="Car" 
-                  color="purple"
-                  description="Trajets avec ≥ 1 résa"
-                  info={{
-                    formula: "(Trajets avec seats_booked > 0) / (Total trajets)",
-                    tables: ["trips"],
-                    details: "Liquidité côté offre : % des trajets publiés qui reçoivent au moins une réservation de passager."
-                  }}
-                />
+                <KPICard title="Match Rate Demande" value={`${metrics.liquidity.match_rate_demand}%`} icon="Target" color="blue" />
+                <KPICard title="Match Rate Offre" value={`${metrics.liquidity.match_rate_supply}%`} icon="Car" color="purple" />
               </div>
             </div>
-
             <div className="space-y-6">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" />
-                Efficacité Opérationnelle
+                Efficacité
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <KPICard 
-                  title="Fill Rate Moyen" 
-                  value={`${metrics.efficiency.fill_rate}%`} 
-                  icon="Users" 
-                  color="green"
-                  description="Occupation des sièges"
-                  info={{
-                    formula: "AVG(seats_booked / total_seats) [COMPLETED]",
-                    tables: ["trips"],
-                    details: "Performance réalisée : % moyen de remplissage uniquement sur les trajets terminés (encaissés)."
-                  }}
-                />
-                <KPICard 
-                  title="Exécution (Realized)" 
-                  value={`${metrics.efficiency.realized_published_ratio}%`} 
-                  icon="CheckCircle2" 
-                  color="blue"
-                  description="Ratio Réalisés / Publiés"
-                  info={{
-                    formula: "(Trajets COMPLETED) / (Trajets clôturés)",
-                    tables: ["trips"],
-                    details: "Fiabilité : % de trajets publiés qui atteignent le statut 'COMPLETED' sans être annulés."
-                  }}
-                />
+                <KPICard title="Fill Rate Moyen" value={`${metrics.efficiency.fill_rate}%`} icon="Users" color="green" />
+                <KPICard title="Exécution (Realized)" value={`${metrics.efficiency.realized_published_ratio}%`} icon="CheckCircle2" color="blue" />
               </div>
             </div>
           </div>
         </TabsContent>
 
+        <TabsContent value="prospects" className="outline-none animate-in fade-in duration-500">
+          <SiteRequestTable 
+            requests={requests} 
+            onUpdateStatus={handleUpdateStatus}
+            updatingId={updatingId}
+            currentPage={prospectsPage}
+            setCurrentPage={setProspectsPage}
+            statusFilter={prospectsStatus}
+            setStatusFilter={setProspectsStatus}
+            onOpenIA={setAiDialogOpenId}
+            onScan={handleScanRequest}
+            onSelectOnMap={(id) => { setSelectedCorridor(null); setActiveTab("corridors"); }}
+            scanningId={scanningId}
+          />
+        </TabsContent>
+
         <TabsContent value="corridors" className="outline-none animate-in fade-in duration-500 space-y-6">
-          
-          {/* CONTROL BAR */}
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-slate-200">
             <div className="flex flex-1 items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm w-full md:w-auto">
               <Search className="w-4 h-4 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Filtrer une ville (ex: Dakar, Mbour...)" 
-                className="text-xs font-bold bg-transparent border-none outline-none w-full"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <input type="text" placeholder="Filtrer une ville..." className="text-xs font-bold bg-transparent border-none outline-none w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner overflow-x-auto no-scrollbar">
-              <button 
-                onClick={() => { setFilterStatus('all'); setSelectedCorridor(null); }}
-                className={cn(
-                  "px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                  filterStatus === 'all' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                )}
-              >Tous</button>
-              <button 
-                onClick={() => { setFilterStatus('optimal'); setSelectedCorridor(null); }}
-                className={cn(
-                  "px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2",
-                  filterStatus === 'optimal' ? "bg-green-600 text-white shadow-sm" : "text-green-600/60 hover:text-green-600"
-                )}
-              ><CheckCircle2 className="w-3 h-3" /> Optimaux</button>
-              <button 
-                onClick={() => { setFilterStatus('boost'); setSelectedCorridor(null); }}
-                className={cn(
-                  "px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2",
-                  filterStatus === 'boost' ? "bg-orange-500 text-white shadow-sm" : "text-orange-500/60 hover:text-orange-500"
-                )}
-              ><AlertTriangle className="w-3 h-3" /> À booster</button>
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
+              <button onClick={() => { setFilterStatus('all'); setSelectedCorridor(null); }} className={cn("px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", filterStatus === 'all' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Tous</button>
+              <button onClick={() => { setFilterStatus('optimal'); setSelectedCorridor(null); }} className={cn("px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2", filterStatus === 'optimal' ? "bg-green-600 text-white shadow-sm" : "text-green-600/60 hover:text-green-600")}><CheckCircle2 className="w-3 h-3" /> Optimaux</button>
+              <button onClick={() => { setFilterStatus('boost'); setSelectedCorridor(null); }} className={cn("px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2", filterStatus === 'boost' ? "bg-orange-500 text-white shadow-sm" : "text-orange-500/60 hover:text-orange-500")}><AlertTriangle className="w-3 h-3" /> À booster</button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[700px]">
-            {/* LEFT: TABLE (4 cols) */}
             <div className="lg:col-span-5 flex flex-col gap-4 min-h-0">
                <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-xl flex flex-col h-full">
                 <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
@@ -311,23 +286,7 @@ export function PilotageClient({ metrics, crmData, tripsForMap }: PilotageClient
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {filteredCorridors.map((corridor: any, i: number) => (
-                        <tr 
-                          key={i} 
-                          className={cn(
-                            "hover:bg-slate-50/80 transition-all group cursor-pointer border-l-4",
-                            selectedCorridor?.origin === corridor.origin && selectedCorridor?.destination === corridor.destination 
-                              ? "bg-indigo-50/50 border-l-indigo-500" 
-                              : "border-l-transparent"
-                          )}
-                          onClick={() => {
-                            if (selectedCorridor?.origin === corridor.origin && selectedCorridor?.destination === corridor.destination) {
-                              // Ne pas déselectionner si c'est le seul
-                            } else {
-                              setSelectedCorridor(corridor);
-                              setSelectedTrip(null);
-                            }
-                          }}
-                        >
+                        <tr key={i} className={cn("hover:bg-slate-50/80 transition-all group cursor-pointer border-l-4", selectedCorridor?.origin === corridor.origin && selectedCorridor?.destination === corridor.destination ? "bg-indigo-50/50 border-l-indigo-500" : "border-l-transparent")} onClick={() => { setSelectedCorridor(corridor); setSelectedTrip(null); }}>
                           <td className="px-6 py-4">
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5 font-black uppercase text-[11px] italic tracking-tight text-slate-900">
@@ -335,27 +294,20 @@ export function PilotageClient({ metrics, crmData, tripsForMap }: PilotageClient
                                 <span className="text-muted-foreground/30">→</span>
                                 <span>{corridor.destination}</span>
                               </div>
-                              <span className="text-[9px] font-bold text-slate-400">{corridor.total_bookings} réservations</span>
+                              <span className="text-[9px] font-bold text-slate-400">{corridor.total_bookings} résas</span>
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center font-black text-xs text-slate-600">{corridor.trips_count}</td>
                           <td className="px-4 py-4">
                             <div className="flex flex-col items-center gap-1">
                               <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
-                                <div 
-                                  className={cn("h-full transition-all", corridor.fill_rate > 50 ? "bg-green-500" : "bg-orange-500")} 
-                                  style={{ width: `${corridor.fill_rate}%` }}
-                                />
+                                <div className={cn("h-full transition-all", corridor.fill_rate > 50 ? "bg-green-500" : "bg-orange-500")} style={{ width: `${corridor.fill_rate}%` }} />
                               </div>
                               <span className="text-[9px] font-black italic">{corridor.fill_rate}%</span>
                             </div>
                           </td>
                           <td className="px-4 py-4 text-right">
-                            {corridor.fill_rate > 50 ? (
-                              <CheckCircle2 className="w-4 h-4 text-green-500 ml-auto" />
-                            ) : (
-                              <AlertTriangle className="w-4 h-4 text-orange-500 ml-auto" />
-                            )}
+                            {corridor.fill_rate > 50 ? <CheckCircle2 className="w-4 h-4 text-green-500 ml-auto" /> : <AlertTriangle className="w-4 h-4 text-orange-500 ml-auto" />}
                           </td>
                         </tr>
                       ))}
@@ -365,55 +317,52 @@ export function PilotageClient({ metrics, crmData, tripsForMap }: PilotageClient
               </div>
             </div>
 
-            {/* RIGHT: MAP (8 cols) */}
             <div className="lg:col-span-7 bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-xl relative min-h-[400px]">
               <TripMap 
-                trips={filteredTripsForMap}
-                selectedTrip={selectedTrip}
-                selectedRequest={null}
-                hoveredTripId={hoveredTripId}
-                hoveredRequestId={null}
-                hiddenTripIds={new Set()}
-                hiddenRequestIds={new Set()}
-                onSelectTrip={setSelectedTrip}
-                onSelectRequest={() => {}}
-                onHoverTrip={setHoveredTripId}
-                onHoverRequest={() => {}}
+                trips={filteredTripsForMap} 
+                selectedTrip={selectedTrip} 
+                selectedRequest={null} 
+                hoveredTripId={hoveredTripId} 
+                hoveredRequestId={null} 
+                hiddenTripIds={new Set()} 
+                hiddenRequestIds={new Set()} 
+                onSelectTrip={setSelectedTrip} 
+                onSelectRequest={() => {}} 
+                onHoverTrip={setHoveredTripId} 
+                onHoverRequest={() => {}} 
+                flowMode={true} 
               />
-              
-              {/* Overlay stats de la sélection map */}
               <div className="absolute top-6 left-6 z-[1000] flex flex-col gap-2">
                 <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-slate-200 shadow-lg flex items-center gap-3">
-                   <div className="p-2 bg-indigo-600/10 rounded-xl text-indigo-600">
-                      <MapIcon className="w-4 h-4" />
-                   </div>
+                   <div className="p-2 bg-indigo-600/10 rounded-xl text-indigo-600"><MapIcon className="w-4 h-4" /></div>
                    <div>
-                      <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none">Corridor Sélectionné</p>
+                      <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none">Corridor Focus</p>
                       <p className="text-sm font-black text-slate-900">{selectedCorridor ? `${selectedCorridor.origin} → ${selectedCorridor.destination}` : 'Aucun'}</p>
                    </div>
-                </div>
-                <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2">
-                   <span className="text-[10px] font-black text-slate-500 uppercase">{filteredTripsForMap.length} Trajets réels</span>
-                </div>
-              </div>
-
-              {/* Legend Overlay */}
-              <div className="absolute bottom-6 right-6 z-[1000] bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200 shadow-lg pointer-events-none">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Offre sur ce corridor</span>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
         </TabsContent>
 
+        {/* CRM TAB */}
         <TabsContent value="crm" className="outline-none animate-in slide-in-from-right-4 duration-500">
           <CRMOpportunities data={crmData} />
         </TabsContent>
+
+        {/* OBSERVATOIRE TAB (NEWLY INTEGRATED) */}
+        <TabsContent value="history" className="outline-none animate-in fade-in duration-500">
+          <RequestHistoryTab requests={requests} flowStats={flowStats} />
+        </TabsContent>
       </Tabs>
+
+      {/* MODALS */}
+      <MatchingDialog 
+        isOpen={!!aiDialogOpenId}
+        onClose={() => setAiDialogOpenId(null)}
+        selectedRequest={aiRequest || null}
+        {...aiMatching}
+      />
     </div>
   );
 }

@@ -58,7 +58,7 @@ export async function generateCommIdeasAction() {
       }
     }
 
-    revalidatePath("/marketing");
+    revalidatePath("/admin/pilotage");
     revalidatePath("/editorial");
     return { success: true, count: ideas.length };
   } catch (err) {
@@ -112,7 +112,7 @@ export async function generateSocialPostAction(platform: CommPlatform, topic: st
       details: { platform, topic, method: 'AI_GENERATION' }
     });
 
-    revalidatePath("/marketing");
+    revalidatePath("/admin/pilotage");
     revalidatePath("/editorial");
     return { success: true, post };
   } catch (err) {
@@ -181,7 +181,7 @@ export async function generatePendingRequestsPostAction(platform: CommPlatform) 
       details: { platform, method: 'PENDING_REQUESTS_PROMO' }
     });
 
-    revalidatePath("/marketing");
+    revalidatePath("/admin/pilotage");
     revalidatePath("/editorial");
     return { success: true, post };
   } catch (err) {
@@ -225,7 +225,7 @@ export async function createMarketingCommAction(data: Partial<MarketingComm>) {
     details: { platform: data.platform, title: data.title, method: 'MANUAL' }
   });
 
-  revalidatePath("/marketing");
+  revalidatePath("/admin/pilotage");
   revalidatePath("/editorial");
   return { success: true, post };
 }
@@ -279,7 +279,7 @@ export async function updateMarketingCommAction(id: string, updates: Partial<Mar
     details: { updates }
   });
 
-  revalidatePath("/marketing");
+  revalidatePath("/admin/pilotage");
   revalidatePath("/editorial");
   return { success: true };
 }
@@ -319,7 +319,7 @@ export async function deleteMarketingCommAction(id: string) {
     entityId: id
   });
 
-  revalidatePath("/marketing");
+  revalidatePath("/admin/pilotage");
   revalidatePath("/editorial");
   return { success: true };
 }
