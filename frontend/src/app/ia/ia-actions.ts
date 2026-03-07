@@ -215,23 +215,6 @@ export async function createPropositionDraft(
     }
   }
 
-  // --- VÉRIFICATION ANTI-DOUBLON ---
-  // On vérifie si un brouillon identique existe déjà depuis moins de 24h
-  const { data: existing } = await supabase
-    .from("dash_marketing_messages")
-    .select("id")
-    .eq("recipient_contact", recipientEmail)
-    .eq("subject", subject)
-    .eq("status", "DRAFT")
-    .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-    .limit(1);
-
-  if (existing && existing.length > 0) {
-    console.log(`[IA-TOOLS] Duplicate draft detected for ${recipientEmail}. Skipping.`);
-    return { success: false, error: "DOUBLON : Un brouillon identique existe déjà pour ce destinataire." };
-  }
-  // ---------------------------------
-
   // 3. Créer le brouillon dans dash_marketing_messages
   const { data: draft, error } = await supabase
     .from("dash_marketing_messages")
