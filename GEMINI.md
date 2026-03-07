@@ -47,6 +47,10 @@ Les composants lourds (`CommunicationTab`, `MessagingTab`, `MapClient`) sont dé
 ### 4. Radar de Matching & Capture
 - **Haute Fidélité** : Utilisation de `preferCanvas: true` dans Leaflet pour garantir un alignement parfait des tracés lors des captures `html2canvas`.
 - **Auto-Correction** : Inversion automatique des polylines si le sens de saisie diverge du trajet conducteur.
+- **Règles d'Or Leaflet (Layouts & Tabs)** : 
+  1. **Toujours `forceMount`** le `TabsContent` qui contient une carte pour éviter que Leaflet s'initialise dans un conteneur à 0px (display: none). Gérer la visibilité via CSS (`hidden`).
+  2. **Styles Inline** : Utiliser des `style={{ height: '75vh', display: 'grid' }}` pour les conteneurs de carte complexes afin d'empêcher le layout de s'écraser face aux conflits Tailwind/Parents (`overflow-auto`).
+  3. **Pas de `key` dynamique** : Ne pas forcer le re-render du composant Map, utiliser plutôt le `ResizeObserver` intégré pour redimensionner proprement.
 
 ## Current Status
 
