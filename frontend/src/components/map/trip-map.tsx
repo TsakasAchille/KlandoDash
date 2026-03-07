@@ -526,20 +526,27 @@ export function TripMap({
 
   }, [decodedTrips, decodedRequests, siteRequests, selectedTrip, selectedRequest, hoveredTripId, hoveredRequestId, hiddenTripIds, hiddenRequestIds, isHighlighting, onSelectTrip, onSelectRequest, onHoverTrip, onHoverRequest, flowMode, flows]);
 
-  // Zoom management
+  // Zoom management and visibility fix (invalidateSize)
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !mapContainerRef.current) return;
 
+    // Trigger initial invalidateSize
     mapRef.current.invalidateSize();
+
+    // Use ResizeObserver to detect when the container becomes visible or changes size
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    });
+
+    resizeObserver.observe(mapContainerRef.current);
 
     if (flowMode && flowLinesRef.current.length > 0) {
       const group = new L.FeatureGroup(flowLinesRef.current);
       const bounds = group.getBounds();
       if (bounds.isValid()) mapRef.current.fitBounds(bounds, { padding: [50, 50], animate: false });
-      return;
-    }
-
-    if (selectedTrip) {
+    } else if (selectedTrip) {
       const line = polylinesRef.current.get(selectedTrip.trip_id);
       if (line) mapRef.current.fitBounds(line.getBounds(), { padding: [100, 100], animate: false });
     } else if (selectedRequest) {
@@ -564,6 +571,10 @@ export function TripMap({
         }
       }
     }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, [selectedTrip, selectedRequest, hiddenTripIds, hiddenRequestIds, trips.length, siteRequests.length, flowMode]);
 
   return (

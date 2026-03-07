@@ -16,6 +16,7 @@ import { MatchingDialog } from "@/app/site-requests/components/MatchingDialog";
 import { SiteTripRequest, SiteTripRequestsStats } from "@/types/site-request";
 import { TripMapItem } from "@/types/trip";
 import { PublicTrip, useSiteRequestAI } from "@/app/site-requests/hooks/useSiteRequestAI";
+import { useSiteRequestRoutes } from "@/app/map/hooks/useSiteRequestRoutes";
 
 interface PilotageClientProps {
   metrics: any;
@@ -39,12 +40,17 @@ export function PilotageClient({
   drivers
 }: PilotageClientProps) {
   const [activeTab, setActiveTab] = useState("perf");
+  
+  // Enriches requests with polylines using the hook
+  const enrichedRequests = useSiteRequestRoutes(initialRequests);
   const [requests, setRequests] = useState<SiteTripRequest[]>(initialRequests);
+  
+  useEffect(() => {
+    setRequests(enrichedRequests);
+  }, [enrichedRequests]);
+
   const [selectedRequest, setSelectedRequest] = useState<SiteTripRequest | null>(null);
   const [aiDialogOpenId, setAiDialogOpenId] = useState<string | null>(null);
-
-  // Sync state with initial data
-  useEffect(() => { setRequests(initialRequests); }, [initialRequests]);
 
   // AI Matching Hook logic
   const aiRequest = useMemo(() => aiDialogOpenId ? requests.find(r => r.id === aiDialogOpenId) : null, [requests, aiDialogOpenId]);
@@ -57,7 +63,7 @@ export function PilotageClient({
       </div>
 
       {/* LEAD SNAPSHOT */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 text-left">
         <MiniStatCard title="Prospects" value={leadStats.total} icon="Globe" color="purple" />
         <MiniStatCard title="Nouveaux" value={leadStats.new} icon="CircleDot" color="red" />
         <MiniStatCard title="Observés" value={leadStats.reviewed} icon="Zap" color="gold" />
@@ -74,7 +80,7 @@ export function PilotageClient({
             <Users className="w-3.5 h-3.5" /> Prospects
           </TabsTrigger>
           <TabsTrigger value="radar" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
-            <MapIcon className="w-3.5 h-3.5" /> Radar Radar
+            <MapIcon className="w-3.5 h-3.5" /> Radar
           </TabsTrigger>
           <TabsTrigger value="crm" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-indigo-600 data-[state=active]:text-white shadow-md font-black uppercase text-[10px] tracking-widest gap-2 relative">
             <Sparkles className="w-3.5 h-3.5" /> CRM Actions
