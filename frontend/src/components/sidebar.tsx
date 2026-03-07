@@ -22,7 +22,6 @@ const navItems = [
   { href: "/trips", label: "Trajets", icon: Car },
   { href: "/users", label: "Utilisateurs", icon: Users },
   { href: "/messaging", label: "Messagerie", icon: MessageSquare },
-  { href: "/map", label: "Carte", icon: Map },
 ];
 
 const supportItems = [
