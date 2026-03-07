@@ -7,52 +7,75 @@ import { recordAuditLog } from "@/lib/audit";
 import React from "react";
 
 /**
- * Recherche les conducteurs ayant déjà effectué un trajet spécifique
+ * Recherche les conducteurs ayant déjà effectué un trajet spatialement proche
  */
 export async function searchHistoricalDrivers(origin: string, destination: string) {
-  console.log(`[IA-ACTION] searchHistoricalDrivers started for ${origin} -> ${destination}`);
+  console.log(`[IA-ACTION] Smart Search started for ${origin} -> ${destination}`);
   const session = await auth();
-  if (!session) {
-    console.error("[IA-ACTION] Unauthorized search attempt");
-    throw new Error("Unauthorized");
-  }
-  // ...
+  if (!session) throw new Error("Unauthorized");
 
   const supabase = createServerClient();
 
-  // Recherche dans l'historique des trajets
-  const { data, error } = await supabase
-    .from("trips")
-    .select(`
-      departure_name,
-      destination_name,
-      departure_schedule,
-      driver_id,
-      driver:users!fk_driver (
-        uid,
-        display_name,
-        photo_url,
-        phone_number,
-        rating
-      )
-    `)
-    .ilike("departure_name", `%${origin}%`)
-    .ilike("destination_name", `%${destination}%`)
-    .not("driver_id", "is", null)
-    .order("departure_schedule", { ascending: false });
+  // 1. On cherche d'abord les coordonnées de référence pour les noms saisis
+  // On prend le trajet le plus récent qui mentionne ces noms pour avoir un point GPS fiable
+  const [{ data: originRef }, { data: destRef }] = await Promise.all([
+    supabase.from("trips").select("departure_latitude, departure_longitude").ilike("departure_name", `%${origin}%`).order("created_at", { ascending: false }).limit(1),
+    supabase.from("trips").select("destination_latitude, destination_longitude").ilike("destination_name", `%${destination}%`).order("created_at", { ascending: false }).limit(1)
+  ]);
+
+  // Si on n'a pas de référence géo, on retombe sur la recherche textuelle classique
+  if (!originRef?.[0] || !destRef?.[0]) {
+    console.log("[IA-ACTION] Falling back to text search (no geo reference found)");
+    const { data, error } = await supabase
+      .from("trips")
+      .select(`
+        departure_name, destination_name, departure_schedule, driver_id,
+        driver:users!fk_driver (uid, display_name, photo_url, phone_number, rating)
+      `)
+      .ilike("departure_name", `%${origin}%`)
+      .ilike("destination_name", `%${destination}%`)
+      .not("driver_id", "is", null)
+      .order("departure_schedule", { ascending: false })
+      .limit(50);
+    
+    return formatResults(data || []);
+  }
+
+  const oLat = originRef[0].departure_latitude;
+  const oLng = originRef[0].departure_longitude;
+  const dLat = destRef[0].destination_latitude;
+  const dLng = destRef[0].destination_longitude;
+
+  console.log(`[IA-ACTION] Geo Reference: Origin(${oLat},${oLng}), Dest(${dLat},${dLng})`);
+
+  // 2. Recherche spatiale : Départ proche (<15km) ET Arrivée proche (<15km)
+  const { data, error } = await supabase.rpc('find_drivers_by_proximity', {
+    p_orig_lat: oLat,
+    p_orig_lng: oLng,
+    p_dest_lat: dLat,
+    p_dest_lng: dLng,
+    p_threshold_km: 15.0
+  });
 
   if (error) {
-    console.error("searchHistoricalDrivers error:", error);
+    console.error("searchHistoricalDrivers RPC error:", error);
+    // Fallback text search en cas d'erreur RPC
     return [];
   }
 
   await recordAuditLog({
     action: 'IA_DATA_INGESTION',
     entityType: 'SYSTEM',
-    details: { search: { origin, destination }, resultsCount: data.length }
+    details: { search: { origin, destination, geo: true }, resultsCount: data?.length || 0 }
   });
 
-  // On garde le trajet le plus récent pour chaque conducteur unique trouvé
+  return data || [];
+}
+
+/**
+ * Helper pour formater les résultats bruts
+ */
+function formatResults(data: any[]) {
   const uniqueDriversMap = new Map();
   data.forEach((item: any) => {
     if (item.driver && !uniqueDriversMap.has(item.driver_id)) {
@@ -66,7 +89,6 @@ export async function searchHistoricalDrivers(origin: string, destination: strin
       });
     }
   });
-
   return Array.from(uniqueDriversMap.values());
 }
 
@@ -123,7 +145,6 @@ export async function createPropositionDraft(
     console.error("[IA-ACTION] Unauthorized draft creation attempt");
     throw new Error("Unauthorized");
   }
-  // ...
 
   const cleanTarget = target.trim();
   console.log(`[IA-TOOLS] Creating draft for "${cleanTarget}" with ${images.length} images`);
