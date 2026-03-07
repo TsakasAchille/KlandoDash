@@ -150,6 +150,7 @@ export function RadarTab({
     // A. Uniquement si "Flux Klando" est coché, on injecte les corridors conducteurs
     if (showFlows) {
       corridors.forEach(c => {
+        if (!c.origin || !c.destination) return;
         const key = [c.origin.toLowerCase(), c.destination.toLowerCase()].sort().join(' - ');
         axesMap[key] = { origin: c.origin, dest: c.destination, trips: c.trips_count, leads: 0, fill: c.fill_rate };
       });
@@ -157,6 +158,7 @@ export function RadarTab({
 
     // B. Injecter les leads (Prospects) filtrés
     filteredRequests.forEach(r => {
+      if (!r.origin_city || !r.destination_city) return;
       const key = [r.origin_city.toLowerCase(), r.destination_city.toLowerCase()].sort().join(' - ');
       if (!axesMap[key]) {
         axesMap[key] = { origin: r.origin_city, dest: r.destination_city, trips: 0, leads: 0, fill: 0 };
@@ -173,10 +175,15 @@ export function RadarTab({
   // 3. Filtrer les trajets pour la carte
   const filteredTrips = useMemo(() => {
     if (selectedCorridor) {
-      return tripsForMap.filter(t => 
-        (t.departure_name?.toLowerCase().includes(selectedCorridor.origin.toLowerCase()) && t.destination_name?.toLowerCase().includes(selectedCorridor.destination.toLowerCase())) ||
-        (t.departure_name?.toLowerCase().includes(selectedCorridor.destination.toLowerCase()) && t.destination_name?.toLowerCase().includes(selectedCorridor.origin.toLowerCase()))
-      );
+      return tripsForMap.filter(t => {
+        const dName = t.departure_name?.toLowerCase() || "";
+        const aName = t.destination_name?.toLowerCase() || "";
+        const cOrigin = selectedCorridor.origin?.toLowerCase() || "";
+        const cDest = selectedCorridor.destination?.toLowerCase() || "";
+
+        return (dName.includes(cOrigin) && aName.includes(cDest)) ||
+               (dName.includes(cDest) && aName.includes(cOrigin));
+      });
     }
     return tripsForMap;
   }, [tripsForMap, selectedCorridor]);
