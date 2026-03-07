@@ -243,14 +243,24 @@ export default async function IAPage() {
                 >
                   <div className="w-1/6 truncate text-slate-500">{formatDateShort(req.created_at)}</div>
                   <div className="w-1/4 truncate font-medium">
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "text-[8px] font-black px-1 rounded uppercase",
-                        req.source === 'FACEBOOK' ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
-                      )}>
-                        {req.source || "SITE"}
-                      </span>
-                      {req.origin_city} → {req.destination_city}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-[8px] font-black px-1 rounded uppercase",
+                          req.source === 'FACEBOOK' ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+                        )}>
+                          {req.source || "SITE"}
+                        </span>
+                        <span className={cn(
+                          "text-[8px] font-black px-1 rounded uppercase",
+                          req.request_type === 'DRIVER' ? "bg-orange-100 text-orange-700" : "bg-purple-100 text-purple-700"
+                        )}>
+                          {req.request_type === 'DRIVER' ? "Conducteur" : "Passager"}
+                        </span>
+                      </div>
+                      <div className="truncate">
+                        {req.origin_city} → {req.destination_city}
+                      </div>
                     </div>
                   </div>
                   <div className="w-1/4 truncate text-slate-600">

@@ -30,6 +30,7 @@ function IAToolsContent() {
   const [intakeOrigin, setIntakeOrigin] = useState("");
   const [intakeDest, setIntakeDest] = useState("");
   const [intakeContact, setIntakeContact] = useState("");
+  const [intakeType, setIntakeType] = useState<'PASSENGER' | 'DRIVER'>('PASSENGER');
   const [isIntaking, setIsIntaking] = useState(false);
 
   // Multi-Image state
@@ -181,7 +182,8 @@ function IAToolsContent() {
         dest,
         contact,
         source: 'FACEBOOK',
-        notes: `Lead Facebook injecté par IA le ${new Date().toLocaleString()}`
+        type: intakeType,
+        notes: `Lead Facebook (${intakeType}) injecté par IA le ${new Date().toLocaleString()}`
       });
       if (res.success) {
         toast.success("Demande Facebook enregistrée !");
@@ -211,7 +213,32 @@ function IAToolsContent() {
           </div>
         </div>
 
-        <form onSubmit={handleIngestLead} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form onSubmit={handleIngestLead} className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="space-y-1">
+            <label className="text-[9px] font-black uppercase text-indigo-300 pl-1">Nature du Post</label>
+            <div className="flex bg-indigo-950 p-1 rounded-xl border border-indigo-700/50 h-11">
+              <button 
+                type="button" 
+                onClick={() => setIntakeType('PASSENGER')}
+                className={cn(
+                  "flex-1 rounded-lg text-[8px] font-black uppercase transition-all",
+                  intakeType === 'PASSENGER' ? "bg-white text-indigo-900 shadow-sm" : "text-indigo-400 hover:text-indigo-200"
+                )}
+              >
+                Passager
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setIntakeType('DRIVER')}
+                className={cn(
+                  "flex-1 rounded-lg text-[8px] font-black uppercase transition-all",
+                  intakeType === 'DRIVER' ? "bg-white text-indigo-900 shadow-sm" : "text-indigo-400 hover:text-indigo-200"
+                )}
+              >
+                Conducteur
+              </button>
+            </div>
+          </div>
           <div className="space-y-1">
             <label className="text-[9px] font-black uppercase text-indigo-300 pl-1">Départ</label>
             <input id="ia-intake-origin" type="text" value={intakeOrigin} onChange={(e) => setIntakeOrigin(e.target.value)} placeholder="ex: Niague" className="w-full bg-indigo-950 border border-indigo-700/50 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-indigo-800" />

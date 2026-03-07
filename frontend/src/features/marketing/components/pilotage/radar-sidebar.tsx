@@ -71,6 +71,12 @@ function LeadItem({
     >
       <div className="flex items-center justify-between text-left">
         <div className="flex items-center gap-1.5 text-[10px] font-black uppercase italic tracking-tight text-slate-900">
+          <span className={cn(
+            "not-italic px-1 rounded-[4px] text-[7px]",
+            request.request_type === 'DRIVER' ? "bg-orange-100 text-orange-700" : "bg-purple-100 text-purple-700"
+          )}>
+            {request.request_type === 'DRIVER' ? "DRV" : "PSGR"}
+          </span>
           <span>{request.origin_city || '?'}</span>
           <span className="text-slate-300">→</span>
           <span>{request.destination_city || '?'}</span>

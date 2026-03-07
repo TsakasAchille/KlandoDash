@@ -138,9 +138,10 @@ export async function ingestExternalRequest(data: {
   dest: string;
   contact: string;
   source: 'FACEBOOK' | 'WHATSAPP' | 'IA_AGENT';
+  type?: 'PASSENGER' | 'DRIVER';
   notes?: string;
 }) {
-  console.log(`[IA-ACTION] Ingesting external request from ${data.source}: ${data.origin} -> ${data.dest}`);
+  console.log(`[IA-ACTION] Ingesting external ${data.type || 'PASSENGER'} request from ${data.source}: ${data.origin} -> ${data.dest}`);
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
@@ -153,6 +154,7 @@ export async function ingestExternalRequest(data: {
       destination_city: data.dest,
       contact_info: data.contact,
       source: data.source,
+      request_type: data.type || 'PASSENGER',
       status: 'NEW',
       notes: data.notes || `Injecté par IA le ${new Date().toLocaleString()}`
     }])

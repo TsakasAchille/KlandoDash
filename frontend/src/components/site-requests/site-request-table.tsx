@@ -245,6 +245,12 @@ export function SiteRequestTable({
                               <SourceIcon className="w-2.5 h-2.5" />
                               {config.label}
                             </div>
+                            <div className={cn(
+                              "px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter border shadow-sm",
+                              request.request_type === 'DRIVER' ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-purple-50 text-purple-600 border-purple-100"
+                            )}>
+                              {request.request_type === 'DRIVER' ? "Conducteur" : "Passager"}
+                            </div>
                           </div>
                            <div className="font-black uppercase text-[10px] sm:hidden mt-1 text-klando-gold truncate text-left">
                             {request.origin_city} ➜ {request.destination_city}

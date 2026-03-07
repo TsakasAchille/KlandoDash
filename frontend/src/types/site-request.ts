@@ -9,6 +9,7 @@ export interface SiteTripRequest {
   status: SiteTripRequestStatus;
   created_at: string;
   source?: string | null;
+  request_type?: 'PASSENGER' | 'DRIVER' | null;
   notes: string | null;
   ai_recommendation?: string | null;
   ai_updated_at?: string | null;
