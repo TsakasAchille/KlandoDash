@@ -174,15 +174,30 @@ function IAToolsContent() {
             {isSearching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />} RECHERCHER
           </button>
         </form>
-        <div className="overflow-auto max-h-[400px]">
+        <div id="ia-search-results-container" className="overflow-auto max-h-[400px]">
           {searchResults.map((driver) => (
-            <div key={driver.uid} className="flex flex-col p-3 bg-slate-50 border border-slate-100 rounded gap-2 mb-2">
+            <div 
+              key={driver.uid} 
+              className="ia-search-result-item flex flex-col p-3 bg-slate-50 border border-slate-100 rounded gap-2 mb-2"
+              data-driver-uid={driver.uid}
+              data-driver-name={driver.display_name}
+            >
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-bold truncate max-w-[100px]">{driver.display_name}</p>
-                <button id={`ia-select-driver-${driver.uid}`} type="button" onClick={() => setContactTarget(driver.uid)} className="text-[10px] font-bold text-klando-burgundy hover:underline uppercase">Sélectionner</button>
+                <button 
+                  id={`ia-select-driver-${driver.uid}`} 
+                  type="button" 
+                  onClick={() => setContactTarget(driver.uid)} 
+                  className="text-[10px] font-bold text-klando-burgundy hover:underline uppercase"
+                >
+                  Sélectionner
+                </button>
               </div>
             </div>
           ))}
+          {searchResults.length === 0 && !isSearching && (
+            <p className="text-[10px] text-slate-400 text-center py-4 italic">Aucun conducteur trouvé pour cet axe.</p>
+          )}
         </div>
       </div>
 
