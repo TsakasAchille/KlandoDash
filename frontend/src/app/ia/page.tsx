@@ -6,7 +6,7 @@ import { getSiteTripRequests } from "@/lib/queries/site-requests/get-requests";
 import { getTopDrivers, getTopRequestedRoutes } from "@/lib/queries/stats/get-ai-analytics";
 import { RefreshButton } from "./refresh-button";
 import { IAToolsClient } from "./ia-tools-client";
-import { formatDateShort } from "@/lib/utils";
+import { formatDateShort, cn } from "@/lib/utils";
 import { User, MapPin, Phone, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -166,6 +166,7 @@ export default async function IAPage() {
                     <div className="w-1/6 text-right">
                       <button 
                         className="ia-action-radar-btn text-[9px] font-black uppercase text-indigo-600 hover:underline flex items-center gap-1 ml-auto"
+                        // @ts-ignore
                         onClick={`(function(){ document.getElementById('ia-search-origin').value='${route.origin_city}'; document.getElementById('ia-search-dest').value='${route.destination_city}'; document.getElementById('ia-search-button').click(); })()`}
                       >
                         <Zap className="w-2.5 h-2.5" /> Radar
@@ -263,6 +264,7 @@ export default async function IAPage() {
                   <div className="w-1/6 text-right">
                     <button 
                       className="ia-radar-fill-btn bg-indigo-600 text-white px-2 py-1 rounded text-[9px] font-black uppercase hover:bg-indigo-700 transition-colors flex items-center gap-1 ml-auto"
+                      // @ts-ignore
                       onClick={`(function(){ document.getElementById('ia-search-origin').value='${req.origin_city}'; document.getElementById('ia-search-dest').value='${req.destination_city}'; document.getElementById('ia-contact-target').value='${req.contact_info}'; document.getElementById('ia-search-button').click(); })()`}
                     >
                       <Zap className="w-2.5 h-2.5" /> Lancer Radar

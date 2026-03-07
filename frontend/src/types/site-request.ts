@@ -8,6 +8,7 @@ export interface SiteTripRequest {
   contact_info: string;
   status: SiteTripRequestStatus;
   created_at: string;
+  source?: string | null;
   notes: string | null;
   ai_recommendation?: string | null;
   ai_updated_at?: string | null;

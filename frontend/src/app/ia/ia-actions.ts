@@ -115,7 +115,7 @@ export async function getUserInfo(target: string) {
     query.eq("uid", cleanTarget);
   }
 
-  const { data, error } = await query.single();
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     console.error(`[IA-TOOLS] Error fetching user ${cleanTarget}:`, error.message);
