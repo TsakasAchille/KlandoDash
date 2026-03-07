@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   ChevronLeft, ChevronRight, Map as MapIcon, 
-  History, TrendingUp, Calendar, ArrowUpRight, CheckCircle2, Clock
+  History, TrendingUp, Calendar, ArrowUpRight, CheckCircle2, Clock, Globe, Facebook, MessageSquare, Sparkles
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
@@ -120,15 +120,38 @@ export function RequestHistoryTab({ requests, flowStats }: RequestHistoryTabProp
             </TableHeader>
             <TableBody>
               {paginatedRequests.length > 0 ? (
-                paginatedRequests.map((req) => (
-                  <TableRow key={req.id} className="border-slate-100 hover:bg-slate-50 transition-colors group">
-                    <TableCell className="text-[11px] font-bold text-slate-500 py-4 tabular-nums pl-8 text-left">
-                      {format(new Date(req.created_at), 'dd MMM, HH:mm', { locale: fr })}
-                    </TableCell>
-                    <TableCell className="text-left">
-                      <span className="text-xs font-black text-slate-900 uppercase">{req.contact_info}</span>
-                    </TableCell>
-                    <TableCell className="text-left">
+                paginatedRequests.map((req) => {
+                  // Source visual config
+                  const sourceConfig: Record<string, { icon: any; color: string; bg: string; label: string; }> = {
+                    SITE: { icon: Globe, color: "text-slate-500", bg: "bg-slate-100", label: "Site Web" },
+                    FACEBOOK: { icon: Facebook, color: "text-blue-600", bg: "bg-blue-50", label: "Facebook" },
+                    WHATSAPP: { icon: MessageSquare, color: "text-green-600", bg: "bg-green-50", label: "WhatsApp" },
+                    IA_AGENT: { icon: Sparkles, color: "text-purple-600", bg: "bg-purple-50", label: "IA Hub" },
+                  };
+                  const source = (req.source as string) || 'SITE';
+                  const config = sourceConfig[source] || sourceConfig.SITE;
+                  const SourceIcon = config.icon;
+
+                  return (
+                    <TableRow key={req.id} className="border-slate-100 hover:bg-slate-50 transition-colors group">
+                      <TableCell className="text-[11px] font-bold text-slate-500 py-4 tabular-nums pl-8 text-left">
+                        {format(new Date(req.created_at), 'dd MMM, HH:mm', { locale: fr })}
+                      </TableCell>
+                      <TableCell className="text-left">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-black text-slate-900 uppercase">{req.contact_info}</span>
+                          <div className={cn(
+                            "inline-flex items-center gap-1 w-fit px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter border shadow-sm",
+                            config.bg,
+                            config.color,
+                            "border-current/10"
+                          )}>
+                            <SourceIcon className="w-2.5 h-2.5" />
+                            {config.label}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-left">
                         <div className="flex flex-col">
                             <span className="text-xs font-black text-klando-burgundy uppercase tracking-tighter text-left">
                                 {req.origin_city} ➜ {req.destination_city}
@@ -138,18 +161,19 @@ export function RequestHistoryTab({ requests, flowStats }: RequestHistoryTabProp
                                 {req.desired_date ? format(new Date(req.desired_date), 'dd MMMM yyyy', { locale: fr }) : "Dès que possible"}
                             </span>
                         </div>
-                    </TableCell>
-                    <TableCell className="text-right pr-8">
-                      <div className={cn(
-                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-black text-[9px] uppercase tracking-widest shadow-sm border",
-                        req.status.toUpperCase() === 'VALIDATED' ? "bg-green-50 border-green-100 text-green-600" : "bg-blue-50 border-blue-100 text-blue-600"
-                      )}>
-                        {req.status.toUpperCase() === 'VALIDATED' ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                        {req.status}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell className="text-right pr-8">
+                        <div className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-black text-[9px] uppercase tracking-widest shadow-sm border",
+                          req.status.toUpperCase() === 'VALIDATED' ? "bg-green-50 border-green-100 text-green-600" : "bg-blue-50 border-blue-100 text-blue-600"
+                        )}>
+                          {req.status.toUpperCase() === 'VALIDATED' ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                          {req.status}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="h-40 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">
