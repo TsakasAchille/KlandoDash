@@ -1,5 +1,5 @@
--- Migration: Smart Driver Search for AI Hub
--- Description: Allows finding historical drivers based on geographic proximity of both origin and destination.
+-- Migration: Smart Driver Search for AI Hub (V2 with Date)
+-- Description: Allows finding historical drivers based on geographic proximity and returns the date of the last matched trip.
 
 CREATE OR REPLACE FUNCTION public.find_drivers_by_proximity(
     p_orig_lat double precision,
@@ -39,11 +39,8 @@ BEGIN
     FROM trips t
     JOIN users u ON t.driver_id = u.uid
     WHERE 
-        -- Comparaison Départ -> Départ
         ST_DWithin(v_orig, ST_SetSRID(ST_MakePoint(t.departure_longitude, t.departure_latitude), 4326)::geography, p_threshold_km * 1000)
-        -- ET Comparaison Arrivée -> Arrivée
         AND ST_DWithin(v_dest, ST_SetSRID(ST_MakePoint(t.destination_longitude, t.destination_latitude), 4326)::geography, p_threshold_km * 1000)
-    ORDER BY u.uid, (ST_Distance(v_orig, ST_SetSRID(ST_MakePoint(t.departure_longitude, t.departure_latitude), 4326)::geography) + 
-                      ST_Distance(v_dest, ST_SetSRID(ST_MakePoint(t.destination_longitude, t.destination_latitude), 4326)::geography)) ASC;
+    ORDER BY u.uid, t.departure_schedule DESC; -- On prend le plus récent en premier
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;

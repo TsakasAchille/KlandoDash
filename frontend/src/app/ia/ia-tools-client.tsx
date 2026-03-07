@@ -184,16 +184,24 @@ function IAToolsContent() {
               data-driver-phone={driver.phone_number || "N/A"}
               data-dist-orig={driver.matched_trip?.dist_orig_km || 0}
               data-dist-dest={driver.matched_trip?.dist_dest_km || 0}
+              data-last-trip-date={driver.matched_trip?.date || ""}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-bold truncate max-w-[150px]">{driver.display_name}</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-[9px] text-slate-400 font-mono">{driver.phone_number || "Pas de numéro"}</p>
-                    {driver.matched_trip?.dist_orig_km !== undefined && (
-                      <span className="text-[8px] bg-indigo-50 text-indigo-600 px-1 rounded font-black uppercase">
-                        📍 {driver.matched_trip.dist_orig_km}km / {driver.matched_trip.dist_dest_km}km
-                      </span>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[9px] text-slate-400 font-mono">{driver.phone_number || "Pas de numéro"}</p>
+                      {driver.matched_trip?.dist_orig_km !== undefined && (
+                        <span className="text-[8px] bg-indigo-50 text-indigo-600 px-1 rounded font-black uppercase">
+                          📍 {driver.matched_trip.dist_orig_km}km / {driver.matched_trip.dist_dest_km}km
+                        </span>
+                      )}
+                    </div>
+                    {driver.matched_trip?.date && (
+                      <p className="text-[8px] text-slate-400 italic">
+                        Dernier trajet : {formatDateShort(driver.matched_trip.date)}
+                      </p>
                     )}
                   </div>
                 </div>
