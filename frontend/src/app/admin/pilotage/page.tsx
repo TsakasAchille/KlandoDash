@@ -1,6 +1,6 @@
 import { getPilotageMetrics } from "@/lib/queries/stats/get-pilotage-metrics";
 import { getCRMOpportunities } from "@/lib/queries/stats/get-crm-opportunities";
-import { getTripsForMap } from "@/lib/queries/trips/get-trips-for-map";
+import { getTripsForMap, getDriversList } from "@/lib/queries/trips";
 import { getMarketingSiteRequestsAction } from "@/app/site-requests/actions";
 import { getPublicPendingTrips, getPublicCompletedTrips, getSiteTripRequestsStats } from "@/lib/queries/site-requests";
 import { PilotageClient } from "./pilotage-client";
@@ -15,15 +15,17 @@ export default async function PilotagePage() {
     requestsRes, 
     publicPending,
     publicCompleted,
-    leadStats
+    leadStats,
+    drivers
   ] = await Promise.all([
     getPilotageMetrics(),
     getCRMOpportunities(),
-    getTripsForMap(200),
+    getTripsForMap(300), // On prend plus de trajets pour le radar complet
     getMarketingSiteRequestsAction({ limit: 1000 }),
     getPublicPendingTrips(),
     getPublicCompletedTrips(),
-    getSiteTripRequestsStats()
+    getSiteTripRequestsStats(),
+    getDriversList()
   ]);
 
   if (!metrics) {
@@ -43,6 +45,7 @@ export default async function PilotagePage() {
       leadStats={leadStats}
       publicPending={publicPending}
       publicCompleted={publicCompleted}
+      drivers={drivers}
     />
   );
 }
