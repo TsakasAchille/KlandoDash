@@ -114,8 +114,8 @@ export function PilotageClient({
           />
         </TabsContent>
 
-        <TabsContent value="radar">
-          <RadarTab 
+        <TabsContent value="radar" forceMount className={activeTab !== "radar" ? "hidden" : ""}>
+          <RadarTab
             corridors={metrics.corridors}
             tripsForMap={tripsForMap}
             requests={requests}

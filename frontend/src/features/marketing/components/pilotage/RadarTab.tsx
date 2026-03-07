@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { 
-  TrendingUp, Target, Globe, Facebook, Sparkles, 
-  X, Eye, EyeOff, BarChart3, Loader2, Users, Car, Search
-} from "lucide-react";
+import { TrendingUp, Target, BarChart3, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { TripMapItem } from "@/types/trip";
 import { SiteTripRequest } from "@/types/site-request";
@@ -17,9 +14,8 @@ const TripMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 rounded-[2.5rem] border border-slate-200">
-        <Loader2 className="w-10 h-10 text-klando-gold animate-spin mb-4" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Chargement Radar...</p>
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <Loader2 className="w-10 h-10 text-klando-gold animate-spin" />
       </div>
     ),
   }
@@ -34,18 +30,12 @@ interface RadarTabProps {
   onSelectRequest: (req: SiteTripRequest | null) => void;
 }
 
-export function RadarTab({ 
-  corridors, 
-  tripsForMap, 
-  requests, 
-  drivers,
-  selectedRequest,
-  onSelectRequest
+export function RadarTab({
+  corridors, tripsForMap, requests, drivers, selectedRequest, onSelectRequest
 }: RadarTabProps) {
   const [showFacebook, setShowFacebook] = useState(true);
   const [showSite, setShowSite] = useState(true);
   const [showRadarOnly, setShowRadarOnly] = useState(false);
-  
   const [selectedCorridor, setSelectedCorridor] = useState<any | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<TripMapItem | null>(null);
   const [hoveredTripId, setHoveredTripId] = useState<string | null>(null);
@@ -68,7 +58,6 @@ export function RadarTab({
   }), [filteredRequests]);
   const whatsappLeads = useMemo(() => filteredRequests.filter(r => (r.source || '').toUpperCase() === 'WHATSAPP'), [filteredRequests]);
   const matchedProspects = useMemo(() => requests.filter(r => r.matches && r.matches.length > 0), [requests]);
-
   const activeCorridors = useMemo(() => corridors.filter(c => c.origin && c.destination).sort((a, b) => b.trips_count - a.trips_count), [corridors]);
 
   const filteredTrips = useMemo(() => {
@@ -84,12 +73,23 @@ export function RadarTab({
     return tripsForMap;
   }, [tripsForMap, selectedCorridor]);
 
-  const selectedRequestId = selectedRequest?.id ?? null;
   const isFocusMode = !!selectedCorridor || !!selectedRequest;
 
+  // Focus mode: only show the selected item on the map
+  const mapTrips = useMemo(() => {
+    if (selectedRequest) return []; // Request selected → hide all trips
+    return filteredTrips;
+  }, [selectedRequest, filteredTrips]);
+
+  const mapRequests = useMemo(() => {
+    if (selectedRequest) return [selectedRequest]; // Only the selected request
+    if (selectedCorridor) return []; // Corridor selected → hide requests
+    return filteredRequests;
+  }, [selectedRequest, selectedCorridor, filteredRequests]);
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 text-left">
-      <RadarControls 
+    <div>
+      <RadarControls
         showFacebook={showFacebook} setShowFacebook={setShowFacebook}
         showSite={showSite} setShowSite={setShowSite}
         showRadarOnly={showRadarOnly} setShowRadarOnly={setShowRadarOnly}
@@ -97,19 +97,19 @@ export function RadarTab({
         onReset={() => { setSelectedCorridor(null); onSelectRequest(null); setSelectedTrip(null); }}
       />
 
-      {/* GRILLE FIXE : Garantie que la carte a de l'espace (800px de haut) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[800px] min-h-[800px]">
-        
-        {/* SIDEBAR (Toujours visible pour naviguer) */}
-        <div className="lg:col-span-4 h-full min-h-0 bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-xl flex flex-col">
-          <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between shrink-0">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 text-left">
+      {/* INLINE STYLE : force le grid côte-à-côte, pas de Tailwind pour le sizing */}
+      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '24px', height: '75vh', marginTop: '24px' }}>
+
+        {/* SIDEBAR */}
+        <div className="bg-white border border-slate-200 rounded-3xl shadow-xl flex flex-col" style={{ overflow: 'hidden', minHeight: 0 }}>
+          <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-100 shrink-0">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-indigo-500" />
               Intelligence Radar
             </h2>
           </div>
-          <div className="flex-1 overflow-hidden">
-            <RadarSidebar 
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <RadarSidebar
               showFacebook={showFacebook}
               showSite={showSite}
               corridors={activeCorridors}
@@ -117,46 +117,126 @@ export function RadarTab({
               siteLeads={siteLeads}
               whatsappLeads={whatsappLeads}
               matchedProspects={matchedProspects}
-              selectedRequestId={selectedRequestId}
+              selectedRequestId={selectedRequest?.id ?? null}
               selectedCorridor={selectedCorridor}
-              onSelectCorridor={handleSelectCorridor}
-              onSelectRequest={handleSelectRequest}
+              onSelectCorridor={(c) => { setSelectedCorridor(c); onSelectRequest(null); }}
+              onSelectRequest={(r) => { onSelectRequest(r); setSelectedCorridor(null); }}
             />
           </div>
         </div>
 
-        {/* CARTE (Prend le reste de l'espace) */}
-        <div className="lg:col-span-8 bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-xl relative h-full">
-          <TripMap 
-            key={`${selectedRequestId}-${selectedCorridor?.origin}`}
-            trips={filteredTrips} 
-            selectedTrip={selectedTrip} 
+        {/* CARTE - inline styles pour forcer les dimensions */}
+        <div className="bg-white border border-slate-200 rounded-3xl shadow-xl" style={{ position: 'relative', overflow: 'hidden', minHeight: 0 }}>
+          <TripMap
+            trips={mapTrips}
+            selectedTrip={selectedTrip}
             selectedRequest={selectedRequest}
-            siteRequests={filteredRequests}
-            hoveredTripId={hoveredTripId} 
-            hoveredRequestId={hoveredRequestId} 
-            hiddenTripIds={new Set()} 
-            hiddenRequestIds={new Set()} 
-            onSelectTrip={setSelectedTrip} 
-            onSelectRequest={onSelectRequest} 
-            onHoverTrip={setHoveredTripId} 
-            onHoverRequest={setHoveredRequestId} 
-            flowMode={!isFocusMode} 
+            siteRequests={mapRequests}
+            hoveredTripId={hoveredTripId}
+            hoveredRequestId={hoveredRequestId}
+            hiddenTripIds={new Set()}
+            hiddenRequestIds={new Set()}
+            onSelectTrip={setSelectedTrip}
+            onSelectRequest={onSelectRequest}
+            onHoverTrip={setHoveredTripId}
+            onHoverRequest={setHoveredRequestId}
+            flowMode={!isFocusMode}
           />
-          
-          <div className="absolute top-6 left-6 z-[1000] flex flex-col gap-2 pointer-events-none text-left">
+
+          {/* Overlay badge */}
+          <div style={{ position: 'absolute', top: 24, left: 24, zIndex: 1000, pointerEvents: 'none' }}>
             <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-slate-200 shadow-lg flex items-center gap-3">
-               <div className={cn("p-2 rounded-xl", isFocusMode ? "bg-klando-gold/10 text-klando-dark" : "bg-indigo-600/10 text-indigo-600")}>
-                  {isFocusMode ? <Target className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
-               </div>
-               <div className="text-left">
-                  <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none text-left">Radar Intelligence</p>
-                  <p className="text-sm font-black text-slate-900 text-left">
-                    {selectedRequest ? `${selectedRequest.origin_city} ➜ ${selectedRequest.destination_city}` : selectedCorridor ? `${selectedCorridor.origin} → ${selectedCorridor.destination}` : "Vue Multi-Couches"}
-                  </p>
-               </div>
+              <div className={cn("p-2 rounded-xl", isFocusMode ? "bg-klando-gold/10 text-klando-dark" : "bg-indigo-600/10 text-indigo-600")}>
+                {isFocusMode ? <Target className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
+              </div>
+              <div>
+                <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none">Radar Intelligence</p>
+                <p className="text-sm font-black text-slate-900">
+                  {selectedRequest ? `${selectedRequest.origin_city} ➜ ${selectedRequest.destination_city}` : selectedCorridor ? `${selectedCorridor.origin} → ${selectedCorridor.destination}` : "Flux & Leads"}
+                </p>
+              </div>
             </div>
           </div>
+
+          {/* Detail panel when a request is selected */}
+          {selectedRequest && (
+            <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24, zIndex: 1000 }}>
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-xl px-5 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-purple-100">
+                      <Target className="w-3.5 h-3.5 text-purple-600" />
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-wide text-slate-900">
+                      {selectedRequest.origin_city} ➜ {selectedRequest.destination_city}
+                    </span>
+                  </div>
+                  <span className={cn(
+                    "text-[9px] font-black uppercase px-2.5 py-1 rounded-full",
+                    selectedRequest.source?.toUpperCase() === 'FACEBOOK' ? "bg-blue-100 text-blue-700" :
+                    selectedRequest.source?.toUpperCase() === 'WHATSAPP' ? "bg-green-100 text-green-700" :
+                    "bg-emerald-100 text-emerald-700"
+                  )}>
+                    {selectedRequest.source || 'Site'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-500">
+                  {selectedRequest.desired_date && (
+                    <span>📅 {new Date(selectedRequest.desired_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  )}
+                  {selectedRequest.contact_info && (
+                    <span>📧 {selectedRequest.contact_info}</span>
+                  )}
+                  <span className={cn(
+                    "font-bold uppercase",
+                    selectedRequest.status === 'NEW' ? "text-red-500" :
+                    selectedRequest.status === 'REVIEWED' ? "text-yellow-600" :
+                    selectedRequest.status === 'CONTACTED' ? "text-blue-500" :
+                    selectedRequest.status === 'VALIDATED' ? "text-green-600" : "text-slate-400"
+                  )}>
+                    {selectedRequest.status}
+                  </span>
+                </div>
+                {selectedRequest.matches && selectedRequest.matches.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-2">
+                    <span className="text-[9px] font-black bg-klando-gold/20 text-klando-dark px-2 py-0.5 rounded-full">
+                      {selectedRequest.matches.length} match{selectedRequest.matches.length > 1 ? 's' : ''}
+                    </span>
+                    <span className="text-[9px] font-bold text-klando-gold">
+                      Meilleur : {Math.round(Math.max(...selectedRequest.matches.map(m => m.proximity_score)) * 100)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Detail panel when a corridor is selected */}
+          {selectedCorridor && !selectedRequest && (
+            <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24, zIndex: 1000 }}>
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-xl px-5 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-indigo-100">
+                      <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-wide text-slate-900">
+                      {selectedCorridor.origin} → {selectedCorridor.destination}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-black text-indigo-600">
+                    {selectedCorridor.trips_count} trajet{selectedCorridor.trips_count > 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${selectedCorridor.fill_rate || 0}%` }} />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500">{Math.round(selectedCorridor.fill_rate || 0)}% remplissage</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -23,37 +23,40 @@ export function RadarControls({
   return (
     <div className="flex flex-wrap gap-3 items-center justify-between bg-slate-900 p-4 rounded-[2rem] border border-white/5 shadow-2xl">
       <div className="flex flex-wrap gap-2 items-center">
+        {/* Toggle FACEBOOK */}
         <button
           onClick={() => setShowFacebook(!showFacebook)}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
             showFacebook 
-              ? "bg-blue-600 text-white border-blue-400 shadow-lg shadow-blue-600/20" 
-              : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700"
+              ? "bg-blue-600 text-white border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)]" 
+              : "bg-slate-800/50 text-slate-500 border-slate-700 hover:text-slate-300"
           )}
         >
           <Facebook className="w-3.5 h-3.5" /> Facebook
         </button>
 
+        {/* Toggle SITE */}
         <button
           onClick={() => setShowSite(!showSite)}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
             showSite 
-              ? "bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-600/20" 
-              : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700"
+              ? "bg-emerald-600 text-white border-emerald-500 shadow-[0_0_15px_rgba(5,150,105,0.4)]" 
+              : "bg-slate-800/50 text-slate-500 border-slate-700 hover:text-slate-300"
           )}
         >
           <Globe className="w-3.5 h-3.5" /> Site Web
         </button>
 
+        {/* Toggle RADAR MATCH */}
         <button
           onClick={() => setShowRadarOnly(!showRadarOnly)}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
             showRadarOnly 
-              ? "bg-klando-gold text-klando-dark border-yellow-400 shadow-lg shadow-yellow-600/20" 
-              : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700"
+              ? "bg-klando-gold text-klando-dark border-klando-gold shadow-[0_0_15px_rgba(235,195,63,0.4)]" 
+              : "bg-slate-800/50 text-slate-500 border-slate-700 hover:text-slate-300"
           )}
         >
           <Target className="w-3.5 h-3.5" /> Radar Match
