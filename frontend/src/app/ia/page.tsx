@@ -7,7 +7,7 @@ import { getTopDrivers, getTopRequestedRoutes } from "@/lib/queries/stats/get-ai
 import { RefreshButton } from "./refresh-button";
 import { IAToolsClient } from "./ia-tools-client";
 import { formatDateShort } from "@/lib/utils";
-import { User, MapPin, Phone } from "lucide-react";
+import { User, MapPin, Phone, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -146,17 +146,31 @@ export default async function IAPage() {
             <h2 className="text-xs font-black uppercase text-slate-400 mb-4 tracking-widest border-l-4 border-blue-500 pl-3">Analyse: Top Demandes Passagers</h2>
             <div className="bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
               <div className="p-2 bg-slate-100 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase flex">
-                <div className="w-3/4">Itinéraire</div>
-                <div className="w-1/4 text-right">Requêtes</div>
+                <div className="w-2/3">Itinéraire</div>
+                <div className="w-1/6 text-center">Requêtes</div>
+                <div className="w-1/6 text-right">Action</div>
               </div>
-              <div className="divide-y divide-slate-100">
+              <div id="ia-top-routes-list" className="divide-y divide-slate-100">
                 {topRoutes.map((route, i) => (
-                  <div key={i} className="p-2 flex items-center hover:bg-slate-50">
-                    <div className="w-3/4 flex items-center gap-2 font-medium">
+                  <div 
+                    key={i} 
+                    className="ia-top-route-item p-2 flex items-center hover:bg-slate-50 transition-colors"
+                    data-origin={route.origin_city}
+                    data-dest={route.destination_city}
+                  >
+                    <div className="w-2/3 flex items-center gap-2 font-medium">
                       <MapPin className="w-3 h-3 text-blue-500 opacity-50" />
                       <span className="truncate">{route.origin_city} → {route.destination_city}</span>
                     </div>
-                    <div className="w-1/4 text-right font-black text-blue-600">{route.request_count}</div>
+                    <div className="w-1/6 text-center font-black text-blue-600">{route.request_count}</div>
+                    <div className="w-1/6 text-right">
+                      <button 
+                        className="ia-action-radar-btn text-[9px] font-black uppercase text-indigo-600 hover:underline flex items-center gap-1 ml-auto"
+                        onClick={`(function(){ document.getElementById('ia-search-origin').value='${route.origin_city}'; document.getElementById('ia-search-dest').value='${route.destination_city}'; document.getElementById('ia-search-button').click(); })()`}
+                      >
+                        <Zap className="w-2.5 h-2.5" /> Radar
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -210,25 +224,40 @@ export default async function IAPage() {
           <h2 className="text-xs font-black uppercase text-slate-400 mb-4 tracking-widest border-l-4 border-amber-500 pl-3">Intentions Voyageurs (Passengers)</h2>
           <div className="bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
              <div className="p-2 bg-slate-100 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase flex">
-              <div className="w-1/4">Créé le</div>
-              <div className="w-1/3">Origine -&gt; Destination</div>
-              <div className="w-1/4">Contact / Date souhaitée</div>
-              <div className="w-1/6">Status</div>
+              <div className="w-1/6">Créé le</div>
+              <div className="w-1/4">Origine -&gt; Destination</div>
+              <div className="w-1/4">Contact / Date</div>
+              <div className="w-1/12 text-center">Status</div>
+              <div className="w-1/6 text-right">Action Radar</div>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div id="ia-passenger-intentions-list" className="divide-y divide-slate-100">
               {[...newRequests, ...reviewedRequests].map((req) => (
-                <div key={req.id} className="p-2 flex items-center hover:bg-slate-50">
-                  <div className="w-1/4 truncate text-slate-500">{formatDateShort(req.created_at)}</div>
-                  <div className="w-1/3 truncate font-medium">
+                <div 
+                  key={req.id} 
+                  className="ia-passenger-request-item p-2 flex items-center hover:bg-slate-50 transition-colors"
+                  data-origin={req.origin_city}
+                  data-dest={req.destination_city}
+                  data-contact={req.contact_info}
+                >
+                  <div className="w-1/6 truncate text-slate-500">{formatDateShort(req.created_at)}</div>
+                  <div className="w-1/4 truncate font-medium">
                     {req.origin_city} → {req.destination_city}
                   </div>
                   <div className="w-1/4 truncate text-slate-600">
                     {req.contact_info} ({req.desired_date || "Dès que possible"})
                   </div>
-                  <div className="w-1/6">
+                  <div className="w-1/12 text-center">
                     <span className={`px-1.5 py-0.5 rounded text-[10px] ${req.status === 'NEW' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
                       {req.status}
                     </span>
+                  </div>
+                  <div className="w-1/6 text-right">
+                    <button 
+                      className="ia-radar-fill-btn bg-indigo-600 text-white px-2 py-1 rounded text-[9px] font-black uppercase hover:bg-indigo-700 transition-colors flex items-center gap-1 ml-auto"
+                      onClick={`(function(){ document.getElementById('ia-search-origin').value='${req.origin_city}'; document.getElementById('ia-search-dest').value='${req.destination_city}'; document.getElementById('ia-contact-target').value='${req.contact_info}'; document.getElementById('ia-search-button').click(); })()`}
+                    >
+                      <Zap className="w-2.5 h-2.5" /> Lancer Radar
+                    </button>
                   </div>
                 </div>
               ))}
