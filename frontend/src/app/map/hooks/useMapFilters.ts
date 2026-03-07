@@ -22,17 +22,29 @@ export function useMapFilters({
 }: UseMapFiltersProps) {
   const router = useRouter();
 
-  const [filters, setFilters] = useState<MapFiltersType & { showRequests: boolean; showMatchesOnly: boolean }>({
+  const [filters, setFilters] = useState<MapFiltersType & { 
+    showRequests: boolean; 
+    showMatchesOnly: boolean;
+    requestSource: string;
+    requestsWithMatchesOnly: boolean;
+  }>({
     status: (initialStatusFilter as MapFiltersType["status"]) || "ALL",
     dateFrom: null,
     dateTo: null,
     driverId: initialDriverFilter,
     showRequests: initialShowRequests,
     showMatchesOnly: false,
+    requestSource: "ALL",
+    requestsWithMatchesOnly: false,
   });
 
   const handleFilterChange = useCallback(
-    (newFilters: Partial<MapFiltersType & { showRequests: boolean; showMatchesOnly: boolean }>) => {
+    (newFilters: Partial<MapFiltersType & { 
+      showRequests: boolean; 
+      showMatchesOnly: boolean;
+      requestSource: string;
+      requestsWithMatchesOnly: boolean;
+    }>) => {
       setFilters((prev) => ({ ...prev, ...newFilters }));
       const url = new URL(window.location.href);
       
@@ -85,9 +97,24 @@ export function useMapFilters({
   const filteredRequests = useMemo(() => {
     if (!filters.showRequests) return [];
 
-    // On ne montre que les requêtes qui ont des coordonnées réelles
-    return siteRequests.filter(r => r.origin_lat && r.origin_lng);
-  }, [siteRequests, filters.showRequests]);
+    return siteRequests.filter(r => {
+      // 1. On ne montre que les requêtes qui ont des coordonnées réelles
+      if (!r.origin_lat || !r.origin_lng) return false;
+
+      // 2. Filtrer par source
+      if (filters.requestSource !== "ALL") {
+        const source = r.source || "SITE";
+        if (source !== filters.requestSource) return false;
+      }
+
+      // 3. Filtrer par radar (matches identifiés)
+      if (filters.requestsWithMatchesOnly) {
+        if (!r.matches || r.matches.length === 0) return false;
+      }
+
+      return true;
+    });
+  }, [siteRequests, filters.showRequests, filters.requestSource, filters.requestsWithMatchesOnly]);
 
   return {
     filters,

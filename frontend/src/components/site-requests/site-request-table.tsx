@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Calendar, Phone, Mail, Sparkles, Loader2, ChevronLeft, ChevronRight, Hash, Radar, CheckCircle, Check, ArrowUpRight, Clock } from "lucide-react";
+import { Calendar, Phone, Mail, Sparkles, Loader2, ChevronLeft, ChevronRight, Hash, Radar, CheckCircle, Check, ArrowUpRight, Clock, Globe, Facebook, MessageSquare } from "lucide-react";
 import { scanRequestMatchesAction } from "@/app/site-requests/actions";
 import { toast } from "sonner";
 import { ScanResultsDialog } from "@/app/site-requests/components/ScanResultsDialog";
@@ -214,6 +214,18 @@ export function SiteRequestTable({
                 const contact = request.contact_info || "N/A";
                 const isEmail = contact.includes('@');
                 const ContactIcon = isEmail ? Mail : Phone;
+
+                // Source visual config
+                const sourceConfig: Record<string, { icon: any; color: string; bg: string; label: string; }> = {
+                  SITE: { icon: Globe, color: "text-slate-500", bg: "bg-slate-100", label: "Site Web" },
+                  FACEBOOK: { icon: Facebook, color: "text-blue-600", bg: "bg-blue-50", label: "Facebook" },
+                  WHATSAPP: { icon: MessageSquare, color: "text-green-600", bg: "bg-green-50", label: "WhatsApp" },
+                  IA_AGENT: { icon: Sparkles, color: "text-purple-600", bg: "bg-purple-50", label: "IA Hub" },
+                };
+                const source = (request.source as string) || 'SITE';
+                const config = sourceConfig[source] || sourceConfig.SITE;
+                const SourceIcon = config.icon;
+
                 return (
                   <TableRow key={request.id} className="transition-colors group hover:bg-slate-50 border-b border-slate-100 last:border-0">
                     <TableCell className="py-4">
@@ -222,7 +234,18 @@ export function SiteRequestTable({
                           <ContactIcon className="w-4 h-4" />
                         </div>
                         <div className="flex flex-col min-w-0 text-left">
-                          <div className="font-bold text-slate-900 truncate">{contact}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-bold text-slate-900 truncate">{contact}</div>
+                            <div className={cn(
+                              "flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter border shadow-sm",
+                              config.bg,
+                              config.color,
+                              "border-current/10"
+                            )}>
+                              <SourceIcon className="w-2.5 h-2.5" />
+                              {config.label}
+                            </div>
+                          </div>
                            <div className="font-black uppercase text-[10px] sm:hidden mt-1 text-klando-gold truncate text-left">
                             {request.origin_city} ➜ {request.destination_city}
                           </div>

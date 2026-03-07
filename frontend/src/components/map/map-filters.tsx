@@ -1,16 +1,89 @@
 import { MapFilters as MapFiltersType } from "@/types/trip";
-import { Users, Calendar, ShieldCheck, User } from "lucide-react";
+import { Users, Calendar, ShieldCheck, User, Globe, Facebook, MessageSquare, Sparkles, Radar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MapFiltersProps {
-  filters: MapFiltersType & { showRequests: boolean };
+  filters: MapFiltersType & { 
+    showRequests: boolean;
+    requestSource: string;
+    requestsWithMatchesOnly: boolean;
+  };
   drivers: Array<{ uid: string; display_name: string | null }>;
-  onFilterChange: (filters: Partial<MapFiltersType & { showRequests: boolean }>) => void;
+  onFilterChange: (filters: Partial<MapFiltersType & { 
+    showRequests: boolean;
+    requestSource: string;
+    requestsWithMatchesOnly: boolean;
+  }>) => void;
 }
 
 export function MapFilters({ filters, drivers, onFilterChange }: MapFiltersProps) {
   return (
     <div className="space-y-8">
+      {/* Visibility Toggle */}
+      <div className="space-y-4">
+        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-klando-gold flex items-center gap-2">
+          <Radar className="w-3 h-3" /> Visibilité Globale
+        </h4>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onFilterChange({ showRequests: !filters.showRequests })}
+            className={cn(
+              "flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2",
+              filters.showRequests 
+                ? "bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-600/20" 
+                : "bg-secondary/50 text-muted-foreground border-border/40 hover:border-purple-600/30"
+            )}
+          >
+            <Users className="w-3.5 h-3.5" />
+            Demandes Prospects
+          </button>
+        </div>
+      </div>
+
+      {/* Section Source des Prospects (Only visible if showRequests is true) */}
+      {filters.showRequests && (
+        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-klando-gold flex items-center gap-2">
+            <Globe className="w-3 h-3" /> Origine des Prospects
+          </h4>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { id: "ALL", label: "Toutes sources", icon: Globe },
+              { id: "SITE", label: "Site Web", icon: Globe },
+              { id: "FACEBOOK", label: "Facebook", icon: Facebook },
+              { id: "WHATSAPP", label: "WhatsApp", icon: MessageSquare }
+            ].map((s) => (
+              <button
+                key={s.id}
+                onClick={() => onFilterChange({ requestSource: s.id })}
+                className={cn(
+                  "py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-2 justify-center",
+                  filters.requestSource === s.id 
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20" 
+                    : "bg-secondary/50 text-muted-foreground border-border/40 hover:border-indigo-600/30"
+                )}
+              >
+                <s.icon className="w-3 h-3" />
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => onFilterChange({ requestsWithMatchesOnly: !filters.requestsWithMatchesOnly })}
+            className={cn(
+              "w-full py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2",
+              filters.requestsWithMatchesOnly 
+                ? "bg-green-600 text-white border-green-600 shadow-lg shadow-green-600/20" 
+                : "bg-secondary/50 text-muted-foreground border-border/40 hover:border-green-600/30"
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Matches Radar Uniquement
+          </button>
+        </div>
+      )}
+
       {/* Section Statut */}
       <div className="space-y-4">
         <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-klando-gold flex items-center gap-2">
@@ -94,7 +167,15 @@ export function MapFilters({ filters, drivers, onFilterChange }: MapFiltersProps
       {/* Boutons d'action */}
       <div className="pt-4">
         <button
-          onClick={() => onFilterChange({ status: "PENDING", driverId: null, dateFrom: null, dateTo: null, showRequests: false })}
+          onClick={() => onFilterChange({ 
+            status: "ALL", 
+            driverId: null, 
+            dateFrom: null, 
+            dateTo: null, 
+            showRequests: true,
+            requestSource: "ALL",
+            requestsWithMatchesOnly: false
+          })}
           className="w-full py-4 rounded-2xl border border-dashed border-border/60 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-klando-gold hover:border-klando-gold/40 transition-all"
         >
           Réinitialiser tous les filtres
