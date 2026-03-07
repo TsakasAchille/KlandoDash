@@ -166,8 +166,17 @@ export default async function IAPage() {
                     <div className="w-1/6 text-right">
                       <button 
                         className="ia-action-radar-btn text-[9px] font-black uppercase text-indigo-600 hover:underline flex items-center gap-1 ml-auto"
-                        // @ts-ignore
-                        onClick={`(function(){ document.getElementById('ia-search-origin').value='${route.origin_city}'; document.getElementById('ia-search-dest').value='${route.destination_city}'; document.getElementById('ia-search-button').click(); })()`}
+                        onClick={() => {
+                          const originInput = document.getElementById('ia-search-origin') as HTMLInputElement;
+                          const destInput = document.getElementById('ia-search-dest') as HTMLInputElement;
+                          const searchBtn = document.getElementById('ia-search-button') as HTMLButtonElement;
+                          if (originInput) originInput.value = route.origin_city;
+                          if (destInput) destInput.value = route.destination_city;
+                          // Trigger input events for React to see the change
+                          originInput?.dispatchEvent(new Event('input', { bubbles: true }));
+                          destInput?.dispatchEvent(new Event('input', { bubbles: true }));
+                          if (searchBtn) searchBtn.click();
+                        }}
                       >
                         <Zap className="w-2.5 h-2.5" /> Radar
                       </button>
@@ -274,8 +283,23 @@ export default async function IAPage() {
                   <div className="w-1/6 text-right">
                     <button 
                       className="ia-radar-fill-btn bg-indigo-600 text-white px-2 py-1 rounded text-[9px] font-black uppercase hover:bg-indigo-700 transition-colors flex items-center gap-1 ml-auto"
-                      // @ts-ignore
-                      onClick={`(function(){ document.getElementById('ia-search-origin').value='${req.origin_city}'; document.getElementById('ia-search-dest').value='${req.destination_city}'; document.getElementById('ia-contact-target').value='${req.contact_info}'; document.getElementById('ia-search-button').click(); })()`}
+                      onClick={() => {
+                        const originInput = document.getElementById('ia-search-origin') as HTMLInputElement;
+                        const destInput = document.getElementById('ia-search-dest') as HTMLInputElement;
+                        const targetInput = document.getElementById('ia-contact-target') as HTMLInputElement;
+                        const searchBtn = document.getElementById('ia-search-button') as HTMLButtonElement;
+                        
+                        if (originInput) originInput.value = req.origin_city;
+                        if (destInput) destInput.value = req.destination_city;
+                        if (targetInput) targetInput.value = req.contact_info;
+                        
+                        // Trigger events for React state sync
+                        originInput?.dispatchEvent(new Event('input', { bubbles: true }));
+                        destInput?.dispatchEvent(new Event('input', { bubbles: true }));
+                        targetInput?.dispatchEvent(new Event('input', { bubbles: true }));
+                        
+                        if (searchBtn) searchBtn.click();
+                      }}
                     >
                       <Zap className="w-2.5 h-2.5" /> Lancer Radar
                     </button>
