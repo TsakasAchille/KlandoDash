@@ -148,7 +148,10 @@ function IAToolsContent() {
     if (!finalMessage || !finalSubject) { toast.error("L'objet et le message sont obligatoires."); return; }
     setIsSending(true);
     try {
-      const result = await createPropositionDraft(finalTarget, finalSubject, finalMessage, attachedImages);
+      const result = await createPropositionDraft(finalTarget, finalSubject, finalMessage, attachedImages, {
+        source: 'FACEBOOK',
+        type: intakeType
+      });
       if (result.success) {
         console.log(`[IA-CLIENT] Draft created: ${result.id}`);
         toast.success("Brouillon créé avec succès !");

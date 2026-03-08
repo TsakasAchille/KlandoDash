@@ -54,6 +54,19 @@ export function MessageList({ messages, selectedId, onSelect, activeFolder }: Me
                     )}>
                       {msg.channel}
                     </span>
+                    {msg.source && (
+                      <span className="text-[7px] font-black px-1 rounded uppercase bg-slate-100 text-slate-500">
+                        {msg.source}
+                      </span>
+                    )}
+                    {msg.request_type && (
+                      <span className={cn(
+                        "text-[7px] font-black px-1 rounded uppercase",
+                        msg.request_type === 'DRIVER' ? "bg-orange-100 text-orange-600" : "bg-purple-100 text-purple-600"
+                      )}>
+                        {msg.request_type === 'DRIVER' ? 'DRV' : 'PSGR'}
+                      </span>
+                    )}
                   </div>
                   <span className="text-[10px] font-bold text-slate-400 tabular-nums whitespace-nowrap ml-2">
                     {new Date(msg.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })} {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}

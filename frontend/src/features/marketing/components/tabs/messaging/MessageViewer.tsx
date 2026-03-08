@@ -146,6 +146,18 @@ export function MessageViewer({
             )}
             <p className="text-[10px] font-bold text-slate-600 uppercase mt-0.5 flex items-center gap-2">
               Canal: <span className={cn(isWhatsApp ? "text-green-600" : "text-blue-600")}>{message.channel}</span>
+              {message.source && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-slate-300" />
+                  Source: <span className="text-slate-900">{message.source}</span>
+                </>
+              )}
+              {message.request_type && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-slate-300" />
+                  Type: <span className={cn(message.request_type === 'DRIVER' ? "text-orange-600" : "text-purple-600")}>{message.request_type}</span>
+                </>
+              )}
               <span className="w-1 h-1 rounded-full bg-slate-300" />
               Vers: {message.recipient_contact}
             </p>

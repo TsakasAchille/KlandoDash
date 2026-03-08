@@ -183,7 +183,8 @@ export async function createPropositionDraft(
   target: string, 
   subject: string, 
   message: string, 
-  images: { url: string; description: string }[] = []
+  images: { url: string; description: string }[] = [],
+  context?: { source?: string; type?: 'PASSENGER' | 'DRIVER' }
 ) {
   console.log(`[IA-ACTION] createPropositionDraft started for ${target}. Images: ${images.length}`);
   const session = await auth();
@@ -231,7 +232,9 @@ export async function createPropositionDraft(
       created_at: new Date().toISOString(),
       is_ai_generated: true,
       images: images,
-      image_url: images.length > 0 ? images[0].url : null // Fallback legacy
+      image_url: images.length > 0 ? images[0].url : null, // Fallback legacy
+      source: context?.source || (recipientEmail?.includes('klando-sn.com') ? 'IA_AGENT' : 'EXTERNAL'),
+      request_type: context?.type || 'PASSENGER'
     }])
     .select()
     .single();

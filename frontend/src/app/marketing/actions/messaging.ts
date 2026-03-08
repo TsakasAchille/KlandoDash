@@ -296,7 +296,13 @@ export async function generateMessagingSuggestionsAction() {
   const { data: inactiveUsers } = await supabase.from('users').select('*').limit(10);
 
   const dataContext = {
-    prospects: prospects?.map(p => ({ contact: p.contact_info, from: p.origin_city, to: p.destination_city })),
+    prospects: prospects?.map(p => ({ 
+      contact: p.contact_info, 
+      from: p.origin_city, 
+      to: p.destination_city,
+      source: p.source || 'SITE',
+      type: p.request_type || 'PASSENGER'
+    })),
     inactive_users: inactiveUsers?.map(u => ({ name: u.display_name, email: u.email, phone: u.phone_number })),
     preferences: marketingMemories
   };
@@ -310,6 +316,7 @@ export async function generateMessagingSuggestionsAction() {
     - Pour WhatsApp, pas de sujet, sois plus direct et utilise des emojis.
     - Pour Email, utilise un sujet accrocheur.
     - Explique ton choix de canal dans "ai_reasoning".
+    - Pour chaque opportunité basée sur un prospect, REPRENDS sa "source" (SITE, FACEBOOK, etc.) et son "request_type" (PASSENGER, DRIVER).
     
     Structure JSON attendue :
     {
@@ -321,6 +328,8 @@ export async function generateMessagingSuggestionsAction() {
           "recipient_name": "nom",
           "subject": "sujet (null si whatsapp)",
           "content": "contenu Markdown",
+          "source": "SITE" | "FACEBOOK" | "WHATSAPP",
+          "request_type": "PASSENGER" | "DRIVER",
           "ai_reasoning": "Explication de la stratégie et du choix du canal"
         }
       ]

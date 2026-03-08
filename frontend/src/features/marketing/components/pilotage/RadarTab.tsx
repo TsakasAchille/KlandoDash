@@ -64,13 +64,13 @@ export function RadarTab({
 
   // 2. Calculer les axes unifiés (Offre + Demande) pour la navigation
   const activeAxes = useMemo(() => {
-    const axesMap: Record<string, { origin: string, dest: string, trips: number, leads: number, fill: number }> = {};
+    const axesMap: Record<string, { origin: string, destination: string, trips: number, leads: number, fill: number }> = {};
 
     // On commence par les flux de l'application
     corridors.forEach(c => {
       if (!c.origin || !c.destination) return;
       const key = [c.origin.toLowerCase(), c.destination.toLowerCase()].sort().join(' - ');
-      axesMap[key] = { origin: c.origin, dest: c.destination, trips: c.trips_count, leads: 0, fill: c.fill_rate };
+      axesMap[key] = { origin: c.origin, destination: c.destination, trips: c.trips_count, leads: 0, fill: c.fill_rate };
     });
 
     // On enrichit avec les prospects filtrés (Facebook / Site)
@@ -78,7 +78,7 @@ export function RadarTab({
       if (!r.origin_city || !r.destination_city) return;
       const key = [r.origin_city.toLowerCase(), r.destination_city.toLowerCase()].sort().join(' - ');
       if (!axesMap[key]) {
-        axesMap[key] = { origin: r.origin_city, dest: r.destination_city, trips: 0, leads: 0, fill: 0 };
+        axesMap[key] = { origin: r.origin_city, destination: r.destination_city, trips: 0, leads: 0, fill: 0 };
       }
       axesMap[key].leads++;
     });
@@ -255,14 +255,14 @@ export function RadarTab({
                     </span>
                   </div>
                   <span className="text-[10px] font-black text-indigo-600">
-                    {selectedCorridor.trips_count} trajet{selectedCorridor.trips_count > 1 ? 's' : ''}
+                    {selectedCorridor.trips} trajet{selectedCorridor.trips > 1 ? 's' : ''}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 mt-2">
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${selectedCorridor.fill_rate || 0}%` }} />
+                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${selectedCorridor.fill || 0}%` }} />
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500">{Math.round(selectedCorridor.fill_rate || 0)}% remplissage</span>
+                  <span className="text-[10px] font-bold text-slate-500">{Math.round(selectedCorridor.fill || 0)}% remplissage</span>
                 </div>
               </div>
             </div>

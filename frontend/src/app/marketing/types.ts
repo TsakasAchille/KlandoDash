@@ -30,6 +30,8 @@ export interface MarketingMessage {
   admin_feedback?: string | null;
   image_url?: string | null;
   images?: { url: string; description: string }[];
+  source?: string | null;
+  request_type?: string | null;
   asset_id?: string | null;
   created_at: string;
   sent_at: string | null;
