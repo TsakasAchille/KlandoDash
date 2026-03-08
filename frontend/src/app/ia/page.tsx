@@ -7,6 +7,7 @@ import { getTopDrivers, getTopRequestedRoutes } from "@/lib/queries/stats/get-ai
 import { RefreshButton } from "./refresh-button";
 import { IAToolsClient } from "./ia-tools-client";
 import { IAListsClient } from "./ia-lists-client";
+import { IAProposalsClient } from "./ia-proposals-client";
 import { formatDateShort } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -113,6 +114,9 @@ export default async function IAPage() {
           <h2 className="text-xs font-black uppercase text-slate-400 mb-4 tracking-widest border-l-4 border-slate-900 pl-3">Outils Community Manager</h2>
           <IAToolsClient />
         </div>
+
+        {/* PROPOSITIONS CM */}
+        <IAProposalsClient />
 
         {/* LISTES INTERACTIVES (CLIENT SIDE) */}
         <IAListsClient 
