@@ -41,15 +41,33 @@ export function MessagingClient({ initialMessages }: MessagingClientProps) {
     setSendingId(id);
     try {
       const res = await sendMessageAction(id) as any;
+
       if (res.success) {
-        if (res.via === 'WHATSAPP_LINK') {
-          toast.success("Prêt pour WhatsApp");
+        if (res.via === 'API_CLOUD') {
+          toast.success("Message WhatsApp envoyé via API Cloud !");
         } else {
-          toast.success("Email envoyé !");
+          toast.success("Email envoyé avec succès !");
         }
         router.refresh();
+      } else if (res.via === 'WHATSAPP_LINK') {
+        // API non configurée → fallback lien wa.me
+        const msg = messages.find(m => m.id === id);
+        const phone = (res.recipient || msg?.recipient_contact || '').replace(/\D/g, '');
+        const text = res.content || msg?.content || '';
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+        toast.warning("API WhatsApp non configurée — ouverture wa.me (mode manuel)", {
+          description: "Configurez WHATSAPP_ACCESS_TOKEN et WHATSAPP_PHONE_NUMBER_ID dans .env.local pour l'envoi automatique.",
+          duration: 8000,
+        });
+      } else if (res.canFallbackToLink) {
+        // API configurée mais erreur (ex: numéro non autorisé, fenêtre 24h)
+        toast.error(`Échec API WhatsApp`, {
+          description: res.message || "Erreur inconnue",
+          duration: 10000,
+        });
       } else {
-        toast.error(res.message || "Échec de l'envoi");
+        toast.error(res.message || "Échec de l'envoi", { duration: 8000 });
       }
     } catch (error) {
       toast.error("Erreur lors de l'envoi");

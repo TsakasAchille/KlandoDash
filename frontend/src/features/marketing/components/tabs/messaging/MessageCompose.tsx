@@ -8,10 +8,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  Plus, Loader2, User, Tag, Mail, MessageSquare
+  Plus, Loader2, User, Tag, Mail, MessageSquare, ChevronDown
 } from "lucide-react";
 import { MessageChannel, MessageCategory } from "@/app/marketing/types";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface MessageComposeProps {
   isOpen: boolean;
@@ -26,6 +33,7 @@ export function MessageCompose({
   onSave,
   isSaving
 }: MessageComposeProps) {
+  const [countryCode, setCountryCode] = useState("221");
   const [newDraft, setNewDraft] = useState({
     recipient_contact: '',
     recipient_name: '',
@@ -36,15 +44,36 @@ export function MessageCompose({
   });
 
   const handleSave = async () => {
-    await onSave(newDraft);
-    setNewDraft({ 
-      recipient_contact: '', 
-      recipient_name: '', 
-      subject: '', 
-      content: '', 
-      channel: 'EMAIL',
-      category: 'GENERAL' 
-    });
+    console.log("[MessageCompose] handleSave triggered", newDraft);
+    // Si WhatsApp, on s'assure que le préfixe est présent
+    let contact = newDraft.recipient_contact;
+    if (newDraft.channel === 'WHATSAPP') {
+        const cleanNumber = contact.replace(/\D/g, '');
+        // Si le numéro ne commence pas déjà par le code pays, on l'ajoute
+        if (!cleanNumber.startsWith(countryCode)) {
+            // Enlever le 0 initial si présent (ex: 06 devient 6)
+            const finalNumber = cleanNumber.startsWith('0') ? cleanNumber.substring(1) : cleanNumber;
+            contact = countryCode + finalNumber;
+        } else {
+            contact = cleanNumber;
+        }
+        console.log("[MessageCompose] WhatsApp formatted contact:", contact);
+    }
+
+    try {
+        await onSave({ ...newDraft, recipient_contact: contact });
+        console.log("[MessageCompose] onSave completed");
+        setNewDraft({ 
+          recipient_contact: '', 
+          recipient_name: '', 
+          subject: '', 
+          content: '', 
+          channel: 'EMAIL',
+          category: 'GENERAL' 
+        });
+    } catch (err) {
+        console.error("[MessageCompose] onSave failed:", err);
+    }
   };
 
   const isWhatsApp = newDraft.channel === 'WHATSAPP';
@@ -97,12 +126,25 @@ export function MessageCompose({
                 <label className="text-[10px] font-black text-slate-700 uppercase pl-1 flex items-center gap-2">
                   <User className="w-3 h-3 text-purple-600"/> {isWhatsApp ? "Téléphone" : "Destinataire (Email)"}
                 </label>
-                <Input 
-                  value={newDraft.recipient_contact}
-                  onChange={(e) => setNewDraft({...newDraft, recipient_contact: e.target.value})}
-                  placeholder={isWhatsApp ? "ex: 22177..." : "ex: client@mail.com"} 
-                  className="bg-slate-50 border-slate-300 rounded-xl text-slate-900 h-11 placeholder:text-slate-400 focus:border-purple-500/50 transition-all outline-none text-left" 
-                />
+                <div className="flex gap-2">
+                    {isWhatsApp && (
+                        <Select value={countryCode} onValueChange={setCountryCode}>
+                            <SelectTrigger className="w-[100px] h-11 bg-slate-50 border-slate-300 rounded-xl font-bold text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-slate-200">
+                                <SelectItem value="221" className="text-xs font-bold">🇸🇳 +221</SelectItem>
+                                <SelectItem value="33" className="text-xs font-bold">🇫🇷 +33</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
+                    <Input 
+                      value={newDraft.recipient_contact}
+                      onChange={(e) => setNewDraft({...newDraft, recipient_contact: e.target.value})}
+                      placeholder={isWhatsApp ? "06..." : "ex: client@mail.com"} 
+                      className="flex-1 bg-slate-50 border-slate-300 rounded-xl text-slate-900 h-11 placeholder:text-slate-400 focus:border-purple-500/50 transition-all outline-none text-left" 
+                    />
+                </div>
               </div>
               <div className="space-y-1.5 text-left">
                 <label className="text-[10px] font-black text-slate-700 uppercase pl-1">Nom (Optionnel)</label>

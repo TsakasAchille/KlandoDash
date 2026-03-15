@@ -64,6 +64,8 @@ export async function saveMessagingFeedbackAction(id: string, isLiked: boolean, 
   return { success: true };
 }
 
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+
 /**
  * Envoie un message (Email ou WhatsApp)
  */
@@ -83,14 +85,52 @@ export async function sendMessageAction(id: string) {
   if (message.channel === 'EMAIL') {
     return sendEmailInternalAction(id);
   } else {
-    // Pour WhatsApp, on marque juste comme envoyé pour l'instant (en attendant l'API Meta)
-    // L'envoi se fait via wa.me coté client
-    await supabase.from('dash_marketing_messages').update({
-      status: 'SENT',
-      sent_at: new Date().toISOString()
-    }).eq('id', id);
+    // Tentative d'envoi automatique via API Meta
+    const phoneId = process.env.WHATSAPP_PHONE_ID || process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const token = process.env.WHATSAPP_ACCESS_TOKEN;
     
-    return { success: true, via: 'WHATSAPP_LINK' };
+    console.log("[WA-SEND] Checking credentials:", { 
+        hasToken: !!token, 
+        phoneId: phoneId,
+        tokenPrefix: token ? token.substring(0, 10) + "..." : "none"
+    });
+
+    if (token && phoneId) {
+        const res = await sendWhatsAppMessage({
+            to: message.recipient_contact,
+            message: message.content
+        });
+
+        if (res.success) {
+            await supabase.from('dash_marketing_messages').update({
+                status: 'SENT',
+                sent_at: new Date().toISOString(),
+                message_id: res.messageId
+            }).eq('id', id);
+
+            await recordAuditLog({
+                action: 'WHATSAPP_SENT',
+                entityType: 'MARKETING_MESSAGE',
+                entityId: id,
+                details: { recipient: message.recipient_contact, method: 'API_CLOUD' }
+            });
+
+            revalidatePath("/admin/pilotage");
+            return { success: true, via: 'API_CLOUD' };
+        } else {
+            // Si l'API échoue (ex: 24h window), on peut encore proposer le wa.me via un flag
+            return { success: false, message: res.error, canFallbackToLink: true };
+        }
+    }
+
+    // Pas de credentials configurées → retourner un fallback lien
+    return {
+      success: false,
+      via: 'WHATSAPP_LINK',
+      message: "API WhatsApp non configurée (WHATSAPP_ACCESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID manquants). Ouverture du lien wa.me.",
+      recipient: message.recipient_contact,
+      content: message.content
+    };
   }
 }
 
@@ -242,7 +282,10 @@ export async function createMessageDraftAction(data: {
     .select()
     .single();
 
-  if (error) return { success: false, message: "Échec de sauvegarde" };
+  if (error) {
+    console.error("[Messaging Action] Insert error:", error);
+    return { success: false, message: `Échec de sauvegarde: ${error.message}` };
+  }
   
   await recordAuditLog({
     action: 'MESSAGE_DRAFT_CREATED',
@@ -252,6 +295,7 @@ export async function createMessageDraftAction(data: {
   });
 
   revalidatePath("/admin/pilotage");
+  revalidatePath("/messaging");
   return { success: true, id: draft.id };
 }
 

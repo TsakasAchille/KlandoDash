@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MarketingMessage, MessageChannel } from "@/app/marketing/types";
 import { 
@@ -35,6 +35,7 @@ export function MessagingTab({
 }: MessagingTabProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   
   const [activeFolder, setActiveFolder] = useState<MessageFolder>('SUGGESTIONS');
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
@@ -81,7 +82,7 @@ export function MessagingTab({
   }), [messages]);
 
   const handleCreateDraft = async (data: Partial<MarketingMessage>) => {
-    if (!data.recipient_contact || !data.content || !data.category || !data.channel) {
+    if (!data.recipient_contact || !data.content || !data.channel) {
         toast.error("Veuillez remplir tous les champs obligatoires");
         return;
     }
@@ -89,29 +90,50 @@ export function MessagingTab({
     try {
         const res = await createMessageDraftAction({
             recipient_contact: data.recipient_contact,
-            recipient_name: data.recipient_name || undefined,
-            subject: data.subject || undefined,
+            recipient_name: data.recipient_name ?? undefined,
+            subject: data.subject ?? (data.channel === 'WHATSAPP' ? 'WhatsApp' : 'Sans objet'),
             content: data.content,
-            category: data.category,
+            category: data.category || 'GENERAL',
             channel: data.channel,
             is_ai_generated: false,
-            image_url: data.image_url || undefined
+            image_url: data.image_url ?? undefined
         });
         if (res.success) {
             toast.success("Brouillon créé !");
             setIsComposeOpen(false);
-            router.refresh();
+            
+            // On mémorise l'ID pour le sélectionner après le refresh
             if (res.id) {
-              setTimeout(() => setSelectedMessageId(res.id as string), 200);
+                console.log("[MessagingTab] Draft created with ID:", res.id);
+                localStorage.setItem('lastCreatedDraftId', res.id as string);
+                setSelectedMessageId(res.id as string);
             }
+            
             setActiveFolder('DRAFTS');
+            startTransition(() => {
+                router.refresh();
+            });
+        } else {
+            console.error("[MessagingTab] Creation failed:", res.message);
+            toast.error(res.message || "Échec de création");
         }
     } catch (err) {
+        console.error("[MessagingTab] Exception during creation:", err);
         toast.error("Erreur de sauvegarde");
     } finally {
         setIsSaving(false);
     }
   };
+
+  // Sélection automatique du dernier brouillon après refresh
+  useEffect(() => {
+    const lastId = localStorage.getItem('lastCreatedDraftId');
+    if (lastId && messages.some(m => m.id === lastId)) {
+        setSelectedMessageId(lastId);
+        setActiveFolder('DRAFTS');
+        localStorage.removeItem('lastCreatedDraftId');
+    }
+  }, [messages]);
 
   const handleUpdateMessage = async (id: string, data: Partial<MarketingMessage>) => {
     setIsSaving(true);
@@ -119,7 +141,9 @@ export function MessagingTab({
         const res = await updateMarketingMessageAction(id, data);
         if (res.success) {
           toast.success("Mis à jour !");
-          router.refresh();
+          startTransition(() => {
+            router.refresh();
+          });
         }
     } catch (err) {
         toast.error("Erreur");
@@ -135,7 +159,9 @@ export function MessagingTab({
         if (res.success) {
             toast.success("Corbeille !");
             setSelectedMessageId(null);
-            router.refresh();
+            startTransition(() => {
+                router.refresh();
+            });
         }
     } catch (err) {
         toast.error("Erreur");
@@ -151,8 +177,10 @@ export function MessagingTab({
         if (res.success) {
             toast.success("Converti !");
             setActiveFolder('DRAFTS');
-            router.refresh();
             setTimeout(() => setSelectedMessageId(id), 200);
+            startTransition(() => {
+                router.refresh();
+            });
         }
     } catch (err) {
         toast.error("Erreur");
@@ -201,19 +229,23 @@ export function MessagingTab({
         "flex-1 min-w-0 h-full overflow-hidden",
         !isViewerActive && "hidden lg:block"
       )}>
-        {selectedMessage && (
-          <MessageViewer
-              message={selectedMessage}
-              onClose={() => setSelectedMessageId(null)}
-              onUpdate={handleUpdateMessage}
-              onTrash={handleTrashMessage}
-              onConvertToDraft={handleConvertToDraft}
-              onSend={onSendMessage}
-              isSaving={isSaving}
-              isTrashing={isTrashing}
-              sendingMessageId={sendingMessageId}
-              onMobileBack={handleMobileBack}
-          />
+        {(selectedMessage || isPending) && (
+          <div className={cn(isPending && "opacity-50 pointer-events-none transition-opacity")}>
+            {selectedMessage && (
+              <MessageViewer
+                  message={selectedMessage}
+                  onClose={() => setSelectedMessageId(null)}
+                  onUpdate={handleUpdateMessage}
+                  onTrash={handleTrashMessage}
+                  onConvertToDraft={handleConvertToDraft}
+                  onSend={onSendMessage}
+                  isSaving={isSaving || isPending}
+                  isTrashing={isTrashing}
+                  sendingMessageId={sendingMessageId}
+                  onMobileBack={handleMobileBack}
+              />
+            )}
+          </div>
         )}
       </div>
 
@@ -221,7 +253,7 @@ export function MessagingTab({
         isOpen={isComposeOpen}
         onOpenChange={setIsComposeOpen}
         onSave={handleCreateDraft}
-        isSaving={isSaving}
+        isSaving={isSaving || isPending}
       />
     </div>
   );

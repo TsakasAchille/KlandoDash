@@ -35,20 +35,6 @@ export function MessageSidebar({
           <Plus className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
           <span>Nouveau Message</span>
         </Button>
-
-        <Button
-          onClick={onScan}
-          disabled={isScanning}
-          variant="outline"
-          className="w-full h-11 lg:h-12 rounded-2xl border-slate-200 text-slate-900 hover:bg-slate-50 font-black uppercase text-[9px] lg:text-[10px] tracking-widest gap-2 lg:gap-3 shadow-sm transition-all active:scale-95 group"
-        >
-          {isScanning ? (
-            <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-          ) : (
-            <Zap className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
-          )}
-          <span>{isScanning ? "Analyse..." : "Scanner Opportunités"}</span>
-        </Button>
       </div>
 
       {/* Folders: horizontal scroll on mobile, vertical on desktop */}

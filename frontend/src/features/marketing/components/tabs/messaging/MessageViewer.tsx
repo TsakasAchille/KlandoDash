@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface MessageViewerProps {
   message: MarketingMessage;
@@ -346,19 +346,21 @@ export function MessageViewer({
                 ) : (
                     !isEditing && (
                         <Button 
-                            onClick={isWhatsApp ? handleManualWhatsAppSend : () => onSend(message.id)}
-                            disabled={sendingMessageId === message.id}
+                            onClick={() => onSend(message.id)}
+                            disabled={sendingMessageId === message.id || isSaving}
                             className={cn(
-                              "rounded-xl font-black text-[10px] uppercase tracking-widest px-10 h-11 gap-2 shadow-xl active:scale-95 transition-all",
-                              isWhatsApp ? "bg-[#25D366] hover:bg-[#128C7E] text-white" : "bg-slate-900 text-white hover:bg-slate-800"
+                              "rounded-xl font-black text-[10px] uppercase tracking-widest px-10 h-11 gap-2 shadow-xl active:scale-95 transition-all border-none",
+                              isWhatsApp 
+                                ? "bg-[#128C7E] hover:bg-[#075E54] text-white" 
+                                : "bg-slate-900 text-white hover:bg-slate-800"
                             )}
                         >
                             {sendingMessageId === message.id ? (
                               <Loader2 className="w-4 h-4 animate-spin text-white" />
                             ) : (
-                              isWhatsApp ? <MessageSquare className="w-4 h-4 text-white" /> : <Send className="w-4 h-4 text-white" />
+                              isWhatsApp ? <MessageSquare className="w-4 h-4 text-white fill-white/20" /> : <Send className="w-4 h-4 text-white" />
                             )}
-                            {isWhatsApp ? "Ouvrir WhatsApp" : "Envoyer par Email"}
+                            {isWhatsApp ? "Envoyer via API Cloud" : "Envoyer par Email"}
                         </Button>
                     )
                 )
@@ -370,6 +372,9 @@ export function MessageViewer({
       <Dialog open={!!selectedLightboxImage} onOpenChange={(open) => !open && setSelectedLightboxImage(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-transparent shadow-none overflow-hidden flex items-center justify-center">
           <DialogTitle className="sr-only">Aperçu de l'image</DialogTitle>
+          <DialogDescription className="sr-only">
+            Visualisation en plein écran de l'image sélectionnée.
+          </DialogDescription>
           {selectedLightboxImage && (
             <div className="relative w-full h-full flex items-center justify-center animate-in zoom-in-95 duration-300">
               <img 
