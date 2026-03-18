@@ -18,6 +18,7 @@ interface TaskDialogsProps {
   editingItem: RoadmapItem | null;
   members: DashMember[];
   boards: PlanningBoard[];
+  defaultBoardId?: string | null;
   onAdd: (item: any) => void;
   onUpdate: (item: RoadmapItem) => void;
 }
@@ -57,15 +58,22 @@ function MemberPicker({ members, selected, onChange }: { members: DashMember[]; 
 }
 
 export function TaskDialogs({
-  isAddOpen, setIsAddOpen, isEditOpen, setIsEditOpen, editingItem, members, boards, onAdd, onUpdate
+  isAddOpen, setIsAddOpen, isEditOpen, setIsEditOpen, editingItem, members, boards, defaultBoardId, onAdd, onUpdate
 }: TaskDialogsProps) {
 
   const [newItem, setNewItem] = useState({
     title: "", description: "", phase_name: "Phase 1: Automatisation & Temps Réel",
     timeline: "Court Terme", icon_name: "Target", is_planning: true,
     planning_stage: 'backlog', start_date: null as string | null, target_date: null as string | null, custom_color: null as string | null,
-    assigned_to: [] as string[], planning_board_id: null as string | null
+    assigned_to: [] as string[], planning_board_id: defaultBoardId || null as string | null
   });
+
+  // Mettre à jour le board par défaut quand la modale s'ouvre
+  useEffect(() => {
+    if (isAddOpen) {
+      setNewItem(prev => ({ ...prev, planning_board_id: defaultBoardId || null }));
+    }
+  }, [isAddOpen, defaultBoardId]);
 
   const [localEditingItem, setLocalEditingItem] = useState<RoadmapItem | null>(null);
 

@@ -79,6 +79,7 @@ export function RoadmapView({ items, members, boards }: RoadmapViewProps) {
         editingItem={roadmap.editingItem}
         members={members}
         boards={boards}
+        defaultBoardId={selectedBoardId}
         onAdd={roadmap.handleAdd}
         onUpdate={roadmap.handleUpdate}
       />
