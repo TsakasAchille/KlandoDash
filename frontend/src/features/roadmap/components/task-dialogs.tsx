@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RoadmapItem, ICON_MAP, STAGE_CONFIG } from "../types";
+import { RoadmapItem, ICON_MAP, STAGE_CONFIG, COLOR_PRESETS } from "../types";
+import type { DashMember } from "@/lib/queries/admin";
 import { cn } from "@/lib/utils";
 
 interface TaskDialogsProps {
@@ -15,18 +16,54 @@ interface TaskDialogsProps {
   isEditOpen: boolean;
   setIsEditOpen: (v: boolean) => void;
   editingItem: RoadmapItem | null;
+  members: DashMember[];
   onAdd: (item: any) => void;
   onUpdate: (item: RoadmapItem) => void;
 }
 
-export function TaskDialogs({ 
-  isAddOpen, setIsAddOpen, isEditOpen, setIsEditOpen, editingItem, onAdd, onUpdate 
+function MemberPicker({ members, selected, onChange }: { members: DashMember[]; selected: string[]; onChange: (v: string[]) => void }) {
+  const toggle = (email: string) => {
+    onChange(selected.includes(email) ? selected.filter(e => e !== email) : [...selected, email]);
+  };
+
+  return (
+    <div className="space-y-1">
+      <label className="text-[10px] uppercase font-bold text-slate-500">Assignés</label>
+      <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-white/5">
+        {members.map(m => {
+          const isActive = selected.includes(m.email);
+          return (
+            <button
+              key={m.email}
+              type="button"
+              className={cn(
+                "flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs transition-all",
+                isActive ? "border-klando-gold bg-klando-gold/20 text-klando-gold" : "border-white/10 text-slate-400 hover:border-white/30 hover:text-white"
+              )}
+              onClick={() => toggle(m.email)}
+            >
+              <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[7px] font-black shrink-0">
+                {(m.display_name || m.email).split(' ').map(w => w[0]?.toUpperCase()).slice(0, 2).join('')}
+              </div>
+              <span className="font-medium">{m.display_name || m.email.split('@')[0]}</span>
+            </button>
+          );
+        })}
+        {members.length === 0 && <span className="text-xs text-slate-500 italic">Aucun membre</span>}
+      </div>
+    </div>
+  );
+}
+
+export function TaskDialogs({
+  isAddOpen, setIsAddOpen, isEditOpen, setIsEditOpen, editingItem, members, onAdd, onUpdate
 }: TaskDialogsProps) {
-  
+
   const [newItem, setNewItem] = useState({
     title: "", description: "", phase_name: "Phase 1: Automatisation & Temps Réel",
     timeline: "Court Terme", icon_name: "Target", is_planning: true,
-    planning_stage: 'backlog', start_date: "", target_date: ""
+    planning_stage: 'backlog', start_date: "", target_date: "", custom_color: "",
+    assigned_to: [] as string[]
   });
 
   const [localEditingItem, setLocalEditingItem] = useState<RoadmapItem | null>(null);
@@ -39,7 +76,10 @@ export function TaskDialogs({
     <>
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="bg-slate-900 border-white/10 text-white sm:max-w-[500px]">
-          <DialogHeader><DialogTitle>Nouvelle Tâche</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Nouvelle Tâche</DialogTitle>
+            <DialogDescription>Créer une nouvelle tâche dans le planning.</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4 py-4">
             <Input placeholder="Titre" className="bg-white/5 border-white/10" value={newItem.title} onChange={e => setNewItem({...newItem, title: e.target.value})} />
             <Textarea placeholder="Description" className="bg-white/5 border-white/10 h-24" value={newItem.description} onChange={e => setNewItem({...newItem, description: e.target.value})} />
@@ -66,6 +106,45 @@ export function TaskDialogs({
               </div>
             </div>
 
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-slate-500">Couleur</label>
+              <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-white/5">
+                <button
+                  type="button"
+                  className={cn("w-7 h-7 rounded-full border-2 text-[8px] font-bold text-slate-400", !newItem.custom_color ? "border-white ring-2 ring-white/30" : "border-white/10")}
+                  onClick={() => setNewItem({...newItem, custom_color: ""})}
+                  title="Auto (selon temporalité)"
+                >Auto</button>
+                {COLOR_PRESETS.map(c => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    className={cn("w-7 h-7 rounded-full border-2 transition-all", newItem.custom_color === c.value ? "border-white ring-2 ring-white/30 scale-110" : "border-white/10 hover:scale-110")}
+                    style={{ backgroundColor: c.value }}
+                    onClick={() => setNewItem({...newItem, custom_color: c.value})}
+                    title={c.label}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-slate-500">Icône</label>
+              <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-white/5">
+                {Object.entries(ICON_MAP).map(([name, Icon]) => (
+                  <button
+                    key={name}
+                    type="button"
+                    className={cn("w-8 h-8 rounded-lg flex items-center justify-center border transition-all", newItem.icon_name === name ? "border-klando-gold bg-klando-gold/20 text-klando-gold" : "border-white/10 text-slate-400 hover:text-white hover:border-white/30")}
+                    onClick={() => setNewItem({...newItem, icon_name: name})}
+                    title={name}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] uppercase font-bold text-slate-500">Phase</label>
@@ -79,16 +158,9 @@ export function TaskDialogs({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-slate-500">Icône</label>
-                <Select value={newItem.icon_name} onValueChange={v => setNewItem({...newItem, icon_name: v})}>
-                  <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-slate-800 text-white">
-                    {Object.keys(ICON_MAP).map(icon => <SelectItem key={icon} value={icon}>{icon}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
+
+            <MemberPicker members={members} selected={newItem.assigned_to} onChange={v => setNewItem({...newItem, assigned_to: v})} />
 
             <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
               <div className="space-y-0.5"><label className="text-sm font-medium">Dans le Planning ?</label></div>
@@ -109,7 +181,10 @@ export function TaskDialogs({
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="bg-slate-900 border-white/10 text-white sm:max-w-[500px]">
-          <DialogHeader><DialogTitle>Modifier la tâche</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Modifier la tâche</DialogTitle>
+            <DialogDescription>Modifier les détails de la tâche.</DialogDescription>
+          </DialogHeader>
           {localEditingItem && (
             <div className="space-y-4 py-4">
               <Input className="bg-white/5 border-white/10" value={localEditingItem.title} onChange={e => setLocalEditingItem({...localEditingItem, title: e.target.value})} />
@@ -137,7 +212,49 @@ export function TaskDialogs({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-500">Couleur</label>
+                <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-white/5">
+                  <button
+                    type="button"
+                    className={cn("w-7 h-7 rounded-full border-2 text-[8px] font-bold text-slate-400", !localEditingItem.custom_color ? "border-white ring-2 ring-white/30" : "border-white/10")}
+                    onClick={() => setLocalEditingItem({...localEditingItem, custom_color: null})}
+                    title="Auto (selon temporalité)"
+                  >Auto</button>
+                  {COLOR_PRESETS.map(c => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      className={cn("w-7 h-7 rounded-full border-2 transition-all", localEditingItem.custom_color === c.value ? "border-white ring-2 ring-white/30 scale-110" : "border-white/10 hover:scale-110")}
+                      style={{ backgroundColor: c.value }}
+                      onClick={() => setLocalEditingItem({...localEditingItem, custom_color: c.value})}
+                      title={c.label}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-500">Icône</label>
+                <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-white/5">
+                  {Object.entries(ICON_MAP).map(([name, Icon]) => (
+                    <button
+                      key={name}
+                      type="button"
+                      className={cn("w-8 h-8 rounded-lg flex items-center justify-center border transition-all", localEditingItem.icon_name === name ? "border-klando-gold bg-klando-gold/20 text-klando-gold" : "border-white/10 text-slate-400 hover:text-white hover:border-white/30")}
+                      onClick={() => setLocalEditingItem({...localEditingItem, icon_name: name})}
+                      title={name}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <MemberPicker members={members} selected={localEditingItem.assigned_to || []} onChange={v => setLocalEditingItem({...localEditingItem, assigned_to: v})} />
+
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-500">Phase</label>
                 <Select value={localEditingItem.phase_name} onValueChange={v => setLocalEditingItem({...localEditingItem, phase_name: v})}>
                   <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-slate-800 text-white">
@@ -145,12 +262,6 @@ export function TaskDialogs({
                     <SelectItem value="Phase 1: Automatisation & Temps Réel">Phase 1: Automatisation</SelectItem>
                     <SelectItem value="Phase 2: Intelligence & Reporting">Phase 2: Intelligence</SelectItem>
                     <SelectItem value="Phase 3: Intelligence & Scale">Phase 3: Scale</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={localEditingItem.icon_name} onValueChange={v => setLocalEditingItem({...localEditingItem, icon_name: v})}>
-                  <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-slate-800 text-white">
-                    {Object.keys(ICON_MAP).map(icon => <SelectItem key={icon} value={icon}>{icon}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

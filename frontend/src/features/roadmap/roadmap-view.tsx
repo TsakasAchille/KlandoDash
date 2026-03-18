@@ -9,12 +9,14 @@ import { useRoadmap } from "./use-roadmap";
 import { RoadmapGrid } from "./components/roadmap-grid";
 import { PlanningGantt } from "./components/planning-gantt";
 import { TaskDialogs } from "./components/task-dialogs";
+import type { DashMember } from "@/lib/queries/admin";
 
 interface RoadmapViewProps {
   items: RoadmapItem[];
+  members: DashMember[];
 }
 
-export function RoadmapView({ items }: RoadmapViewProps) {
+export function RoadmapView({ items, members }: RoadmapViewProps) {
   const roadmap = useRoadmap(items);
   const roadmapItems = items.filter(i => !i.is_planning);
   const planningItems = items.filter(i => i.is_planning);
@@ -57,16 +59,17 @@ export function RoadmapView({ items }: RoadmapViewProps) {
         </TabsContent>
 
         <TabsContent value="planning" className="mt-0">
-          <PlanningGantt items={planningItems} {...roadmapProps} />
+          <PlanningGantt items={planningItems} members={members} {...roadmapProps} />
         </TabsContent>
       </Tabs>
 
-      <TaskDialogs 
+      <TaskDialogs
         isAddOpen={roadmap.isAddOpen}
         setIsAddOpen={roadmap.setIsAddOpen}
         isEditOpen={roadmap.isEditOpen}
         setIsEditOpen={roadmap.setIsEditOpen}
         editingItem={roadmap.editingItem}
+        members={members}
         onAdd={roadmap.handleAdd}
         onUpdate={roadmap.handleUpdate}
       />

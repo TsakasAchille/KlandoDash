@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Calendar, MoreHorizontal, GripHorizontal, Plus, ChevronLeft, ChevronRight, Star, Clock, Info, X, ArrowRight } from "lucide-react";
-import { RoadmapItem, STAGE_CONFIG } from "../types";
+import { RoadmapItem, STAGE_CONFIG, ICON_MAP } from "../types";
+import type { DashMember } from "@/lib/queries/admin";
 import { RoadmapCard } from "./roadmap-card";
 import { cn } from "@/lib/utils";
 import { useGanttInteraction } from "../use-gantt-interaction";
@@ -13,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PlanningGanttProps {
   items: RoadmapItem[];
+  members: DashMember[];
   localProgress: Record<string, number>;
   updatingId: string | null;
   onProgressChange: (id: string, val: number) => void;
@@ -22,10 +24,16 @@ interface PlanningGanttProps {
   onEdit: (item: RoadmapItem) => void;
 }
 
-export function PlanningGantt({ 
-  items, localProgress, updatingId, onProgressChange, onSetLocalProgress,
-  onTogglePlanning, onDelete, onEdit 
+export function PlanningGantt({
+  items, members, localProgress, updatingId, onProgressChange, onSetLocalProgress,
+  onTogglePlanning, onDelete, onEdit
 }: PlanningGanttProps) {
+
+  const membersMap = useMemo(() => {
+    const map: Record<string, DashMember> = {};
+    members.forEach(m => { map[m.email] = m; });
+    return map;
+  }, [members]);
   
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -223,6 +231,8 @@ export function PlanningGantt({
               if (!pos) return null;
               
               const config = STAGE_CONFIG[item.planning_stage] || STAGE_CONFIG['backlog'];
+              const hasCustomColor = !!item.custom_color;
+              const ItemIcon = ICON_MAP[item.icon_name] || null;
               const isInteracting = interaction?.itemId === item.id;
               const isSelected = selectedItemId === item.id;
 
@@ -240,7 +250,10 @@ export function PlanningGantt({
                       onEdit(item);
                     }}
                   >
-                    <div className={cn("w-3 h-3 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] shrink-0", config.color.split(' ')[0])} />
+                    <div
+                      className={cn("w-3 h-3 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] shrink-0", !hasCustomColor && config.color.split(' ')[0])}
+                      style={hasCustomColor ? { backgroundColor: item.custom_color! } : undefined}
+                    />
                     <div className={cn(
                       "truncate text-xs font-bold transition-colors",
                       isSelected ? "text-klando-gold" : "text-slate-200 group-hover:text-klando-gold"
@@ -272,16 +285,17 @@ export function PlanningGantt({
                       </div>
                     )}
 
-                      <div 
+                      <div
                         className={cn(
                           "absolute top-3 bottom-3 rounded-xl shadow-2xl border-2 flex items-center overflow-hidden transition-all group/bar",
-                          config.color,
+                          !hasCustomColor && config.color,
+                          hasCustomColor && "text-white border-white/20",
                           isInteracting ? "z-30 scale-y-110 shadow-klando-gold/40 brightness-110" : "hover:brightness-105",
                           isSelected ? "ring-4 ring-klando-gold/30 z-20" : "",
                           pos.isCutStart && "rounded-l-none border-l-0 opacity-70",
                           pos.isCutEnd && "rounded-r-none border-r-0 opacity-70"
                         )}
-                        style={{ left: pos.left, width: pos.width }}
+                        style={{ left: pos.left, width: pos.width, ...(hasCustomColor ? { backgroundColor: item.custom_color! } : {}) }}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedItemId(item.id);
@@ -338,10 +352,34 @@ export function PlanningGantt({
                       </div>
 
                       <div className="flex items-center gap-2 flex-1 min-w-0 px-3">
+                        {ItemIcon && <ItemIcon className="w-4 h-4 shrink-0 opacity-70" />}
                         <div className="flex flex-col min-w-0">
                           <span className="text-[11px] font-black truncate">{item.title}</span>
-                          <span className="text-[9px] font-bold opacity-80">{localProgress[item.id] ?? item.progress}% complété</span>
+                          <span className="text-[9px] font-bold opacity-80">{localProgress[item.id] ?? item.progress}%</span>
                         </div>
+                        {/* Assignee avatars */}
+                        {item.assigned_to?.length > 0 && (
+                          <div className="flex -space-x-1.5 shrink-0 ml-auto mr-1">
+                            {item.assigned_to.slice(0, 3).map(email => {
+                              const member = membersMap[email];
+                              const initials = (member?.display_name || email).split(' ').map(w => w[0]?.toUpperCase()).slice(0, 2).join('');
+                              return (
+                                <div
+                                  key={email}
+                                  title={member?.display_name || email}
+                                  className="w-5 h-5 rounded-full border border-black/30 bg-white/20 flex items-center justify-center text-[7px] font-black"
+                                >
+                                  {initials}
+                                </div>
+                              );
+                            })}
+                            {item.assigned_to.length > 3 && (
+                              <div className="w-5 h-5 rounded-full border border-black/30 bg-black/30 flex items-center justify-center text-[8px] font-bold">
+                                +{item.assigned_to.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                       
                       {/* Resize Handle Right */}

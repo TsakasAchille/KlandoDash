@@ -19,6 +19,8 @@ export interface RoadmapItem {
   planning_stage: PlanningStage;
   start_date: string | null;
   target_date: string | null;
+  custom_color: string | null;
+  assigned_to: string[];
   updated_at: string;
 }
 
@@ -34,6 +36,19 @@ export const ICON_MAP: Record<string, any> = {
   Cpu,
   Star
 };
+
+export const COLOR_PRESETS = [
+  { value: "#EF4444", label: "Rouge" },
+  { value: "#F97316", label: "Orange" },
+  { value: "#EBC33F", label: "Or" },
+  { value: "#22C55E", label: "Vert" },
+  { value: "#14B8A6", label: "Teal" },
+  { value: "#3B82F6", label: "Bleu" },
+  { value: "#8B5CF6", label: "Violet" },
+  { value: "#EC4899", label: "Rose" },
+  { value: "#7B1F2F", label: "Bordeaux" },
+  { value: "#64748B", label: "Gris" },
+];
 
 export const STAGE_CONFIG = {
   now: { label: "Maintenant", color: "bg-red-500 text-black border-red-400", desc: "Priorités immédiates" },

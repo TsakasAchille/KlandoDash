@@ -98,6 +98,31 @@ export interface RoadmapItem {
 /**
  * Récupère les items de la roadmap
  */
+export interface DashMember {
+  email: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: string;
+}
+
+export async function getDashMembers(): Promise<DashMember[]> {
+  noStore();
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase
+    .from("dash_authorized_users")
+    .select("email, display_name, avatar_url, role")
+    .eq("active", true)
+    .order("display_name", { ascending: true });
+
+  if (error) {
+    console.error("Erreur getDashMembers:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
 export async function getRoadmapItems(): Promise<RoadmapItem[]> {
   noStore();
   const supabase = createServerClient();
