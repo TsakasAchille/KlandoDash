@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, X, MessageSquare, User, MapPin, RefreshCw, Edit3, Phone, ExternalLink } from "lucide-react";
+import { Check, X, MessageSquare, User, MapPin, RefreshCw, Edit3, Phone, ExternalLink, Car } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 

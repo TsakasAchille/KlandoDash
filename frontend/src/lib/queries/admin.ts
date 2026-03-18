@@ -81,6 +81,28 @@ export async function getAuditLogs(options: {
   };
 }
 
+/**
+ * Récupère la liste des emails des administrateurs présents dans les logs d'audit
+ */
+export async function getAuditAdmins(): Promise<string[]> {
+  noStore();
+  const supabase = createServerClient();
+  
+  const { data, error } = await supabase
+    .from("dash_audit_logs")
+    .select("admin_email")
+    .order("admin_email");
+
+  if (error) {
+    console.error("Erreur getAuditAdmins:", error);
+    return [];
+  }
+
+  // Retourne une liste unique d'emails
+  const emails = data.map(log => log.admin_email);
+  return Array.from(new Set(emails));
+}
+
 export interface RoadmapItem {
   id: string;
   phase_name: string;
