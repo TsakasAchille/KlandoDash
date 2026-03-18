@@ -67,6 +67,18 @@ export function useGanttInteraction(
       if (newEnd - newStart < 86400000) newEnd = newStart + 86400000;
     }
 
+    // Snap to nearest day (midnight)
+    const snapToDay = (ts: number) => {
+      const d = new Date(ts);
+      // Round to nearest day
+      d.setHours(12, 0, 0, 0); // noon to avoid DST edge cases
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    };
+
+    newStart = snapToDay(newStart);
+    newEnd = snapToDay(newEnd);
+
     return {
       start_date: new Date(newStart).toISOString().split('T')[0],
       target_date: new Date(newEnd).toISOString().split('T')[0],

@@ -196,6 +196,26 @@ export function PlanningGantt({
                 })}
                 <div className="border-l border-white/[0.01] h-full" />
                 </div>
+
+          {/* Today line */}
+          {(() => {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const nowTs = now.getTime();
+            if (nowTs >= timelineStart && nowTs <= timelineEnd) {
+              const pct = ((nowTs - timelineStart) / timelineDuration) * 100;
+              return (
+                <div className="absolute top-0 bottom-0 z-20 pointer-events-none" style={{ left: `calc(${pct}% + 12rem)` }}>
+                  <div className="w-px h-full bg-klando-gold/60" />
+                  <div className="absolute -top-0 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-klando-gold rounded-b text-[8px] font-black text-black uppercase">
+                    Auj.
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           <div className="divide-y divide-white/5 relative">
             {scheduledItems.map(item => {
               const interactionData = interaction && interaction.itemId === item.id ? calculateNewDates(interaction) : null;
@@ -267,8 +287,13 @@ export function PlanningGantt({
                           setSelectedItemId(item.id);
                         }}
                       >
-                        {/* Overlay léger pour unifier le fond */}
-                        <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+                        {/* Progress bar */}
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
+                          <div
+                            className="absolute inset-y-0 left-0 bg-black/20 transition-all duration-300"
+                            style={{ width: `${localProgress[item.id] ?? item.progress}%` }}
+                          />
+                        </div>
 
                       {/* Drag Handle — centré en bas du bloc */}
                       <div
