@@ -449,6 +449,23 @@ export function PlanningGantt({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 border-white/10 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-all gap-2"
+                onClick={async () => {
+                  if (confirm("Retirer cette tâche du planning ? (Elle sera déplacée dans les tâches sans dates)")) {
+                    await updateRoadmapItem(selectedItem.id, { 
+                      start_date: null, 
+                      target_date: null 
+                    });
+                    setSelectedItemId(null);
+                    toast.success("Tâche retirée du planning");
+                  }
+                }}
+              >
+                Retirer du planning
+              </Button>
               <Button variant="outline" size="sm" className="h-8 border-white/10 hover:bg-white/5" onClick={() => onEdit(selectedItem)}>
                 Modifier
               </Button>
