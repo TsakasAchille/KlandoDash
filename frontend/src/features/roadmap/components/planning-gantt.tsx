@@ -103,7 +103,7 @@ export function PlanningGantt({
     return { left: `${left}%`, width: `${Math.max(width, 0.5)}%`, isCutStart: start < timelineStart, isCutEnd: end > timelineEnd };
   };
 
-  const scheduledItems = items.filter(i => i.start_date && i.target_date).sort((a, b) => new Date(a.start_date!).getTime() - new Date(b.start_date!).getTime());
+  const scheduledItems = items.filter(i => i.start_date && i.target_date).sort((a, b) => a.order_index - b.order_index);
   const unscheduledItems = items.filter(i => !i.start_date || !i.target_date);
 
   const getWeekNumber = (d: Date) => {
@@ -351,14 +351,14 @@ export function PlanningGantt({
 
       {/* Détails de la tâche sélectionnée */}
       {selectedItem && (
-        <Card className="border-klando-gold/30 bg-slate-900/80 backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.5)]">
+        <Card className="border-klando-gold/30 !bg-slate-900 !text-white backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.5)]">
           <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
             <div className="flex items-center gap-3">
               <div className={cn("p-2 rounded-xl bg-klando-gold/10 text-klando-gold")}>
                 <Info className="w-5 h-5" />
               </div>
               <div>
-                <CardTitle className="text-lg font-black text-white">{selectedItem.title}</CardTitle>
+                <CardTitle className="text-lg font-black !text-klando-gold">{selectedItem.title}</CardTitle>
                 <div className="flex items-center gap-4 mt-1">
                   <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     <Clock className="w-3 h-3" />
