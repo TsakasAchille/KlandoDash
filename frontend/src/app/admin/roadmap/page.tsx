@@ -1,6 +1,6 @@
 import { RoadmapView } from "@/features/roadmap/roadmap-view";
 import { Milestone } from "lucide-react";
-import { getRoadmapItems, getDashMembers } from "@/lib/queries/admin";
+import { getRoadmapItems, getDashMembers, getPlanningBoards } from "@/lib/queries/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 export default async function RoadmapPage() {
-  const [items, members] = await Promise.all([getRoadmapItems(), getDashMembers()]);
+  const [items, members, boards] = await Promise.all([getRoadmapItems(), getDashMembers(), getPlanningBoards()]);
 
   return (
     <div className="space-y-6">
@@ -24,7 +24,7 @@ export default async function RoadmapPage() {
         </div>
       </div>
 
-      <RoadmapView items={items} members={members} />
+      <RoadmapView items={items} members={members} boards={boards} />
     </div>
   );
 }

@@ -92,6 +92,12 @@ export interface RoadmapItem {
   icon_name: string;
   order_index: number;
   is_planning: boolean;
+  planning_stage: 'now' | 'next' | 'later' | 'backlog';
+  start_date: string | null;
+  target_date: string | null;
+  custom_color: string | null;
+  assigned_to: string[];
+  planning_board_id: string | null;
   updated_at: string;
 }
 
@@ -120,6 +126,31 @@ export async function getDashMembers(): Promise<DashMember[]> {
     return [];
   }
 
+  return data || [];
+}
+
+export interface PlanningBoard {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getPlanningBoards(): Promise<PlanningBoard[]> {
+  noStore();
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("planning_boards")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Erreur getPlanningBoards:", error);
+    return [];
+  }
   return data || [];
 }
 

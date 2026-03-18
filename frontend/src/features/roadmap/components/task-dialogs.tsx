@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RoadmapItem, ICON_MAP, STAGE_CONFIG, COLOR_PRESETS } from "../types";
+import { RoadmapItem, ICON_MAP, STAGE_CONFIG, COLOR_PRESETS, PlanningBoard } from "../types";
 import type { DashMember } from "@/lib/queries/admin";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,7 @@ interface TaskDialogsProps {
   setIsEditOpen: (v: boolean) => void;
   editingItem: RoadmapItem | null;
   members: DashMember[];
+  boards: PlanningBoard[];
   onAdd: (item: any) => void;
   onUpdate: (item: RoadmapItem) => void;
 }
@@ -56,14 +57,14 @@ function MemberPicker({ members, selected, onChange }: { members: DashMember[]; 
 }
 
 export function TaskDialogs({
-  isAddOpen, setIsAddOpen, isEditOpen, setIsEditOpen, editingItem, members, onAdd, onUpdate
+  isAddOpen, setIsAddOpen, isEditOpen, setIsEditOpen, editingItem, members, boards, onAdd, onUpdate
 }: TaskDialogsProps) {
 
   const [newItem, setNewItem] = useState({
     title: "", description: "", phase_name: "Phase 1: Automatisation & Temps Réel",
     timeline: "Court Terme", icon_name: "Target", is_planning: true,
     planning_stage: 'backlog', start_date: "", target_date: "", custom_color: "",
-    assigned_to: [] as string[]
+    assigned_to: [] as string[], planning_board_id: "" as string
   });
 
   const [localEditingItem, setLocalEditingItem] = useState<RoadmapItem | null>(null);
@@ -164,13 +165,26 @@ export function TaskDialogs({
 
             <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
               <div className="space-y-0.5"><label className="text-sm font-medium">Dans le Planning ?</label></div>
-              <div 
+              <div
                 className={cn("w-10 h-6 rounded-full p-1 cursor-pointer", newItem.is_planning ? "bg-klando-burgundy" : "bg-slate-700")}
                 onClick={() => setNewItem({...newItem, is_planning: !newItem.is_planning})}
               >
                 <div className={cn("w-4 h-4 bg-white rounded-full transition-transform", newItem.is_planning ? "translate-x-4" : "translate-x-0")} />
               </div>
             </div>
+
+            {newItem.is_planning && boards.length > 0 && (
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-500">Tableau</label>
+                <Select value={newItem.planning_board_id || "none"} onValueChange={v => setNewItem({...newItem, planning_board_id: v === "none" ? "" : v})}>
+                  <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-slate-800 text-white">
+                    <SelectItem value="none">Aucun (Backlog)</SelectItem>
+                    {boards.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Annuler</Button>
@@ -252,6 +266,19 @@ export function TaskDialogs({
               </div>
 
               <MemberPicker members={members} selected={localEditingItem.assigned_to || []} onChange={v => setLocalEditingItem({...localEditingItem, assigned_to: v})} />
+
+              {boards.length > 0 && (
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold text-slate-500">Tableau</label>
+                  <Select value={localEditingItem.planning_board_id || "none"} onValueChange={v => setLocalEditingItem({...localEditingItem, planning_board_id: v === "none" ? null : v})}>
+                    <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-slate-800 text-white">
+                      <SelectItem value="none">Aucun (Backlog)</SelectItem>
+                      {boards.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="text-[10px] uppercase font-bold text-slate-500">Phase</label>

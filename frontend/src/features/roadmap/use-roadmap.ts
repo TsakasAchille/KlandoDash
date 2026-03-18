@@ -29,9 +29,9 @@ export function useRoadmap(initialItems: RoadmapItem[]) {
     setUpdatingId(null);
   };
 
-  const handleTogglePlanning = async (itemId: string, isPlanning: boolean) => {
+  const handleTogglePlanning = async (itemId: string, isPlanning: boolean, boardId?: string | null) => {
     setUpdatingId(itemId);
-    const result = await toggleRoadmapPlanning(itemId, isPlanning);
+    const result = await toggleRoadmapPlanning(itemId, isPlanning, boardId);
     if (result.success) toast.success(isPlanning ? "Déplacé vers Planning" : "Promu vers Roadmap");
     else toast.error("Erreur");
     setUpdatingId(null);

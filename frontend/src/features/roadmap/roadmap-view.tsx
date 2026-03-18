@@ -1,10 +1,11 @@
 "use client";
 
-import { Milestone, Calendar, Plus, Rocket, LayoutGrid } from "lucide-react";
+import { useState } from "react";
+import { Milestone, Calendar, Plus, Rocket } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { RoadmapItem } from "./types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RoadmapItem, PlanningBoard } from "./types";
 import { useRoadmap } from "./use-roadmap";
 import { RoadmapGrid } from "./components/roadmap-grid";
 import { PlanningGantt } from "./components/planning-gantt";
@@ -14,18 +15,27 @@ import type { DashMember } from "@/lib/queries/admin";
 interface RoadmapViewProps {
   items: RoadmapItem[];
   members: DashMember[];
+  boards: PlanningBoard[];
 }
 
-export function RoadmapView({ items, members }: RoadmapViewProps) {
+export function RoadmapView({ items, members, boards }: RoadmapViewProps) {
   const roadmap = useRoadmap(items);
+  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
+
   const roadmapItems = items.filter(i => !i.is_planning);
   const planningItems = items.filter(i => i.is_planning);
+  const filteredPlanningItems = selectedBoardId
+    ? planningItems.filter(i => i.planning_board_id === selectedBoardId)
+    : planningItems;
 
   const roadmapProps = {
     updatingId: roadmap.updatingId,
     localProgress: roadmap.localProgress,
     onProgressChange: roadmap.handleProgressChange,
-    onTogglePlanning: roadmap.handleTogglePlanning,
+    onTogglePlanning: (id: string, isPlanning: boolean) => {
+      const defaultBoard = selectedBoardId || boards[0]?.id || null;
+      roadmap.handleTogglePlanning(id, isPlanning, isPlanning ? defaultBoard : null);
+    },
     onDelete: roadmap.handleDelete,
     onEdit: (item: RoadmapItem) => {
       roadmap.setEditingItem(item);
@@ -45,7 +55,7 @@ export function RoadmapView({ items, members }: RoadmapViewProps) {
               <Milestone className="w-4 h-4 mr-2" /> Roadmap
             </TabsTrigger>
             <TabsTrigger value="planning" className="rounded-lg px-6">
-              <Calendar className="w-4 h-4 mr-2" /> Gantt Planning ({planningItems.length})
+              <Calendar className="w-4 h-4 mr-2" /> Gantt Planning ({filteredPlanningItems.length})
             </TabsTrigger>
           </TabsList>
 
@@ -59,7 +69,14 @@ export function RoadmapView({ items, members }: RoadmapViewProps) {
         </TabsContent>
 
         <TabsContent value="planning" className="mt-0">
-          <PlanningGantt items={planningItems} members={members} {...roadmapProps} />
+          <PlanningGantt
+            items={filteredPlanningItems}
+            members={members}
+            boards={boards}
+            selectedBoardId={selectedBoardId}
+            onBoardChange={setSelectedBoardId}
+            {...roadmapProps}
+          />
         </TabsContent>
       </Tabs>
 
@@ -70,6 +87,7 @@ export function RoadmapView({ items, members }: RoadmapViewProps) {
         setIsEditOpen={roadmap.setIsEditOpen}
         editingItem={roadmap.editingItem}
         members={members}
+        boards={boards}
         onAdd={roadmap.handleAdd}
         onUpdate={roadmap.handleUpdate}
       />
@@ -83,7 +101,7 @@ export function RoadmapView({ items, members }: RoadmapViewProps) {
         </CardHeader>
         <CardContent>
           <p className="text-xs text-slate-300 leading-relaxed">
-            Le <b>Diagramme de Gantt</b> permet de visualiser la planification temporelle des tâches sur les 6 prochains mois. 
+            Le <b>Diagramme de Gantt</b> permet de visualiser la planification temporelle des tâches sur les 6 prochains mois.
             Les tâches sans date de début ou de fin seront listées dans le backlog ci-dessous.
           </p>
         </CardContent>

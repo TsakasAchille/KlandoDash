@@ -81,15 +81,23 @@ export async function updateRoadmapItem(itemId: string, data: any) {
   return { success: true };
 }
 
-export async function toggleRoadmapPlanning(itemId: string, is_planning: boolean) {
+export async function toggleRoadmapPlanning(itemId: string, is_planning: boolean, planning_board_id?: string | null) {
   const supabase = createServerClient();
-  
+
+  const updateData: Record<string, any> = {
+    is_planning,
+    updated_at: new Date().toISOString()
+  };
+  if (is_planning && planning_board_id) {
+    updateData.planning_board_id = planning_board_id;
+  }
+  if (!is_planning) {
+    updateData.planning_board_id = null;
+  }
+
   const { error } = await supabase
     .from("roadmap_items")
-    .update({ 
-      is_planning,
-      updated_at: new Date().toISOString() 
-    })
+    .update(updateData)
     .eq("id", itemId);
 
   if (error) {
@@ -97,6 +105,54 @@ export async function toggleRoadmapPlanning(itemId: string, is_planning: boolean
     return { success: false, error: error.message };
   }
 
+  revalidatePath("/admin/roadmap");
+  return { success: true };
+}
+
+// ---- Planning Boards CRUD ----
+
+export async function createPlanningBoard(data: { name: string; description?: string; color?: string; created_by?: string }) {
+  const supabase = createServerClient();
+  const { data: board, error } = await supabase
+    .from("planning_boards")
+    .insert(data)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erreur createPlanningBoard:", error);
+    return { success: false, error: error.message };
+  }
+  revalidatePath("/admin/roadmap");
+  return { success: true, board };
+}
+
+export async function updatePlanningBoard(boardId: string, data: { name?: string; description?: string; color?: string }) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("planning_boards")
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq("id", boardId);
+
+  if (error) {
+    console.error("Erreur updatePlanningBoard:", error);
+    return { success: false, error: error.message };
+  }
+  revalidatePath("/admin/roadmap");
+  return { success: true };
+}
+
+export async function deletePlanningBoard(boardId: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("planning_boards")
+    .delete()
+    .eq("id", boardId);
+
+  if (error) {
+    console.error("Erreur deletePlanningBoard:", error);
+    return { success: false, error: error.message };
+  }
   revalidatePath("/admin/roadmap");
   return { success: true };
 }
