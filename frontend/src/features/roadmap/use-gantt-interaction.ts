@@ -5,7 +5,7 @@ import { RoadmapItem } from "./types";
 
 interface InteractionState {
   itemId: string;
-  type: 'move' | 'resize';
+  type: 'move' | 'resize-left' | 'resize-right';
   initialX: number;
   initialStart: number;
   initialEnd: number;
@@ -23,12 +23,12 @@ export function useGanttInteraction(
   const startInteraction = (
     e: React.MouseEvent | React.TouchEvent,
     item: RoadmapItem,
-    type: 'move' | 'resize'
+    type: 'move' | 'resize-left' | 'resize-right'
   ) => {
     // Ne pas empêcher le clic sur les boutons d'édition
     if ((e.target as HTMLElement).closest('button')) return;
 
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     
     if (!item.start_date || !item.target_date) {
       // Si pas de date, on simule un début aujourd'hui pour permettre le drag
@@ -49,7 +49,7 @@ export function useGanttInteraction(
 
   const handleMouseMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!interaction) return;
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
     const deltaX = clientX - interaction.initialX;
     setInteraction(prev => prev ? { ...prev, currentDelta: deltaX } : null);
   }, [interaction]);
@@ -65,12 +65,15 @@ export function useGanttInteraction(
     if (state.type === 'move') {
       newStart += deltaTime;
       newEnd += deltaTime;
-    } else {
+    } else if (state.type === 'resize-left') {
+      newStart += deltaTime;
+      // Minimum 1 jour, ne pas dépasser la fin
+      if (newEnd - newStart < 86400000) newStart = newEnd - 86400000;
+    } else if (state.type === 'resize-right') {
       newEnd += deltaTime;
+      // Minimum 1 jour, ne pas passer avant le début
+      if (newEnd - newStart < 86400000) newEnd = newStart + 86400000;
     }
-
-    // Minimum 1 jour
-    if (newEnd - newStart < 86400000) newEnd = newStart + 86400000;
 
     return {
       start_date: new Date(newStart).toISOString().split('T')[0],
