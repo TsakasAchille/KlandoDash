@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Calendar, MoreHorizontal, GripHorizontal, Plus, ChevronLeft, ChevronRight, Star, Clock, Info, X, ArrowRight } from "lucide-react";
 import { RoadmapItem, STAGE_CONFIG, ICON_MAP, PlanningBoard } from "../types";
 import type { DashMember } from "@/lib/queries/admin";
@@ -47,13 +47,24 @@ export function PlanningGantt({
   }, [boards]);
   
   const [weekOffset, setWeekOffset] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const weeksToShow = 14;
 
   const timelineWeeks = useMemo(() => {
     const weeks = [];
     const today = new Date();
-    const baseDate = new Date(today.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)));
+    today.setHours(0, 0, 0, 0); // Normaliser à minuit pour la stabilité SSR
+    const baseDate = new Date(today.getTime());
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+    baseDate.setDate(diff);
+    
     const startOfView = new Date(baseDate.getTime() + weekOffset * 7 * 86400000);
     
     for (let i = 0; i < weeksToShow; i++) {
@@ -119,7 +130,12 @@ export function PlanningGantt({
     const left = ((visibleStart - timelineStart) / timelineDuration) * 100;
     const width = ((visibleEnd - visibleStart) / timelineDuration) * 100;
     
-    return { left: `${left}%`, width: `${Math.max(width, 0.5)}%`, isCutStart: start < timelineStart, isCutEnd: end > timelineEnd };
+    return { 
+      left: `${left.toFixed(4)}%`, 
+      width: `${Math.max(width, 0.5).toFixed(4)}%`, 
+      isCutStart: start < timelineStart, 
+      isCutEnd: end > timelineEnd 
+    };
   };
 
   const scheduledItems = items.filter(i => i.start_date && i.target_date).sort((a, b) => a.order_index - b.order_index);
@@ -220,14 +236,14 @@ export function PlanningGantt({
                 </div>
 
           {/* Today line */}
-          {(() => {
+          {mounted && (() => {
             const now = new Date();
             now.setHours(0, 0, 0, 0);
             const nowTs = now.getTime();
             if (nowTs >= timelineStart && nowTs <= timelineEnd) {
               const pct = ((nowTs - timelineStart) / timelineDuration) * 100;
               return (
-                <div className="absolute top-0 bottom-0 z-20 pointer-events-none" style={{ left: `calc(${pct}% + 12rem)` }}>
+                <div className="absolute top-0 bottom-0 z-20 pointer-events-none" style={{ left: `calc(${pct.toFixed(4)}% + 12rem)` }}>
                   <div className="w-px h-full bg-klando-gold/60" />
                   <div className="absolute -top-0 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-klando-gold rounded-b text-[8px] font-black text-black uppercase">
                     Auj.
