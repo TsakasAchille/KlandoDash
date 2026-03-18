@@ -63,8 +63,8 @@ export function TaskDialogs({
   const [newItem, setNewItem] = useState({
     title: "", description: "", phase_name: "Phase 1: Automatisation & Temps Réel",
     timeline: "Court Terme", icon_name: "Target", is_planning: true,
-    planning_stage: 'backlog', start_date: "", target_date: "", custom_color: "",
-    assigned_to: [] as string[], planning_board_id: "" as string
+    planning_stage: 'backlog', start_date: null as string | null, target_date: null as string | null, custom_color: null as string | null,
+    assigned_to: [] as string[], planning_board_id: null as string | null
   });
 
   const [localEditingItem, setLocalEditingItem] = useState<RoadmapItem | null>(null);
@@ -99,11 +99,11 @@ export function TaskDialogs({
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] uppercase font-bold text-slate-500">Début</label>
-                <Input type="date" className="bg-white/5 border-white/10 text-xs" value={newItem.start_date} onChange={e => setNewItem({...newItem, start_date: e.target.value})} />
+                <Input type="date" className="bg-white/5 border-white/10 text-xs" value={newItem.start_date || ""} onChange={e => setNewItem({...newItem, start_date: e.target.value || null})} />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] uppercase font-bold text-slate-500">Fin (Jalon)</label>
-                <Input type="date" className="bg-white/5 border-white/10 text-xs" value={newItem.target_date} onChange={e => setNewItem({...newItem, target_date: e.target.value})} />
+                <Input type="date" className="bg-white/5 border-white/10 text-xs" value={newItem.target_date || ""} onChange={e => setNewItem({...newItem, target_date: e.target.value || null})} />
               </div>
             </div>
 
@@ -163,23 +163,13 @@ export function TaskDialogs({
 
             <MemberPicker members={members} selected={newItem.assigned_to} onChange={v => setNewItem({...newItem, assigned_to: v})} />
 
-            <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-              <div className="space-y-0.5"><label className="text-sm font-medium">Dans le Planning ?</label></div>
-              <div
-                className={cn("w-10 h-6 rounded-full p-1 cursor-pointer", newItem.is_planning ? "bg-klando-burgundy" : "bg-slate-700")}
-                onClick={() => setNewItem({...newItem, is_planning: !newItem.is_planning})}
-              >
-                <div className={cn("w-4 h-4 bg-white rounded-full transition-transform", newItem.is_planning ? "translate-x-4" : "translate-x-0")} />
-              </div>
-            </div>
-
-            {newItem.is_planning && boards.length > 0 && (
+            {boards.length > 0 && (
               <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-slate-500">Tableau</label>
-                <Select value={newItem.planning_board_id || "none"} onValueChange={v => setNewItem({...newItem, planning_board_id: v === "none" ? "" : v})}>
+                <label className="text-[10px] uppercase font-bold text-slate-500">Tableau de destination</label>
+                <Select value={newItem.planning_board_id || "none"} onValueChange={v => setNewItem({...newItem, planning_board_id: v === "none" ? null : v})}>
                   <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-slate-800 text-white">
-                    <SelectItem value="none">Aucun (Backlog)</SelectItem>
+                    <SelectItem value="none">Aucun (Tout le monde)</SelectItem>
                     {boards.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -188,7 +178,15 @@ export function TaskDialogs({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Annuler</Button>
-            <Button className="bg-klando-gold text-black" onClick={() => onAdd(newItem)}>Créer</Button>
+            <Button className="bg-klando-gold text-black" onClick={() => {
+              onAdd(newItem);
+              setNewItem({
+                title: "", description: "", phase_name: "Phase 1: Automatisation & Temps Réel",
+                timeline: "Court Terme", icon_name: "Target", is_planning: true,
+                planning_stage: 'backlog', start_date: null, target_date: null, custom_color: null,
+                assigned_to: [], planning_board_id: null
+              });
+            }}>Créer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

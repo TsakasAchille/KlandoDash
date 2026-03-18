@@ -480,11 +480,24 @@ export function PlanningGantt({
                 size="sm" 
                 className="absolute -top-2 -right-2 rounded-full w-8 h-8 p-0 bg-klando-gold text-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-30"
                 onClick={async () => {
-                  const today = new Date();
-                  const start_date = today.toISOString().split('T')[0];
-                  const target_date = new Date(today.getTime() + 7 * 86400000).toISOString().split('T')[0];
-                  await updateRoadmapItem(item.id, { start_date, target_date });
-                  setSelectedItemId(item.id);
+                  // Si un board est sélectionné, on planifie direct dessus
+                  if (selectedBoardId) {
+                    const today = new Date();
+                    const start_date = today.toISOString().split('T')[0];
+                    const target_date = new Date(today.getTime() + 7 * 86400000).toISOString().split('T')[0];
+                    await updateRoadmapItem(item.id, { 
+                      start_date, 
+                      target_date, 
+                      planning_board_id: selectedBoardId,
+                      is_planning: true 
+                    });
+                    setSelectedItemId(item.id);
+                    toast.success(`Planifié sur le board actuel`);
+                  } else {
+                    // Sinon on ouvre la modale pour laisser choisir le board
+                    onEdit(item);
+                    toast.info("Choisissez un board pour planifier cette tâche");
+                  }
                 }}
               >
                 <Plus className="w-4 h-4" />

@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Milestone, Calendar, Plus, Rocket } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, Plus, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RoadmapItem, PlanningBoard } from "./types";
 import { useRoadmap } from "./use-roadmap";
-import { RoadmapGrid } from "./components/roadmap-grid";
 import { PlanningGantt } from "./components/planning-gantt";
 import { TaskDialogs } from "./components/task-dialogs";
 import type { DashMember } from "@/lib/queries/admin";
@@ -22,8 +20,8 @@ export function RoadmapView({ items, members, boards }: RoadmapViewProps) {
   const roadmap = useRoadmap(items);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
 
-  const roadmapItems = items.filter(i => !i.is_planning);
-  const planningItems = items.filter(i => i.is_planning);
+  // On considère maintenant que toutes les tâches sont destinées au planning
+  const planningItems = items;
   const filteredPlanningItems = selectedBoardId
     ? planningItems.filter(i => i.planning_board_id === selectedBoardId)
     : planningItems;
@@ -48,37 +46,30 @@ export function RoadmapView({ items, members, boards }: RoadmapViewProps) {
 
   return (
     <div className="space-y-6 pb-10">
-      <Tabs defaultValue="roadmap" className="w-full">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          <TabsList className="bg-slate-900 border border-white/5 p-1 rounded-xl">
-            <TabsTrigger value="roadmap" className="rounded-lg px-6">
-              <Milestone className="w-4 h-4 mr-2" /> Roadmap
-            </TabsTrigger>
-            <TabsTrigger value="planning" className="rounded-lg px-6">
-              <Calendar className="w-4 h-4 mr-2" /> Gantt Planning ({filteredPlanningItems.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <Button onClick={() => roadmap.setIsAddOpen(true)} className="bg-klando-gold hover:bg-klando-gold/90 text-black font-bold">
-            <Plus className="w-4 h-4 mr-2" /> Nouvelle Tâche
-          </Button>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-klando-gold/10 text-klando-gold border border-klando-gold/20">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-white uppercase tracking-tight">Gantt Planning</h2>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{filteredPlanningItems.length} Tâches au total</p>
+          </div>
         </div>
 
-        <TabsContent value="roadmap" className="mt-0">
-          <RoadmapGrid items={roadmapItems} {...roadmapProps} />
-        </TabsContent>
+        <Button onClick={() => roadmap.setIsAddOpen(true)} className="bg-klando-gold hover:bg-klando-gold/90 text-black font-bold">
+          <Plus className="w-4 h-4 mr-2" /> Nouvelle Tâche
+        </Button>
+      </div>
 
-        <TabsContent value="planning" className="mt-0">
-          <PlanningGantt
-            items={filteredPlanningItems}
-            members={members}
-            boards={boards}
-            selectedBoardId={selectedBoardId}
-            onBoardChange={setSelectedBoardId}
-            {...roadmapProps}
-          />
-        </TabsContent>
-      </Tabs>
+      <PlanningGantt
+        items={filteredPlanningItems}
+        members={members}
+        boards={boards}
+        selectedBoardId={selectedBoardId}
+        onBoardChange={setSelectedBoardId}
+        {...roadmapProps}
+      />
 
       <TaskDialogs
         isAddOpen={roadmap.isAddOpen}
@@ -101,8 +92,8 @@ export function RoadmapView({ items, members, boards }: RoadmapViewProps) {
         </CardHeader>
         <CardContent>
           <p className="text-xs text-slate-300 leading-relaxed">
-            Le <b>Diagramme de Gantt</b> permet de visualiser la planification temporelle des tâches sur les 6 prochains mois.
-            Les tâches sans date de début ou de fin seront listées dans le backlog ci-dessous.
+            Le <b>Diagramme de Gantt</b> permet de visualiser la planification temporelle des tâches.
+            Les tâches sans date de début ou de fin sont listées dans la section "Tâches sans dates" ci-dessous pour être glissées dans le planning.
           </p>
         </CardContent>
       </Card>
