@@ -36,8 +36,8 @@ export const ICON_MAP: Record<string, any> = {
 };
 
 export const STAGE_CONFIG = {
-  now: { label: "Maintenant", color: "bg-red-500/20 text-red-400 border-red-500/10", desc: "Priorités immédiates" },
-  next: { label: "Bientôt", color: "bg-klando-gold/20 text-klando-gold border-klando-gold/10", desc: "1-2 prochains mois" },
-  later: { label: "Plus tard", color: "bg-indigo-500/20 text-indigo-400 border-indigo-500/10", desc: "3-6 prochains mois" },
-  backlog: { label: "Backlog", color: "bg-slate-500/20 text-slate-400 border-slate-500/10", desc: "Futur & Idées" }
+  now: { label: "Maintenant", color: "bg-red-500 text-black border-red-400", desc: "Priorités immédiates" },
+  next: { label: "Bientôt", color: "bg-klando-gold text-black border-yellow-400", desc: "1-2 prochains mois" },
+  later: { label: "Plus tard", color: "bg-indigo-400 text-black border-indigo-300", desc: "3-6 prochains mois" },
+  backlog: { label: "Backlog", color: "bg-slate-400 text-black border-slate-300", desc: "Futur & Idées" }
 };

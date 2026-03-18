@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
-import { Calendar, MoreHorizontal, GripVertical, Plus, ChevronLeft, ChevronRight, Star, Clock, Info, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Calendar, MoreHorizontal, GripHorizontal, Plus, ChevronLeft, ChevronRight, Star, Clock, Info, X, ArrowRight } from "lucide-react";
 import { RoadmapItem, STAGE_CONFIG } from "../types";
 import { RoadmapCard } from "./roadmap-card";
 import { cn } from "@/lib/utils";
@@ -48,26 +48,27 @@ export function PlanningGantt({
   const timelineEnd = new Date(timelineWeeks[weeksToShow - 1].getTime() + 7 * 86400000).getTime();
   const timelineDuration = timelineEnd - timelineStart;
 
-  const { containerRef, interaction, startInteraction, handleMouseMove, handleMouseUp, calculateNewDates } = useGanttInteraction(
+  // Optimistic state: keeps visual position while server action is in-flight
+  const [pendingUpdates, setPendingUpdates] = useState<Record<string, { start_date: string; target_date: string }>>({});
+
+  const { containerRef, interaction, startInteraction, calculateNewDates } = useGanttInteraction(
     timelineStart,
     timelineDuration,
     async (id, data) => {
-      const result = await updateRoadmapItem(id, data);
+      const { start_date, target_date } = data;
+      // Apply optimistic update immediately so bar doesn't snap back
+      setPendingUpdates(prev => ({ ...prev, [id]: { start_date, target_date } }));
+      const result = await updateRoadmapItem(id, { start_date, target_date });
       if (result.success) toast.success("Planification mise à jour");
       else toast.error("Erreur de mise à jour");
+      // Clear optimistic state — server props will have the real data now
+      setPendingUpdates(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
     }
   );
-
-  useEffect(() => {
-    if (interaction) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [interaction, handleMouseMove, handleMouseUp]);
 
   const selectedItem = useMemo(() => items.find(i => i.id === selectedItemId), [items, selectedItemId]);
 
@@ -75,12 +76,18 @@ export function PlanningGantt({
     let startStr = startDateStr;
     let endStr = endDateStr;
 
+    // Priority 1: live drag/resize in progress
     if (interaction && interaction.itemId === itemId) {
       const newDates = calculateNewDates(interaction);
       if (newDates) {
         startStr = newDates.start_date;
         endStr = newDates.target_date;
       }
+    }
+    // Priority 2: optimistic update waiting for server
+    else if (itemId && pendingUpdates[itemId]) {
+      startStr = pendingUpdates[itemId].start_date;
+      endStr = pendingUpdates[itemId].target_date;
     }
 
     if (!startStr || !endStr) return null;
@@ -159,25 +166,42 @@ export function PlanningGantt({
         </div>
 
         <div className="flex-1 overflow-y-auto relative min-h-[500px]">
-          {/* Vertical Lines */}
+          {/* Vertical Lines & Weekends */}
           <div className="absolute inset-0 left-48 lg:left-64 flex pointer-events-none h-full">
             {timelineWeeks.map((week, i) => {
               const isToday = getWeekNumber(week) === getWeekNumber(new Date()) && week.getFullYear() === new Date().getFullYear();
+              
+              // Générer les sous-colonnes pour les jours (optionnel mais aide pour les week-ends)
+              const days = [];
+              for(let d=0; d<7; d++) {
+                const dayDate = new Date(week.getTime() + d * 86400000);
+                const isWE = dayDate.getDay() === 0 || dayDate.getDay() === 6;
+                days.push(isWE);
+              }
+
               return (
                 <div key={i} className={cn(
-                  "flex-1 border-l border-white/[0.08] h-full transition-colors",
-                  i % 2 === 0 ? "bg-white/[0.01]" : "bg-transparent",
-                  isToday && "border-l-klando-gold/40 bg-klando-gold/[0.03]"
-                )} />
-              );
-            })}
-            <div className="border-l border-white/[0.08] h-full" />
-          </div>
-
+                  "flex-1 border-l border-white/[0.01] h-full transition-colors flex",
+                  i % 2 === 0 ? "bg-white/[0.002]" : "bg-transparent",
+                  isToday && "border-l-klando-gold/20 bg-klando-gold/[0.005]"
+                )}>
+                  {days.map((isWE, j) => (
+                    <div key={j} className={cn(
+                      "flex-1 h-full border-l border-white/[0.005] first:border-l-0",
+                      isWE && "bg-black/10"
+                    )} />
+                  ))}
+                </div>
+                );
+                })}
+                <div className="border-l border-white/[0.01] h-full" />
+                </div>
           <div className="divide-y divide-white/5 relative">
             {scheduledItems.map(item => {
+              const interactionData = interaction && interaction.itemId === item.id ? calculateNewDates(interaction) : null;
               const pos = getPositionStyles(item.start_date, item.target_date, item.id);
               if (!pos) return null;
+              
               const config = STAGE_CONFIG[item.planning_stage] || STAGE_CONFIG['backlog'];
               const isInteracting = interaction?.itemId === item.id;
               const isSelected = selectedItemId === item.id;
@@ -199,69 +223,121 @@ export function PlanningGantt({
                     <div className={cn("w-3 h-3 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] shrink-0", config.color.split(' ')[0])} />
                     <div className={cn(
                       "truncate text-xs font-bold transition-colors",
-                      isSelected ? "text-klando-gold" : "text-white group-hover:text-klando-gold"
+                      isSelected ? "text-klando-gold" : "text-slate-200 group-hover:text-klando-gold"
                     )}>{item.title}</div>
                   </div>
                   
                   {/* Timeline Bar Area */}
                   <div className="flex-1 relative p-3">
-                    <div 
-                      className={cn(
-                        "absolute top-3 bottom-3 rounded-xl shadow-2xl border-2 flex items-center px-4 overflow-hidden backdrop-blur-md cursor-grab active:cursor-grabbing transition-all group/bar",
-                        config.color, 
-                        isInteracting ? "z-30 scale-y-110 shadow-klando-gold/40 brightness-150 border-klando-gold" : "hover:brightness-110 border-transparent",
-                        isSelected ? "border-klando-gold ring-4 ring-klando-gold/20 z-20" : "",
-                        pos.isCutStart && "rounded-l-none border-l-0 opacity-70", 
-                        pos.isCutEnd && "rounded-r-none border-r-0 opacity-70"
-                      )}
-                      style={{ left: pos.left, width: pos.width }}
-                      onMouseDown={(e) => startInteraction(e, item, 'move')}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedItemId(item.id);
-                      }}
-                    >
-                      {/* Resize Handle Left */}
+                    {/* Tooltip flottant pendant interaction */}
+                    {isInteracting && interactionData && (
+                      <div 
+                        className="absolute -top-6 z-50 px-3 py-1 bg-black border border-klando-gold rounded-lg shadow-[0_0_20px_rgba(235,195,63,0.3)] pointer-events-none animate-in fade-in zoom-in duration-200"
+                        style={{ 
+                          left: `calc(${pos.left} + ${parseFloat(pos.width)/2}%)`,
+                          transform: 'translateX(-50%)'
+                        }}
+                      >
+                        <div className="flex items-center gap-3 whitespace-nowrap">
+                          <span className="text-[10px] font-black text-white uppercase tracking-tighter">
+                            {new Date(interactionData.start_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                          </span>
+                          <ArrowRight className="w-3 h-3 text-klando-gold" />
+                          <span className="text-[10px] font-black text-white uppercase tracking-tighter">
+                            {new Date(interactionData.target_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                          </span>
+                          <div className="h-3 w-px bg-white/20 mx-1" />
+                          <span className="text-[10px] font-black text-klando-gold">{interactionData.diffDays}j</span>
+                        </div>
+                      </div>
+                    )}
+
                       <div 
                         className={cn(
-                          "absolute left-0 top-0 bottom-0 w-10 cursor-ew-resize flex items-center justify-center z-40 transition-all group/handle-left",
-                          interaction?.itemId === item.id ? "opacity-100" : "opacity-0 group-hover/bar:opacity-70 hover:!opacity-100"
+                          "absolute top-3 bottom-3 rounded-xl shadow-2xl border-2 flex items-center overflow-hidden transition-all group/bar",
+                          config.color,
+                          isInteracting ? "z-30 scale-y-110 shadow-klando-gold/40 brightness-110" : "hover:brightness-105",
+                          isSelected ? "ring-4 ring-klando-gold/30 z-20" : "",
+                          pos.isCutStart && "rounded-l-none border-l-0 opacity-70",
+                          pos.isCutEnd && "rounded-r-none border-r-0 opacity-70"
+                        )}
+                        style={{ left: pos.left, width: pos.width }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedItemId(item.id);
+                        }}
+                      >
+                        {/* Overlay léger pour unifier le fond */}
+                        <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+
+                      {/* Drag Handle — centré en bas du bloc */}
+                      <div
+                        className={cn(
+                          "absolute bottom-0 left-1/2 -translate-x-1/2 h-4 w-10 flex items-center justify-center cursor-grab active:cursor-grabbing z-10 rounded-t-md transition-all",
+                          "bg-black/20 hover:bg-white/20 active:bg-white/30",
+                          isInteracting && interaction?.type === 'move' ? "bg-white/30 opacity-100 w-14" : isSelected ? "opacity-80" : "opacity-0 group-hover/bar:opacity-80"
+                        )}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          startInteraction(e, item, 'move');
+                        }}
+                        onTouchStart={(e) => {
+                          e.stopPropagation();
+                          startInteraction(e, item, 'move');
+                        }}
+                        title="Glisser pour déplacer"
+                      >
+                        <GripHorizontal className="w-4 h-3 opacity-80" />
+                      </div>
+
+                      {/* Resize Handle Left */}
+                      <div
+                        className={cn(
+                          "absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize flex items-center justify-center z-40 transition-all group/handle-left",
+                          interaction?.itemId === item.id ? "opacity-100" : isSelected ? "opacity-80" : "opacity-0 group-hover/bar:opacity-70 hover:!opacity-100"
                         )}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           startInteraction(e, item, 'resize-left');
                         }}
+                        onTouchStart={(e) => {
+                          e.stopPropagation();
+                          startInteraction(e, item, 'resize-left');
+                        }}
                       >
                         <div className={cn(
-                          "w-2.5 h-10 rounded-full transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] border-2 bg-klando-gold/80 border-black/20",
-                          "group-hover/handle-left:bg-klando-gold group-hover/handle-left:border-white group-hover/handle-left:h-14 group-hover/handle-left:scale-x-110",
-                          interaction?.type === 'resize-left' && interaction.itemId === item.id && "bg-klando-gold border-white scale-x-125 h-16 shadow-klando-gold/50"
+                          "w-1.5 h-8 rounded-full transition-all bg-klando-gold/80 border border-black/20",
+                          "group-hover/handle-left:bg-klando-gold group-hover/handle-left:h-10",
+                          interaction?.type === 'resize-left' && interaction.itemId === item.id && "bg-klando-gold h-12 shadow-klando-gold/50"
                         )} />
                       </div>
 
-                      <div className="flex items-center gap-2 w-full px-8">
-                        <GripVertical className="w-4 h-4 opacity-40 shrink-0" />
+                      <div className="flex items-center gap-2 flex-1 min-w-0 px-3">
                         <div className="flex flex-col min-w-0">
-                          <span className="text-[11px] font-black truncate drop-shadow-md">{item.title}</span>
-                          <span className="text-[9px] font-bold opacity-70">{localProgress[item.id] ?? item.progress}% complété</span>
+                          <span className="text-[11px] font-black truncate">{item.title}</span>
+                          <span className="text-[9px] font-bold opacity-80">{localProgress[item.id] ?? item.progress}% complété</span>
                         </div>
                       </div>
                       
                       {/* Resize Handle Right */}
-                      <div 
+                      <div
                         className={cn(
-                          "absolute right-0 top-0 bottom-0 w-10 cursor-ew-resize flex items-center justify-center z-40 transition-all group/handle-right",
-                          interaction?.itemId === item.id ? "opacity-100" : "opacity-0 group-hover/bar:opacity-70 hover:!opacity-100"
+                          "absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize flex items-center justify-center z-40 transition-all group/handle-right",
+                          interaction?.itemId === item.id ? "opacity-100" : isSelected ? "opacity-80" : "opacity-0 group-hover/bar:opacity-70 hover:!opacity-100"
                         )}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           startInteraction(e, item, 'resize-right');
                         }}
+                        onTouchStart={(e) => {
+                          e.stopPropagation();
+                          startInteraction(e, item, 'resize-right');
+                        }}
                       >
                         <div className={cn(
-                          "w-2.5 h-10 rounded-full transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] border-2 bg-klando-gold/80 border-black/20",
-                          "group-hover/handle-right:bg-klando-gold group-hover/handle-right:border-white group-hover/handle-right:h-14 group-hover/handle-right:scale-x-110",
-                          interaction?.type === 'resize-right' && interaction.itemId === item.id && "bg-klando-gold border-white scale-x-125 h-16 shadow-klando-gold/50"
+                          "w-1.5 h-8 rounded-full transition-all bg-klando-gold/80 border border-black/20",
+                          "group-hover/handle-right:bg-klando-gold group-hover/handle-right:h-10",
+                          interaction?.type === 'resize-right' && interaction.itemId === item.id && "bg-klando-gold h-12 shadow-klando-gold/50"
                         )} />
                       </div>
                     </div>
@@ -328,10 +404,9 @@ export function PlanningGantt({
                 className="absolute -top-2 -right-2 rounded-full w-8 h-8 p-0 bg-klando-gold text-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-30"
                 onClick={async () => {
                   const today = new Date();
-                  await updateRoadmapItem(item.id, {
-                    start_date: today.toISOString().split('T')[0],
-                    target_date: new Date(today.getTime() + 7 * 86400000).toISOString().split('T')[0]
-                  });
+                  const start_date = today.toISOString().split('T')[0];
+                  const target_date = new Date(today.getTime() + 7 * 86400000).toISOString().split('T')[0];
+                  await updateRoadmapItem(item.id, { start_date, target_date });
                   setSelectedItemId(item.id);
                 }}
               >
