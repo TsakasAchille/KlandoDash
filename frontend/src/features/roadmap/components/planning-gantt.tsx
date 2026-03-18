@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { Calendar, MoreHorizontal, GripHorizontal, Plus, ChevronLeft, ChevronRight, Star, Clock, Info, X, ArrowRight } from "lucide-react";
-import { RoadmapItem, STAGE_CONFIG, ICON_MAP } from "../types";
+import { RoadmapItem, STAGE_CONFIG, ICON_MAP, PlanningBoard } from "../types";
 import type { DashMember } from "@/lib/queries/admin";
 import { RoadmapCard } from "./roadmap-card";
+import { BoardSelector } from "./board-selector";
 import { cn } from "@/lib/utils";
 import { useGanttInteraction } from "../use-gantt-interaction";
 import { updateRoadmapItem } from "@/app/admin/roadmap/actions";
@@ -15,6 +16,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 interface PlanningGanttProps {
   items: RoadmapItem[];
   members: DashMember[];
+  boards: PlanningBoard[];
+  selectedBoardId: string | null;
+  onBoardChange: (boardId: string | null) => void;
   localProgress: Record<string, number>;
   updatingId: string | null;
   onProgressChange: (id: string, val: number) => void;
@@ -25,7 +29,8 @@ interface PlanningGanttProps {
 }
 
 export function PlanningGantt({
-  items, members, localProgress, updatingId, onProgressChange, onSetLocalProgress,
+  items, members, boards, selectedBoardId, onBoardChange,
+  localProgress, updatingId, onProgressChange, onSetLocalProgress,
   onTogglePlanning, onDelete, onEdit
 }: PlanningGanttProps) {
 
@@ -34,6 +39,12 @@ export function PlanningGantt({
     members.forEach(m => { map[m.email] = m; });
     return map;
   }, [members]);
+
+  const boardsMap = useMemo(() => {
+    const map: Record<string, PlanningBoard> = {};
+    boards.forEach(b => { map[b.id] = b; });
+    return map;
+  }, [boards]);
   
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -128,6 +139,9 @@ export function PlanningGantt({
       interaction?.type === 'move' && "cursor-grabbing",
       (interaction?.type === 'resize-left' || interaction?.type === 'resize-right') && "cursor-ew-resize"
     )}>
+      {/* Board selector */}
+      <BoardSelector boards={boards} selectedBoardId={selectedBoardId} onBoardChange={onBoardChange} />
+
       <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden flex flex-col shadow-2xl">
         {/* Navigation */}
         <div className="flex items-center justify-between border-b border-white/10 bg-white/5 p-3">

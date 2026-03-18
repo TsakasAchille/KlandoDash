@@ -21,6 +21,17 @@ export interface RoadmapItem {
   target_date: string | null;
   custom_color: string | null;
   assigned_to: string[];
+  planning_board_id: string | null;
+  updated_at: string;
+}
+
+export interface PlanningBoard {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string | null;
+  created_by: string | null;
+  created_at: string;
   updated_at: string;
 }
 
