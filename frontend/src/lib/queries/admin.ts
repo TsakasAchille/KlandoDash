@@ -81,21 +81,36 @@ export async function getAuditLogs(options: {
   };
 }
 
+export interface RoadmapItem {
+  id: string;
+  phase_name: string;
+  timeline: string;
+  title: string;
+  description: string;
+  status: 'todo' | 'in-progress' | 'done';
+  progress: number;
+  icon_name: string;
+  order_index: number;
+  is_planning: boolean;
+  updated_at: string;
+}
+
 /**
- * Récupère la liste des administrateurs ayant effectué des actions (pour les filtres)
+ * Récupère les items de la roadmap
  */
-export async function getAuditAdmins(): Promise<string[]> {
+export async function getRoadmapItems(): Promise<RoadmapItem[]> {
   noStore();
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from("dash_audit_logs")
-    .select("admin_email")
-    .order("admin_email");
+    .from("roadmap_items")
+    .select("*")
+    .order("order_index", { ascending: true });
 
-  if (error) return [];
-  
-  // Extraire les emails uniques
-  const uniqueEmails = Array.from(new Set(data.map(d => d.admin_email)));
-  return uniqueEmails;
+  if (error) {
+    console.error("Erreur getRoadmapItems:", error);
+    return [];
+  }
+
+  return data || [];
 }

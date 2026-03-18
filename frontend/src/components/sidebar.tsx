@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { 
   Home, Car, Users, BarChart3, Map, LifeBuoy, 
   Shield, X, Banknote, Globe, CheckSquare, 
-  Sparkles, Loader2, TrendingUp, PenTool, Database, MessageSquare, Rocket
+  Sparkles, Loader2, TrendingUp, PenTool, Database, MessageSquare, Rocket, Milestone
 } from "lucide-react";
 import { UserMenu } from "@/components/user-menu";
 import { Logo } from "@/components/logo";
@@ -36,6 +36,7 @@ const adminItems = [
   { href: "/admin/validation", label: "Validation", icon: CheckSquare },
   { href: "/transactions", label: "Transactions", icon: Banknote },
   { href: "/stats", label: "Statistiques", icon: BarChart3 },
+  { href: "/admin/roadmap", label: "Roadmap", icon: Milestone },
   { href: "/admin/logs", label: "Audit Logs", icon: Database },
   { href: "/admin", label: "Administration", icon: Shield },
 ];
