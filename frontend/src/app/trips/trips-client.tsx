@@ -46,7 +46,21 @@ function TripsPageClientContent({
   // FILTRAGE LOCAL (Instantané)
   const filteredTrips = useMemo(() => {
     return initialTrips.filter(trip => {
-      const matchesStatus = statusFilter === "all" || trip.status === statusFilter;
+      // Déterminer le statut effectif pour le filtrage
+      const effectiveStatus = trip.status === 'ARCHIVED' && trip.last_status ? trip.last_status : trip.status;
+      
+      // Logique de correspondance par catégorie
+      let matchesStatus = statusFilter === "all";
+      if (!matchesStatus) {
+        if (statusFilter === "COMPLETED") {
+          matchesStatus = effectiveStatus === "COMPLETED" || effectiveStatus === "CLOSED";
+        } else if (statusFilter === "ACTIVE") {
+          matchesStatus = effectiveStatus === "ACTIVE" || effectiveStatus === "STARTED";
+        } else {
+          matchesStatus = effectiveStatus === statusFilter;
+        }
+      }
+
       const matchesPaid = !onlyPaidFilter || trip.has_successful_transaction === true;
       const matchesSearch = !localSearch || 
         trip.departure_city.toLowerCase().includes(localSearch.toLowerCase()) ||

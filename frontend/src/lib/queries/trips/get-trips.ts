@@ -24,13 +24,18 @@ export async function getTrips(options: {
       seats_published,
       passenger_price,
       status,
+      last_status,
       driver_id
     `)
     .order("departure_schedule", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (status) {
-    query = query.eq("status", status);
+  if (status === "COMPLETED") {
+    query = query.or('status.eq.COMPLETED,status.eq.CLOSED,and(status.eq.ARCHIVED,last_status.in.(COMPLETED,CLOSED))');
+  } else if (status === "ACTIVE") {
+    query = query.or('status.eq.ACTIVE,status.eq.STARTED,and(status.eq.ARCHIVED,last_status.in.(ACTIVE,STARTED))');
+  } else if (status) {
+    query = query.or(`status.eq.${status},and(status.eq.ARCHIVED,last_status.eq.${status})`);
   }
 
   const { data, error } = await query;
@@ -64,7 +69,8 @@ export async function getTripsByDriver(
       seats_available,
       seats_published,
       passenger_price,
-      status
+      status,
+      last_status
     `, { count: "exact" })
     .eq("driver_id", driverId)
     .order("departure_schedule", { ascending: false })
@@ -133,6 +139,7 @@ export async function getTripsWithDriver(options: {
       passenger_price,
       driver_price,
       status,
+      last_status,
       auto_confirmation,
       created_at,
       driver_id,
@@ -155,8 +162,12 @@ export async function getTripsWithDriver(options: {
       )
     `, { count: "exact" });
 
-  if (status && status !== "all") {
-    query = query.eq("status", status);
+  if (status === "COMPLETED") {
+    query = query.or('status.eq.COMPLETED,status.eq.CLOSED,and(status.eq.ARCHIVED,last_status.in.(COMPLETED,CLOSED))');
+  } else if (status === "ACTIVE") {
+    query = query.or('status.eq.ACTIVE,status.eq.STARTED,and(status.eq.ARCHIVED,last_status.in.(ACTIVE,STARTED))');
+  } else if (status && status !== "all") {
+    query = query.or(`status.eq.${status},and(status.eq.ARCHIVED,last_status.eq.${status})`);
   }
 
   // Si on veut seulement les trajets payés
@@ -261,6 +272,7 @@ export async function getTripsWithDriver(options: {
       passenger_price: t.passenger_price,
       driver_price: t.driver_price,
       status: t.status,
+      last_status: t.last_status,
       auto_confirmation: t.auto_confirmation,
       created_at: t.created_at,
       driver_id: t.driver_id,

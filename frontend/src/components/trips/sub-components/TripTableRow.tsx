@@ -15,13 +15,18 @@ interface TripTableRowProps {
 
 const statusColors: Record<string, string> = {
   COMPLETED: "bg-green-500/10 text-green-500 border-green-500/20",
+  CLOSED: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
   ACTIVE: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  STARTED: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
   PENDING: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   CANCELLED: "bg-red-500/10 text-red-500 border-red-500/20",
   ARCHIVED: "bg-gray-500/10 text-gray-400 border-gray-500/20",
 };
 
 export function TripTableRow({ trip, isSelected, onSelect }: TripTableRowProps) {
+  // Déterminer le statut réel à afficher
+  const displayStatus = trip.status === 'ARCHIVED' && trip.last_status ? trip.last_status : trip.status;
+
   return (
     <TableRow
       key={trip.trip_id}
@@ -111,10 +116,10 @@ export function TripTableRow({ trip, isSelected, onSelect }: TripTableRowProps) 
           <span
             className={cn(
               "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm",
-              statusColors[trip.status] || "bg-gray-500/10 text-gray-400 border-gray-500/20"
+              statusColors[displayStatus] || "bg-gray-500/10 text-gray-400 border-gray-500/20"
             )}
           >
-            {trip.status}
+            {displayStatus}
           </span>
           {trip.has_successful_transaction && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500 text-white text-[8px] font-black uppercase tracking-tighter shadow-sm animate-in zoom-in-90 duration-300">

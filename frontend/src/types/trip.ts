@@ -20,6 +20,7 @@ export interface TripRow {
   passenger_price: number | null;
   driver_price: number | null;
   status: string | null;
+  last_status: string | null;
   auto_confirmation: boolean | null;
   precision: string | null;
   created_at: string;
@@ -37,6 +38,7 @@ export interface TripListItem {
   seats_published: number | null;
   passenger_price: number | null;
   status: string | null;
+  last_status?: string | null;
   driver_id: string | null;
 }
 
@@ -87,7 +89,7 @@ export interface TripStats {
 }
 
 // Statuts possibles
-export type TripStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED" | "ARCHIVED";
+export type TripStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED" | "ARCHIVED" | "STARTED" | "CLOSED";
 
 // Type pour la carte (page Map)
 export interface TripMapItem {
@@ -153,6 +155,7 @@ export interface Trip {
   driver_id: string;
   driver_name: string;
   status: string;
+  last_status?: string | null;
   trip_polyline?: string;
   created_at: string;
   viator_income?: number;
@@ -182,6 +185,7 @@ export function toTrip(detail: TripDetail): Trip {
     driver_id: detail.driver_id || "",
     driver_name: detail.driver_name || "",
     status: detail.status || "",
+    last_status: detail.last_status,
     trip_polyline: detail.polyline || undefined,
     created_at: detail.created_at || "",
     viator_income: detail.driver_price || 0,

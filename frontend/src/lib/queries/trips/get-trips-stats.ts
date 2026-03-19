@@ -29,10 +29,23 @@ export async function getTripsStats(): Promise<TripStats> {
   }
 
   const byStatus: StatusCount[] = data.trips.byStatus || [];
-  const activeCount = byStatus.find((s) => s.status === 'ACTIVE')?.count || 0;
-  const completedCount = byStatus.find((s) => s.status === 'COMPLETED')?.count || 0;
-  const pendingCount = byStatus.find((s) => s.status === 'PENDING')?.count || 0;
-  const cancelledCount = byStatus.find((s) => s.status === 'CANCELLED')?.count || 0;
+  
+  // Agrégation des statuts pour correspondre aux catégories du dashboard
+  const activeCount = byStatus
+    .filter(s => s.status === 'ACTIVE' || s.status === 'STARTED')
+    .reduce((acc, s) => acc + s.count, 0);
+    
+  const completedCount = byStatus
+    .filter(s => s.status === 'COMPLETED' || s.status === 'CLOSED')
+    .reduce((acc, s) => acc + s.count, 0);
+    
+  const pendingCount = byStatus
+    .filter(s => s.status === 'PENDING')
+    .reduce((acc, s) => acc + s.count, 0);
+    
+  const cancelledCount = byStatus
+    .filter(s => s.status === 'CANCELLED')
+    .reduce((acc, s) => acc + s.count, 0);
 
   return {
     total_trips: data.trips.total,
